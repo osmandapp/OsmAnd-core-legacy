@@ -973,11 +973,10 @@ void convertRouteDataObjecToMapObjects(SearchQuery* q, std::vector<RouteDataObje
 			for (uint32_t s = 0; s < r->pointsX.size(); s++) {
 				obj->points.push_back(std::pair<int, int>(r->pointsX[s], r->pointsY[s]));
 			}
-			obj->id = r->id;
-			UNORDERED(map)<int, std::string >::iterator nameIterator = r->names.begin();
-			for (; nameIterator != r->names.end(); nameIterator++) {
-				std::string ruleId = r->region->decodingRules[nameIterator->first].first;				
-				obj->objectNames[ruleId] = nameIterator->second;
+			obj->id = r->id;	
+			for (uint32_t s = 0; s < r->namesOrder.size(); s++) {
+				std::string ruleId = r->region->decodingRules[r->namesOrder[s]].first;				
+				obj->objectNames[ruleId] = r->names[r->namesOrder[s]];
 				obj->namesOrder.push_back(ruleId);
 			}
 			obj->area = false;
@@ -1381,6 +1380,7 @@ bool readRouteDataObject(CodedInputStream* input, uint32_t left, uint32_t top, R
 				DO_((WireFormatLite::ReadPrimitive<uint32_t, WireFormatLite::TYPE_UINT32>(input, &t)));
 
 				obj->namesIds.push_back( pair<uint32_t, uint32_t>(s, t));
+				obj->namesOrder.push_back(s);
 			}
 			input->PopLimit(oldLimit)	;
 			break;

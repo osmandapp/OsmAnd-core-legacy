@@ -116,6 +116,8 @@ struct RouteDataObject {
 	int64_t id;
 
 	UNORDERED(map)<int, std::string > names;
+	std::vector<int> namesOrder;
+
 	vector<pair<uint32_t, uint32_t> > namesIds;
 
 	string getName() {
