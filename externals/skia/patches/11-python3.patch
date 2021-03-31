@@ -1,0 +1,45 @@
+--- upstream.original/bin/fetch-gn
++++ upstream.patched/bin/fetch-gn
+@@ -10,7 +10,11 @@ import os
+ import shutil
+ import stat
+ import sys
+-import urllib2
++
++if sys.version_info[0] < 3:
++  from urllib2 import urlopen
++else:
++  from urllib.request import urlopen
+ 
+ os.chdir(os.path.join(os.path.dirname(__file__), os.pardir))
+ 
+@@ -29,7 +33,7 @@ def sha1_of_file(path):
+ 
+ if sha1_of_file(gn_path) != sha1:
+   with open(gn_path, 'wb') as f:
+-    f.write(urllib2.urlopen('https://chromium-gn.storage-download.googleapis.com/' + sha1).read())
++    f.write(urlopen('https://chromium-gn.storage-download.googleapis.com/' + sha1).read())
+ 
+   os.chmod(gn_path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR |
+                     stat.S_IRGRP                | stat.S_IXGRP |
+--- upstream.original/tools/git-sync-deps
++++ upstream.patched/tools/git-sync-deps
+@@ -94,7 +94,7 @@ def is_git_toplevel(git, directory):
+   try:
+     toplevel = subprocess.check_output(
+       [git, 'rev-parse', '--show-toplevel'], cwd=directory).strip()
+-    return os.path.realpath(directory) == os.path.realpath(toplevel)
++    return os.path.realpath(directory) == os.path.realpath(toplevel.decode())
+   except subprocess.CalledProcessError:
+     return False
+ 
+@@ -167,7 +167,8 @@ def git_checkout_to_directory(git, repo, checkoutable, directory, verbose):
+ 
+ def parse_file_to_dict(path):
+   dictionary = {}
+-  execfile(path, dictionary)
++  with open(path) as f:
++    exec(f.read(), dictionary)
+   return dictionary
+ 
+ 
