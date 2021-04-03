@@ -227,6 +227,29 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRouteInternal
 	return runRouting(ctx, recalculationEnd);
 }
 
+GpxRouteApproximation::GpxRouteApproximation(RoutingContext* rctx) {
+		ctx = rctx;
+}
+	 	
+GpxRouteApproximation::GpxRouteApproximation(const GpxRouteApproximation& gctx) {
+	ctx = gctx.ctx;
+	routeDistance = gctx.routeDistance;
+}
+
+double GpxRouteApproximation::distFromLastPoint(LatLon startPoint) {
+	if (result.size() > 0) {
+		return getDistance(getLastPoint()->lat,getLastPoint()->lon, startPoint.lat, startPoint.lon);
+	}
+	return 0;
+}
+
+SHARED_PTR<LatLon> GpxRouteApproximation::getLastPoint() {
+	if (result.size() > 0) {
+		return result[result.size() - 1]->getEndPoint();
+	}
+	return NULL;
+}
+
 vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 	RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentPoint>>& points,
 	SHARED_PTR<PrecalculatedRouteDirection> routeDirection) {

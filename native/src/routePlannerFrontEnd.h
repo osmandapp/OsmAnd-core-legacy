@@ -44,4 +44,34 @@ public:
     static SHARED_PTR<RouteSegmentResult> generateStraightLineSegment(float averageSpeed, vector<pair<double, double>> points);
 };
 
+class GpxRouteApproximation {
+    public:
+    // ! MAIN parameter to approximate (35m good for custom recorded tracks) 
+    double MINIMUM_POINT_APPROXIMATION = 50; // 35 m good for small deviations
+    // This parameter could speed up or slow down evaluation (better to make bigger for long routes and smaller for short)
+    double MAXIMUM_STEP_APPROXIMATION = 3000;
+    // don't search subsegments shorter than specified distance (also used to step back for car turns)
+    double MINIMUM_STEP_APPROXIMATION = 100;
+    // Parameter to smoother the track itself (could be 0 if it's not recorded track)
+    double SMOOTHEN_POINTS_NO_ROUTE = 5;
+    
+    RoutingContext* ctx;
+    int routeCalculations = 0;
+    int routePointsSearched = 0;
+    int routeDistCalculations = 0;
+    vector<SHARED_PTR<GpxPoint>> finalPoints;
+    vector<SHARED_PTR<RouteSegmentResult>> result;
+    int routeDistance;
+    int routeGapDistance;
+    int routeDistanceUnmatched;
+
+     GpxRouteApproximation(RoutingContext* ctx);
+
+     GpxRouteApproximation(const GpxRouteApproximation& gctx);
+
+     double distFromLastPoint(LatLon startPoint);
+
+     SHARED_PTR<LatLon> getLastPoint();
+};
+
 #endif /*_OSMAND_ROUTE_PLANNER_FRONT_END_H*/
