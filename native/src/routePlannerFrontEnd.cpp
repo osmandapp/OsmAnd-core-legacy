@@ -250,6 +250,32 @@ SHARED_PTR<LatLon> GpxRouteApproximation::getLastPoint() {
 	return NULL;
 }
 
+bool pointCloseEnough(GpxRouteApproximation gctx, SHARED_PTR<GpxPoint> ipoint, vector<SHARED_PTR<RouteSegmentResult>> res) {
+	int px = get31TileNumberX(ipoint->lon);
+	int py = get31TileNumberY(ipoint->lat);
+	double SQR = gctx.MINIMUM_POINT_APPROXIMATION;
+	SQR = SQR * SQR;
+	for ( int i=0;i<res.size();i++) {
+		SHARED_PTR<RouteSegmentResult> sr = res[i];
+		int start = sr->getStartPointIndex();
+		int end = sr->getEndPointIndex();
+		if (sr->getStartPointIndex() > sr->getEndPointIndex()) {
+			start = sr->getEndPointIndex();
+			end = sr->getStartPointIndex();
+		}
+		for (int i = start; i < end; i++) {
+			RouteDataObject r = sr->object;
+			std::pair<int, int> pp = getProjectionPoint(px, py, r.pointsX[i], r.pointsY[i],
+					r.pointsX[i + 1], r.pointsY[i + 1]);
+			double currentsDist = squareDist31TileMetric((int) pp.first, (int) pp.second, px, py);
+			if (currentsDist <= SQR) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 	RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentPoint>>& points,
 	SHARED_PTR<PrecalculatedRouteDirection> routeDirection) {
