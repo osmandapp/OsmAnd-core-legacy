@@ -3,6 +3,8 @@
 #include "CommonCollections.h"
 #include "commonOsmAndCore.h"
 
+const string UNMATCHED_HIGHWAY_TYPE = "unmatched";
+
 struct RouteSegmentResult;
 struct FinalRouteSegment;
 struct CombineAreaRoutePoint;

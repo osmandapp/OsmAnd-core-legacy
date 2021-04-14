@@ -165,6 +165,19 @@ typedef pair<std::string, std::string> tag_value;
 typedef pair<int, int> int_pair;
 typedef vector<pair<int, int> > coordinates;
 
+struct LatLon{
+	double lat;
+	double lon;
+	LatLon(double lat, double lon):
+		lat(lat),
+		lon(lon)
+		{};
+
+	bool isEquals(LatLon other){
+		return abs(lat - other.lat) < 0.00001 && abs(lon - other.lon) < 0.00001;
+	}
+};
+
 class MapDataObject {
    public:
 	std::vector<tag_value> types;
@@ -315,6 +328,9 @@ int findFirstNumberEndIndex(string value);
 double parseSpeed(string v, double def);
 
 std::pair<int, int> getProjectionPoint(int px, int py, int xA, int yA, int xB, int yB);
+std::pair<double, double> getProjection(double lat, double lon, double fromLat, double fromLon, double toLat, double toLon);
+double getOrthogonalDistance(double lat, double lon, double fromLat, double fromLon, double toLat, double toLon);
+double scalarMultiplication(double xA, double yA, double xB, double yB, double xC, double yC);
 
 std::string to_lowercase(const std::string& in);
 std::vector<std::string> split_string(const std::string& str, const std::string& delimiters);

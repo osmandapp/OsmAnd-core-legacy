@@ -89,6 +89,40 @@ double convert31XToMeters(int x1, int x2, int y) {
 	return ((double)x1 - x2) * coefficientsX[ind];
 }
 
+double scalarMultiplication(double xA, double yA, double xB, double yB, double xC, double yC) {
+		// Scalar multiplication between (AB, AC)
+		return (xB - xA) * (xC - xA) + (yB - yA) * (yC - yA);
+	}
+
+double getDistance(std::pair<double, double> l, double latitude, double longitude) {
+	return getDistance(l.first, l.second, latitude, longitude);
+}
+
+double getOrthogonalDistance(double lat, double lon, double fromLat, double fromLon, double toLat, double toLon) {
+		return getDistance(getProjection(lat, lon, fromLat, fromLon, toLat, toLon), lat, lon);
+	}
+
+std::pair<double, double> getProjection(double lat, double lon, double fromLat, double fromLon, double toLat, double toLon) {
+	// not very accurate computation on sphere but for distances < 1000m it is ok
+	double mDist = (fromLat - toLat) * (fromLat - toLat) + (fromLon - toLon) * (fromLon - toLon);
+	double projection = scalarMultiplication(fromLat, fromLon, toLat, toLon, lat, lon);
+	double prlat;
+	double prlon;
+	if (projection < 0) {
+		prlat = fromLat;
+		prlon = fromLon;
+	} else if (projection >= mDist) {
+		prlat = toLat;
+		prlon = toLon;
+	} else {
+		prlat = fromLat + (toLat - fromLat) * (projection / mDist);
+		prlon = fromLon + (toLon - fromLon) * (projection / mDist);
+	}
+	return std::pair<double, double>(prlat, prlon);
+}
+
+
+
 std::pair<int, int> getProjectionPoint(int px, int py, int xA, int yA, int xB, int yB) {
 	double mDist = squareRootDist31(xA, yA, xB, yB);
 	int prx = xA;

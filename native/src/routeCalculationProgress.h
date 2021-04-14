@@ -27,13 +27,17 @@ public:
 	int directQueueSize;
 	int oppositeQueueSize;
 
+	int totalIterations;
+	int iteration;
+
 	bool cancelled;
 	
 public:
 	RouteCalculationProgress() : segmentNotFound(-1), distanceFromBegin(0),
 		directSegmentQueueSize(0), distanceFromEnd(0),  reverseSegmentQueueSize(0), totalEstimatedDistance(0),
 		routingCalculatedTime(0), visitedSegments(0), loadedTiles(0), 
-		visitedDirectSegments(0), visitedOppositeSegments(0), directQueueSize(0),  oppositeQueueSize(0), cancelled(false) {
+		visitedDirectSegments(0), visitedOppositeSegments(0), directQueueSize(0),  oppositeQueueSize(0), 
+		totalIterations(1), iteration(-1), cancelled(false) {
 	}
 
 	virtual bool isCancelled(){
