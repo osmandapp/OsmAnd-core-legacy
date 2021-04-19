@@ -48,16 +48,20 @@ LOCAL_SRC_FILES := \
 	$(OSMAND_CORE_RELATIVE)/src/binaryRead.cpp \
 	$(OSMAND_CORE_RELATIVE)/src/generalRouter.cpp \
 	$(OSMAND_CORE_RELATIVE)/src/binaryRoutePlanner.cpp \
-	$(OSMAND_CORE_RELATIVE)/src/transportRoutePlanner.cpp \
 	$(OSMAND_CORE_RELATIVE)/src/transportRouteResultSegment.cpp \
 	$(OSMAND_CORE_RELATIVE)/src/transportRoutingObjects.cpp \
 	$(OSMAND_CORE_RELATIVE)/src/transportRouteSegment.cpp \
 	$(OSMAND_CORE_RELATIVE)/src/transportRouteResult.cpp \
 	$(OSMAND_CORE_RELATIVE)/src/transportRoutingConfiguration.cpp \
 	$(OSMAND_CORE_RELATIVE)/src/transportRoutingContext.cpp \
+	$(OSMAND_CORE_RELATIVE)/src/transportRoutePlanner.cpp \
+	$(OSMAND_CORE_RELATIVE)/src/transportRouteStopsReader.cpp \
 	$(OSMAND_CORE_RELATIVE)/src/routeDataBundle.cpp \
 	$(OSMAND_CORE_RELATIVE)/src/routeDataResources.cpp \
-	$(OSMAND_CORE_RELATIVE)/src/transportRouteStopsReader.cpp \
+	$(OSMAND_CORE_RELATIVE)/src/routePlannerFrontEnd.cpp \
+	$(OSMAND_CORE_RELATIVE)/src/routeResultPreparation.cpp \
+	$(OSMAND_CORE_RELATIVE)/src/routeSegmentResult.cpp \
+	$(OSMAND_CORE_RELATIVE)/src/turnType.cpp \
 	$(OSMAND_CORE_RELATIVE)/src/proto/osmand_index.pb.cc \
 	$(OSMAND_CORE_RELATIVE)/src/java_wrap.cpp
 	
