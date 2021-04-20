@@ -19,13 +19,11 @@ public:
     RoutePlannerFrontEnd() : useSmartRouteRecalculation(true) {
     }
     
-private:
     vector<SHARED_PTR<RouteSegmentResult> > searchRoute(RoutingContext* ctx,
                                            vector<SHARED_PTR<RouteSegmentPoint>>& points,
                                            SHARED_PTR<PrecalculatedRouteDirection> routeDirection);
     
     vector<SHARED_PTR<RouteSegmentResult> > searchRouteInternalPrepare(RoutingContext* ctx, SHARED_PTR<RouteSegmentPoint> start, SHARED_PTR<RouteSegmentPoint> end, SHARED_PTR<PrecalculatedRouteDirection> routeDirection);
-public:
     
     void setUseFastRecalculation(bool use) {
         useSmartRouteRecalculation = use;
@@ -44,7 +42,7 @@ public:
     static SHARED_PTR<RouteSegmentResult> generateStraightLineSegment(float averageSpeed, vector<pair<double, double>> points);
 };
 
-class GpxRouteApproximation {
+struct GpxRouteApproximation {
     public:
     // ! MAIN parameter to approximate (35m good for custom recorded tracks) 
     double MINIMUM_POINT_APPROXIMATION = 50; // 35 m good for small deviations
@@ -65,13 +63,34 @@ class GpxRouteApproximation {
     int routeGapDistance;
     int routeDistanceUnmatched;
 
-     GpxRouteApproximation(RoutingContext* ctx);
+	GpxRouteApproximation(RoutingContext* rctx) { ctx = rctx; }
 
-     GpxRouteApproximation(const GpxRouteApproximation& gctx);
+	GpxRouteApproximation(const GpxRouteApproximation& gctx) {
+		ctx = gctx.ctx;
+		routeDistance = gctx.routeDistance;
+	}
 
-     double distFromLastPoint(LatLon startPoint);
+	double distFromLastPoint(double lat, double lon);
 
-     SHARED_PTR<LatLon> getLastPoint();
+	SHARED_PTR<LatLon> getLastPoint();
 };
+
+GpxRouteApproximation* searchGpxRoute(GpxRouteApproximation* gctx, vector<SHARED_PTR<GpxPoint>> gpxPoints);
+
+SHARED_PTR<GpxPoint> findNextGpxPointWithin(vector<SHARED_PTR<GpxPoint>> gpxPoints, SHARED_PTR<GpxPoint> start,
+											double dist);
+bool findGpxRouteSegment(GpxRouteApproximation* gctx, vector<SHARED_PTR<GpxPoint>> gpxPoints,
+						 SHARED_PTR<GpxPoint> start, SHARED_PTR<GpxPoint> target, bool prevRouteCalculated);
+bool initRoutingPoint(SHARED_PTR<GpxPoint> start, GpxRouteApproximation* gctx, double distThreshold);
+bool stepBackAndFindPrevPointInRoute(GpxRouteApproximation* gctx, vector<SHARED_PTR<GpxPoint>> gpxPoints,
+									 SHARED_PTR<GpxPoint> start, SHARED_PTR<GpxPoint> next);
+void calculateGpxRoute(GpxRouteApproximation* gctx, vector<SHARED_PTR<GpxPoint>> gpxPoints);
+void addStraightLine(GpxRouteApproximation* gctx, vector<SHARED_PTR<LatLon>> lastStraightLine,
+					 SHARED_PTR<GpxPoint> strPnt, RoutingIndex* reg);
+void cleanupResultAndAddTurns(GpxRouteApproximation* gctx);
+void simplifyDouglasPeucker(vector<SHARED_PTR<LatLon>> l, double eps, int start, int end);
+bool pointCloseEnough(GpxRouteApproximation* gctx, SHARED_PTR<GpxPoint> ipoint,
+					  vector<SHARED_PTR<RouteSegmentResult>> res);
+void makeSegmentPointPrecise(SHARED_PTR<RouteSegmentResult> routeSegmentResult, double lat, double lon, bool st);
 
 #endif /*_OSMAND_ROUTE_PLANNER_FRONT_END_H*/

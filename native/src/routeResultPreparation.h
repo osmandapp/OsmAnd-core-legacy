@@ -20,5 +20,6 @@ vector<SHARED_PTR<RouteSegmentResult> > prepareResult(RoutingContext* ctx, vecto
 
 vector<int> parseTurnLanes(const SHARED_PTR<RouteDataObject>& ro, double dirToNorthEastPi);
 vector<int> parseLanes(const SHARED_PTR<RouteDataObject>& ro, double dirToNorthEastPi);
+void prepareTurnResults(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResult> >& result);
 
 #endif /*_OSMAND_ROUTE_RESULT_PREPARATION_H*/
