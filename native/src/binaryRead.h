@@ -145,6 +145,17 @@ struct RouteDataObject {
 	std::vector<double> heightDistanceArray;
 	int64_t id;
 	bool ownsRegion;
+    
+    void setPointTypes(int pntInd, std::vector<uint32_t> array) {
+        if (pointTypes.size() <= pntInd) {
+            std::vector<std::vector<uint32_t>> npointTypes;
+            for (int k = 0; k < pointTypes.size(); k++) {
+                npointTypes.push_back(pointTypes[k]);
+            }
+            pointTypes = npointTypes;
+        }
+        pointTypes[pntInd] = array;
+    }
 
 	UNORDERED(map)<int, std::string> names;
 	vector<pair<uint32_t, uint32_t>> namesIds;

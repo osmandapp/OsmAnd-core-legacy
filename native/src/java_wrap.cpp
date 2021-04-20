@@ -489,6 +489,12 @@ jfieldID jfield_RoutingConfiguration_planRoadDirection = NULL;
 jfieldID jfield_RoutingConfiguration_routeCalculationTime = NULL;
 jfieldID jfield_RoutingConfiguration_routerName = NULL;
 jfieldID jfield_RoutingConfiguration_router = NULL;
+jmethodID jmethod_RoutingConfiguration_getDirectionPoints = NULL;
+		
+jclass jclass_DirectionPoint = NULL;
+jfieldID jfield_DirectionPoint_x31 = NULL;
+jfieldID jfield_DirectionPoint_y31 = NULL;
+jfieldID jfield_DirectionPoint_tags = NULL;
 
 jclass jclass_GeneralRouter = NULL;
 jfieldID jfield_GeneralRouter_restrictionsAware = NULL;
@@ -850,6 +856,15 @@ void loadJniRenderingContext(JNIEnv* env) {
 		getFid(env, jclass_RoutingConfiguration, "routerName", "Ljava/lang/String;");
 	jfield_RoutingConfiguration_router =
 		getFid(env, jclass_RoutingConfiguration, "router", "Lnet/osmand/router/GeneralRouter;");
+
+	jmethod_RoutingConfiguration_getDirectionPoints = 
+		env->GetMethodID(jclass_RoutingConfiguration, "getDirectionPointSimplifyArray", "()[Lnet/osmand/router/RoutingConfiguration$DirectionPointSimplify;");	
+
+	jclass_DirectionPoint = findGlobalClass(env, "net/osmand/router/RoutingConfiguration$DirectionPointSimplify");
+	jfield_DirectionPoint_x31 = getFid(env, jclass_DirectionPoint, "x31", "I");
+	jfield_DirectionPoint_y31 = getFid(env, jclass_DirectionPoint, "y31", "I");	
+	jfield_DirectionPoint_tags = getFid(env, jclass_DirectionPoint, "tags", "[[Ljava/lang/String;");
+	
 
 	jclass_GeneralRouter = findGlobalClass(env, "net/osmand/router/GeneralRouter");
 	jfield_GeneralRouter_restrictionsAware = getFid(env, jclass_GeneralRouter, "restrictionsAware", "Z");
@@ -1428,6 +1443,37 @@ void parseRouteConfiguration(JNIEnv* ienv, SHARED_PTR<RoutingConfiguration> rCon
 		}
 		ienv->ReleaseLongArrayElements(impassableRoadIds, (jlong*)iRi, 0);
 	}
+
+	SkRect rect = SkRect::MakeLTRB(0, 0, INT_MAX, INT_MAX);
+	rConfig->directionPoints = quad_tree<DirectionPoint>(rect, 14, 0.5f);
+	jobjectArray directionPoints = (jobjectArray)ienv->CallObjectMethod(jRouteConfig, jmethod_RoutingConfiguration_getDirectionPoints);
+	for (int j = 0; j < ienv->GetArrayLength(directionPoints); j++) {
+		jobject jdp = ienv->GetObjectArrayElement(directionPoints, j);
+		DirectionPoint dp;
+
+		dp.x31 = ienv->GetIntField(jdp, jfield_DirectionPoint_x31);
+		dp.y31 = ienv->GetIntField(jdp, jfield_DirectionPoint_y31);
+		
+		jobjectArray tagsKeyValue = (jobjectArray)ienv->GetObjectField(jdp, jfield_DirectionPoint_tags);
+		for (int s = 0; s < ienv->GetArrayLength(tagsKeyValue); s++) {
+			jobjectArray jstrArr = (jobjectArray)ienv->GetObjectArrayElement(tagsKeyValue, s);
+			if(ienv->GetArrayLength(jstrArr) > 0) {
+				jobject jkey = (jobject)ienv->GetObjectArrayElement(jstrArr, 0);
+				jobject jvalue = (jobject)ienv->GetObjectArrayElement(jstrArr, 1);
+				const char* key = ienv->GetStringUTFChars((jstring)jkey, NULL);
+				const char* value = ienv->GetStringUTFChars((jstring)jvalue, NULL);
+				dp.tags.push_back(std::make_pair((std::string)key, (std::string)value));
+				ienv->DeleteLocalRef(jkey);
+				ienv->DeleteLocalRef(jvalue);
+			}
+			ienv->DeleteLocalRef(jstrArr);
+		}		
+		ienv->DeleteLocalRef(tagsKeyValue);
+		ienv->DeleteLocalRef(jdp);
+		SkRect rectDp = SkRect::MakeLTRB(dp.x31, dp.y31, dp.x31, dp.y31);
+        rConfig->directionPoints.insert(dp, rectDp);
+	}
+	ienv->DeleteLocalRef(directionPoints);
 
 	ienv->DeleteLocalRef(impassableRoadIds);
 	ienv->DeleteLocalRef(objectAttributes);

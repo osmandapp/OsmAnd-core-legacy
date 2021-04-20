@@ -300,6 +300,28 @@ struct RoutingContext {
 			UNORDERED(set)<int64_t> excludedIds;
 			for (uint j = 0; j < subregions.size(); j++) {
 				if (!subregions[j]->isLoaded()) {
+                    
+                    std::vector<DirectionPoint> points;
+                    if (config->getDirectionPoints().count() > 0) {
+                        RouteSubregion & subregion = subregions[j]->subregion;
+                        SkRect rect = SkRect::MakeLTRB(subregion.left, subregion.top, subregion.right, subregion.bottom);
+                        //OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Points.size(%d) before", points.size());
+                        config->getDirectionPoints().query_in_box(rect, points);
+                        //OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Points.size(%d) after", points.size());
+                        //OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "ltrb:%d, %d, %d, %d", subregion.left, subregion.top, subregion.right, subregion.bottom);
+                        for (DirectionPoint & d : points) {
+                            // use temporary types
+                            d.types.clear();
+                            //OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Point:%d, %d,", d.x31, d.y31);
+                            for (std::pair<std::string, std::string> e : d.tags) {
+                                uint32_t type = subregion.routingIndex->searchRouteEncodingRule(e.first, e.second);
+                                if (type != -1) {
+                                    d.types.push_back(type);
+                                }
+                           }
+                        }
+                    }
+                    
 					if (progress) {
 						progress->loadedTiles++;
 					}
@@ -317,6 +339,7 @@ struct RoutingContext {
 							if (acceptLine(o)) {
 								if (excludedIds.find(o->getId()) == excludedIds.end()) {
 									subregions[j]->add(o);
+                                    connectPoint(subregions[j], o, points);
 								}
 							}
 							if (o->getId() > 0) {
@@ -491,6 +514,65 @@ struct RoutingContext {
 		startX = start->road->pointsX[start->segmentStart];
 		startY = start->road->pointsY[start->segmentStart];
 	}
+    
+    void connectPoint(SHARED_PTR<RoutingSubregionTile> ts, SHARED_PTR<RouteDataObject> ro, std::vector<DirectionPoint> points) {
+        //OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "connectPoint:%d", points.size());
+        for (DirectionPoint & np : points) {
+            if (np.types.size() == 0) {
+                continue;
+            }
+            bool sameRoadId = np.connected && np.connected->getId() == ro->getId() && np.connected != ro;
+            int wptX = np.x31;
+            int wptY = np.y31;
+            int x = ro->pointsX.at(0);
+            int y = ro->pointsY.at(0);
+            for(int i = 1; i < ro->pointsX.size(); i++) {
+                int nx = ro->pointsX.at(i);
+                int ny = ro->pointsY.at(i);
+                // TODO wptX != x || wptY != y this check is questionable
+                bool sameRoadIdIndex = sameRoadId && np.pointIndex == i && (wptX != x || wptY != y);
+                bool sgnx = nx - wptX > 0;
+                bool sgx = x - wptX > 0;
+                bool sgny = ny - wptY > 0;
+                bool sgy = y - wptY > 0;
+                double dist;
+                if (sgny == sgy && sgx == sgnx) {
+                    // point outside of rect (line is diagonal) distance is likely be bigger
+                    // TODO this can be speed up without projection!
+                    dist = squareRootDist31(wptX, wptY, abs(nx - wptX) < abs(x - wptX) ? nx : x, abs(ny - wptY) < abs(y - wptY) ? ny : y);
+                    if (dist < config->directionPointsRadius) {
+                        std::pair<int, int> pnt = getProjectionPoint(wptX, wptY, x, y, nx, ny);
+                        dist = squareRootDist31(wptX, wptY, pnt.first, pnt.second);
+                    }
+                } else {
+                    std::pair<int, int> pnt = getProjectionPoint(wptX, wptY, x, y, nx, ny);
+                    dist = squareRootDist31(wptX, wptY, pnt.first, pnt.second);
+                }
+
+                if ((dist < np.distance && dist < config->directionPointsRadius) || sameRoadIdIndex) {
+                    //System.out.println(String.format("INSERT %s %s (%d-%d) %.0f m [%.5f, %.5f] ",  ts.subregion.hashCode() + "",
+                    //            ro, i, i + 1, dist, MapUtils.get31LatitudeY(wptY), MapUtils.get31LongitudeX(wptX)));
+                    if (np.connected && !sameRoadIdIndex) {
+                        // clear old connected
+                        std::vector<uint32_t> empty;
+                        np.connected->setPointTypes(np.pointIndex, empty);
+                    }
+                    
+                    ro->insert(i, wptX, wptY);
+                    // ro.insert(i, (int) pnt.x, (int) pnt.y); // TODO more correct
+                    ro->setPointTypes(i, np.types);
+                    np.distance = dist;
+                    np.connected = ro;
+                    np.pointIndex = i;
+                    i++;
+                }
+                
+                x = nx;
+                y = ny;
+                    
+            }
+        }
+    }
 };
 
 #endif /*_OSMAND_ROUTING_CONTEXT_H*/
