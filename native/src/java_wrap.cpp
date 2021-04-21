@@ -1565,6 +1565,7 @@ jobject convertRouteSegmentResultListToJava(JNIEnv* ienv, vector<SHARED_PTR<Rout
 	for (uint i = 0; i < result.size(); i++) {
 		jobject resobj = convertRouteSegmentResultToJava(ienv, result[i], indexes, regions);
 		ienv->CallBooleanMethod(resultList, jmethod_ArrayList_add, resobj);
+		ienv->DeleteLocalRef(resobj);
 	}
 	return resultList;
 }
@@ -1627,6 +1628,7 @@ extern "C" JNIEXPORT jobject JNICALL Java_net_osmand_NativeLibrary_searchGpxRout
 	for (uint i = 0; i < r->finalPoints.size(); i++) {
 		jobject resobj = convertGpxPointToJava(ienv, r->finalPoints[i], regions);
 		ienv->CallBooleanMethod(finalPoints, jmethod_ArrayList_add, resobj);
+		ienv->DeleteLocalRef(resobj);
 	}
 	ienv->SetObjectField(jGctx, jfield_GpxRouteApproximation_result,
 						 convertRouteSegmentResultListToJava(ienv, r->result, regions));

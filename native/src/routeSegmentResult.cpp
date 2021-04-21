@@ -373,8 +373,12 @@ vector<SHARED_PTR<RouteSegmentResult>> RouteSegmentResult::getAttachedRoutes(int
 	}
 }
 
-SHARED_PTR<LatLon> convertPoint(SHARED_PTR<RouteDataObject> o, int ind){
-	return std::make_shared<LatLon>(get31LatitudeY(o->pointsY[ind]),  get31LongitudeX(o->pointsX[ind]));
+SHARED_PTR<LatLon> convertPoint(SHARED_PTR<RouteDataObject> o, int ind) {
+	if (o && ind < o->pointsY.size()) {
+		return make_shared<LatLon>(get31LatitudeY(o->pointsY[ind]), get31LongitudeX(o->pointsX[ind]));
+	} else {
+		return nullptr;
+	}
 }
 
 SHARED_PTR<LatLon> RouteSegmentResult::getStartPoint(){

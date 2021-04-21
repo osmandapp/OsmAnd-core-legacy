@@ -6,7 +6,6 @@
 #include "Logging.h"
 
 struct RouteSegment {
-    public :
     uint16_t segmentStart;
     SHARED_PTR<RouteDataObject> road;
     // needed to store intersection of routes
@@ -102,15 +101,10 @@ struct RouteSegment {
         , distanceFromStart(0)
         , distanceToEnd(0) {
     }
-    
-    ~RouteSegment() {
-    }
 };
 
 struct RouteSegmentPoint : RouteSegment {
-   public:
 	RouteSegmentPoint(SHARED_PTR<RouteDataObject>& road, int segmentStart) : RouteSegment(road, segmentStart) {}
-	~RouteSegmentPoint() {}
 	double dist;
 	int preciseX;
 	int preciseY;
@@ -122,10 +116,7 @@ struct RouteSegmentPoint : RouteSegment {
 };
 
 struct FinalRouteSegment : RouteSegment {
-   public:
 	FinalRouteSegment(SHARED_PTR<RouteDataObject>& road, int segmentStart) : RouteSegment(road, segmentStart) {}
-
-	~FinalRouteSegment() {}
 	bool reverseWaySearch;
 	SHARED_PTR<RouteSegment> opposite;
 };
@@ -142,7 +133,7 @@ struct GpxPoint {
 	bool straightLine = false;
 
 	GpxPoint(int32_t ind, double lat, double lon, double cumDist)
-		: ind(ind), lat(lat), lon(lon), cumDist(cumDist), pnt(nullptr), routeToTarget(0), stepBackRoute(0){};
+		: ind(ind), lat(lat), lon(lon), cumDist(cumDist){};
 };
 
 #endif /*_OSMAND_ROUTE_SEGMENT_H*/

@@ -43,7 +43,6 @@ public:
 };
 
 struct GpxRouteApproximation {
-    public:
     // ! MAIN parameter to approximate (35m good for custom recorded tracks) 
     double MINIMUM_POINT_APPROXIMATION = 50; // 35 m good for small deviations
     // This parameter could speed up or slow down evaluation (better to make bigger for long routes and smaller for short)
