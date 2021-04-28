@@ -201,7 +201,25 @@ vector<SHARED_PTR<RouteSegmentResult>> runRouting(RoutingContext* ctx, SHARED_PT
 		}
 	}
 	if (!result.empty()) {
+        int prevX, prevY;
 		for (auto seg : result) {
+            int xSize = seg->object->pointsX.size() - 1;
+            int ySize = seg->object->pointsY.size() - 1;
+            int dist = 0;
+            if (prevX != 0 && prevX != seg->object->pointsX[0]) {
+                dist = squareRootDist31(prevX, prevY, seg->object->pointsX[0], seg->object->pointsY[0]);
+                double lat1 = get31LatitudeY(prevY);
+                double lon1 = get31LongitudeX(prevX);
+                double lat2 = get31LatitudeY(seg->object->pointsY[0]);
+                double lon2 = get31LongitudeX(seg->object->pointsX[0]);
+                OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "startX:%d, startY:%d, endX:%d, endY:%d, != %d , [%f/%f][%f/%f]", seg->object->pointsX[0], seg->object->pointsY[0],
+                                      seg->object->pointsX[xSize], seg->object->pointsY[ySize], dist, lat1, lon1, lat2, lon2);
+            } else {
+                OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "startX:%d, startY:%d, endX:%d, endY:%d, ==", seg->object->pointsX[0], seg->object->pointsY[0],
+                                      seg->object->pointsX[xSize], seg->object->pointsY[ySize]);
+            }
+            prevX = seg->object->pointsX[xSize];
+            prevY = seg->object->pointsY[ySize];
 			seg->preAttachedRoutes = seg->attachedRoutes;
 		}
 	}

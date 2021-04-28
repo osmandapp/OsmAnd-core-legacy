@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <float.h>
 #include <iostream>
+#include "kyiv.h"
 
 struct RoutingRule {
     string tagName;
@@ -18,7 +19,7 @@ struct RoutingRule {
 };
 
 struct DirectionPoint {
-    double distance = DBL_MAX;
+    double distance = 999999.0;
     int32_t pointIndex;
     int32_t x31;
     int32_t y31;
@@ -33,7 +34,7 @@ struct RoutingConfiguration {
     const static int DEVIATION_RADIUS = 3000;
     MAP_STR_STR attributes;
     quad_tree<DirectionPoint> directionPoints;
-    int directionPointsRadius = 100; // 30 m
+    double directionPointsRadius = 50.0; // 30 m
 
     SHARED_PTR<GeneralRouter> router;
 
@@ -111,53 +112,30 @@ public:
         }
         directionPointsBuilder = getTestKyivPoints();
         if (directionPointsBuilder.size() > 0) {
-            //std::vector<int32_t> minMaxXY = getMinMax();
-            //SkRect rect = SkRect::MakeLTRB(minMaxXY[0], minMaxXY[1], minMaxXY[2], minMaxXY[3]);
-            SkRect rect = SkRect::MakeLTRB(0, 0, INT_MAX, INT_MAX);
+            SkIRect rect = SkIRect::MakeLTRB(0, 0, 0x7FFFFFFF, 0x7FFFFFFF);
             i->directionPoints = quad_tree<DirectionPoint>(rect, 14, 0.5);
             for (int j = 0; j < directionPointsBuilder.size(); j++) {
                 DirectionPoint & dp = directionPointsBuilder[j];
-                //cout << "Point:" << dp.x31 << "," << dp.y31 << std::endl;
-                SkRect rectDp = SkRect::MakeLTRB(dp.x31, dp.y31, dp.x31, dp.y31);
+                SkIRect rectDp = SkIRect::MakeLTRB(dp.x31, dp.y31, dp.x31, dp.y31);
                 i->directionPoints.insert(dp, rectDp);
             }
         }
         return i;
     }
     
-    std::vector<int32_t> getMinMax() {
-        int32_t maxX = 0;
-        int32_t maxY = 0;
-        int32_t minX = INT_MAX;
-        int32_t minY = INT_MAX;
-        for (DirectionPoint dp : directionPointsBuilder) {
-            maxX = dp.x31 > maxX ? dp.x31 : maxX;
-            maxY = dp.y31 > maxY ? dp.y31 : maxY;
-            minX = dp.x31 < minX ? dp.x31 : minX;
-            minY = dp.y31 < minY ? dp.y31 : minY;
-        }
-        std::vector<int32_t> result{minX, minY, maxX, maxY};
-        return result;
-    }
-   
-    std::vector<DirectionPoint> getTestKyivPoints() {
-        int i = 0;
-        double diffLat = 50.4819 - 50.4004;
-        double diffLon = 30.5708 - 30.4196;
+    std::vector<DirectionPoint> getTestKyivPoints() {        
+        Kyiv kyiv;
         std::vector<std::pair<std::string, std::string>> tags;
         tags.push_back(std::make_pair("motorcar", "no"));
         std::vector<DirectionPoint> result;
-        while (i < 2000) {
+        for (int i=0; i < kyiv.kyivLonLat.size(); i = i+2) {
+            double lon = kyiv.kyivLonLat[i];
+            double lat = kyiv.kyivLonLat[i+1];
             DirectionPoint dp;
-            double rand1 = ((double) rand() / (RAND_MAX)) + 1;
-            double rand2 = ((double) rand() / (RAND_MAX)) + 1;
-            double lat = rand1 * diffLat + 50.4004;
-            double lon = rand2 * diffLon + 30.4196;
             dp.x31 = get31TileNumberX(lon);
             dp.y31 = get31TileNumberY(lat);
             dp.tags = tags;
             result.push_back(dp);
-            i++;
         }
         return result;
     }

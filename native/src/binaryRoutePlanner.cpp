@@ -250,7 +250,7 @@ SHARED_PTR<RouteSegment> searchRouteInternal(RoutingContext* ctx, SHARED_PTR<Rou
 	VISITED_MAP visitedDirectSegments;
 	VISITED_MAP visitedOppositeSegments;
 
-	initQueuesWithStartEnd(ctx, start, end, graphDirectSegments, graphReverseSegments);
+	 initQueuesWithStartEnd(ctx, start, end, graphDirectSegments, graphReverseSegments);
 
 	// Extract & analyze segment with min(f(x)) from queue while final segment is not found
 	bool forwardSearch = true;
@@ -792,6 +792,9 @@ SHARED_PTR<RouteSegmentPoint> findRouteSegment(int px, int py, RoutingContext* c
 				int pry = p.second;
 				double currentsDist = squareDist31TileMetric(prx, pry, px, py);
 				if (road.get() == NULL || currentsDist < road->dist) {
+					if (r->getId() == 5108851433L) {
+						cout << "RouteDataObject 5108851433 first time" << endl;
+					}
 					road = std::make_shared<RouteSegmentPoint>(r, j);
 					road->preciseX = prx;
 					road->preciseY = pry;
@@ -818,9 +821,15 @@ SHARED_PTR<RouteSegmentPoint> findRouteSegment(int px, int py, RoutingContext* c
 	if (list.size() > 0) {
 		SHARED_PTR<RouteSegmentPoint> ps = nullptr;
 		int i = 0;
+		if (list[0]->road->getId() == 5108851433L) {
+			cout << "RouteDataObject 5108851433 second time"  << endl;
+		}
 		if (ctx->publicTransport) {
 			vector<SHARED_PTR<RouteSegmentPoint> >::iterator it = list.begin();
 			for (; it != list.end(); it++) {
+				if ((*it)->road->getId() == 5108851433L) {
+					cout << "RouteDataObject 5108851433 third time"  << endl;
+				}
 				if (transportStop && (*it)->dist > 100) {
 					break;
 				}

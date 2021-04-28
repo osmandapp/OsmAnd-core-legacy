@@ -304,7 +304,7 @@ struct RoutingContext {
                     std::vector<DirectionPoint> points;
                     if (config->getDirectionPoints().count() > 0) {
                         RouteSubregion & subregion = subregions[j]->subregion;
-                        SkRect rect = SkRect::MakeLTRB(subregion.left, subregion.top, subregion.right, subregion.bottom);
+                        SkIRect rect = SkIRect::MakeLTRB(subregion.left, subregion.top, subregion.right, subregion.bottom);
                         //OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Points.size(%d) before", points.size());
                         config->getDirectionPoints().query_in_box(rect, points);
                         //OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Points.size(%d) after", points.size());
@@ -521,56 +521,91 @@ struct RoutingContext {
             if (np.types.size() == 0) {
                 continue;
             }
-            bool sameRoadId = np.connected && np.connected->getId() == ro->getId() && np.connected != ro;
+            //bool sameRoadId = np.connected && np.connected->getId() == ro->getId() && np.connected != ro;
+			if (np.connected && np.connected->getId() == ro->getId()) {
+				continue;
+			}
             int wptX = np.x31;
             int wptY = np.y31;
             int x = ro->pointsX.at(0);
             int y = ro->pointsY.at(0);
+            int savedPointIndex = 0;
+            double savedDistance = (double)config->directionPointsRadius;
+            bool found = false;
             for(int i = 1; i < ro->pointsX.size(); i++) {
                 int nx = ro->pointsX.at(i);
                 int ny = ro->pointsY.at(i);
                 // TODO wptX != x || wptY != y this check is questionable
-                bool sameRoadIdIndex = sameRoadId && np.pointIndex == i && (wptX != x || wptY != y);
+                //bool sameRoadIdIndex = sameRoadId && np.pointIndex == i && (wptX != x || wptY != y);
                 bool sgnx = nx - wptX > 0;
                 bool sgx = x - wptX > 0;
                 bool sgny = ny - wptY > 0;
                 bool sgy = y - wptY > 0;
                 double dist;
+                std::pair<int, int> pnt = getProjectionPoint(wptX, wptY, x, y, nx, ny);
                 if (sgny == sgy && sgx == sgnx) {
                     // point outside of rect (line is diagonal) distance is likely be bigger
                     // TODO this can be speed up without projection!
                     dist = squareRootDist31(wptX, wptY, abs(nx - wptX) < abs(x - wptX) ? nx : x, abs(ny - wptY) < abs(y - wptY) ? ny : y);
                     if (dist < config->directionPointsRadius) {
-                        std::pair<int, int> pnt = getProjectionPoint(wptX, wptY, x, y, nx, ny);
                         dist = squareRootDist31(wptX, wptY, pnt.first, pnt.second);
                     }
                 } else {
-                    std::pair<int, int> pnt = getProjectionPoint(wptX, wptY, x, y, nx, ny);
                     dist = squareRootDist31(wptX, wptY, pnt.first, pnt.second);
                 }
 
-                if ((dist < np.distance && dist < config->directionPointsRadius) || sameRoadIdIndex) {
+                if (dist < config->directionPointsRadius) {
+                    found = true;
+                    if (dist < savedDistance) {
+                        savedDistance = dist;
+						savedPointIndex = i;						
+                    }
                     //System.out.println(String.format("INSERT %s %s (%d-%d) %.0f m [%.5f, %.5f] ",  ts.subregion.hashCode() + "",
                     //            ro, i, i + 1, dist, MapUtils.get31LatitudeY(wptY), MapUtils.get31LongitudeX(wptX)));
-                    if (np.connected && !sameRoadIdIndex) {
+                    /*if (np.connected && !sameRoadIdIndex) {
                         // clear old connected
                         std::vector<uint32_t> empty;
                         np.connected->setPointTypes(np.pointIndex, empty);
+                        np.connected->pointsX.erase(np.connected->pointsX.begin() + np.pointIndex);
+                        np.connected->pointsY.erase(np.connected->pointsY.begin() + np.pointIndex);
                     }
                     
                     ro->insert(i, wptX, wptY);
                     // ro.insert(i, (int) pnt.x, (int) pnt.y); // TODO more correct
-                    ro->setPointTypes(i, np.types);
+                    // ro->setPointTypes(i, np.types);
                     np.distance = dist;
                     np.connected = ro;
                     np.pointIndex = i;
-                    i++;
+                    i++;*/
                 }
                 
                 x = nx;
                 y = ny;
                     
             }
+			if (found) {
+				if (np.connected && np.connected->getId() != ro->getId()) {
+					if (np.distance < savedDistance) {
+						continue;
+					}
+				}
+				double lon = get31LongitudeX(wptX);
+				double lat = get31LatitudeY(wptY);
+				//50.4466/30.4967
+				//ro->id:5108851433
+				double ro_lon_1 = get31LongitudeX(ro->pointsX[0]);
+				double ro_lat_1 = get31LatitudeY(ro->pointsY[0]);
+				double ro_lon_2 = get31LongitudeX(ro->pointsX[ro->pointsX.size() - 1]);
+				double ro_lat_2 = get31LatitudeY(ro->pointsY[ro->pointsY.size() - 1]);
+				cout << lat << "/" << lon << " rp->id:" << ro->getId() << " np.types[0]:" << np.types[0] 
+				<< " distance:" << savedDistance << " pointIndex:" <<  savedPointIndex << " " << ro_lat_1 << "/" << ro_lon_1 
+				<< " " << ro_lat_2 << "/" << ro_lon_2 << endl;
+				ro->insert(savedPointIndex, wptX, wptY);
+                ro->setPointTypes(savedPointIndex, np.types);
+				np.distance = savedDistance;
+				np.connected = ro;
+				np.pointIndex = savedPointIndex;				
+			}
         }
     }
 };
