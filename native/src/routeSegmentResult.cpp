@@ -373,24 +373,14 @@ vector<SHARED_PTR<RouteSegmentResult>> RouteSegmentResult::getAttachedRoutes(int
 	}
 }
 
-SHARED_PTR<LatLon> convertPoint(SHARED_PTR<RouteDataObject> o, int ind) {
-	if (o && ind < o->pointsY.size()) {
-		return make_shared<LatLon>(get31LatitudeY(o->pointsY[ind]), get31LongitudeX(o->pointsX[ind]));
-	} else {
-		return nullptr;
-	}
+LatLon convertPoint(SHARED_PTR<RouteDataObject> o, int ind) {
+	return LatLon(get31LatitudeY(o->pointsY[ind]), get31LongitudeX(o->pointsX[ind]));
 }
 
-SHARED_PTR<LatLon> RouteSegmentResult::getStartPoint(){
-	return convertPoint(object, startPointIndex);
-}
+LatLon RouteSegmentResult::getStartPoint() { return convertPoint(object, startPointIndex); }
 
-SHARED_PTR<LatLon> RouteSegmentResult::getEndPoint(){
-	return convertPoint(object, endPointIndex);
-}
+LatLon RouteSegmentResult::getEndPoint() { return convertPoint(object, endPointIndex); }
 
-SHARED_PTR<LatLon> RouteSegmentResult::getPoint(int i) {
-	return convertPoint(object, i);
-}
+LatLon RouteSegmentResult::getPoint(int i) { return convertPoint(object, i); }
 
 #endif /*_OSMAND_ROUTE_SEGMENT_RESULT_CPP*/

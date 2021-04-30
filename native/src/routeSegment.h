@@ -110,9 +110,7 @@ struct RouteSegmentPoint : RouteSegment {
 	int preciseY;
 	vector<SHARED_PTR<RouteSegmentPoint>> others;
 
-	SHARED_PTR<LatLon> getPreciseLatLon() {
-		return std::make_shared<LatLon>(get31LatitudeY(preciseY), get31LongitudeX(preciseX));
-	}
+	LatLon getPreciseLatLon() { LatLon(get31LatitudeY(preciseY), get31LongitudeX(preciseX)); }
 };
 
 struct FinalRouteSegment : RouteSegment {
