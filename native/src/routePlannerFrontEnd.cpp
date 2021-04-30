@@ -71,31 +71,31 @@ void updateResult(SHARED_PTR<RouteSegmentResult>& routeSegmentResult, int px, in
 	int pind = st ? routeSegmentResult->getStartPointIndex() : routeSegmentResult->getEndPointIndex();
 
 	auto r = routeSegmentResult->object;
-	std::pair<int, int>* before = NULL;
-	std::pair<int, int>* after = NULL;
+	std::pair<int, int> before(-1, -1);
+	std::pair<int, int> after(-1, -1);
 	if (pind > 0) {
-		before = new std::pair<int, int>(
+		before = std::pair<int, int>(
 			getProjectionPoint(px, py, r->pointsX[pind - 1], r->pointsY[pind - 1], r->pointsX[pind], r->pointsY[pind]));
 	}
 	if (pind < r->getPointsLength() - 1) {
-		after = new std::pair<int, int>(
+		after = std::pair<int, int>(
 			getProjectionPoint(px, py, r->pointsX[pind + 1], r->pointsY[pind + 1], r->pointsX[pind], r->pointsY[pind]));
 	}
 	int insert = 0;
 	double dd = measuredDist31(px, py, r->pointsX[pind], r->pointsY[pind]);
 	double ddBefore = std::numeric_limits<double>::infinity();
 	double ddAfter = std::numeric_limits<double>::infinity();
-	std::pair<int, int>* i = NULL;
-	if (before != NULL) {
-		ddBefore = measuredDist31(px, py, before->first, before->second);
+	std::pair<int, int> i;
+	if (before.first != -1) {
+		ddBefore = measuredDist31(px, py, before.first, before.second);
 		if (ddBefore < dd) {
 			insert = -1;
 			i = before;
 		}
 	}
 
-	if (after != NULL) {
-		ddAfter = measuredDist31(px, py, after->first, after->second);
+	if (after.first != -1) {
+		ddAfter = measuredDist31(px, py, after.first, after.second);
 		if (ddAfter < dd && ddAfter < ddBefore) {
 			insert = 1;
 			i = after;
@@ -110,7 +110,7 @@ void updateResult(SHARED_PTR<RouteSegmentResult>& routeSegmentResult, int px, in
 			routeSegmentResult->setStartPointIndex(routeSegmentResult->getStartPointIndex() + 1);
 		}
 		if (insert > 0) {
-			r->insert(pind + 1, i->first, i->second);
+			r->insert(pind + 1, i.first, i.second);
 			if (st) {
 				routeSegmentResult->setStartPointIndex(routeSegmentResult->getStartPointIndex() + 1);
 			}
@@ -118,14 +118,8 @@ void updateResult(SHARED_PTR<RouteSegmentResult>& routeSegmentResult, int px, in
 				routeSegmentResult->setEndPointIndex(routeSegmentResult->getEndPointIndex() + 1);
 			}
 		} else {
-			r->insert(pind, i->first, i->second);
+			r->insert(pind, i.first, i.second);
 		}
-	}
-	if (before != NULL) {
-		delete before;
-	}
-	if (after != NULL) {
-		delete after;
 	}
 }
 
@@ -239,7 +233,7 @@ LatLon GpxRouteApproximation::getLastPoint() {
 }
 
 GpxRouteApproximation* searchGpxRoute(GpxRouteApproximation* gctx, vector<SHARED_PTR<GpxPoint>>& gpxPoints) {
-	if (gctx->ctx->progress == NULL) {
+	if (!gctx->ctx->progress) {
 		gctx->ctx->progress = std::make_shared<RouteCalculationProgress>();
 	}
 	gctx->ctx->progress->timeToCalculate.Start();
@@ -310,7 +304,7 @@ GpxRouteApproximation* searchGpxRoute(GpxRouteApproximation* gctx, vector<SHARED
 		}
 		start = next;
 	}
-	if (gctx->ctx->progress != nullptr) {
+	if (gctx->ctx->progress) {
 		gctx->ctx->progress->timeToCalculate.Pause();
 	}
 	// BinaryRoutePlanner.printDebugMemoryInformation(gctx.ctx);
@@ -332,32 +326,32 @@ void makeSegmentPointPrecise(SHARED_PTR<RouteSegmentResult> routeSegmentResult, 
 
 	SHARED_PTR<RouteDataObject> r = std::make_shared<RouteDataObject>(routeSegmentResult->object);
 	routeSegmentResult->object = r;
-	std::pair<int, int>* before = NULL;
-	std::pair<int, int>* after = NULL;
+	std::pair<int, int> before(-1, -1);
+	std::pair<int, int> after(-1, -1);
 
 	if (pind > 0) {
-		before = new std::pair<int, int>(
+		before = std::pair<int, int>(
 			getProjectionPoint(px, py, r->pointsX[pind - 1], r->pointsY[pind - 1], r->pointsX[pind], r->pointsY[pind]));
 	}
 	if (pind < r->pointsX.size() - 1) {
-		after = new std::pair<int, int>(
+		after = std::pair<int, int>(
 			getProjectionPoint(px, py, r->pointsX[pind + 1], r->pointsY[pind + 1], r->pointsX[pind], r->pointsY[pind]));
 	}
 	int insert = 0;
 	double dd = getDistance(lat, lon, get31LatitudeY(r->pointsY[pind]), get31LongitudeX(r->pointsX[pind]));
 	double ddBefore = std::numeric_limits<double>::infinity();
 	double ddAfter = std::numeric_limits<double>::infinity();
-	std::pair<int, int>* i = NULL;
-	if (before != NULL) {
-		ddBefore = getDistance(lat, lon, get31LatitudeY(before->second), get31LongitudeX(before->first));
+	std::pair<int, int> i;
+	if (before.first != -1) {
+		ddBefore = getDistance(lat, lon, get31LatitudeY(before.second), get31LongitudeX(before.first));
 		if (ddBefore < dd) {
 			insert = -1;
 			i = before;
 		}
 	}
 
-	if (after != NULL) {
-		ddAfter = getDistance(lat, lon, get31LatitudeY(after->second), get31LongitudeX(after->first));
+	if (after.first != -1) {
+		ddAfter = getDistance(lat, lon, get31LatitudeY(after.second), get31LongitudeX(after.first));
 		if (ddAfter < dd && ddAfter < ddBefore) {
 			insert = 1;
 			i = after;
@@ -372,7 +366,7 @@ void makeSegmentPointPrecise(SHARED_PTR<RouteSegmentResult> routeSegmentResult, 
 			routeSegmentResult->setStartPointIndex(routeSegmentResult->getStartPointIndex() + 1);
 		}
 		if (insert > 0) {
-			r->insert(pind + 1, i->first, i->second);
+			r->insert(pind + 1, i.first, i.second);
 			if (st) {
 				routeSegmentResult->setStartPointIndex(routeSegmentResult->getStartPointIndex() + 1);
 			}
@@ -380,7 +374,7 @@ void makeSegmentPointPrecise(SHARED_PTR<RouteSegmentResult> routeSegmentResult, 
 				routeSegmentResult->setEndPointIndex(routeSegmentResult->getEndPointIndex() + 1);
 			}
 		} else {
-			r->insert(pind, i->first, i->second);
+			r->insert(pind, i.first, i.second);
 		}
 	}
 }
@@ -427,7 +421,7 @@ mainLoop:
 		start->routeToTarget.erase(start->routeToTarget.begin() + segmendInd + 1);
 		start->stepBackRoute.push_back(removed);
 	}
-	SHARED_PTR<RouteSegmentResult> res = start->routeToTarget[segmendInd];
+	SHARED_PTR<RouteSegmentResult>& res = start->routeToTarget[segmendInd];
 	next->pnt = std::make_shared<RouteSegmentPoint>(res->object, res->getEndPointIndex());
 	return true;
 }
@@ -438,7 +432,7 @@ void calculateGpxRoute(GpxRouteApproximation* gctx, vector<SHARED_PTR<GpxPoint>>
 	vector<LatLon> lastStraightLine;
 	SHARED_PTR<GpxPoint> straightPointStart;
 	for (int i = 0; i < gpxPoints.size() && !gctx->ctx->progress->isCancelled();) {
-		SHARED_PTR<GpxPoint> pnt = gpxPoints[i];
+		SHARED_PTR<GpxPoint>& pnt = gpxPoints[i];
 		if (!pnt->routeToTarget.empty()) {
 			LatLon startPoint = LatLon(pnt->routeToTarget[0]->getStartPoint().lat, pnt->routeToTarget[0]->getStartPoint().lon);
 			if (!lastStraightLine.empty()) {
@@ -515,9 +509,9 @@ void cleanupResultAndAddTurns(GpxRouteApproximation* gctx) {
 	// cleanup double joints
 	int LOOK_AHEAD = 4;
 	for (int i = 0; i < gctx->result.size() && !gctx->ctx->progress->isCancelled(); i++) {
-		SHARED_PTR<RouteSegmentResult> s = gctx->result[i];
+		SHARED_PTR<RouteSegmentResult>& s = gctx->result[i];
 		for (int j = i + 2; j <= i + LOOK_AHEAD && j < gctx->result.size(); j++) {
-			SHARED_PTR<RouteSegmentResult> e = gctx->result[j];
+			SHARED_PTR<RouteSegmentResult>& e = gctx->result[j];
 			if (e->getStartPoint().isEquals(s->getEndPoint())) {
 				while ((--j) != i) {
 					gctx->result.erase(gctx->result.begin() + j);
@@ -527,7 +521,7 @@ void cleanupResultAndAddTurns(GpxRouteApproximation* gctx) {
 		}
 	}
 	for (SHARED_PTR<RouteSegmentResult> r : gctx->result) {
-		r->turnType = NULL;
+		r->turnType = nullptr;
 		r->description = "";
 	}
 	if (!gctx->ctx->progress->isCancelled()) {
@@ -557,18 +551,18 @@ void simplifyDouglasPeucker(vector<LatLon>& l, double eps, int start, int end) {
 }
 
 bool initRoutingPoint(SHARED_PTR<GpxPoint> start, GpxRouteApproximation* gctx, double distThreshold) {
-	if (start != NULL && start->pnt == NULL) {
+	if (start && !start->pnt) {
 		gctx->routePointsSearched++;
 		SHARED_PTR<RouteSegmentPoint> rsp =
 			findRouteSegment(get31TileNumberX(start->lon), get31TileNumberY(start->lat), gctx->ctx);
-		if (rsp != NULL) {
+		if (rsp) {
 			LatLon point = rsp->getPreciseLatLon();
 			if (getDistance(point.lat, point.lon, start->lat, start->lon) < distThreshold) {
 				start->pnt = rsp;
 			}
 		}
 	}
-	if (start != NULL && start->pnt != NULL) {
+	if (start && start->pnt) {
 		return true;
 	}
 	return false;
@@ -594,13 +588,13 @@ bool findGpxRouteSegment(GpxRouteApproximation* gctx, vector<SHARED_PTR<GpxPoint
 						 SHARED_PTR<GpxPoint> start, SHARED_PTR<GpxPoint> target, bool prevRouteCalculated) {
 	vector<SHARED_PTR<RouteSegmentResult>> res;
 	bool routeIsCorrect = false;
-	if (start->pnt != NULL && target->pnt != NULL) {
+	if (start->pnt && target->pnt) {
 		start->pnt = std::make_shared<RouteSegmentPoint>(*start->pnt);
 		target->pnt = std::make_shared<RouteSegmentPoint>(*target->pnt);
 		gctx->routeDistCalculations += (target->cumDist - start->cumDist);
 		gctx->routeCalculations++;
 		RoutePlannerFrontEnd rpfe = RoutePlannerFrontEnd();
-		res = rpfe.searchRouteInternalPrepare(gctx->ctx, start->pnt, target->pnt, NULL);
+		res = rpfe.searchRouteInternalPrepare(gctx->ctx, start->pnt, target->pnt, nullptr);
 		// BinaryRoutePlanner.printDebugMemoryInformation(gctx.ctx);
 		routeIsCorrect = !res.empty();
 		for (int k = start->ind + 1; routeIsCorrect && k < target->ind; k++) {
