@@ -165,17 +165,12 @@ typedef pair<std::string, std::string> tag_value;
 typedef pair<int, int> int_pair;
 typedef vector<pair<int, int> > coordinates;
 
-struct LatLon{
+struct LatLon {
 	double lat;
 	double lon;
-	LatLon(double lat, double lon):
-		lat(lat),
-		lon(lon)
-		{};
+	LatLon(double lat, double lon) : lat(lat), lon(lon){};
 
-	bool isEquals(LatLon other){
-		return abs(lat - other.lat) < 0.00001 && abs(lon - other.lon) < 0.00001;
-	}
+	bool isEquals(LatLon other) { return abs(lat - other.lat) < 0.00001 && abs(lon - other.lon) < 0.00001; }
 };
 
 class MapDataObject {

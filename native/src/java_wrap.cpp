@@ -1600,9 +1600,7 @@ RoutingContext* getRoutingContext(JNIEnv* ienv, jobject jCtx, jfloat initDirecti
 }
 
 extern "C" JNIEXPORT jobject JNICALL Java_net_osmand_NativeLibrary_searchGpxRoute(JNIEnv* ienv, jobject obj,
-																				  jobject jGctx,
-																				  jobjectArray jGpxPoints,
-																				  jobjectArray regions) {
+	jobject jGctx,jobjectArray jGpxPoints,jobjectArray regions) {
 	vector<SHARED_PTR<GpxPoint>> gpxPoints;
 	for (int t = 0; t < ienv->GetArrayLength(jGpxPoints); t++) {
 		jobject jGpxPoint = ienv->GetObjectArrayElement(jGpxPoints, t);

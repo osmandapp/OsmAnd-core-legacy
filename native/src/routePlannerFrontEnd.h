@@ -74,22 +74,22 @@ struct GpxRouteApproximation {
 	SHARED_PTR<LatLon> getLastPoint();
 };
 
-GpxRouteApproximation* searchGpxRoute(GpxRouteApproximation* gctx, vector<SHARED_PTR<GpxPoint>> gpxPoints);
+GpxRouteApproximation* searchGpxRoute(GpxRouteApproximation* gctx, vector<SHARED_PTR<GpxPoint>> &gpxPoints);
 
-SHARED_PTR<GpxPoint> findNextGpxPointWithin(vector<SHARED_PTR<GpxPoint>> gpxPoints, SHARED_PTR<GpxPoint> start,
+SHARED_PTR<GpxPoint> findNextGpxPointWithin(vector<SHARED_PTR<GpxPoint>> &gpxPoints, SHARED_PTR<GpxPoint> start,
 											double dist);
-bool findGpxRouteSegment(GpxRouteApproximation* gctx, vector<SHARED_PTR<GpxPoint>> gpxPoints,
+bool findGpxRouteSegment(GpxRouteApproximation* gctx, vector<SHARED_PTR<GpxPoint>> &gpxPoints,
 						 SHARED_PTR<GpxPoint> start, SHARED_PTR<GpxPoint> target, bool prevRouteCalculated);
 bool initRoutingPoint(SHARED_PTR<GpxPoint> start, GpxRouteApproximation* gctx, double distThreshold);
-bool stepBackAndFindPrevPointInRoute(GpxRouteApproximation* gctx, vector<SHARED_PTR<GpxPoint>> gpxPoints,
+bool stepBackAndFindPrevPointInRoute(GpxRouteApproximation* gctx, vector<SHARED_PTR<GpxPoint>> &gpxPoints,
 									 SHARED_PTR<GpxPoint> start, SHARED_PTR<GpxPoint> next);
-void calculateGpxRoute(GpxRouteApproximation* gctx, vector<SHARED_PTR<GpxPoint>> gpxPoints);
-void addStraightLine(GpxRouteApproximation* gctx, vector<SHARED_PTR<LatLon>> lastStraightLine,
+void calculateGpxRoute(GpxRouteApproximation* gctx, vector<SHARED_PTR<GpxPoint>> &gpxPoints);
+void addStraightLine(GpxRouteApproximation* gctx, vector<SHARED_PTR<LatLon>> &lastStraightLine,
 					 SHARED_PTR<GpxPoint> strPnt, RoutingIndex* reg);
 void cleanupResultAndAddTurns(GpxRouteApproximation* gctx);
-void simplifyDouglasPeucker(vector<SHARED_PTR<LatLon>> l, double eps, int start, int end);
+void simplifyDouglasPeucker(vector<SHARED_PTR<LatLon>> &l, double eps, int start, int end);
 bool pointCloseEnough(GpxRouteApproximation* gctx, SHARED_PTR<GpxPoint> ipoint,
-					  vector<SHARED_PTR<RouteSegmentResult>> res);
+					  vector<SHARED_PTR<RouteSegmentResult>> &res);
 void makeSegmentPointPrecise(SHARED_PTR<RouteSegmentResult> routeSegmentResult, double lat, double lon, bool st);
 
 #endif /*_OSMAND_ROUTE_PLANNER_FRONT_END_H*/
