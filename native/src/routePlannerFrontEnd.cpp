@@ -232,7 +232,7 @@ LatLon GpxRouteApproximation::getLastPoint() {
 	return result[result.size() - 1]->getEndPoint();
 }
 
-GpxRouteApproximation* searchGpxRoute(GpxRouteApproximation* gctx, vector<SHARED_PTR<GpxPoint>>& gpxPoints) {
+void searchGpxRoute(GpxRouteApproximation* gctx, vector<SHARED_PTR<GpxPoint>>& gpxPoints) {
 	if (!gctx->ctx->progress) {
 		gctx->ctx->progress = std::make_shared<RouteCalculationProgress>();
 	}
@@ -316,7 +316,6 @@ GpxRouteApproximation* searchGpxRoute(GpxRouteApproximation* gctx, vector<SHARED
 	//+ if (resultMatcher != NULL) {
 	//+ resultMatcher.publish(gctx.ctx->progress->isCancelled() ? NULL : gctx);
 	//+ }
-	return gctx;
 }
 
 void makeSegmentPointPrecise(SHARED_PTR<RouteSegmentResult> routeSegmentResult, double lat, double lon, bool st) {
@@ -324,8 +323,7 @@ void makeSegmentPointPrecise(SHARED_PTR<RouteSegmentResult> routeSegmentResult, 
 	int py = get31TileNumberY(lat);
 	int pind = st ? routeSegmentResult->getStartPointIndex() : routeSegmentResult->getEndPointIndex();
 
-	SHARED_PTR<RouteDataObject> r = std::make_shared<RouteDataObject>(routeSegmentResult->object);
-	routeSegmentResult->object = r;
+	SHARED_PTR<RouteDataObject> r = routeSegmentResult->object;
 	std::pair<int, int> before(-1, -1);
 	std::pair<int, int> after(-1, -1);
 
@@ -466,6 +464,7 @@ void calculateGpxRoute(GpxRouteApproximation* gctx, vector<SHARED_PTR<GpxPoint>>
 	if (!lastStraightLine.empty()) {
 		addStraightLine(gctx, lastStraightLine, straightPointStart, reg);
 	}
+	delete reg;
 	// clean turns to recaculate them
 	cleanupResultAndAddTurns(gctx);
 }

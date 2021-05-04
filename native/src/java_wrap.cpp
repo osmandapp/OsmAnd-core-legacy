@@ -1617,7 +1617,8 @@ extern "C" JNIEXPORT jobject JNICALL Java_net_osmand_NativeLibrary_searchGpxRout
 	jobject progress = ienv->GetObjectField(jCtx, jfield_RoutingContext_calculationProgress);
 	RoutingContext* c = getRoutingContext(ienv, jCtx, -360, false, progress);
 	GpxRouteApproximation gctx(c);
-	GpxRouteApproximation* r = searchGpxRoute(&gctx, gpxPoints);
+	GpxRouteApproximation* r = &gctx;
+	searchGpxRoute(r, gpxPoints);
 	addIntField(ienv, jGctx, jfield_GpxRouteApproximation_routeCalculations, r->routeCalculations);
 	addIntField(ienv, jGctx, jfield_GpxRouteApproximation_routePointsSearched, r->routePointsSearched);
 	addIntField(ienv, jGctx, jfield_GpxRouteApproximation_routeDistCalculations, r->routeDistCalculations);

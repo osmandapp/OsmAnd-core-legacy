@@ -74,7 +74,7 @@ struct GpxRouteApproximation {
 	LatLon getLastPoint();
 };
 
-GpxRouteApproximation* searchGpxRoute(GpxRouteApproximation* gctx, vector<SHARED_PTR<GpxPoint>>& gpxPoints);
+void searchGpxRoute(GpxRouteApproximation* gctx, vector<SHARED_PTR<GpxPoint>>& gpxPoints);
 
 SHARED_PTR<GpxPoint> findNextGpxPointWithin(vector<SHARED_PTR<GpxPoint>>& gpxPoints, SHARED_PTR<GpxPoint> start,
 											double dist);
