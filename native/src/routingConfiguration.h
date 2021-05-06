@@ -6,7 +6,6 @@
 #include <algorithm>
 #include <float.h>
 #include <iostream>
-#include "kyiv.h"
 
 struct RoutingRule {
     string tagName;
@@ -19,13 +18,15 @@ struct RoutingRule {
 };
 
 struct DirectionPoint {
-    double distance = 999999.0;
+    double distance = DBL_MAX;
     int32_t pointIndex;
     int32_t x31;
     int32_t y31;
     SHARED_PTR<RouteDataObject> connected;
     std::vector<uint32_t> types;
     std::vector<std::pair<std::string, std::string>> tags;
+    int connectedx;
+	int connectedy;
 };
 
 struct RoutingConfiguration {
@@ -33,8 +34,8 @@ struct RoutingConfiguration {
     const static int DEFAULT_MEMORY_LIMIT = 100;
     const static int DEVIATION_RADIUS = 3000;
     MAP_STR_STR attributes;
-    quad_tree<DirectionPoint> directionPoints;
-    double directionPointsRadius = 50.0; // 30 m
+    quad_tree<SHARED_PTR<DirectionPoint>> directionPoints;
+    double directionPointsRadius = 30.0; // 30 m
 
     SHARED_PTR<GeneralRouter> router;
 
@@ -69,7 +70,7 @@ struct RoutingConfiguration {
 		zoomToLoad = (int)parseFloat(getAttribute(router, "zoomToLoadTiles"), 16);
 		//routerName = parseString(getAttribute(router, "name"), "default");
 	}
-    quad_tree<DirectionPoint> getDirectionPoints() {
+    quad_tree<SHARED_PTR<DirectionPoint>> getDirectionPoints() {
         return directionPoints;
     }
 };
@@ -110,34 +111,16 @@ public:
         for(;it != impassableRoadLocations.end(); it++) {
             i->router->impassableRoadIds.insert(it->first);
         }
-        directionPointsBuilder = getTestKyivPoints();
         if (directionPointsBuilder.size() > 0) {
             SkIRect rect = SkIRect::MakeLTRB(0, 0, 0x7FFFFFFF, 0x7FFFFFFF);
-            i->directionPoints = quad_tree<DirectionPoint>(rect, 14, 0.5);
+            i->directionPoints = quad_tree<SHARED_PTR<DirectionPoint>>(rect, 14, 0.5);
             for (int j = 0; j < directionPointsBuilder.size(); j++) {
-                DirectionPoint & dp = directionPointsBuilder[j];
-                SkIRect rectDp = SkIRect::MakeLTRB(dp.x31, dp.y31, dp.x31, dp.y31);
+                SHARED_PTR<DirectionPoint> dp = std::make_shared<DirectionPoint>(directionPointsBuilder[j]);
+                SkIRect rectDp = SkIRect::MakeLTRB(dp->x31, dp->y31, dp->x31, dp->y31);
                 i->directionPoints.insert(dp, rectDp);
             }
         }
         return i;
-    }
-    
-    std::vector<DirectionPoint> getTestKyivPoints() {        
-        Kyiv kyiv;
-        std::vector<std::pair<std::string, std::string>> tags;
-        tags.push_back(std::make_pair("motorcar", "no"));
-        std::vector<DirectionPoint> result;
-        for (int i=0; i < kyiv.kyivLonLat.size(); i = i+2) {
-            double lon = kyiv.kyivLonLat[i];
-            double lat = kyiv.kyivLonLat[i+1];
-            DirectionPoint dp;
-            dp.x31 = get31TileNumberX(lon);
-            dp.y31 = get31TileNumberY(lat);
-            dp.tags = tags;
-            result.push_back(dp);
-        }
-        return result;
     }
     
     UNORDERED(map)<int64_t, int_pair>& getImpassableRoadLocations() {

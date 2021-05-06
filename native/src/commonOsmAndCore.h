@@ -156,9 +156,7 @@ class quad_tree {
                 node_data_iterator i = node->data.begin();
                 node_data_iterator end = node->data.end();
                 while (i != end) {
-                    if (box.fLeft <= i->x31 && box.fRight >= i->x31 && box.fTop <= i->y31 && box.fBottom >= i->y31) {
-                        result.push_back(*i);
-                    }
+                    result.push_back(*i);
                     ++i;
                 }
                 for (int k = 0; k < 4; ++k) {

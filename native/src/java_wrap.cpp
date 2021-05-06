@@ -1445,15 +1445,13 @@ void parseRouteConfiguration(JNIEnv* ienv, SHARED_PTR<RoutingConfiguration> rCon
 	}
 
 	SkIRect rect = SkIRect::MakeLTRB(0, 0, INT_MAX, INT_MAX);
-	rConfig->directionPoints = quad_tree<DirectionPoint>(rect, 14, 0.5);
+	rConfig->directionPoints = quad_tree<SHARED_PTR<DirectionPoint>>(rect, 14, 0.5);
 	jobjectArray directionPoints = (jobjectArray)ienv->CallObjectMethod(jRouteConfig, jmethod_RoutingConfiguration_getDirectionPoints);
 	for (int j = 0; j < ienv->GetArrayLength(directionPoints); j++) {
 		jobject jdp = ienv->GetObjectArrayElement(directionPoints, j);
-		DirectionPoint dp;
-
-		dp.x31 = ienv->GetIntField(jdp, jfield_DirectionPoint_x31);
-		dp.y31 = ienv->GetIntField(jdp, jfield_DirectionPoint_y31);
-		
+		SHARED_PTR<DirectionPoint> dp = std::make_shared<DirectionPoint>();
+		dp->x31 = ienv->GetIntField(jdp, jfield_DirectionPoint_x31);
+		dp->y31 = ienv->GetIntField(jdp, jfield_DirectionPoint_y31);
 		jobjectArray tagsKeyValue = (jobjectArray)ienv->GetObjectField(jdp, jfield_DirectionPoint_tags);
 		for (int s = 0; s < ienv->GetArrayLength(tagsKeyValue); s++) {
 			jobjectArray jstrArr = (jobjectArray)ienv->GetObjectArrayElement(tagsKeyValue, s);
@@ -1462,7 +1460,7 @@ void parseRouteConfiguration(JNIEnv* ienv, SHARED_PTR<RoutingConfiguration> rCon
 				jobject jvalue = (jobject)ienv->GetObjectArrayElement(jstrArr, 1);
 				const char* key = ienv->GetStringUTFChars((jstring)jkey, NULL);
 				const char* value = ienv->GetStringUTFChars((jstring)jvalue, NULL);
-				dp.tags.push_back(std::make_pair((std::string)key, (std::string)value));
+				dp->tags.push_back(std::make_pair((std::string)key, (std::string)value));
 				ienv->DeleteLocalRef(jkey);
 				ienv->DeleteLocalRef(jvalue);
 			}
@@ -1470,7 +1468,7 @@ void parseRouteConfiguration(JNIEnv* ienv, SHARED_PTR<RoutingConfiguration> rCon
 		}		
 		ienv->DeleteLocalRef(tagsKeyValue);
 		ienv->DeleteLocalRef(jdp);
-		SkIRect rectDp = SkIRect::MakeLTRB(dp.x31, dp.y31, dp.x31, dp.y31);
+		SkIRect rectDp = SkIRect::MakeLTRB(dp->x31, dp->y31, dp->x31, dp->y31);
         rConfig->directionPoints.insert(dp, rectDp);
 	}
 	ienv->DeleteLocalRef(directionPoints);
@@ -1532,38 +1530,9 @@ extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_nativeRo
 
 	// convert results
 	jobjectArray res = ienv->NewObjectArray(r.size(), jclass_RouteSegmentResult, NULL);
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "ROUTE RESULT:");
 	int prevX = 0, prevY = 0;
 	for (uint i = 0; i < r.size(); i++) {
-		int xSize = r[i]->object->pointsX.size() - 1;
-		int ySize = r[i]->object->pointsY.size() - 1;
-		int dist = 0;
-		/*if (prevX != 0 && prevX != r[i]->object->pointsX[0]) {
-			dist = squareRootDist31(prevX, prevY, r[i]->object->pointsX[0], r[i]->object->pointsY[0]);
-			double lat1 = get31LatitudeY(prevY);
-			double lon1 = get31LongitudeX(prevX);
-			double lat2 = get31LatitudeY(r[i]->object->pointsY[0]);
-			double lon2 = get31LongitudeX(r[i]->object->pointsX[0]);
-			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "startX:%d, startY:%d, endX:%d, endY:%d, != %d , [%f/%f][%f/%f]", r[i]->object->pointsX[0], r[i]->object->pointsY[0], 
-						  r[i]->object->pointsX[xSize], r[i]->object->pointsY[ySize], dist, lat1, lon1, lat2, lon2);
-		} else {*/
-			//bool equal = prevX != 0 && prevX != r[i]->object->pointsX[0];
-			//std::string es = equal ? "==" : "!=";
-			//double lat = get31LatitudeY(r[i]->object->pointsY[0]);
-			//double lon = get31LongitudeX(r[i]->object->pointsX[0]);
-			/*OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "startX:%d, startY:%d, endX:%d, endY:%d, ==, [%f/%f]", r[i]->object->pointsX[0], r[i]->object->pointsY[0], 
-						  r[i]->object->pointsX[xSize], r[i]->object->pointsY[ySize], lat, lon);*/
-			//OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "%s%f,%f", es.c_str(), lat, lon);
-		//}
-		for (uint j = 0; j < r[i]->object->pointsX.size(); j++) {
-			double lat = get31LatitudeY(r[i]->object->pointsY[j]);
-			double lon = get31LongitudeX(r[i]->object->pointsX[j]);
-			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "%f,%f", lat, lon);
-		}
-
 		jobject resobj = convertRouteSegmentResultToJava(ienv, r[i], indexes, regions);
-		prevX = r[i]->object->pointsX[xSize];
-		prevY = r[i]->object->pointsY[ySize];
 		ienv->SetObjectArrayElement(res, i, resobj);
 		ienv->DeleteLocalRef(resobj);
 	}
