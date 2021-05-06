@@ -278,7 +278,7 @@ struct RoutingContext {
 		if (itSubregions == indexedSubregions.end()) {
 			return;
 		}
-		auto& subregions = itSubregions->second;//std::vector<SHARED_PTR<RoutingSubregionTile> >
+		auto& subregions = itSubregions->second;
 		bool gc = false;
 		for (uint j = 0; j < subregions.size(); j++) {
 			if (!subregions[j]->isLoaded()) {

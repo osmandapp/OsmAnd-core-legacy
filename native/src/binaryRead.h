@@ -27,7 +27,6 @@
 #define close _close
 #endif
 #include "renderRules.h"
-#include <iostream>
 
 static const uint MAP_VERSION = 2;
 static const int SHIFT_ID = 6;
@@ -156,12 +155,6 @@ struct RouteDataObject {
             pointTypes = npointTypes;
         }
         pointTypes[pntInd] = array;
-		/*cout << "***" <<array[0] << "***" << endl;
-        for (int i = 0; i < pointTypes.size(); i++) {
-            for (int j = 0; j < pointTypes[i].size(); j++) {
-                cout << "[" << i << "][" << j << "] = " << pointTypes[i][j] << endl;
-            }
-        }*/
     }
 
 	UNORDERED(map)<int, std::string> names;

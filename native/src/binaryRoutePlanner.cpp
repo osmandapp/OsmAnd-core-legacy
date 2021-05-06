@@ -250,7 +250,7 @@ SHARED_PTR<RouteSegment> searchRouteInternal(RoutingContext* ctx, SHARED_PTR<Rou
 	VISITED_MAP visitedDirectSegments;
 	VISITED_MAP visitedOppositeSegments;
 
-	 initQueuesWithStartEnd(ctx, start, end, graphDirectSegments, graphReverseSegments);
+	initQueuesWithStartEnd(ctx, start, end, graphDirectSegments, graphReverseSegments);
 
 	// Extract & analyze segment with min(f(x)) from queue while final segment is not found
 	bool forwardSearch = true;
@@ -701,7 +701,7 @@ SHARED_PTR<RouteSegment> processIntersections(RoutingContext* ctx, SEGMENTS_QUEU
 	while (hasNext && !ctx->isInterrupted()) {
 		if (thereAreRestrictions) {
 			next = *nextIterator;
-		}		
+		}
 		if (next->getSegmentStart() == segmentPoint && next->road->getId() == segment->road->getId()) {
 			// find segment itself
 			// (and process it as other with small exception that we don't add to graph segments and process
@@ -820,7 +820,7 @@ SHARED_PTR<RouteSegmentPoint> findRouteSegment(int px, int py, RoutingContext* c
 		int i = 0;
 		if (ctx->publicTransport) {
 			vector<SHARED_PTR<RouteSegmentPoint> >::iterator it = list.begin();
-			for (; it != list.end(); it++) {			
+			for (; it != list.end(); it++) {
 				if (transportStop && (*it)->dist > 100) {
 					break;
 				}

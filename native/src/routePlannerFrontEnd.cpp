@@ -200,8 +200,8 @@ vector<SHARED_PTR<RouteSegmentResult>> runRouting(RoutingContext* ctx, SHARED_PT
 			current = pr;
 		}
 	}
-	if (!result.empty()) {        
-		for (auto seg : result) {            
+	if (!result.empty()) {
+		for (auto seg : result) {
 			seg->preAttachedRoutes = seg->attachedRoutes;
 		}
 	}

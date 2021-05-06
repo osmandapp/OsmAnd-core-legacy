@@ -5,7 +5,6 @@
 #include "generalRouter.h"
 #include <algorithm>
 #include <float.h>
-#include <iostream>
 
 struct RoutingRule {
     string tagName;
