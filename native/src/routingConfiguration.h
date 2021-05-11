@@ -4,7 +4,6 @@
 #include "commonOsmAndCore.h"
 #include "generalRouter.h"
 #include <algorithm>
-#include <float.h>
 
 struct RoutingRule {
     string tagName;
@@ -17,7 +16,7 @@ struct RoutingRule {
 };
 
 struct DirectionPoint {
-    double distance = DBL_MAX;
+    double distance = -1.0;
     int32_t pointIndex;
     int32_t x31;
     int32_t y31;
@@ -25,7 +24,7 @@ struct DirectionPoint {
     std::vector<uint32_t> types;
     std::vector<std::pair<std::string, std::string>> tags;
     int connectedx;
-	int connectedy;
+    int connectedy;
 };
 
 struct RoutingConfiguration {
@@ -69,20 +68,17 @@ struct RoutingConfiguration {
 		zoomToLoad = (int)parseFloat(getAttribute(router, "zoomToLoadTiles"), 16);
 		//routerName = parseString(getAttribute(router, "name"), "default");
 	}
-    quad_tree<SHARED_PTR<DirectionPoint>> getDirectionPoints() {
-        return directionPoints;
-    }
 };
 
 class RoutingConfigurationBuilder {
 private:
     MAP_STR_STR attributes;
-    UNORDERED(map)<int64_t, int_pair> impassableRoadLocations;
-    std::vector<DirectionPoint> directionPointsBuilder;
+    UNORDERED(map)<int64_t, int_pair> impassableRoadLocations;    
 
 public:
     UNORDERED(map)<string, SHARED_PTR<GeneralRouter> > routers;
     string defaultRouter;
+    std::vector<DirectionPoint> directionPointsBuilder;
 
     RoutingConfigurationBuilder() : defaultRouter("") {
     }
@@ -148,10 +144,6 @@ public:
 
     void removeImpassableRoad(int64_t routeId) {
         impassableRoadLocations.erase(routeId);
-    }
-    
-    void setDirectionPoints(std::vector<DirectionPoint> directionPoints) {
-        directionPointsBuilder = directionPoints;
     }
 };
 

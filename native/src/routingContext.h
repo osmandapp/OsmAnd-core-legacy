@@ -302,17 +302,13 @@ struct RoutingContext {
 				if (!subregions[j]->isLoaded()) {
                     
                     std::vector<SHARED_PTR<DirectionPoint>> points;
-                    if (config->getDirectionPoints().count() > 0) {
+                    if (config->directionPoints.count() > 0) {
+						//retrieve direction points for attach to routing
                         RouteSubregion & subregion = subregions[j]->subregion;
                         SkIRect rect = SkIRect::MakeLTRB(subregion.left, subregion.top, subregion.right, subregion.bottom);
-                        //OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Points.size(%d) before", points.size());
-                        config->getDirectionPoints().query_in_box(rect, points);                        
-                        //OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Points.size(%d) after", points.size());
-                        //OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "ltrb:%d, %d, %d, %d", subregion.left, subregion.top, subregion.right, subregion.bottom);
-                        for (SHARED_PTR<DirectionPoint> & d : points) {
-                            // use temporary types
-                            d->types.clear();
-                            //OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Point:%d, %d,", d.x31, d.y31);
+                        config->directionPoints.query_in_box(rect, points);
+                        for (SHARED_PTR<DirectionPoint> & d : points) {                            
+                            d->types.clear();                            
                             for (std::pair<std::string, std::string> e : d->tags) {
                                 uint32_t type = subregion.routingIndex->searchRouteEncodingRule(e.first, e.second);
                                 if (type != -1) {
@@ -516,23 +512,23 @@ struct RoutingContext {
 		startY = start->road->pointsY[start->segmentStart];
 	}
     
-    void connectPoint(SHARED_PTR<RoutingSubregionTile> subRegTile, SHARED_PTR<RouteDataObject> ro, std::vector<SHARED_PTR<DirectionPoint>> & points) {
-        for (SHARED_PTR<DirectionPoint> & np : points) {
-            if (np->types.size() == 0) {
-                continue;
-            }
-			
-            int wptX = np->x31;
-            int wptY = np->y31;
-            int x = ro->pointsX.at(0);
-            int y = ro->pointsY.at(0);
-            double mindist = config->directionPointsRadius * 2;
+	void connectPoint(SHARED_PTR<RoutingSubregionTile> subRegTile, SHARED_PTR<RouteDataObject> ro, std::vector<SHARED_PTR<DirectionPoint>> & points) {
+		for (SHARED_PTR<DirectionPoint> & np : points) {
+			if (np->types.size() == 0) {
+				continue;
+			}
+						
+			int wptX = np->x31;
+			int wptY = np->y31;
+			int x = ro->pointsX.at(0);
+			int y = ro->pointsY.at(0);
+			double mindist = config->directionPointsRadius * 2;
 			int indexToInsert = 0;
 			int mprojx = 0;
 			int mprojy = 0;
-            for(int i = 1; i < ro->pointsX.size(); i++) {
-                int nx = ro->pointsX.at(i);
-                int ny = ro->pointsY.at(i);
+			for(int i = 1; i < ro->pointsX.size(); i++) {
+				int nx = ro->pointsX.at(i);
+				int ny = ro->pointsY.at(i);
 				bool sgnx = nx - wptX > 0;
 				bool sgx = x - wptX > 0;
 				bool sgny = ny - wptY > 0;
@@ -558,15 +554,16 @@ struct RoutingContext {
 				}
 				x = nx;
 				y = ny;
-            }
+			}
 			bool sameRoadId = np->connected && np->connected->getId() == ro->getId();
-			bool pointShouldBeAttachedByDist = (mindist < config->directionPointsRadius && mindist < np->distance);
+			bool pointShouldBeAttachedByDist = (mindist < config->directionPointsRadius && (mindist < np->distance || np->distance < 0));
 			
 			if (pointShouldBeAttachedByDist && !sameRoadId) {
 				//cout << "INSERT " << ro->getId() / 64 << " (" << indexToInsert << "-" << indexToInsert + 1 << ") " << mindist << "m " << "[" 
 				//	<< get31LatitudeY(wptY) << "/" <<  get31LongitudeX(wptX) << "] x:" << wptX << " y:" << wptY << " ro.id:" << ro->getId() << endl;
 				if (np->connected) {
-					// clear old connected points
+					// check old connected points
+					// using search by coordinates because by index doesn't work (parallel updates)
 					int pointIndex = -1;
 					for(int i = 0; i < np->connected->getPointsLength(); i++) {
 						int tx = np->connected->pointsX.at(i);
@@ -592,19 +589,15 @@ struct RoutingContext {
 				np->connected = ro;
 			} else if (sameRoadId) {
 				bool sameRoadIdButPointIsNotPresent;
-				if (indexToInsert < ro->getPointsLength()) {
-					int tx = ro->pointsX.at(indexToInsert);
-					int ty = ro->pointsY.at(indexToInsert);
-					sameRoadIdButPointIsNotPresent = (mprojx != tx || mprojy != ty);
-				} else {
-					sameRoadIdButPointIsNotPresent = true;
-				}
+				int tx = ro->pointsX.at(indexToInsert);
+				int ty = ro->pointsY.at(indexToInsert);
+				sameRoadIdButPointIsNotPresent = (mprojx != tx || mprojy != ty);
 				if (sameRoadIdButPointIsNotPresent) {
 					ro->insert(indexToInsert, mprojx, mprojy);
 				}
 			}
-        }
-    }
+		}
+	}
 };
 
 #endif /*_OSMAND_ROUTING_CONTEXT_H*/
