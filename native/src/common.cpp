@@ -241,7 +241,11 @@ int findFirstNumberEndIndex(string value) {
 	if (value.length() > 0 && value[0] == '-') {
 		i++;
 	}
-	while (i < value.length() && ((value[i] >= '0' && value[i] <= '9') || value[i] == '.')) {
+	bool dotfound = false;
+	while (i < value.length() && ((value[i] >= '0' && value[i] <= '9') || value[i] == '.') && !dotfound) {
+		if (value[i] == '.') {
+			dotfound = true;
+		}
 		i++;
 		valid = true;
 	}
