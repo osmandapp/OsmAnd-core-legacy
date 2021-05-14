@@ -47,10 +47,16 @@ class RoutingRulesHandler {
 			parseGeneralRouterProfile(attrValue(attrsMap, "baseProfile"), GeneralRouterProfile::CAR);
 		SHARED_PTR<GeneralRouter> currentRouter = std::make_shared<GeneralRouter>(c, attrs);
 		currentRouter->profileName = currentSelectedRouter;
-		//        if (filename.length() > 0) {
-		//            currentRouter->fileName = filename;
-		//            currentSelectedRouter = filename + "/" + currentSelectedRouter;
-		//        }
+        if (filename.length() > 0) {
+            size_t found = filename.find_last_of("/");
+            // Skip this step for the bundled routing.xml
+            if (found != string::npos && filename.find("OsmAnd Maps.app") == string::npos)
+            {
+                const auto name = filename.substr(found + 1);
+                currentRouter->fileName = name;
+                currentSelectedRouter = name + "/" + currentSelectedRouter;
+            }
+        }
 		config->addRouter(currentSelectedRouter, currentRouter);
 		return currentRouter;
 	}
