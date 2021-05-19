@@ -1532,6 +1532,7 @@ extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_nativeRo
 	jobjectArray res = ienv->NewObjectArray(r.size(), jclass_RouteSegmentResult, NULL);
 	int prevX = 0, prevY = 0;
 	for (uint i = 0; i < r.size(); i++) {
+		clearDirectionPointFromRouteResult(r[i]);
 		jobject resobj = convertRouteSegmentResultToJava(ienv, r[i], indexes, regions);
 		ienv->SetObjectArrayElement(res, i, resobj);
 		ienv->DeleteLocalRef(resobj);
@@ -2117,4 +2118,28 @@ std::string JNIRenderingContext::getReshapedString(const std::string& name) {
 
 	this->env->DeleteLocalRef(n);
 	return res;
+}
+
+void clearDirectionPointFromRouteResult(SHARED_PTR<RouteSegmentResult> r ) {
+	// Delete dynamicaly DirectionPoint types for backward compatibility with Java (avoid crash in BinaryMapRouteReaderAdapter quickGetEncodingRule)
+	uint32_t createType = r->object->region->findOrCreateRouteType(DirectionPoint_TAG, DirectionPoint_CREATE_TYPE);
+	uint32_t deleteType = r->object->region->findOrCreateRouteType(DirectionPoint_TAG, DirectionPoint_DELETE_TYPE);
+	int clearPointIndex = -1;
+	for (int i = 0; i < r->object->pointTypes.size() && i < r->object->pointsX.size(); i++) {
+		if (r->object->pointTypes[i].size() > 0) {
+			for (int k = 0; k < r->object->pointTypes[i].size(); k++) {
+				if (r->object->pointTypes[i][k] == createType || r->object->pointTypes[i][k] == deleteType) {
+					clearPointIndex = i;
+					break;
+				}
+			}
+			if (clearPointIndex != -1) {
+				break;
+			}
+		}
+	}
+	if (clearPointIndex != -1) {
+		std::vector<uint32_t> empty;
+		r->object->pointTypes[clearPointIndex] = empty;
+	}	
 }

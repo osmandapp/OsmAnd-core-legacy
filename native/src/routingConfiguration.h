@@ -15,6 +15,9 @@ struct RoutingRule {
     string type;
 };
 
+const std::string DirectionPoint_TAG = "osmand_dp";
+const std::string DirectionPoint_DELETE_TYPE = "osmand_delete_point";
+const std::string DirectionPoint_CREATE_TYPE = "osmand_add_point";
 struct DirectionPoint {
     double distance = -1.0;
     int32_t pointIndex;
@@ -74,8 +77,8 @@ class RoutingConfigurationBuilder {
 private:
     MAP_STR_STR attributes;
     UNORDERED(map)<int64_t, int_pair> impassableRoadLocations;    
+
 public:
-    MAP_STR_STR attributes;
     UNORDERED(map)<string, SHARED_PTR<GeneralRouter> > routers;
     string defaultRouter;
     std::vector<DirectionPoint> directionPointsBuilder;

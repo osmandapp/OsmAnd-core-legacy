@@ -307,6 +307,7 @@ struct RoutingContext {
                         RouteSubregion & subregion = subregions[j]->subregion;
                         SkIRect rect = SkIRect::MakeLTRB(subregion.left, subregion.top, subregion.right, subregion.bottom);
                         config->directionPoints.query_in_box(rect, points);
+						uint32_t createType = subregion.routingIndex->findOrCreateRouteType(DirectionPoint_TAG, DirectionPoint_CREATE_TYPE);
                         for (SHARED_PTR<DirectionPoint> & d : points) {                            
                             d->types.clear();                            
                             for (std::pair<std::string, std::string> e : d->tags) {
@@ -314,6 +315,7 @@ struct RoutingContext {
                                 if (type != -1) {
                                     d->types.push_back(type);
                                 }
+								d->types.push_back(createType);
                            }
                         }
                     }
@@ -513,6 +515,9 @@ struct RoutingContext {
 	}
     
 	void connectPoint(SHARED_PTR<RoutingSubregionTile> subRegTile, SHARED_PTR<RouteDataObject> ro, std::vector<SHARED_PTR<DirectionPoint>> & points) {
+		uint32_t createType = ro->region->findOrCreateRouteType(DirectionPoint_TAG, DirectionPoint_CREATE_TYPE);
+		uint32_t deleteType = ro->region->findOrCreateRouteType(DirectionPoint_TAG, DirectionPoint_DELETE_TYPE);
+
 		for (SHARED_PTR<DirectionPoint> & np : points) {
 			if (np->types.size() == 0) {
 				continue;
@@ -557,46 +562,54 @@ struct RoutingContext {
 			}
 			bool sameRoadId = np->connected && np->connected->getId() == ro->getId();
 			bool pointShouldBeAttachedByDist = (mindist < config->directionPointsRadius && (mindist < np->distance || np->distance < 0));
-			
-			if (pointShouldBeAttachedByDist && !sameRoadId) {
-				//cout << "INSERT " << ro->getId() / 64 << " (" << indexToInsert << "-" << indexToInsert + 1 << ") " << mindist << "m " << "[" 
-				//	<< get31LatitudeY(wptY) << "/" <<  get31LongitudeX(wptX) << "] x:" << wptX << " y:" << wptY << " ro.id:" << ro->getId() << endl;
-				if (np->connected) {
-					// check old connected points
-					// using search by coordinates because by index doesn't work (parallel updates)
-					int pointIndex = -1;
-					for(int i = 0; i < np->connected->getPointsLength(); i++) {
-						int tx = np->connected->pointsX.at(i);
-						int ty = np->connected->pointsY.at(i);						
-						if (tx == np->connectedx && ty == np->connectedy) {
-							pointIndex = i;
-							break;
+
+			if (pointShouldBeAttachedByDist) {
+				if (!sameRoadId) {
+					//cout << "INSERT " << ro->getId() / 64 << " (" << indexToInsert << "-" << indexToInsert + 1 << ") " << mindist << "m " << "["
+					//	<< get31LatitudeY(wptY) << "/" <<  get31LongitudeX(wptX) << "] x:" << wptX << " y:" << wptY << " ro.id:" << ro->getId() << endl;
+					if (np->connected) {
+						// check old connected points
+						int pointIndex = findPointIndex(np, createType);
+						if (pointIndex != -1) {
+							// set type "deleted" for old connected point
+							std::vector<uint32_t> osmand_dp_vector{deleteType};
+							np->connected->setPointTypes(pointIndex, osmand_dp_vector);
 						}
 					}
-					if (pointIndex != -1) {
-						uint32_t tp = ro->region->findOrCreateRouteType("osmand_dp", "osmand_delete_point");
-						std::vector<uint32_t> osmand_dp_vector{tp};
-						np->connected->setPointTypes(pointIndex, osmand_dp_vector);						
-					} else {
-						//cout << "CONNECTED POINT WAS NOT FOUND" << endl;
+				} else {
+					int sameRoadPointIndex = findPointIndex(np, createType);
+					if (sameRoadPointIndex != -1 && np->connected) {
+						if (mprojx == np->connectedx && mprojy == np->connectedy) {
+							continue; // was found the same point
+						} else {
+							// set type "deleted" for old connected point
+							std::vector<uint32_t> osmand_dp_vector{deleteType};
+							np->connected->setPointTypes(sameRoadPointIndex, osmand_dp_vector);
+						}
 					}
 				}
 				np->connectedx = mprojx;
 				np->connectedy = mprojy;
-				ro->insert(indexToInsert, mprojx, mprojy); 
-				ro->setPointTypes(indexToInsert, np->types);
+				ro->insert(indexToInsert, mprojx, mprojy);
+				ro->setPointTypes(indexToInsert, np->types); // np->types contains DirectionPoint_CREATE_TYPE
 				np->distance = mindist;
 				np->connected = ro;
-			} else if (sameRoadId) {
-				bool sameRoadIdButPointIsNotPresent;
-				int tx = ro->pointsX.at(indexToInsert);
-				int ty = ro->pointsY.at(indexToInsert);
-				sameRoadIdButPointIsNotPresent = (mprojx != tx || mprojy != ty);
-				if (sameRoadIdButPointIsNotPresent) {
-					ro->insert(indexToInsert, mprojx, mprojy);
-				}
 			}
 		}
+	}
+
+	int findPointIndex(SHARED_PTR<DirectionPoint> np, int createType) {
+		// using search by coordinates because by index doesn't work (parallel updates)
+		int samePointIndex = -1;
+		for (int i = 0; np->connected && i < np->connected->getPointsLength(); i++) {
+			int tx = np->connected->pointsX.at(i);
+			int ty = np->connected->pointsY.at(i);
+			if (tx == np->connectedx && ty == np->connectedy && np->connected->hasPointType(i, createType)) {
+				samePointIndex = i;
+				break;
+			}
+		}
+		return samePointIndex;
 	}
 };
 

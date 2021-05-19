@@ -673,6 +673,15 @@ struct RouteDataObject {
 		}
 		return def;
 	}
+
+	bool hasPointType(int pntId, uint32_t type) {
+		for (int k = 0; pointTypes.size() > pntId && k < pointTypes[pntId].size(); k++) {
+			if (pointTypes[pntId][k] == type) {
+				return true;
+			}
+		}
+		return false;
+	}
 };
 
 struct IndexStringTable {
