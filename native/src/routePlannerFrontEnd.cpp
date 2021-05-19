@@ -70,7 +70,8 @@ double projectDistance(vector<SHARED_PTR<RouteSegmentResult>>& res, int k, int p
 void updateResult(SHARED_PTR<RouteSegmentResult>& routeSegmentResult, int px, int py, bool st) {
 	int pind = st ? routeSegmentResult->getStartPointIndex() : routeSegmentResult->getEndPointIndex();
 
-	auto r = routeSegmentResult->object;
+	auto r = std::make_shared<RouteDataObject>(routeSegmentResult->object);
+	routeSegmentResult->object = r;
 	std::pair<int, int>* before = NULL;
 	std::pair<int, int>* after = NULL;
 	if (pind > 0) {
@@ -148,32 +149,6 @@ void makeStartEndPointsPrecise(vector<SHARED_PTR<RouteSegmentResult>>& res, int 
 	if (res.size() > 0) {
 		updateResult(res[0], startX, startY, true);
 		updateResult(res[res.size() - 1], endX, endY, false);
-		if (!intermediatesX.empty()) {
-			int k = 1;
-			for (int i = 0; i < intermediatesX.size(); i++) {
-				int px = intermediatesX[i];
-				int py = intermediatesY[i];
-				for (; k < res.size(); k++) {
-					double currentsDist = projectDistance(res, k, px, py);
-					if (currentsDist < 500 * 500) {
-						for (int k1 = k + 1; k1 < res.size(); k1++) {
-							double c2 = projectDistance(res, k1, px, py);
-							if (c2 < currentsDist) {
-								k = k1;
-								currentsDist = c2;
-							} else if (k1 - k > 15) {
-								break;
-							}
-						}
-						updateResult(res[k], px, py, false);
-						if (k < res.size() - 1) {
-							updateResult(res[k + 1], px, py, true);
-						}
-						break;
-					}
-				}
-			}
-		}
 	}
 }
 

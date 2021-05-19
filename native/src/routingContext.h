@@ -484,12 +484,16 @@ struct RoutingContext {
 	void initTargetPoint(SHARED_PTR<RouteSegment>& end) {
 		targetX = end->road->pointsX[end->segmentStart];
 		targetY = end->road->pointsY[end->segmentStart];
+		targetRoadId = end->road->id;
+		targetSegmentInd = end->segmentStart;
 	}
 
 	void initStartAndTargetPoints(SHARED_PTR<RouteSegment> start, SHARED_PTR<RouteSegment> end) {
 		initTargetPoint(end);
 		startX = start->road->pointsX[start->segmentStart];
 		startY = start->road->pointsY[start->segmentStart];
+		startRoadId = start->road->id;
+		startSegmentInd = start->segmentStart;
 	}
 };
 
