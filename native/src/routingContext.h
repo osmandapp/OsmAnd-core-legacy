@@ -300,6 +300,26 @@ struct RoutingContext {
 			UNORDERED(set)<int64_t> excludedIds;
 			for (uint j = 0; j < subregions.size(); j++) {
 				if (!subregions[j]->isLoaded()) {
+
+					std::vector<SHARED_PTR<DirectionPoint>> points;
+					if (config->directionPoints.count() > 0) {
+						//retrieve direction points for attach to routing
+						RouteSubregion &subregion = subregions[j]->subregion;
+						SkIRect rect = SkIRect::MakeLTRB(subregion.left, subregion.top, subregion.right, subregion.bottom);
+						config->directionPoints.query_in_box(rect, points);
+						uint32_t createType = subregion.routingIndex->findOrCreateRouteType(DirectionPoint_TAG, DirectionPoint_CREATE_TYPE);
+						for (SHARED_PTR<DirectionPoint> &d : points) {
+							d->types.clear();
+							for (std::pair<std::string, std::string> e : d->tags) {
+								uint32_t type = subregion.routingIndex->searchRouteEncodingRule(e.first, e.second);
+								if (type != -1) {
+									d->types.push_back(type);
+								}
+								d->types.push_back(createType);
+							}
+						}
+					}
+
 					if (progress) {
 						progress->loadedTiles++;
 					}
@@ -310,12 +330,14 @@ struct RoutingContext {
 					vector<RouteDataObject*>::iterator i = res.begin();
 					for (;i != res.end(); i++) {
 						if (*i != NULL) {
-							SHARED_PTR<RouteDataObject> o(*i);
+							SHARED_PTR<RouteDataObject> o;
+							o.reset(*i);
 							if(conditionalTime != 0) {
 								o->processConditionalTags(conditionalTimeStr);
 							}
 							if (acceptLine(o)) {
-								if (excludedIds.find(o->getId()) == excludedIds.end()) {
+								if (excludedIds.find(o->getId()) == excludedIds.end()) {									
+								connectPoint(subregions[j], o, points);
 									subregions[j]->add(o);
 								}
 							}
@@ -494,6 +516,104 @@ struct RoutingContext {
 		startY = start->road->pointsY[start->segmentStart];
 		startRoadId = start->road->id;
 		startSegmentInd = start->segmentStart;
+	}
+    
+	void connectPoint(SHARED_PTR<RoutingSubregionTile> subRegTile, SHARED_PTR<RouteDataObject> ro, std::vector<SHARED_PTR<DirectionPoint>> & points) {
+		uint32_t createType = ro->region->findOrCreateRouteType(DirectionPoint_TAG, DirectionPoint_CREATE_TYPE);
+		uint32_t deleteType = ro->region->findOrCreateRouteType(DirectionPoint_TAG, DirectionPoint_DELETE_TYPE);
+
+		for (SHARED_PTR<DirectionPoint> & np : points) {
+			if (np->types.size() == 0) {
+				continue;
+			}
+						
+			int wptX = np->x31;
+			int wptY = np->y31;
+			int x = ro->pointsX.at(0);
+			int y = ro->pointsY.at(0);
+			double mindist = config->directionPointsRadius * 2;
+			int indexToInsert = 0;
+			int mprojx = 0;
+			int mprojy = 0;
+			for(int i = 1; i < ro->pointsX.size(); i++) {
+				int nx = ro->pointsX.at(i);
+				int ny = ro->pointsY.at(i);
+				bool sgnx = nx - wptX > 0;
+				bool sgx = x - wptX > 0;
+				bool sgny = ny - wptY > 0;
+				bool sgy = y - wptY > 0;
+				bool checkPreciseProjection = true;
+				if (sgny == sgy && sgx == sgnx) {
+					// Speedup: point outside of rect (line is diagonal) distance is likely be bigger
+					double dist = squareRootDist31(wptX, wptY, abs(nx - wptX) < abs(x - wptX) ? nx : x,
+							abs(ny - wptY) < abs(y - wptY) ? ny : y);
+					checkPreciseProjection = dist < config->directionPointsRadius;
+				} 
+				if (checkPreciseProjection) {					
+					std::pair<int, int> pnt = getProjectionPoint(wptX, wptY, x, y, nx, ny);
+					int projx = (int) pnt.first;
+					int projy = (int) pnt.second;
+					double dist = squareRootDist31(wptX, wptY, projx, projy);
+					if (dist < mindist) {
+						indexToInsert = i;
+						mindist = dist;
+						mprojx = projx;
+						mprojy = projy;
+					}
+				}
+				x = nx;
+				y = ny;
+			}
+			bool sameRoadId = np->connected && np->connected->getId() == ro->getId();
+			bool pointShouldBeAttachedByDist = (mindist < config->directionPointsRadius && (mindist < np->distance || np->distance < 0));
+
+			if (pointShouldBeAttachedByDist) {
+				if (!sameRoadId) {
+					//cout << "INSERT " << ro->getId() / 64 << " (" << indexToInsert << "-" << indexToInsert + 1 << ") " << mindist << "m " << "["
+					//	<< get31LatitudeY(wptY) << "/" <<  get31LongitudeX(wptX) << "] x:" << wptX << " y:" << wptY << " ro.id:" << ro->getId() << endl;
+					if (np->connected) {
+						// check old connected points
+						int pointIndex = findPointIndex(np, createType);
+						if (pointIndex != -1) {
+							// set type "deleted" for old connected point
+							std::vector<uint32_t> osmand_dp_vector{deleteType};
+							np->connected->setPointTypes(pointIndex, osmand_dp_vector);
+						}
+					}
+				} else {
+					int sameRoadPointIndex = findPointIndex(np, createType);
+					if (sameRoadPointIndex != -1 && np->connected) {
+						if (mprojx == np->connectedx && mprojy == np->connectedy) {
+							continue; // was found the same point
+						} else {
+							// set type "deleted" for old connected point
+							std::vector<uint32_t> osmand_dp_vector{deleteType};
+							np->connected->setPointTypes(sameRoadPointIndex, osmand_dp_vector);
+						}
+					}
+				}
+				np->connectedx = mprojx;
+				np->connectedy = mprojy;
+				ro->insert(indexToInsert, mprojx, mprojy);
+				ro->setPointTypes(indexToInsert, np->types); // np->types contains DirectionPoint_CREATE_TYPE
+				np->distance = mindist;
+				np->connected = ro;
+			}
+		}
+	}
+
+	int findPointIndex(SHARED_PTR<DirectionPoint> np, int createType) {
+		// using search by coordinates because by index doesn't work (parallel updates)
+		int samePointIndex = -1;
+		for (int i = 0; np->connected && i < np->connected->getPointsLength(); i++) {
+			int tx = np->connected->pointsX.at(i);
+			int ty = np->connected->pointsY.at(i);
+			if (tx == np->connectedx && ty == np->connectedy && np->connected->hasPointType(i, createType)) {
+				samePointIndex = i;
+				break;
+			}
+		}
+		return samePointIndex;
 	}
 };
 

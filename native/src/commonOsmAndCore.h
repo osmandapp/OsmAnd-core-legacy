@@ -47,11 +47,15 @@ class quad_tree {
 		cont_t data;
 		std::unique_ptr<node> children[4];
 		SkRect bounds;
+		SkIRect bounds_int;
 
 		node(SkRect& b) : bounds(b) {
 		}
 
-		node(const node& b) : bounds(b.bounds) {
+		node(SkIRect& b) : bounds_int(b) {
+		}
+
+		node(const node& b) : bounds(b.bounds), bounds_int(b.bounds_int) {
 			data = b.data;
 			for (int i = 0; i < 4; i++) {
 				if (b.children[i] != NULL) {
@@ -70,6 +74,10 @@ class quad_tree {
 
    public:
 	quad_tree(SkRect r = SkRect::MakeLTRB(0, 0, 0x7FFFFFFF, 0x7FFFFFFF), int depth = 8, double ratio = 0.55)
+		: ratio(ratio), max_depth(depth), root(new node(r)) {
+	}
+
+	quad_tree(SkIRect r, int depth, double ratio)
 		: ratio(ratio), max_depth(depth), root(new node(r)) {
 	}
 
@@ -92,9 +100,26 @@ class quad_tree {
 		do_insert_data(data, box, root, depth);
 	}
 
+	void insert(T data, SkIRect& box) {
+		unsigned int depth = 0;
+		do_insert_data(data, box, root, depth);
+	}
+
 	void query_in_box(SkRect& box, std::vector<T>& result) {
 		result.clear();
 		query_node(box, result, root);
+	}
+
+	void query_in_box(SkIRect& box, std::vector<T>& result) {
+		result.clear();
+		query_node(box, result, root);
+	}
+
+	bool compareSkIRects(const SkIRect& r1, const SkIRect& r2) {
+		return min(r1.fLeft, r1.fRight) <= min(r2.fLeft, r2.fRight) &&
+			   max(r1.fLeft, r1.fRight) >= max(r2.fLeft, r2.fRight) &&
+			   min(r1.fTop, r1.fBottom) <= min(r2.fTop, r2.fBottom) &&
+			   max(r1.fTop, r1.fBottom) >= max(r2.fTop, r2.fBottom);
 	}
 
    private:
@@ -111,6 +136,22 @@ class quad_tree {
 	void query_node(SkRect& box, std::vector<T>& result, std::unique_ptr<node>& node) const {
 		if (node) {
 			if (SkRect::Intersects(box, node->bounds)) {
+				node_data_iterator i = node->data.begin();
+				node_data_iterator end = node->data.end();
+				while (i != end) {
+					result.push_back(*i);
+					++i;
+				}
+				for (int k = 0; k < 4; ++k) {
+					query_node(box, result, node->children[k]);
+				}
+			}
+		}
+	}
+
+	void query_node(SkIRect& box, std::vector<T>& result, std::unique_ptr<node>& node) const {
+		if (node) {
+			if (SkIRect::Intersects(box, node->bounds_int)) {
 				node_data_iterator i = node->data.begin();
 				node_data_iterator end = node->data.end();
 				while (i != end) {
@@ -143,6 +184,27 @@ class quad_tree {
 			n->data.push_back(data);
 		}
 	}
+
+	void do_insert_data(T data, SkIRect& box, std::unique_ptr<node>& n, unsigned int& depth) {
+		if (++depth >= max_depth) {
+			n->data.push_back(data);
+		} else {
+			SkIRect& node_extent = n->bounds_int;
+			SkIRect ext[4];
+			split_box(node_extent, ext);
+			for (int i = 0; i < 4; ++i) {
+				if (compareSkIRects(ext[i], box)) {
+					if (!n->children[i]) {
+						n->children[i] = std::unique_ptr<node>(new node(ext[i]));
+					}
+					do_insert_data(data, box, n->children[i], depth);
+					return;
+				}
+			}
+			n->data.push_back(data);
+		}
+	}
+
 	void split_box(SkRect& node_extent, SkRect* ext) {
 		// coord2d c=node_extent.center();
 
@@ -158,6 +220,21 @@ class quad_tree {
 		ext[1] = SkRect::MakeLTRB(hix - width * ratio, loy, hix, loy + height * ratio);
 		ext[2] = SkRect::MakeLTRB(lox, hiy - height * ratio, lox + width * ratio, hiy);
 		ext[3] = SkRect::MakeLTRB(hix - width * ratio, hiy - height * ratio, hix, hiy);
+	}
+
+	void split_box(SkIRect& node_extent, SkIRect* ext) {
+		int32_t width = node_extent.width();
+		int32_t height = node_extent.height();
+
+		int32_t lox = node_extent.fLeft;
+		int32_t loy = node_extent.fTop;
+		int32_t hix = node_extent.fRight;
+		int32_t hiy = node_extent.fBottom;
+
+		ext[0] = SkIRect::MakeLTRB(lox, loy, lox + width * ratio, loy + height * ratio);
+		ext[1] = SkIRect::MakeLTRB(hix - width * ratio, loy, hix, loy + height * ratio);
+		ext[2] = SkIRect::MakeLTRB(lox, hiy - height * ratio, lox + width * ratio, hiy);
+		ext[3] = SkIRect::MakeLTRB(hix - width * ratio, hiy - height * ratio, hix, hiy);
 	}
 };
 
