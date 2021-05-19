@@ -75,10 +75,9 @@ struct RoutingConfiguration {
 
 class RoutingConfigurationBuilder {
 private:
-    MAP_STR_STR attributes;
-    UNORDERED(map)<int64_t, int_pair> impassableRoadLocations;    
-
+    UNORDERED(map)<int64_t, int_pair> impassableRoadLocations;
 public:
+    MAP_STR_STR attributes;
     UNORDERED(map)<string, SHARED_PTR<GeneralRouter> > routers;
     string defaultRouter;
     std::vector<DirectionPoint> directionPointsBuilder;
