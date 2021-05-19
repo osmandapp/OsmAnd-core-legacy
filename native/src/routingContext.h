@@ -300,26 +300,26 @@ struct RoutingContext {
 			UNORDERED(set)<int64_t> excludedIds;
 			for (uint j = 0; j < subregions.size(); j++) {
 				if (!subregions[j]->isLoaded()) {
-                    
-                    std::vector<SHARED_PTR<DirectionPoint>> points;
-                    if (config->directionPoints.count() > 0) {
+
+					std::vector<SHARED_PTR<DirectionPoint>> points;
+					if (config->directionPoints.count() > 0) {
 						//retrieve direction points for attach to routing
-                        RouteSubregion & subregion = subregions[j]->subregion;
-                        SkIRect rect = SkIRect::MakeLTRB(subregion.left, subregion.top, subregion.right, subregion.bottom);
-                        config->directionPoints.query_in_box(rect, points);
+						RouteSubregion &subregion = subregions[j]->subregion;
+						SkIRect rect = SkIRect::MakeLTRB(subregion.left, subregion.top, subregion.right, subregion.bottom);
+						config->directionPoints.query_in_box(rect, points);
 						uint32_t createType = subregion.routingIndex->findOrCreateRouteType(DirectionPoint_TAG, DirectionPoint_CREATE_TYPE);
-                        for (SHARED_PTR<DirectionPoint> & d : points) {                            
-                            d->types.clear();                            
-                            for (std::pair<std::string, std::string> e : d->tags) {
-                                uint32_t type = subregion.routingIndex->searchRouteEncodingRule(e.first, e.second);
-                                if (type != -1) {
-                                    d->types.push_back(type);
-                                }
+						for (SHARED_PTR<DirectionPoint> &d : points) {
+							d->types.clear();
+							for (std::pair<std::string, std::string> e : d->tags) {
+								uint32_t type = subregion.routingIndex->searchRouteEncodingRule(e.first, e.second);
+								if (type != -1) {
+									d->types.push_back(type);
+								}
 								d->types.push_back(createType);
-                           }
-                        }
-                    }
-                    
+							}
+						}
+					}
+
 					if (progress) {
 						progress->loadedTiles++;
 					}
@@ -337,7 +337,7 @@ struct RoutingContext {
 							}
 							if (acceptLine(o)) {
 								if (excludedIds.find(o->getId()) == excludedIds.end()) {									
-                                    connectPoint(subregions[j], o, points);
+								connectPoint(subregions[j], o, points);
 									subregions[j]->add(o);
 								}
 							}
