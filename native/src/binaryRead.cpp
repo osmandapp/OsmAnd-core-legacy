@@ -1915,12 +1915,6 @@ bool getTransportIndex(int64_t filePointer, TransportIndex*& ind) {
 
 void loadTransportRoutes(BinaryMapFile* file, vector<int32_t> filePointers, UNORDERED(map) < int64_t,
 						 SHARED_PTR<TransportRoute> > &result) {
-	lseek(file->routefd, 0, SEEK_SET);
-	FileInputStream input(file->routefd);
-	input.SetCloseOnDelete(false);
-	CodedInputStream cis(&input);
-	cis.SetTotalBytesLimit(INT_MAX, INT_MAX >> 1);
-
 	UNORDERED(map)<TransportIndex*, vector<int32_t>> groupPoints;
 	for (int i = 0; i < filePointers.size(); i++) {
 		TransportIndex* ind = NULL;
@@ -1947,6 +1941,11 @@ void loadTransportRoutes(BinaryMapFile* file, vector<int32_t> filePointers, UNOR
 				finishInit.push_back(transportRoute);
 			}
 		}
+		lseek(file->routefd, 0, SEEK_SET);
+		FileInputStream input(file->routefd);
+		input.SetCloseOnDelete(false);
+		CodedInputStream cis(&input);
+		cis.SetTotalBytesLimit(INT_MAX, INT_MAX >> 1);
 		initializeStringTable(&cis, ind, stringTable);
 		UNORDERED(map)<int32_t, string> indexedStringTable = ind->stringTable->stringTable;
 		for (SHARED_PTR<TransportRoute>& transportRoute : finishInit) {
