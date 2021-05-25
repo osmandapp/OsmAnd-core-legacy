@@ -495,17 +495,17 @@ void filterMinorStops(SHARED_PTR<RouteSegmentResult> seg) {
 
 	for (uint32_t stop : stops) {
 		std::vector<SHARED_PTR<RouteSegmentResult>> attachedRoutes = seg->getAttachedRoutes(stop);
-        for (auto it = attachedRoutes.begin(); it != attachedRoutes.end(); ++it)
-        {
-            const string highway = (*it)->object->getHighway();
-            const string segHighway = seg->object->getHighway();
-            int attStopPriority = highwaySpeakPriority(highway);
-            int segStopPriority = highwaySpeakPriority(segHighway);
-            if (segStopPriority < attStopPriority) {
-                seg->object->removePointType(stop, seg->object->region->stopSign);
-                break;
-            }
-        }
+		for (auto it = attachedRoutes.begin(); it != attachedRoutes.end(); ++it)
+		{
+			const string highway = (*it)->object->getHighway();
+			const string segHighway = seg->object->getHighway();
+			int attStopPriority = highwaySpeakPriority(highway);
+			int segStopPriority = highwaySpeakPriority(segHighway);
+			if (segStopPriority < attStopPriority) {
+				seg->object->removePointType(stop, seg->object->region->stopSign);
+				break;
+			}
+		}
 	}
 }
 
@@ -1678,7 +1678,7 @@ vector<SHARED_PTR<RouteSegmentResult> > prepareResult(RoutingContext* ctx, vecto
 	combineWayPointsForAreaRouting(ctx, result);
 	validateAllPointsConnected(result);
 	splitRoadsAndAttachRoadSegments(ctx, result);
-    for (auto it = result.begin(); it != result.end(); ++it) {
+	for (auto it = result.begin(); it != result.end(); ++it) {
 		filterMinorStops(*it);
 	}
 	calculateTimeSpeed(ctx, result);
