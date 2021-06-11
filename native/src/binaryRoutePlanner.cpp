@@ -48,7 +48,7 @@ int64_t calculateRoutePointId(SHARED_PTR<RouteDataObject>& road, int pntId, int 
 
 int64_t calculateRoutePointId(SHARED_PTR<RouteSegment>& segm) {
 	return calculateRoutePointId(segm->getRoad(), segm->getSegmentStart(),
-								 segm->isPositive() ? segm->getSegmentStart() + 1 : segm->getSegmentStart() - 1);
+		   segm->isPositive() ? segm->getSegmentStart() + 1 : segm->getSegmentStart() - 1);
 }
 
 static double estimatedDistance(RoutingContext* ctx, int targetEndX, int targetEndY, int startX, int startY) {
