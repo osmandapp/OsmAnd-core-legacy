@@ -2,10 +2,10 @@
 #define _OSMAND_ROUTE_SEGMENT_H
 #include "CommonCollections.h"
 #include "commonOsmAndCore.h"
+#include "routeSegmentResult.h"
 #include "Logging.h"
 
 struct RouteSegment {
-    public :
     uint16_t segmentStart;
     SHARED_PTR<RouteDataObject> road;
     // needed to store intersection of routes
@@ -101,33 +101,37 @@ struct RouteSegment {
         , distanceFromStart(0)
         , distanceToEnd(0) {
     }
-    
-    ~RouteSegment() {
-    }
 };
 
 struct RouteSegmentPoint : RouteSegment {
-public:
-    RouteSegmentPoint(SHARED_PTR<RouteDataObject>& road, int segmentStart) :
-				RouteSegment(road, segmentStart) {					
-                }
-    ~RouteSegmentPoint(){
-    }
-    double dist;
-    int preciseX;
-    int preciseY;
-    vector< SHARED_PTR<RouteSegmentPoint> > others;
+	RouteSegmentPoint(SHARED_PTR<RouteDataObject>& road, int segmentStart) : RouteSegment(road, segmentStart) {}
+	double dist;
+	int preciseX;
+	int preciseY;
+	vector<SHARED_PTR<RouteSegmentPoint>> others;
+
+	LatLon getPreciseLatLon() { return LatLon(get31LatitudeY(preciseY), get31LongitudeX(preciseX)); }
 };
 
 struct FinalRouteSegment : RouteSegment {
-public:
-    FinalRouteSegment(SHARED_PTR<RouteDataObject>& road, int segmentStart) : RouteSegment(road, segmentStart) {
-    }
-        
-    ~FinalRouteSegment() {
-    }
-    bool reverseWaySearch;
-    SHARED_PTR<RouteSegment> opposite;
+	FinalRouteSegment(SHARED_PTR<RouteDataObject>& road, int segmentStart) : RouteSegment(road, segmentStart) {}
+	bool reverseWaySearch;
+	SHARED_PTR<RouteSegment> opposite;
+};
+
+struct GpxPoint {
+	int32_t ind;
+	double lat;
+	double lon;
+	double cumDist;
+	SHARED_PTR<RouteSegmentPoint> pnt;
+	vector<SHARED_PTR<RouteSegmentResult>> routeToTarget;
+	vector<SHARED_PTR<RouteSegmentResult>> stepBackRoute;
+	int targetInd = -1;
+	bool straightLine = false;
+
+	GpxPoint(int32_t ind, double lat, double lon, double cumDist)
+		: ind(ind), lat(lat), lon(lon), cumDist(cumDist){};
 };
 
 #endif /*_OSMAND_ROUTE_SEGMENT_H*/

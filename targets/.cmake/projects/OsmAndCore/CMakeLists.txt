@@ -80,6 +80,7 @@ add_library(osmand SHARED
 	"${ROOT}/src/binaryRead.cpp"
 	"${ROOT}/src/precalculatedRouteDirection.cpp"
 	"${ROOT}/src/generalRouter.cpp"
+	"${ROOT}/src/binaryRoutePlanner.cpp"
 	"${ROOT}/src/transportRouteResultSegment.cpp"
 	"${ROOT}/src/transportRoutingObjects.cpp"
 	"${ROOT}/src/transportRouteSegment.cpp"
@@ -87,12 +88,15 @@ add_library(osmand SHARED
 	"${ROOT}/src/transportRoutingConfiguration.cpp"
 	"${ROOT}/src/transportRoutingContext.cpp"
 	"${ROOT}/src/transportRoutePlanner.cpp"
-	"${ROOT}/src/binaryRoutePlanner.cpp"
-	"${ROOT}/src/proto/osmand_index.pb.cc"
-	"${ROOT}/src/java_wrap.cpp"
 	"${ROOT}/src/transportRouteStopsReader.cpp"
 	"${ROOT}/src/routeDataBundle.cpp"
 	"${ROOT}/src/routeDataResources.cpp"
+	"${ROOT}/src/routePlannerFrontEnd.cpp"
+	"${ROOT}/src/routeResultPreparation.cpp"
+	"${ROOT}/src/routeSegmentResult.cpp"
+	"${ROOT}/src/turnType.cpp"
+	"${ROOT}/src/proto/osmand_index.pb.cc"
+	"${ROOT}/src/java_wrap.cpp"
 	${pd_sources}
 )
 
