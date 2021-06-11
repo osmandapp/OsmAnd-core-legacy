@@ -41,14 +41,14 @@ int64_t calculateRoutePointId(SHARED_PTR<RouteDataObject>& road, int pntId, int 
 	int positive = nextPntId - pntId;
 	int pntLen = road->getPointsLength();
 	if (pntId < 0 || nextPntId < 0 || pntId >= pntLen || nextPntId >= pntLen || (positive != -1 && positive != 1)) {
-		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "Assert failed route point");
+		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "Assert failed route point (should never happen)");
 	}
 	return (road->id << ROUTE_POINTS) + (pntId << 1) + (positive > 0 ? 1 : 0);
 }
 
 int64_t calculateRoutePointId(SHARED_PTR<RouteSegment>& segm) {
 	return calculateRoutePointId(segm->getRoad(), segm->getSegmentStart(),
-		segm->isPositive() ? segm->getSegmentStart() : segm->getSegmentStart() - 1);
+								 segm->isPositive() ? segm->getSegmentStart() + 1 : segm->getSegmentStart() - 1);
 }
 
 static double estimatedDistance(RoutingContext* ctx, int targetEndX, int targetEndY, int startX, int startY) {
@@ -482,11 +482,19 @@ void processRouteSegment(RoutingContext* ctx, bool reverseWaySearch, SEGMENTS_QU
 		}
 		if (segmentPoint < 0 || segmentPoint >= road->getPointsLength()) {
 			directionAllowed = false;
-			continue;
+			break;
 		}
+		// store <segment> in order to not have unique <segment, direction> in visitedSegments
 		int64_t nextPntId = calculateRoutePointId(segment->road, prevSegmentPoint, segmentPoint);
-		SHARED_PTR<RouteSegment> toInsert = (previous) ? previous : segment;
-		SHARED_PTR<RouteSegment> existingSegment = visitedSegments[nextPntId] = toInsert;
+		SHARED_PTR<RouteSegment> &toInsert = previous != nullptr ? previous : segment;
+		SHARED_PTR<RouteSegment> &existingSegment = visitedSegments[nextPntId];
+		if (existingSegment != nullptr && toInsert->distanceFromStart > existingSegment->distanceFromStart) {
+			// leave the original segment (test case with large area way)
+			directionAllowed = false;
+			break;
+		} else {
+			visitedSegments[nextPntId] = toInsert;
+		}
 		int x = road->pointsX[segmentPoint];
 		int y = road->pointsY[segmentPoint];
 		int prevx = road->pointsX[prevSegmentPoint];
@@ -502,13 +510,13 @@ void processRouteSegment(RoutingContext* ctx, bool reverseWaySearch, SEGMENTS_QU
 		double obstacle = ctx->config->router->defineRoutingObstacle(road, segmentPoint, (dir && !reverseWaySearch));
 		if (obstacle < 0) {
 			directionAllowed = false;
-			continue;
+			break;
 		}
 		double heightObstacle = ctx->config->router->defineHeightObstacle(
 			road, !reverseWaySearch ? prevSegmentPoint : segmentPoint, !reverseWaySearch ? segmentPoint : prevSegmentPoint);
 		if (heightObstacle < 0) {
 			directionAllowed = false;
-			continue;
+			break;
 		}
 		bool alreadyVisited = checkIfOppositieSegmentWasVisited(
 			ctx, reverseWaySearch, graphSegments, segment, oppositeSegments, segmentPoint, prevSegmentPoint, segmentDist,
@@ -517,7 +525,7 @@ void processRouteSegment(RoutingContext* ctx, bool reverseWaySearch, SEGMENTS_QU
 		obstaclesTime += heightObstacle;
 		if (alreadyVisited) {
 			directionAllowed = false;
-			continue;
+			break;
 		}
 		// correct way of handling precalculatedRouteDirection
 		if (ctx->precalcRoute != nullptr) {
@@ -549,7 +557,7 @@ void processRouteSegment(RoutingContext* ctx, bool reverseWaySearch, SEGMENTS_QU
 
 		if (!processFurther) {
 			directionAllowed = false;
-			continue;
+			break;
 		}
 	}
 	// if(initDirectionAllowed && ctx.visitor != null){
