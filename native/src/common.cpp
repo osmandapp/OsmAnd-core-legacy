@@ -241,15 +241,34 @@ int findFirstNumberEndIndex(string value) {
 	if (value.length() > 0 && value[0] == '-') {
 		i++;
 	}
+	int state = 0;
 	while (i < value.length() && ((value[i] >= '0' && value[i] <= '9') || value[i] == '.')) {
+		if (value[i] == '.') {
+			if (state == 2) {
+				return i - 1;
+			}
+			if (state != 1)	{
+				return -1;
+			}
+			state = 2;
+		} else {
+			if (state == 2)	{
+				// last digits
+				state = 3;
+			} else if (state == 0) {
+				// first digits started
+				state = 1;
+			}
+		}
 		i++;
-		valid = true;
 	}
-	if (valid) {
-		return i;
-	} else {
+	if (state == 2) {	
+		return i - 1;
+	}
+	if (state == 0) {
 		return -1;
 	}
+	return i;
 }
 
 double parseSpeed(string v, double def) {

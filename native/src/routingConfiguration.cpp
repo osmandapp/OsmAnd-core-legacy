@@ -47,10 +47,10 @@ class RoutingRulesHandler {
 			parseGeneralRouterProfile(attrValue(attrsMap, "baseProfile"), GeneralRouterProfile::CAR);
 		SHARED_PTR<GeneralRouter> currentRouter = std::make_shared<GeneralRouter>(c, attrs);
 		currentRouter->profileName = currentSelectedRouter;
-		//        if (filename.length() > 0) {
-		//            currentRouter->fileName = filename;
-		//            currentSelectedRouter = filename + "/" + currentSelectedRouter;
-		//        }
+		if (filename.length() > 0) {
+			currentRouter->fileName = filename;
+			currentSelectedRouter = filename + "/" + currentSelectedRouter;
+		}
 		config->addRouter(currentSelectedRouter, currentRouter);
 		return currentRouter;
 	}
@@ -178,16 +178,16 @@ class RoutingRulesHandler {
 	}
 };
 
-SHARED_PTR<RoutingConfigurationBuilder> parseRoutingConfigurationFromXml(const char* filename) {
+SHARED_PTR<RoutingConfigurationBuilder> parseRoutingConfigurationFromXml(const char* filePath, const char* fileName) {
 	XML_Parser parser = XML_ParserCreate(NULL);
 	SHARED_PTR<RoutingConfigurationBuilder> config = std::make_shared<RoutingConfigurationBuilder>();
 	RoutingRulesHandler* handler = new RoutingRulesHandler(config);
-	handler->filename = string(filename);
+	handler->filename = string(fileName);
 	XML_SetUserData(parser, handler);
 	XML_SetElementHandler(parser, RoutingRulesHandler::startElementHandler, RoutingRulesHandler::endElementHandler);
-	FILE* file = fopen(filename, "r");
+	FILE* file = fopen(filePath, "r");
 	if (file == NULL) {
-		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "File can not be open %s", filename);
+		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "File can not be open %s", filePath);
 		XML_ParserFree(parser);
 		delete handler;
 		return nullptr;

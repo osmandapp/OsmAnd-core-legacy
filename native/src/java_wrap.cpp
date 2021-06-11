@@ -455,6 +455,7 @@ jmethodID jmethod_RenderedObject_setNativeId = NULL;
 jmethodID jmethod_RenderedObject_setName = NULL;
 jmethodID jmethod_RenderedObject_setOrder = NULL;
 jmethodID jmethod_RenderedObject_setVisible = NULL;
+jmethodID jmethod_RenderedObject_setDrawOnPath = NULL;
 jmethodID jmethod_RenderedObject_setBbox = NULL;
 jmethodID jmethod_RenderedObject_init = NULL;
 jmethodID jmethod_RenderedObject_setLabelX = NULL;
@@ -489,6 +490,12 @@ jfieldID jfield_RoutingConfiguration_planRoadDirection = NULL;
 jfieldID jfield_RoutingConfiguration_routeCalculationTime = NULL;
 jfieldID jfield_RoutingConfiguration_routerName = NULL;
 jfieldID jfield_RoutingConfiguration_router = NULL;
+jmethodID jmethod_RoutingConfiguration_getDirectionPoints = NULL;
+		
+jclass jclass_DirectionPoint = NULL;
+jfieldID jfield_DirectionPoint_x31 = NULL;
+jfieldID jfield_DirectionPoint_y31 = NULL;
+jfieldID jfield_DirectionPoint_tags = NULL;
 
 jclass jclass_GeneralRouter = NULL;
 jfieldID jfield_GeneralRouter_restrictionsAware = NULL;
@@ -851,6 +858,15 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jfield_RoutingConfiguration_router =
 		getFid(env, jclass_RoutingConfiguration, "router", "Lnet/osmand/router/GeneralRouter;");
 
+	jmethod_RoutingConfiguration_getDirectionPoints = 
+		env->GetMethodID(jclass_RoutingConfiguration, "getNativeDirectionPoints", "()[Lnet/osmand/NativeLibrary$NativeDirectionPoint;");	
+
+	jclass_DirectionPoint = findGlobalClass(env, "net/osmand/NativeLibrary$NativeDirectionPoint");
+	jfield_DirectionPoint_x31 = getFid(env, jclass_DirectionPoint, "x31", "I");
+	jfield_DirectionPoint_y31 = getFid(env, jclass_DirectionPoint, "y31", "I");	
+	jfield_DirectionPoint_tags = getFid(env, jclass_DirectionPoint, "tags", "[[Ljava/lang/String;");
+	
+
 	jclass_GeneralRouter = findGlobalClass(env, "net/osmand/router/GeneralRouter");
 	jfield_GeneralRouter_restrictionsAware = getFid(env, jclass_GeneralRouter, "restrictionsAware", "Z");
 	jfield_GeneralRouter_sharpTurn = getFid(env, jclass_GeneralRouter, "sharpTurn", "F");
@@ -871,6 +887,7 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jmethod_RenderedObject_addLocation = env->GetMethodID(jclass_RenderedObject, "addLocation", "(II)V");
 	jmethod_RenderedObject_setOrder = env->GetMethodID(jclass_RenderedObject, "setOrder", "(I)V");
 	jmethod_RenderedObject_setVisible = env->GetMethodID(jclass_RenderedObject, "setVisible", "(Z)V");
+	jmethod_RenderedObject_setDrawOnPath = env->GetMethodID(jclass_RenderedObject, "setDrawOnPath", "(Z)V");
 	jmethod_RenderedObject_setNativeId = env->GetMethodID(jclass_RenderedObject, "setNativeId", "(J)V");
 	jmethod_RenderedObject_setName = env->GetMethodID(jclass_RenderedObject, "setName", "(Ljava/lang/String;)V");
 	jmethod_RenderedObject_setBbox = env->GetMethodID(jclass_RenderedObject, "setBbox", "(IIII)V");
@@ -1022,7 +1039,7 @@ void pullFromJavaRenderingContext(JNIEnv* env, jobject jrc, JNIRenderingContext*
 // ElapsedTimer routingTimer;
 
 jobject convertRenderedObjectToJava(JNIEnv* ienv, MapDataObject* robj, std::string name, SkRect bbox, int order,
-									bool visible) {
+									bool visible, bool drawOnPath) {
 	jobject resobj = ienv->NewObject(jclass_RenderedObject, jmethod_RenderedObject_init);
 	for (uint i = 0; i < robj->types.size(); i++) {
 		jstring ts = ienv->NewStringUTF(robj->types[i].first.c_str());
@@ -1057,6 +1074,7 @@ jobject convertRenderedObjectToJava(JNIEnv* ienv, MapDataObject* robj, std::stri
 	ienv->CallVoidMethod(resobj, jmethod_RenderedObject_setNativeId, robj->id);
 	ienv->CallVoidMethod(resobj, jmethod_RenderedObject_setOrder, order);
 	ienv->CallVoidMethod(resobj, jmethod_RenderedObject_setVisible, visible);
+	ienv->CallVoidMethod(resobj, jmethod_RenderedObject_setDrawOnPath, drawOnPath);
 
 	jstring nm = ienv->NewStringUTF(name.c_str());
 	ienv->CallVoidMethod(resobj, jmethod_RenderedObject_setName, nm);
@@ -1429,6 +1447,35 @@ void parseRouteConfiguration(JNIEnv* ienv, SHARED_PTR<RoutingConfiguration> rCon
 		ienv->ReleaseLongArrayElements(impassableRoadIds, (jlong*)iRi, 0);
 	}
 
+	SkIRect rect = SkIRect::MakeLTRB(0, 0, INT_MAX, INT_MAX);
+	rConfig->directionPoints = quad_tree<SHARED_PTR<DirectionPoint>>(rect, 14, 0.5);
+	jobjectArray directionPoints = (jobjectArray)ienv->CallObjectMethod(jRouteConfig, jmethod_RoutingConfiguration_getDirectionPoints);
+	for (int j = 0; j < ienv->GetArrayLength(directionPoints); j++) {
+		jobject jdp = ienv->GetObjectArrayElement(directionPoints, j);
+		SHARED_PTR<DirectionPoint> dp = std::make_shared<DirectionPoint>();
+		dp->x31 = ienv->GetIntField(jdp, jfield_DirectionPoint_x31);
+		dp->y31 = ienv->GetIntField(jdp, jfield_DirectionPoint_y31);
+		jobjectArray tagsKeyValue = (jobjectArray)ienv->GetObjectField(jdp, jfield_DirectionPoint_tags);
+		for (int s = 0; s < ienv->GetArrayLength(tagsKeyValue); s++) {
+			jobjectArray jstrArr = (jobjectArray)ienv->GetObjectArrayElement(tagsKeyValue, s);
+			if(ienv->GetArrayLength(jstrArr) > 0) {
+				jobject jkey = (jobject)ienv->GetObjectArrayElement(jstrArr, 0);
+				jobject jvalue = (jobject)ienv->GetObjectArrayElement(jstrArr, 1);
+				const char* key = ienv->GetStringUTFChars((jstring)jkey, NULL);
+				const char* value = ienv->GetStringUTFChars((jstring)jvalue, NULL);
+				dp->tags.push_back(std::make_pair((std::string)key, (std::string)value));
+				ienv->DeleteLocalRef(jkey);
+				ienv->DeleteLocalRef(jvalue);
+			}
+			ienv->DeleteLocalRef(jstrArr);
+		}		
+		ienv->DeleteLocalRef(tagsKeyValue);
+		ienv->DeleteLocalRef(jdp);
+		SkIRect rectDp = SkIRect::MakeLTRB(dp->x31, dp->y31, dp->x31, dp->y31);
+        rConfig->directionPoints.insert(dp, rectDp);
+	}
+	ienv->DeleteLocalRef(directionPoints);
+
 	ienv->DeleteLocalRef(impassableRoadIds);
 	ienv->DeleteLocalRef(objectAttributes);
 	ienv->DeleteGlobalRef(router);
@@ -1486,7 +1533,9 @@ extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_nativeRo
 
 	// convert results
 	jobjectArray res = ienv->NewObjectArray(r.size(), jclass_RouteSegmentResult, NULL);
+	int prevX = 0, prevY = 0;
 	for (uint i = 0; i < r.size(); i++) {
+		clearDirectionPointFromRouteResult(r[i]);
 		jobject resobj = convertRouteSegmentResultToJava(ienv, r[i], indexes, regions);
 		ienv->SetObjectArrayElement(res, i, resobj);
 		ienv->DeleteLocalRef(resobj);
@@ -1893,7 +1942,8 @@ extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_searchRe
 				((searchText[i]->visible && !searchText[i]->drawOnPath && !searchText[i]->path) || notvisible)) {
 				jobject jo = convertRenderedObjectToJava(ienv, &searchText[i]->object, searchText[i]->text,
 														 searchText[i]->bounds, searchText[i]->textOrder,
-														 searchText[i]->visible);
+														 searchText[i]->visible,
+														 searchText[i]->drawOnPath || searchText[i]->path);
 				collected.push_back(jo);
 				intersects = true;
 			}
@@ -1903,7 +1953,7 @@ extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_searchRe
 		for (uint32_t i = 0; i < icons.size(); i++) {
 			if (SkRect::Intersects(icons[i]->bbox, bbox) && (icons[i]->visible || notvisible)) {
 				jobject jo = convertRenderedObjectToJava(ienv, &icons[i]->object, "", icons[i]->bbox, icons[i]->order,
-														 icons[i]->visible);
+														 icons[i]->visible, false);
 
 				jstring nm = ienv->NewStringUTF(icons[i]->bmpId.c_str());
 				ienv->CallVoidMethod(jo, jmethod_RenderedObject_setIconRes, nm);
@@ -2072,4 +2122,28 @@ std::string JNIRenderingContext::getReshapedString(const std::string& name) {
 
 	this->env->DeleteLocalRef(n);
 	return res;
+}
+
+void clearDirectionPointFromRouteResult(SHARED_PTR<RouteSegmentResult> r ) {
+	// Delete dynamicaly DirectionPoint types for backward compatibility with Java (avoid crash in BinaryMapRouteReaderAdapter quickGetEncodingRule)
+	uint32_t createType = r->object->region->findOrCreateRouteType(DirectionPoint_TAG, DirectionPoint_CREATE_TYPE);
+	uint32_t deleteType = r->object->region->findOrCreateRouteType(DirectionPoint_TAG, DirectionPoint_DELETE_TYPE);
+	int clearPointIndex = -1;
+	for (int i = 0; i < r->object->pointTypes.size() && i < r->object->pointsX.size(); i++) {
+		if (r->object->pointTypes[i].size() > 0) {
+			for (int k = 0; k < r->object->pointTypes[i].size(); k++) {
+				if (r->object->pointTypes[i][k] == createType || r->object->pointTypes[i][k] == deleteType) {
+					clearPointIndex = i;
+					break;
+				}
+			}
+			if (clearPointIndex != -1) {
+				break;
+			}
+		}
+	}
+	if (clearPointIndex != -1) {
+		std::vector<uint32_t> empty;
+		r->object->pointTypes[clearPointIndex] = empty;
+	}	
 }
