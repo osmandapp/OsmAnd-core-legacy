@@ -1,5 +1,6 @@
 #ifndef _OSMAND_ROUTE_SEGMENT_RESULT_CPP
 #define _OSMAND_ROUTE_SEGMENT_RESULT_CPP
+#include <iomanip> 
 #include "routeSegmentResult.h"
 
 #include "routeDataBundle.h"
@@ -371,5 +372,15 @@ vector<SHARED_PTR<RouteSegmentResult>> RouteSegmentResult::getAttachedRoutes(int
 		return attachedRoutesFrontEnd[st];
 	}
 }
+
+LatLon convertPoint(SHARED_PTR<RouteDataObject> o, int ind) {
+	return LatLon(get31LatitudeY(o->pointsY[ind]), get31LongitudeX(o->pointsX[ind]));
+}
+
+LatLon RouteSegmentResult::getStartPoint() { return convertPoint(object, startPointIndex); }
+
+LatLon RouteSegmentResult::getEndPoint() { return convertPoint(object, endPointIndex); }
+
+LatLon RouteSegmentResult::getPoint(int i) { return convertPoint(object, i); }
 
 #endif /*_OSMAND_ROUTE_SEGMENT_RESULT_CPP*/

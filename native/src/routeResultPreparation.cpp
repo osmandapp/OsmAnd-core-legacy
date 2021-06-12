@@ -3,6 +3,7 @@
 #include "routingContext.h"
 #include "routeSegment.h"
 #include "routeSegmentResult.h"
+#include "routeResultPreparation.h"
 #include "turnType.h"
 #include "binaryRoutePlanner.h"
 #include "multipolygons.h"
@@ -11,7 +12,6 @@ const int MAX_SPEAK_PRIORITY = 5;
 const float TURN_DEGREE_MIN = 45;
 const float UNMATCHED_TURN_DEGREE_MINIMUM = 45;
 const float SPLIT_TURN_DEGREE_NOT_STRAIGHT = 100;
-const string UNMATCHED_HIGHWAY_TYPE = "unmatched";
 
 struct RoadSplitStructure {
     bool keepLeft = false;
