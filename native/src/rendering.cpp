@@ -13,6 +13,7 @@
 #include <SkPathEffect.h>
 #include <SkShader.h>
 #include <SkTypes.h>
+#include <SkImageFilter.h>
 #include <math.h>
 #include <stdio.h>
 #include <time.h>
@@ -35,7 +36,6 @@ const int MAX_V_AREA = 2000;
 const int DEFAULT_POLYGON_MAX = 11;
 const int DEFAULT_LINE_MAX = 100;
 const int DEFAULT_POINTS_MAX = 200;
-const int POI_ZOOM_SHIFT = 7;
 const int POINT_DRAW_ZOOM_FILTER = 16;
 #if defined(WIN32)
 #undef min
@@ -159,7 +159,7 @@ int updatePaint(RenderingRuleSearchRequest* req, SkPaint* paint, int ind, int ar
 	if (area) {
 		paint->setColorFilter(NULL);
 		paint->setShader(NULL);
-		paint->setLooper(NULL);
+		paint->setImageFilter(NULL);		
 		paint->setStyle(SkPaint::kStrokeAndFill_Style);
 		paint->setStrokeWidth(0);
 	} else {
@@ -167,7 +167,7 @@ int updatePaint(RenderingRuleSearchRequest* req, SkPaint* paint, int ind, int ar
 		if (!(stroke > 0)) return 0;
 		paint->setColorFilter(NULL);
 		paint->setShader(NULL);
-		paint->setLooper(NULL);
+		paint->setImageFilter(NULL);
 
 		paint->setStyle(SkPaint::kStroke_Style);
 		paint->setStrokeWidth(stroke);
@@ -199,8 +199,7 @@ int updatePaint(RenderingRuleSearchRequest* req, SkPaint* paint, int ind, int ar
 		if (shader.size() > 0) {
 			SkBitmap* bmp = getCachedBitmap(rc, shader);
 			if (bmp != NULL) {
-				paint->setShader(
-					SkShader::MakeBitmapShader(*bmp, SkShader::kRepeat_TileMode, SkShader::kRepeat_TileMode));
+				paint->setShader(bmp->makeShader(SkTileMode::kRepeat, SkTileMode::kRepeat));
 				if (color == 0) {
 					paint->setColor(0xffffffff);
 				}
@@ -217,9 +216,11 @@ int updatePaint(RenderingRuleSearchRequest* req, SkPaint* paint, int ind, int ar
 		}
 		if (shadowColor == 0) shadowLayer = 0;
 
-		if (shadowLayer > 0)
-			paint->setLooper(
-				SkBlurDrawLooper::Make(shadowColor, SkBlurMaskFilter::ConvertRadiusToSigma(shadowLayer), 0, 0));
+		//if (shadowLayer > 0)
+			//SkScalar sigma = SkBlurMaskFilter::ConvertRadiusToSigma(shadowLayer);
+			//paint->setImageFilter(SkImageFilters::DropShadow(0, 0, sigma, sigma, (uint32_t)shadowColor, nullptr));
+			/*paint->setLooper(
+				SkBlurDrawLooper::Make(shadowColor, SkBlurMaskFilter::ConvertRadiusToSigma(shadowLayer), 0, 0));*/
 	}
 	return 1;
 }
@@ -313,20 +314,20 @@ void renderText(MapDataObject* obj, RenderingRuleSearchRequest* req, RenderingCo
 void drawPolylineShadow(SkCanvas* cv, SkPaint* paint, RenderingContext* rc, SkPath* path, int shadowColor,
 						int shadowRadius) {
 	// blurred shadows
-	if (rc->getShadowRenderingMode() == 2 && shadowRadius > 0) {
-		// simply draw shadow? difference from option 3 ?
-		// paint->setColor(0xffffffff);
-		paint->setLooper(
-			SkBlurDrawLooper::Make(shadowColor, SkBlurMaskFilter::ConvertRadiusToSigma(shadowRadius), 0, 0));
-		PROFILE_NATIVE_OPERATION(rc, cv->drawPath(*path, *paint));
-	}
+	//if (rc->getShadowRenderingMode() == 2 && shadowRadius > 0) {
+	//	// simply draw shadow? difference from option 3 ?
+	//	// paint->setColor(0xffffffff);
+	//	paint->setLooper(
+	//		SkBlurDrawLooper::Make(shadowColor, SkBlurMaskFilter::ConvertRadiusToSigma(shadowRadius), 0, 0));
+	//	PROFILE_NATIVE_OPERATION(rc, cv->drawPath(*path, *paint));
+	//}
 
 	// option shadow = 3 with solid border
 	if (rc->getShadowRenderingMode() == 3 && shadowRadius > 0) {
-		paint->setLooper(NULL);
+		paint->setImageFilter(NULL);
 		paint->setStrokeWidth(paint->getStrokeWidth() + shadowRadius * 2);
 		//		paint->setColor(0xffbababa);
-		paint->setColorFilter(SkColorFilter::MakeModeFilter(shadowColor, SkBlendMode::kSrcIn));
+		paint->setColorFilter(SkColorFilters::Blend((uint32_t)shadowColor, SkBlendMode::kSrcIn));
 		//		paint->setColor(shadowColor);
 		PROFILE_NATIVE_OPERATION(rc, cv->drawPath(*path, *paint));
 	}
@@ -695,12 +696,6 @@ bool contains(vector<pair<int, int>>& points, int x, int y) {
 	return countIntersections(points, x, y) % 2 == 1;
 }
 
-/*std::pair<int, int> fixZoomPOI(std::pair<int, int> p) {
-	p.first = (p.first >> POI_ZOOM_SHIFT) << POI_ZOOM_SHIFT;
-	p.second = (p.second >> POI_ZOOM_SHIFT) << POI_ZOOM_SHIFT;
-	return p;
-}*/
-
 void drawPolygon(MapDataObject* mObj, RenderingRuleSearchRequest* req, SkCanvas* cv, SkPaint* paint,
 				 RenderingContext* rc, tag_value pair, const MapDataObjectPrimitive& prim) {
 	size_t length = mObj->points.size();
@@ -792,7 +787,7 @@ void drawPolygon(MapDataObject* mObj, RenderingRuleSearchRequest* req, SkCanvas*
 	}
 	std::vector<coordinates> polygonInnerCoordinates = mObj->polygonInnerCoordinates;
 	if (polygonInnerCoordinates.size() > 0) {
-		path.setFillType(SkPath::kEvenOdd_FillType);
+		path.setFillType(SkPathFillType::kEvenOdd);
 		for (uint j = 0; j < polygonInnerCoordinates.size(); j++) {
 			coordinates cs = polygonInnerCoordinates.at(j);
 			for (uint i = 0; i < cs.size(); i++) {

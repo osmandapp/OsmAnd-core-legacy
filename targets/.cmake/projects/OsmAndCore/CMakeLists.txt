@@ -4,6 +4,7 @@ include("../../common.cmake")
 
 set(ROOT "${OSMAND_ROOT}/native")
 include_directories(AFTER SYSTEM
+	"${OSMAND_ROOT}/externals/skia/upstream.patched"
 	"${OSMAND_ROOT}/externals/skia/upstream.patched/include/core"
 	"${OSMAND_ROOT}/externals/skia/upstream.patched/include/codec"
 	"${OSMAND_ROOT}/externals/skia/upstream.patched/include/images"
@@ -16,6 +17,8 @@ include_directories(AFTER SYSTEM
 	"${OSMAND_ROOT}/externals/skia/upstream.patched/src/core"
 	"${OSMAND_ROOT}/externals/skia/upstream.patched/third_party/externals/expat/lib"
 	"${OSMAND_ROOT}/externals/skia/upstream.patched/third_party/externals/freetype/include"
+	"${OSMAND_ROOT}/externals/skia/upstream.patched/src/shaders"
+	"${OSMAND_ROOT}/externals/skia/upstream.patched/third_party/externals/icu/source/common"
 	#"${OSMAND_ROOT}/externals/giflib/upstream.patched/lib"
 	"${OSMAND_ROOT}/externals/skia/upstream.patched/third_party/externals/libjpeg-turbo"
 	"${OSMAND_ROOT}/externals/skia/upstream.patched/third_party/libpng"
@@ -99,4 +102,5 @@ add_library(osmand SHARED
 target_link_libraries(osmand LINK_PUBLIC
 	skia_osmand
 	protobuf_osmand
+	harfbuzz
 )

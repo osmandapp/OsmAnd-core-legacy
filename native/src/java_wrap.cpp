@@ -1530,7 +1530,6 @@ extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_nativeRo
 
 	// convert results
 	jobjectArray res = ienv->NewObjectArray(r.size(), jclass_RouteSegmentResult, NULL);
-	int prevX = 0, prevY = 0;
 	for (uint i = 0; i < r.size(); i++) {
 		clearDirectionPointFromRouteResult(r[i]);
 		jobject resobj = convertRouteSegmentResultToJava(ienv, r[i], indexes, regions);
@@ -1813,8 +1812,7 @@ jobject convertTransportRouteToJava(JNIEnv* ienv, SHARED_PTR<TransportRoute>& ro
 		tmpIds[k] = (jlong)route->forwardWays.at(k)->id;
 		int nsize = route->forwardWays.at(k)->nodes.size();
 		jdoubleArray j_wayNodesLats = ienv->NewDoubleArray(nsize);
-		jdoubleArray j_wayNodesLons = ienv->NewDoubleArray(nsize);
-		jlong tmpNodesIds[nsize];
+		jdoubleArray j_wayNodesLons = ienv->NewDoubleArray(nsize);		
 		jdouble tmpNodesLats[nsize];
 		jdouble tmpNodesLons[nsize];
 		for (n = 0; n < nsize; n++) {
@@ -2069,13 +2067,12 @@ SkBitmap* JNIRenderingContext::getCachedBitmap(const std::string& bitmapResource
 
 		return NULL;
 	}
-	SkPMColor ctStorage[256];
-	sk_sp<SkColorTable> ctable(new SkColorTable(ctStorage, 256));
-	int count = ctable->count();
+	//SkPMColor ctStorage[256];
+	//sk_sp<SkColorTable> ctable(new SkColorTable(ctStorage, 256));
+	//int count = ctable->count();
 	SkBitmap* iconBitmap = new SkBitmap();
-	if (!iconBitmap->tryAllocPixels(gen->getInfo(), nullptr, ctable.get()) ||
-		!gen->getPixels(gen->getInfo().makeColorSpace(nullptr), iconBitmap->getPixels(), iconBitmap->rowBytes(),
-						const_cast<SkPMColor*>(ctable->readColors()), &count)) {
+	if (!iconBitmap->tryAllocPixels(gen->getInfo()) ||
+		!gen->getPixels(gen->getInfo(), iconBitmap->getPixels(), iconBitmap->rowBytes())) {
 		delete iconBitmap;
 
 		this->nativeOperations.Start();

@@ -13,6 +13,8 @@ OSMAND_SKIA := $(LOCAL_PATH)/../../../externals/skia/upstream.patched
 OSMAND_EXPAT := $(LOCAL_PATH)/../../../externals/skia/upstream.patched/third_party/externals/expat
 OSMAND_CORE_RELATIVE := ../../../native
 OSMAND_CORE := $(LOCAL_PATH)/$(OSMAND_CORE_RELATIVE)
+OSMAND_HARFBUZZ_ROOT := ../../../externals/harfbuzz
+OSMAND_HARFBUZZ := $(LOCAL_PATH)/$(OSMAND_HARFBUZZ_ROOT)
 
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/src \
     $(OSMAND_PROTOBUF)/src \
@@ -26,10 +28,12 @@ LOCAL_C_INCLUDES := $(LOCAL_PATH)/src \
 	$(OSMAND_SKIA)/include/images \
 	$(OSMAND_SKIA)/include/ports \
 	$(OSMAND_SKIA)/include/utils \
+	$(OSMAND_SKIA)/include/shaders \
 	$(OSMAND_SKIA)/include/utils/android \
 	$(OSMAND_SKIA)/src/core \
 	$(OSMAND_CORE)/include \
-	$(OSMAND_CORE)/src
+	$(OSMAND_CORE)/src \
+	$(OSMAND_HARFBUZZ)/src
 
 LOCAL_CPP_EXTENSION := .cc .cpp
 LOCAL_SRC_FILES := \
@@ -86,7 +90,10 @@ LOCAL_STATIC_LIBRARIES := \
 	osmand_png \
 	osmand_expat
 
-LOCAL_WHOLE_STATIC_LIBRARIES := osmand_skia
+LOCAL_WHOLE_STATIC_LIBRARIES := \
+	osmand_skia \
+	osmand_harfbuzz
+
 
 LOCAL_LDLIBS := -lz -llog -ldl -ljnigraphics
 # example of local shared library
