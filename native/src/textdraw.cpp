@@ -5,7 +5,7 @@
 #include <SkTypeface.h>
 #include <SkTypes.h>
 #include <SkUtils.h>
-#include <SKFont.h>
+#include <SkFont.h>
 #include <SkFontMetrics.h>
 #include <SkPathMeasure.h>
 #include <SkRSXform.h>
@@ -83,8 +83,9 @@ bool containsText(SkTypeface* typeface, std::string textString) {
 	return true;
 }
 
-const sk_sp<SkTypeface> FontRegistry::registerStream(const char* pathToFont, uint32_t length/*not used*/, string fontName, bool bold,
+const sk_sp<SkTypeface> FontRegistry::registerStream(const char* pathToFont, string fontName, bool bold,
 													 bool italic) {
+	//OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Ivan font path %s", pathToFont);
 	FontEntry* entry = new FontEntry(pathToFont, 0);
 	if (!entry->fSkiaTypeface) {
 		return nullptr;
@@ -107,6 +108,7 @@ void FontRegistry::updateFontEntry(FontEntry* fontEntry, std::string text, bool 
 			continue;
 		}
 		fontEntry = cache[i];
+		//OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Ivan FOUND font path %s", fontEntry->pathToFont.c_str());
 		bestMatchTypeface = cache[i]->fSkiaTypeface;
 		// If this entry fully matches the request, stop search
 		if (cache[i]->bold == bold && cache[i]->italic == italic) break;
@@ -115,6 +117,7 @@ void FontRegistry::updateFontEntry(FontEntry* fontEntry, std::string text, bool 
 	// If there's no best match, fallback to default typeface
 	if (bestMatchTypeface == nullptr) {
 		fontEntry = new FontEntry();
+		//OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Ivan FOUND ALTERNATIVE font path %s", fontEntry->pathToFont.c_str());
 	}
 }
 

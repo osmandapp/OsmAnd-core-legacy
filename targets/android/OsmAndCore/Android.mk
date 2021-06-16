@@ -31,6 +31,7 @@ LOCAL_C_INCLUDES := $(LOCAL_PATH)/src \
 	$(OSMAND_SKIA)/include/shaders \
 	$(OSMAND_SKIA)/include/utils/android \
 	$(OSMAND_SKIA)/src/core \
+	${OSMAND_SKIA}/src/shaders \
 	$(OSMAND_CORE)/include \
 	$(OSMAND_CORE)/src \
 	$(OSMAND_HARFBUZZ)/src

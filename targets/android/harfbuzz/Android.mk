@@ -6,7 +6,7 @@ LOCAL_ARM_MODE := arm
 LOCAL_MODULE_TAGS := optional
 
 PROJECT_ROOT_RELATIVE := ../../../../platforms/android/OsmAnd
-OSMAND_HARFBUZZ_RELATIVE := ../../../externals/harfbuzz
+OSMAND_HARFBUZZ_RELATIVE := ../../../externals/skia/upstream.patched/third_party/externals/harfbuzz
 OSMAND_HARFBUZZ := $(LOCAL_PATH)/$(OSMAND_HARFBUZZ_RELATIVE)
 
 LOCAL_C_INCLUDES += $(OSMAND_HARFBUZZ)/src

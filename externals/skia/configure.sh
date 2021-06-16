@@ -15,11 +15,11 @@ fi
 
 # Download
 echo "Downloading new upstream..."
-VERSION="android/oreo"
+VERSION="android/11-release"
 mkdir -p "$SRCLOC/upstream.original"
 (cd "$SRCLOC/upstream.original" && \
 	git init && \
-	git remote add origin -t $VERSION https://github.com/osmandapp/OsmAnd-external-skia.git && \
+	git remote add origin -t $VERSION https://github.com/google/skia.git && \
 	git fetch --depth=1 && \
 	git checkout $VERSION)
 
@@ -40,5 +40,9 @@ fi
 cd $SRCLOC/upstream.patched/tools
 ./git-sync-deps
 
+VERSION_HARFBUZZ="b37f03f" #2.8.1
+(cd $SRCLOC/upstream.patched/third_party/externals/harfbuzz && \
+	git checkout $VERSION_HARFBUZZ)
+	
 #Patch jerror.c after git sync, before it is not available
 patch $SRCLOC/upstream.patched/third_party/externals/libjpeg-turbo/jerror.c $SRCLOC/patches/12-libjpeg-jerror.after_git_sync_patch
