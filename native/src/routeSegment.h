@@ -105,6 +105,8 @@ struct RouteSegment {
 
 struct RouteSegmentPoint : RouteSegment {
 	RouteSegmentPoint(SHARED_PTR<RouteDataObject>& road, int segmentStart) : RouteSegment(road, segmentStart) {}
+	RouteSegmentPoint(SHARED_PTR<RouteSegmentPoint>& pnt) : RouteSegment(pnt->road, pnt->segmentStart),
+		/*distSquare(pnt->distSquare),*/ preciseX(pnt->preciseX), preciseY(pnt->preciseY) {}
 	double dist;
 	int preciseX;
 	int preciseY;
@@ -132,6 +134,9 @@ struct GpxPoint {
 
 	GpxPoint(int32_t ind, double lat, double lon, double cumDist)
 		: ind(ind), lat(lat), lon(lon), cumDist(cumDist){};
+	
+	GpxPoint(const SHARED_PTR<GpxPoint>& p)
+		: ind(p->ind), lat(p->lat), lon(p->lon), cumDist(p->cumDist){};
 };
 
 #endif /*_OSMAND_ROUTE_SEGMENT_H*/
