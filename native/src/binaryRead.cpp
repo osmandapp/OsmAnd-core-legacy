@@ -140,13 +140,15 @@ void RouteDataObject::processConditionalTags(const tm& time) {
 				for (; ks < sz; ks++) {
 					auto& toReplace = region->quickGetEncodingRule(types[ks]);
 					if (toReplace.getTag() == nonCondTag) {
-						types[ks] = vl;
 						break;
 					}
 				}
-				if (ks == sz) {
-					types.push_back(vl);
-				}
+                if (ks == sz) {
+                    std::vector<uint32_t> ntypes(sz + 1);
+                    ntypes.insert(ntypes.begin(), types.begin(), types.end());
+                    types = ntypes;
+                }
+                types[ks] = vl;
 			}
 		}
 	}
