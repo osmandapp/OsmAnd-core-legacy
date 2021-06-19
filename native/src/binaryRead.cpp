@@ -143,12 +143,12 @@ void RouteDataObject::processConditionalTags(const tm& time) {
 						break;
 					}
 				}
-                if (ks == sz) {
-                    std::vector<uint32_t> ntypes(sz + 1);
-                    ntypes.insert(ntypes.begin(), types.begin(), types.end());
-                    types = ntypes;
-                }
-                types[ks] = vl;
+				if (ks == sz) {
+					std::vector<uint32_t> ntypes(sz + 1);
+					ntypes.insert(ntypes.begin(), types.begin(), types.end());
+					types = ntypes;
+				}
+				types[ks] = vl;
 			}
 		}
 	}
