@@ -10,6 +10,7 @@
 #include "CommonCollections.h"
 #include "binaryRead.h"
 #include "binaryRoutePlanner.h"
+#include "routePlannerFrontEnd.h"
 #include "java_renderRules.h"
 #include "java_wrap.h"
 #include "rendering.h"
@@ -1491,11 +1492,8 @@ void addLongField(JNIEnv* ienv, jobject obj, jfieldID fid, jlong val) {
 	ienv->SetLongField(obj, fid, ienv->GetLongField(obj, fid) + val);
 }
 
-extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_nativeRouting(
-	JNIEnv* ienv, jobject obj, jobject jCtx, jfloat initDirection, jobjectArray regions, bool basemap) {
+RoutingContext* getRoutingContext(JNIEnv* ienv, jobject jCtx, jfloat initDirection, bool basemap, jobject progress) {
 	jobject jRouteConfig = ienv->GetObjectField(jCtx, jfield_RoutingContext_config);
-	jobject precalculatedRoute = ienv->GetObjectField(jCtx, jfield_RoutingContext_precalculatedRouteDirection);
-	jobject progress = ienv->GetObjectField(jCtx, jfield_RoutingContext_calculationProgress);
 
 	RoutingContext* c = (RoutingContext*)ienv->GetLongField(jCtx, jfield_RoutingContext_nativeRoutingContext);
 	if (c == NULL) {
@@ -1519,6 +1517,16 @@ extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_nativeRo
 	c->basemap = basemap;
 	c->setConditionalTime(c->config->routeCalculationTime);
 	c->publicTransport = ienv->GetBooleanField(jCtx, jfield_RoutingContext_publicTransport);
+	ienv->DeleteLocalRef(jRouteConfig);
+	return c;
+}
+
+extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_nativeRouting(
+	JNIEnv* ienv, jobject obj, jobject jCtx, jfloat initDirection, jobjectArray regions, bool basemap) {
+	jobject precalculatedRoute = ienv->GetObjectField(jCtx, jfield_RoutingContext_precalculatedRouteDirection);
+	jobject progress = ienv->GetObjectField(jCtx, jfield_RoutingContext_calculationProgress);
+
+	RoutingContext* c = getRoutingContext(ienv, jCtx, initDirection, basemap, progress);
 
 	parsePrecalculatedRoute(ienv, c, precalculatedRoute);
 	vector<SHARED_PTR<RouteSegmentResult>> r = searchRouteInternal(c, false);
@@ -1576,7 +1584,6 @@ extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_nativeRo
 		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "No route found");
 	}
 	fflush(stdout);
-	ienv->DeleteLocalRef(jRouteConfig);
 	ienv->DeleteLocalRef(progress);
 	ienv->DeleteLocalRef(precalculatedRoute);
 	if (c != NULL && !ienv->GetBooleanField(jCtx, jfield_RoutingContext_keepNativeRoutingContext)) {
