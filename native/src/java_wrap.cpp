@@ -666,13 +666,8 @@ jfieldID jfield_NativeTransportStop_pTStopExit_y31s = NULL;
 jfieldID jfield_NativeTransportStop_pTStopExit_refs = NULL;
 jmethodID jmethod_NativeTransportStop_init = NULL;
 
-jclass jclass_ArrayList;
-jmethodID jmethod_ArrayList_init;
-jmethodID jmethod_ArrayList_add;
-
 jclass jclass_GpxPoint;
 jmethodID jmethod_GpxPoint_init;
-jmethodID jmethod_GpxPoint_init_full;
 jmethodID jmethod_GpxPoint_addRouteToTarget;
 jmethodID jmethod_GpxPoint_addStepBackRoute;
 jfieldID jfield_GpxPoint_ind = NULL;
@@ -683,6 +678,8 @@ jfieldID jfield_GpxPoint_routeToTarget = NULL;
 jfieldID jfield_GpxPoint_stepBackRoute = NULL;
 
 jclass jclass_GpxRouteApproximation = NULL;
+jmethodID jmethod_GpxRouteApproximation_addFinalPoint;
+jmethodID jmethod_GpxRouteApproximation_addResultSegment;
 jfieldID jfield_GpxRouteApproximation_ctx = NULL;
 jfieldID jfield_GpxRouteApproximation_routeCalculations = NULL;
 jfieldID jfield_GpxRouteApproximation_routePointsSearched = NULL;
@@ -1043,13 +1040,8 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jfield_RouteSubregion_bottom = getFid(env, jclass_RouteSubregion, "bottom", "I");
 	jfield_RouteSubregion_shiftToData = getFid(env, jclass_RouteSubregion, "shiftToData", "I");
 
-	jclass_ArrayList = findGlobalClass(env, "java/util/ArrayList");
-	jmethod_ArrayList_init = env->GetMethodID(jclass_ArrayList, "<init>", "(I)V");
-	jmethod_ArrayList_add = env->GetMethodID(jclass_ArrayList, "add", "(Ljava/lang/Object;)Z");
-
 	jclass_GpxPoint = findGlobalClass(env, "net/osmand/router/RoutePlannerFrontEnd$GpxPoint");
-	jmethod_GpxPoint_init = env->GetMethodID(jclass_GpxPoint, "<init>", "()V");
-	jmethod_GpxPoint_init_full = env->GetMethodID(jclass_GpxPoint, "<init>", "(IDDDIZLnet/osmand/router/BinaryRoutePlanner$RouteSegmentPoint;)V");
+	jmethod_GpxPoint_init = env->GetMethodID(jclass_GpxPoint, "<init>", "(IDDDIZLnet/osmand/router/BinaryRoutePlanner$RouteSegmentPoint;)V");
 	jmethod_GpxPoint_addRouteToTarget = env->GetMethodID(jclass_GpxPoint, "addRouteToTarget", "(Lnet/osmand/router/RouteSegmentResult;)V");
 	jmethod_GpxPoint_addStepBackRoute = env->GetMethodID(jclass_GpxPoint, "addStepBackRoute", "(Lnet/osmand/router/RouteSegmentResult;)V");
 	jfield_GpxPoint_ind = getFid(env, jclass_GpxPoint, "ind", "I");
@@ -1061,6 +1053,8 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jfield_GpxPoint_stepBackRoute = getFid(env, jclass_GpxPoint, "stepBackRoute", "Ljava/util/List;");
 
 	jclass_GpxRouteApproximation = findGlobalClass(env, "net/osmand/router/RoutePlannerFrontEnd$GpxRouteApproximation");
+	jmethod_GpxRouteApproximation_addFinalPoint = env->GetMethodID(jclass_GpxRouteApproximation, "addFinalPoint", "(Lnet/osmand/router/RoutePlannerFrontEnd$GpxPoint;)V");
+	jmethod_GpxRouteApproximation_addResultSegment = env->GetMethodID(jclass_GpxRouteApproximation, "addResultSegment", "(Lnet/osmand/router/RouteSegmentResult;)V");
 	jfield_GpxRouteApproximation_ctx =
 		getFid(env, jclass_GpxRouteApproximation, "ctx", "Lnet/osmand/router/RoutingContext;");
 	jfield_GpxRouteApproximation_routeCalculations =
@@ -1070,8 +1064,6 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jfield_GpxRouteApproximation_routeDistCalculations =
 		getFid(env, jclass_GpxRouteApproximation, "routeDistCalculations", "I");
 	jfield_GpxRouteApproximation_result = getFid(env, jclass_GpxRouteApproximation, "result", "Ljava/util/List;");
-	jfield_GpxRouteApproximation_finalPoints =
-		getFid(env, jclass_GpxRouteApproximation, "finalPoints", "Ljava/util/List;");
 
 	jclass_LatLon = findGlobalClass(env, "net/osmand/data/LatLon");
 	jfield_LatLon_lat = env->GetFieldID(jclass_LatLon, "latitude", "D");
@@ -1564,7 +1556,7 @@ void addLongField(JNIEnv* ienv, jobject obj, jfieldID fid, jlong val) {
 
 jobject convertGpxPointToJava(JNIEnv* ienv, SHARED_PTR<GpxPoint> result, UNORDERED(map) < int64_t, int > &indexes, jobjectArray regions) {
 	jobject jRouteSegmentPoint = convertRouteSegmentPointToJava(ienv, result->pnt, indexes, regions);
-	jobject jGpxPoint = ienv->NewObject(jclass_GpxPoint, jmethod_GpxPoint_init_full, result->ind, result->lat, result->lon,
+	jobject jGpxPoint = ienv->NewObject(jclass_GpxPoint, jmethod_GpxPoint_init, result->ind, result->lat, result->lon,
 		result->cumDist, result->targetInd, result->straightLine, jRouteSegmentPoint);
 	for (uint i = 0; i < result->routeToTarget.size(); i++) {
 		jobject resobj = convertRouteSegmentResultToJava(ienv, result->routeToTarget[i], indexes, regions);
@@ -1577,17 +1569,6 @@ jobject convertGpxPointToJava(JNIEnv* ienv, SHARED_PTR<GpxPoint> result, UNORDER
 		ienv->DeleteLocalRef(resobj);
 	}
 	return jGpxPoint;
-}
-
-jobject convertRouteSegmentResultListToJava(JNIEnv* ienv, vector<SHARED_PTR<RouteSegmentResult>> result,
-                                            UNORDERED(map) < int64_t, int > &indexes, jobjectArray regions) {
-	jobject resultList = ienv->NewObject(jclass_ArrayList, jmethod_ArrayList_init, result.size());
-	for (uint i = 0; i < result.size(); i++) {
-		jobject resobj = convertRouteSegmentResultToJava(ienv, result[i], indexes, regions);
-		ienv->CallBooleanMethod(resultList, jmethod_ArrayList_add, resobj);
-		ienv->DeleteLocalRef(resobj);
-	}
-	return resultList;
 }
 
 jobject convertRouteSegmentPointToJava(JNIEnv* env, SHARED_PTR<RouteSegmentPoint> pnt,
@@ -1665,15 +1646,16 @@ extern "C" JNIEXPORT jobject JNICALL Java_net_osmand_NativeLibrary_searchGpxRout
 		ienv->DeleteLocalRef(oreg);
 		indexes[(fp << 31) + ln] = t;
 	}
-	jobject finalPoints = ienv->NewObject(jclass_ArrayList, jmethod_ArrayList_init, r->finalPoints.size());
-	for (uint i = 0; i < r->finalPoints.size(); i++) {
-		jobject resobj = convertGpxPointToJava(ienv, r->finalPoints[i], indexes, regions);
-		ienv->CallBooleanMethod(finalPoints, jmethod_ArrayList_add, resobj);
+	for (uint i = 0; i < r->result.size(); i++) {
+		jobject resobj = convertRouteSegmentResultToJava(ienv, r->result[i], indexes, regions);
+		ienv->CallVoidMethod(jGctx, jmethod_GpxRouteApproximation_addResultSegment, resobj);
 		ienv->DeleteLocalRef(resobj);
 	}
-	ienv->SetObjectField(jGctx, jfield_GpxRouteApproximation_result,
-						 convertRouteSegmentResultListToJava(ienv, r->result, indexes, regions));
-	ienv->SetObjectField(jGctx, jfield_GpxRouteApproximation_finalPoints, finalPoints);
+	for (uint i = 0; i < r->finalPoints.size(); i++) {
+		jobject resobj = convertGpxPointToJava(ienv, r->finalPoints[i], indexes, regions);
+		ienv->CallVoidMethod(jGctx, jmethod_GpxRouteApproximation_addFinalPoint, resobj);
+		ienv->DeleteLocalRef(resobj);
+	}
 	return jGctx;
 }
 
