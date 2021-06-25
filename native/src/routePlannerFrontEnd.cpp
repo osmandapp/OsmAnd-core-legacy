@@ -358,24 +358,23 @@ bool RoutePlannerFrontEnd::stepBackAndFindPrevPointInRoute(SHARED_PTR<GpxRouteAp
 	// 3) to make sure that we perfectly connect to RoadDataObject points
 	double STEP_BACK_DIST = max(gctx->MINIMUM_POINT_APPROXIMATION, gctx->MINIMUM_STEP_APPROXIMATION);
 	double d = 0;
-	uint64_t segmendInd = start->routeToTarget.size() - 1;
+	int64_t segmendInd = start->routeToTarget.size() - 1;
 	bool search = true;
 	start->stepBackRoute.clear();
 mainLoop:
 	for (; segmendInd >= 0 && search; segmendInd--) {
-		RouteSegmentResult rr = *start->routeToTarget[segmendInd];
-		bool minus = rr.getStartPointIndex() < rr.getEndPointIndex();
+		const auto& rr = start->routeToTarget[segmendInd];
+		bool minus = rr->getStartPointIndex() < rr->getEndPointIndex();
 		int nextInd;
-		for (int j = rr.getEndPointIndex(); j != rr.getStartPointIndex(); j = nextInd) {
+		for (int j = rr->getEndPointIndex(); j != rr->getStartPointIndex(); j = nextInd) {
 			nextInd = minus ? j - 1 : j + 1;
-			d += getDistance(rr.getPoint(j).lat, rr.getPoint(j).lon, rr.getPoint(nextInd).lat, rr.getPoint(nextInd).lon);
+			d += getDistance(rr->getPoint(j).lat, rr->getPoint(j).lon, rr->getPoint(nextInd).lat, rr->getPoint(nextInd).lon);
 			if (d > STEP_BACK_DIST) {
-				if (nextInd == rr.getStartPointIndex()) {
+				if (nextInd == rr->getStartPointIndex()) {
 					segmendInd--;
 				} else {
-					start->stepBackRoute.push_back(std::make_shared<RouteSegmentResult>(
-						RouteSegmentResult(rr.object, nextInd, rr.getEndPointIndex())));
-					rr.setEndPointIndex(nextInd);
+					start->stepBackRoute.push_back(std::make_shared<RouteSegmentResult>(rr->object, nextInd, rr->getEndPointIndex()));
+					rr->setEndPointIndex(nextInd);
 				}
 				search = false;
 				goto mainLoop;
@@ -401,6 +400,7 @@ void RoutePlannerFrontEnd::calculateGpxRoute(SHARED_PTR<GpxRouteApproximation>& 
 	RoutingIndex* reg = new RoutingIndex();
 	reg->initRouteEncodingRule(0, "highway", UNMATCHED_HIGHWAY_TYPE);
 	vector<LatLon> lastStraightLine;
+	bool shouldOwnRoutingIndex = true;
 	SHARED_PTR<GpxPoint> straightPointStart;
 	for (int i = 0; i < gpxPoints.size() && !gctx->ctx->progress->isCancelled();) {
 		SHARED_PTR<GpxPoint>& pnt = gpxPoints[i];
@@ -408,7 +408,8 @@ void RoutePlannerFrontEnd::calculateGpxRoute(SHARED_PTR<GpxRouteApproximation>& 
 			LatLon startPoint = LatLon(pnt->routeToTarget[0]->getStartPoint().lat, pnt->routeToTarget[0]->getStartPoint().lon);
 			if (!lastStraightLine.empty()) {
 				lastStraightLine.push_back(startPoint);
-				addStraightLine(gctx, lastStraightLine, straightPointStart, reg);
+				addStraightLine(gctx, lastStraightLine, straightPointStart, reg, shouldOwnRoutingIndex);
+				shouldOwnRoutingIndex = false;
 				lastStraightLine.clear();
 			}
 			if (gctx->distFromLastPoint(startPoint.lat, startPoint.lon) > 1) {
@@ -435,9 +436,10 @@ void RoutePlannerFrontEnd::calculateGpxRoute(SHARED_PTR<GpxRouteApproximation>& 
 		}
 	}
 	if (!lastStraightLine.empty()) {
-		addStraightLine(gctx, lastStraightLine, straightPointStart, reg);
+		addStraightLine(gctx, lastStraightLine, straightPointStart, reg, shouldOwnRoutingIndex);
 	}
-	else {
+	else if (shouldOwnRoutingIndex) {
+		// No object has claimed the region ownership
 		delete reg;
 	}
 	// clean turns to recaculate them
@@ -445,11 +447,19 @@ void RoutePlannerFrontEnd::calculateGpxRoute(SHARED_PTR<GpxRouteApproximation>& 
 }
 
 void RoutePlannerFrontEnd::addStraightLine(SHARED_PTR<GpxRouteApproximation>& gctx, vector<LatLon>& lastStraightLine, SHARED_PTR<GpxPoint>& strPnt,
-	                 RoutingIndex* reg) {
+	                 RoutingIndex* reg, bool shouldOwnRoutingIndex) {
 	SHARED_PTR<RouteDataObject> rdo = std::make_shared<RouteDataObject>(reg);
-	rdo->ownsRegion = true;
+	rdo->ownsRegion = shouldOwnRoutingIndex;
 	if (gctx->SMOOTHEN_POINTS_NO_ROUTE > 0) {
-		simplifyDouglasPeucker(lastStraightLine, gctx->SMOOTHEN_POINTS_NO_ROUTE, 0, (int) lastStraightLine.size() - 1);
+		std::vector<bool> include(lastStraightLine.size(), true);
+		simplifyDouglasPeucker(lastStraightLine, gctx->SMOOTHEN_POINTS_NO_ROUTE, 0, (int) lastStraightLine.size() - 1, include);
+		vector<LatLon> simplifiedLine;
+		for (int i = 0; i < include.size(); i++) {
+			if (include[i]) {
+				simplifiedLine.push_back(lastStraightLine[i]);
+			}
+		}
+		lastStraightLine = simplifiedLine;
 	}
 	uint64_t s = lastStraightLine.size();
 	vector<uint32_t> x;
@@ -504,7 +514,7 @@ void RoutePlannerFrontEnd::cleanupResultAndAddTurns(SHARED_PTR<GpxRouteApproxima
 	}
 }
 
-void RoutePlannerFrontEnd::simplifyDouglasPeucker(vector<LatLon>& l, double eps, int start, int end) {
+void RoutePlannerFrontEnd::simplifyDouglasPeucker(vector<LatLon>& l, double eps, int start, int end, std::vector<bool>& include) {
 	double dmax = -1;
 	int index = -1;
 	LatLon s = l[start];
@@ -518,10 +528,12 @@ void RoutePlannerFrontEnd::simplifyDouglasPeucker(vector<LatLon>& l, double eps,
 		}
 	}
 	if (dmax >= eps) {
-		simplifyDouglasPeucker(l, eps, start, index);
-		simplifyDouglasPeucker(l, eps, index, end);
+		simplifyDouglasPeucker(l, eps, start, index, include);
+		simplifyDouglasPeucker(l, eps, index, end, include);
 	} else {
-		l.erase(l.begin() + start + 1, l.begin() + end);
+		for (int i = start + 1; i < end; i++) {
+			include[i] = false;
+		}
 	}
 }
 
