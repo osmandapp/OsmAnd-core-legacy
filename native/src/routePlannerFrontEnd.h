@@ -90,9 +90,9 @@ private:
 										 SHARED_PTR<GpxPoint>& start, SHARED_PTR<GpxPoint>& next);
 	void calculateGpxRoute(SHARED_PTR<GpxRouteApproximation>& gctx, vector<SHARED_PTR<GpxPoint>>& gpxPoints);
 	void addStraightLine(SHARED_PTR<GpxRouteApproximation>& gctx, vector<LatLon>& lastStraightLine, SHARED_PTR<GpxPoint>& strPnt,
-						 RoutingIndex* reg);
+						 RoutingIndex* reg, bool shouldOwnRegion);
 	void cleanupResultAndAddTurns(SHARED_PTR<GpxRouteApproximation>& gctx);
-	void simplifyDouglasPeucker(vector<LatLon>& l, double eps, int start, int end);
+	void simplifyDouglasPeucker(vector<LatLon>& l, double eps, int start, int end, std::vector<bool>& include);
 	bool pointCloseEnough(SHARED_PTR<GpxRouteApproximation>& gctx, SHARED_PTR<GpxPoint>& ipoint,
 						  vector<SHARED_PTR<RouteSegmentResult>>& res);
 	void makeSegmentPointPrecise(SHARED_PTR<RouteSegmentResult>& routeSegmentResult, double lat, double lon, bool st);
