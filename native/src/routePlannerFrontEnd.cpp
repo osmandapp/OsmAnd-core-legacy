@@ -400,7 +400,7 @@ void RoutePlannerFrontEnd::calculateGpxRoute(SHARED_PTR<GpxRouteApproximation>& 
 	RoutingIndex* reg = new RoutingIndex();
 	reg->initRouteEncodingRule(0, "highway", UNMATCHED_HIGHWAY_TYPE);
 	vector<LatLon> lastStraightLine;
-    bool shouldOwnRoutingIndex = true;
+	bool shouldOwnRoutingIndex = true;
 	SHARED_PTR<GpxPoint> straightPointStart;
 	for (int i = 0; i < gpxPoints.size() && !gctx->ctx->progress->isCancelled();) {
 		SHARED_PTR<GpxPoint>& pnt = gpxPoints[i];
@@ -409,7 +409,7 @@ void RoutePlannerFrontEnd::calculateGpxRoute(SHARED_PTR<GpxRouteApproximation>& 
 			if (!lastStraightLine.empty()) {
 				lastStraightLine.push_back(startPoint);
 				addStraightLine(gctx, lastStraightLine, straightPointStart, reg, shouldOwnRoutingIndex);
-                shouldOwnRoutingIndex = false;
+				shouldOwnRoutingIndex = false;
 				lastStraightLine.clear();
 			}
 			if (gctx->distFromLastPoint(startPoint.lat, startPoint.lon) > 1) {
@@ -439,7 +439,7 @@ void RoutePlannerFrontEnd::calculateGpxRoute(SHARED_PTR<GpxRouteApproximation>& 
 		addStraightLine(gctx, lastStraightLine, straightPointStart, reg, shouldOwnRoutingIndex);
 	}
 	else if (shouldOwnRoutingIndex) {
-        // No object has claimed the region ownership
+		// No object has claimed the region ownership
 		delete reg;
 	}
 	// clean turns to recaculate them
@@ -451,15 +451,15 @@ void RoutePlannerFrontEnd::addStraightLine(SHARED_PTR<GpxRouteApproximation>& gc
 	SHARED_PTR<RouteDataObject> rdo = std::make_shared<RouteDataObject>(reg);
 	rdo->ownsRegion = shouldOwnRoutingIndex;
 	if (gctx->SMOOTHEN_POINTS_NO_ROUTE > 0) {
-        std::vector<bool> include(lastStraightLine.size(), true);
+		std::vector<bool> include(lastStraightLine.size(), true);
 		simplifyDouglasPeucker(lastStraightLine, gctx->SMOOTHEN_POINTS_NO_ROUTE, 0, (int) lastStraightLine.size() - 1, include);
-        vector<LatLon> simplifiedLine;
-        for (int i = 0; i < include.size(); i++) {
-            if (include[i]) {
-                simplifiedLine.push_back(lastStraightLine[i]);
-            }
-        }
-        lastStraightLine = simplifiedLine;
+		vector<LatLon> simplifiedLine;
+		for (int i = 0; i < include.size(); i++) {
+			if (include[i]) {
+				simplifiedLine.push_back(lastStraightLine[i]);
+			}
+		}
+		lastStraightLine = simplifiedLine;
 	}
 	uint64_t s = lastStraightLine.size();
 	vector<uint32_t> x;
@@ -531,9 +531,9 @@ void RoutePlannerFrontEnd::simplifyDouglasPeucker(vector<LatLon>& l, double eps,
 		simplifyDouglasPeucker(l, eps, start, index, include);
 		simplifyDouglasPeucker(l, eps, index, end, include);
 	} else {
-        for (int i = start + 1; i < end; i++) {
-            include[i] = false;
-        }
+		for (int i = start + 1; i < end; i++) {
+			include[i] = false;
+		}
 	}
 }
 
