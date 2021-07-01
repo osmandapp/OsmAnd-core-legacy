@@ -177,7 +177,7 @@ void RouteSegmentResult::fillNames(SHARED_PTR<RouteDataResources>& resources) {
 		object->names = {};
 		for (auto& name : object->namesIds) {
 			uint32_t nameId = name.first;
-			if (nameId > region->routeEncodingRules.size())
+			if (nameId >= region->routeEncodingRules.size())
 				continue;
 			RouteTypeRule& rule = region->quickGetEncodingRule(nameId);
 

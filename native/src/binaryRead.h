@@ -313,6 +313,8 @@ struct RouteDataObject {
 
 	inline bool hasNameTagStartsWith(string tagStartsWith) {
 		for (int nm = 0; nm < namesIds.size(); nm++) {
+			if (namesIds[nm].first >= region->routeEncodingRules.size())
+				continue;
 			auto& rtr = region->quickGetEncodingRule(namesIds[nm].first);
 			if (rtr.getTag().rfind(tagStartsWith, 0) == 0) {
 				return true;
