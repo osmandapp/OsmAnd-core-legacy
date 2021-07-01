@@ -89,10 +89,10 @@ vector<uint32_t> RouteSegmentResult::convertTypes(vector<uint32_t>& types,
 	for (int i = 0; i < types.size(); i++) {
 		uint32_t type = types[i];
 		auto& rule = object->region->quickGetEncodingRule(type);
+		if (rules.find(rule) == rules.end())
+			continue;
 		uint32_t ruleId = rules[rule];
-		if (ruleId) {
-			arr.push_back(ruleId);
-		}
+		arr.push_back(ruleId);
 	}
 	vector<uint32_t> res(arr.size());
 	for (int i = 0; i < arr.size(); i++) {
