@@ -48,6 +48,8 @@ struct DirectionPoint {
             if (c != '0' && a == 0.0) {
                 return NO_ANGLE;
             }
+            a = alignAngleDifference(a * M_PI / 180);
+            a = a * 180 / M_PI;
             return a;
         }
         return NO_ANGLE;
