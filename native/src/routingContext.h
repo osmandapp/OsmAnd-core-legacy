@@ -193,10 +193,10 @@ struct RoutingContext {
 		subregionTiles.clear();
 		indexedSubregions.clear();
 	}
-    
-    bool isInterrupted() {
-        return progress != nullptr ? progress->isCancelled() : false;
-    }
+	
+	bool isInterrupted() {
+		return progress != nullptr ? progress->isCancelled() : false;
+	}
 
 	void setConditionalTime(time_t tm) {
 		conditionalTime = tm;
