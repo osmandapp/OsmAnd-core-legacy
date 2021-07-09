@@ -193,6 +193,10 @@ struct RoutingContext {
 		subregionTiles.clear();
 		indexedSubregions.clear();
 	}
+	
+	bool isInterrupted() {
+		return progress != nullptr ? progress->isCancelled() : false;
+	}
 
 	void setConditionalTime(time_t tm) {
 		conditionalTime = tm;
@@ -298,7 +302,7 @@ struct RoutingContext {
 		}
 		if (load) {
 			UNORDERED(set)<int64_t> excludedIds;
-			for (uint j = 0; j < subregions.size(); j++) {
+			for (uint j = 0; j < subregions.size() && !isInterrupted(); j++) {
 				if (!subregions[j]->isLoaded()) {
 
 					std::vector<SHARED_PTR<DirectionPoint>> points;
@@ -398,8 +402,8 @@ struct RoutingContext {
 		}
 		int z  = config->zoomToLoad;
 		UNORDERED(set)<int64_t> excludeDuplications;
-		for (int i = -t; i <= t; i++) {
-			for (int j = -t; j <= t; j++) {
+		for (int i = -t; i <= t && !isInterrupted(); i++) {
+			for (int j = -t; j <= t && !isInterrupted(); j++) {
 				uint32_t xloc = (x31 + i*coordinatesShift) >> (31 - z);
 				uint32_t yloc = (y31 + j*coordinatesShift) >> (31 - z);
 				int64_t tileId = (xloc << z) + yloc;
@@ -485,10 +489,6 @@ struct RoutingContext {
 			}
 		}
 		return false;
-	}
-
-	bool isInterrupted() {
-		return progress != nullptr ? progress->isCancelled() : false;
 	}
 
 	float getHeuristicCoefficient() {
