@@ -32,7 +32,7 @@ struct DirectionPoint {
     static constexpr double MAX_ANGLE_DIFF = 45; //in degrees
     static constexpr double NO_ANGLE = 9999;
 
-    // get normalize angle in -180..180 degrees or NO_ANGLE if empty
+    // get angle in degrees or NO_ANGLE if empty
     double getAngle() {
         std::string angle = "";
         for (std::pair<std::string, std::string> tag : tags) {
@@ -48,8 +48,6 @@ struct DirectionPoint {
             if (c != '0' && a == 0.0) {
                 return NO_ANGLE;
             }
-            a = alignAngleDifference(a * M_PI / 180);
-            a = a * 180 / M_PI;
             return a;
         }
         return NO_ANGLE;

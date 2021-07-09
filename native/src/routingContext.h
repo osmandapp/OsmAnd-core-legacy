@@ -576,7 +576,7 @@ struct RoutingContext {
 					double forwardAngle = ro->directionRoute(indexToInsert, true, 5);
 					forwardAngle = forwardAngle * 180 / M_PI;
 					if (oneWay == 1 || oneWay == 0) {
-						double diff = std::abs(degreesDiff(npAngle, forwardAngle));						
+						double diff = std::abs(degreesDiff(npAngle, forwardAngle));
 						if (diff <= np->MAX_ANGLE_DIFF) {
 							restrictionByAngle = false;
 						}
