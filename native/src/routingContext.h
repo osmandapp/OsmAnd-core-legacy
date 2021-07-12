@@ -567,7 +567,30 @@ struct RoutingContext {
 			bool sameRoadId = np->connected && np->connected->getId() == ro->getId();
 			bool pointShouldBeAttachedByDist = (mindist < config->directionPointsRadius && (mindist < np->distance || np->distance < 0));
 
+			double npAngle = np->getAngle();
+			bool restrictionByAngle = npAngle != np->NO_ANGLE;
+
 			if (pointShouldBeAttachedByDist) {
+				if (restrictionByAngle) {
+					int oneWay = ro->getOneway();// -1 backward, 0 two way, 1 forward
+					double forwardAngle = ro->directionRoute(indexToInsert, true, 5);
+					forwardAngle = forwardAngle * 180 / M_PI;
+					if (oneWay == 1 || oneWay == 0) {
+						double diff = std::abs(degreesDiff(npAngle, forwardAngle));
+						if (diff <= np->MAX_ANGLE_DIFF) {
+							restrictionByAngle = false;
+						}
+					}
+					if (restrictionByAngle && (oneWay == -1 || oneWay == 0)) {
+						double diff = std::abs(degreesDiff(npAngle, forwardAngle + 180));
+						if (diff <= np->MAX_ANGLE_DIFF) {
+							restrictionByAngle = false;
+						}
+					}
+				}
+				if (restrictionByAngle) {
+					continue;
+				}
 				if (!sameRoadId) {
 					//cout << "INSERT " << ro->getId() / 64 << " (" << indexToInsert << "-" << indexToInsert + 1 << ") " << mindist << "m " << "["
 					//	<< get31LatitudeY(wptY) << "/" <<  get31LongitudeX(wptX) << "] x:" << wptX << " y:" << wptY << " ro.id:" << ro->getId() << endl;

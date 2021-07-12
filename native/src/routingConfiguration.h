@@ -18,6 +18,7 @@ struct RoutingRule {
 const std::string DirectionPoint_TAG = "osmand_dp";
 const std::string DirectionPoint_DELETE_TYPE = "osmand_delete_point";
 const std::string DirectionPoint_CREATE_TYPE = "osmand_add_point";
+const std::string DirectionPoint_ANGLE_TAG = "apply_direction_angle";
 struct DirectionPoint {
     double distance = -1.0;
     int32_t pointIndex;
@@ -28,6 +29,29 @@ struct DirectionPoint {
     std::vector<std::pair<std::string, std::string>> tags;
     int connectedx;
     int connectedy;
+    static constexpr double MAX_ANGLE_DIFF = 45; //in degrees
+    static constexpr double NO_ANGLE = 9999;
+
+    // get angle in degrees or NO_ANGLE if empty
+    double getAngle() {
+        std::string angle = "";
+        for (std::pair<std::string, std::string> tag : tags) {
+            if (tag.first == DirectionPoint_ANGLE_TAG) {
+                angle = tag.second;
+                break;
+            }
+        }
+        if (!angle.empty()) {
+            const char* angle_c = angle.c_str();
+            char c = angle_c[0];
+            double a = atof(angle_c);
+            if (c != '0' && a == 0.0) {
+                return NO_ANGLE;
+            }
+            return a;
+        }
+        return NO_ANGLE;
+    }
 };
 
 struct RoutingConfiguration {
