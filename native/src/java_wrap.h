@@ -103,8 +103,6 @@ std::string getStringMethod(JNIEnv* env, jobject o, jmethodID fid, int i) {
 	return s;
 }
 jobject convertTransportRouteToJava(JNIEnv* ienv, SHARED_PTR<TransportRoute>& route);
-jobject convertRouteSegmentPointToJava(JNIEnv* env, SHARED_PTR<RouteSegmentPoint> pnt,
-                                       UNORDERED(map) < int64_t, int > &indexes, jobjectArray regions);
 
 void clearDirectionPointFromRouteResult(SHARED_PTR<RouteSegmentResult> r );
 
