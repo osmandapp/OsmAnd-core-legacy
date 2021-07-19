@@ -1,5 +1,6 @@
 #ifndef _OSMAND_ROUTE_SEGMENT_RESULT_CPP
 #define _OSMAND_ROUTE_SEGMENT_RESULT_CPP
+#include <iomanip> 
 #include "routeSegmentResult.h"
 
 #include "routeDataBundle.h"
@@ -88,10 +89,10 @@ vector<uint32_t> RouteSegmentResult::convertTypes(vector<uint32_t>& types,
 	for (int i = 0; i < types.size(); i++) {
 		uint32_t type = types[i];
 		auto& rule = object->region->quickGetEncodingRule(type);
+		if (rules.find(rule) == rules.end())
+			continue;
 		uint32_t ruleId = rules[rule];
-		if (ruleId) {
-			arr.push_back(ruleId);
-		}
+		arr.push_back(ruleId);
 	}
 	vector<uint32_t> res(arr.size());
 	for (int i = 0; i < arr.size(); i++) {
@@ -176,6 +177,8 @@ void RouteSegmentResult::fillNames(SHARED_PTR<RouteDataResources>& resources) {
 		object->names = {};
 		for (auto& name : object->namesIds) {
 			uint32_t nameId = name.first;
+			if (nameId >= region->routeEncodingRules.size())
+				continue;
 			RouteTypeRule& rule = region->quickGetEncodingRule(nameId);
 
 			if (nameTypeRule != -1 && "name" == rule.getTag()) {
@@ -371,5 +374,15 @@ vector<SHARED_PTR<RouteSegmentResult>> RouteSegmentResult::getAttachedRoutes(int
 		return attachedRoutesFrontEnd[st];
 	}
 }
+
+LatLon convertPoint(SHARED_PTR<RouteDataObject> o, int ind) {
+	return LatLon(get31LatitudeY(o->pointsY[ind]), get31LongitudeX(o->pointsX[ind]));
+}
+
+LatLon RouteSegmentResult::getStartPoint() { return convertPoint(object, startPointIndex); }
+
+LatLon RouteSegmentResult::getEndPoint() { return convertPoint(object, endPointIndex); }
+
+LatLon RouteSegmentResult::getPoint(int i) { return convertPoint(object, i); }
 
 #endif /*_OSMAND_ROUTE_SEGMENT_RESULT_CPP*/

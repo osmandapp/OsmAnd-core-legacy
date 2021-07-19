@@ -13,11 +13,9 @@ OSMAND_SKIA := $(LOCAL_PATH)/../../../externals/skia/upstream.patched
 OSMAND_EXPAT := $(LOCAL_PATH)/../../../externals/skia/upstream.patched/third_party/externals/expat
 OSMAND_CORE_RELATIVE := ../../../native
 OSMAND_CORE := $(LOCAL_PATH)/$(OSMAND_CORE_RELATIVE)
-OSMAND_HARFBUZZ_ROOT := ../../../externals/harfbuzz
-OSMAND_HARFBUZZ := $(LOCAL_PATH)/$(OSMAND_HARFBUZZ_ROOT)
 
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/src \
-    $(OSMAND_PROTOBUF)/src \
+	$(OSMAND_PROTOBUF)/src \
 	$(OSMAND_SKIA_ROOT) \
 	$(OSMAND_SKIA) \
 	$(OSMAND_EXPAT)/lib \
@@ -34,7 +32,8 @@ LOCAL_C_INCLUDES := $(LOCAL_PATH)/src \
 	${OSMAND_SKIA}/src/shaders \
 	$(OSMAND_CORE)/include \
 	$(OSMAND_CORE)/src \
-	$(OSMAND_HARFBUZZ)/src
+	$(OSMAND_HARFBUZZ)/src \
+	$(OSMAND_HARFBUZZ_ROOT)
 
 LOCAL_CPP_EXTENSION := .cc .cpp
 LOCAL_SRC_FILES := \
@@ -53,16 +52,20 @@ LOCAL_SRC_FILES := \
 	$(OSMAND_CORE_RELATIVE)/src/binaryRead.cpp \
 	$(OSMAND_CORE_RELATIVE)/src/generalRouter.cpp \
 	$(OSMAND_CORE_RELATIVE)/src/binaryRoutePlanner.cpp \
-	$(OSMAND_CORE_RELATIVE)/src/transportRoutePlanner.cpp \
 	$(OSMAND_CORE_RELATIVE)/src/transportRouteResultSegment.cpp \
 	$(OSMAND_CORE_RELATIVE)/src/transportRoutingObjects.cpp \
 	$(OSMAND_CORE_RELATIVE)/src/transportRouteSegment.cpp \
 	$(OSMAND_CORE_RELATIVE)/src/transportRouteResult.cpp \
 	$(OSMAND_CORE_RELATIVE)/src/transportRoutingConfiguration.cpp \
 	$(OSMAND_CORE_RELATIVE)/src/transportRoutingContext.cpp \
+	$(OSMAND_CORE_RELATIVE)/src/transportRoutePlanner.cpp \
+	$(OSMAND_CORE_RELATIVE)/src/transportRouteStopsReader.cpp \
 	$(OSMAND_CORE_RELATIVE)/src/routeDataBundle.cpp \
 	$(OSMAND_CORE_RELATIVE)/src/routeDataResources.cpp \
-	$(OSMAND_CORE_RELATIVE)/src/transportRouteStopsReader.cpp \
+	$(OSMAND_CORE_RELATIVE)/src/routePlannerFrontEnd.cpp \
+	$(OSMAND_CORE_RELATIVE)/src/routeResultPreparation.cpp \
+	$(OSMAND_CORE_RELATIVE)/src/routeSegmentResult.cpp \
+	$(OSMAND_CORE_RELATIVE)/src/turnType.cpp \
 	$(OSMAND_CORE_RELATIVE)/src/proto/osmand_index.pb.cc \
 	$(OSMAND_CORE_RELATIVE)/src/java_wrap.cpp
 	

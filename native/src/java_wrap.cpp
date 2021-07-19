@@ -10,6 +10,7 @@
 #include "CommonCollections.h"
 #include "binaryRead.h"
 #include "binaryRoutePlanner.h"
+#include "routePlannerFrontEnd.h"
 #include "java_renderRules.h"
 #include "java_wrap.h"
 #include "rendering.h"
@@ -456,6 +457,7 @@ jmethodID jmethod_RenderedObject_setNativeId = NULL;
 jmethodID jmethod_RenderedObject_setName = NULL;
 jmethodID jmethod_RenderedObject_setOrder = NULL;
 jmethodID jmethod_RenderedObject_setVisible = NULL;
+jmethodID jmethod_RenderedObject_setDrawOnPath = NULL;
 jmethodID jmethod_RenderedObject_setBbox = NULL;
 jmethodID jmethod_RenderedObject_init = NULL;
 jmethodID jmethod_RenderedObject_setLabelX = NULL;
@@ -887,6 +889,7 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jmethod_RenderedObject_addLocation = env->GetMethodID(jclass_RenderedObject, "addLocation", "(II)V");
 	jmethod_RenderedObject_setOrder = env->GetMethodID(jclass_RenderedObject, "setOrder", "(I)V");
 	jmethod_RenderedObject_setVisible = env->GetMethodID(jclass_RenderedObject, "setVisible", "(Z)V");
+	jmethod_RenderedObject_setDrawOnPath = env->GetMethodID(jclass_RenderedObject, "setDrawOnPath", "(Z)V");
 	jmethod_RenderedObject_setNativeId = env->GetMethodID(jclass_RenderedObject, "setNativeId", "(J)V");
 	jmethod_RenderedObject_setName = env->GetMethodID(jclass_RenderedObject, "setName", "(Ljava/lang/String;)V");
 	jmethod_RenderedObject_setBbox = env->GetMethodID(jclass_RenderedObject, "setBbox", "(IIII)V");
@@ -1038,7 +1041,7 @@ void pullFromJavaRenderingContext(JNIEnv* env, jobject jrc, JNIRenderingContext*
 // ElapsedTimer routingTimer;
 
 jobject convertRenderedObjectToJava(JNIEnv* ienv, MapDataObject* robj, std::string name, SkRect bbox, int order,
-									bool visible) {
+									bool visible, bool drawOnPath) {
 	jobject resobj = ienv->NewObject(jclass_RenderedObject, jmethod_RenderedObject_init);
 	for (uint i = 0; i < robj->types.size(); i++) {
 		jstring ts = ienv->NewStringUTF(robj->types[i].first.c_str());
@@ -1073,6 +1076,7 @@ jobject convertRenderedObjectToJava(JNIEnv* ienv, MapDataObject* robj, std::stri
 	ienv->CallVoidMethod(resobj, jmethod_RenderedObject_setNativeId, robj->id);
 	ienv->CallVoidMethod(resobj, jmethod_RenderedObject_setOrder, order);
 	ienv->CallVoidMethod(resobj, jmethod_RenderedObject_setVisible, visible);
+	ienv->CallVoidMethod(resobj, jmethod_RenderedObject_setDrawOnPath, drawOnPath);
 
 	jstring nm = ienv->NewStringUTF(name.c_str());
 	ienv->CallVoidMethod(resobj, jmethod_RenderedObject_setName, nm);
@@ -1489,11 +1493,8 @@ void addLongField(JNIEnv* ienv, jobject obj, jfieldID fid, jlong val) {
 	ienv->SetLongField(obj, fid, ienv->GetLongField(obj, fid) + val);
 }
 
-extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_nativeRouting(
-	JNIEnv* ienv, jobject obj, jobject jCtx, jfloat initDirection, jobjectArray regions, bool basemap) {
+RoutingContext* getRoutingContext(JNIEnv* ienv, jobject jCtx, jfloat initDirection, bool basemap, jobject progress) {
 	jobject jRouteConfig = ienv->GetObjectField(jCtx, jfield_RoutingContext_config);
-	jobject precalculatedRoute = ienv->GetObjectField(jCtx, jfield_RoutingContext_precalculatedRouteDirection);
-	jobject progress = ienv->GetObjectField(jCtx, jfield_RoutingContext_calculationProgress);
 
 	RoutingContext* c = (RoutingContext*)ienv->GetLongField(jCtx, jfield_RoutingContext_nativeRoutingContext);
 	if (c == NULL) {
@@ -1517,6 +1518,16 @@ extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_nativeRo
 	c->basemap = basemap;
 	c->setConditionalTime(c->config->routeCalculationTime);
 	c->publicTransport = ienv->GetBooleanField(jCtx, jfield_RoutingContext_publicTransport);
+	ienv->DeleteLocalRef(jRouteConfig);
+	return c;
+}
+
+extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_nativeRouting(
+	JNIEnv* ienv, jobject obj, jobject jCtx, jfloat initDirection, jobjectArray regions, bool basemap) {
+	jobject precalculatedRoute = ienv->GetObjectField(jCtx, jfield_RoutingContext_precalculatedRouteDirection);
+	jobject progress = ienv->GetObjectField(jCtx, jfield_RoutingContext_calculationProgress);
+
+	RoutingContext* c = getRoutingContext(ienv, jCtx, initDirection, basemap, progress);
 
 	parsePrecalculatedRoute(ienv, c, precalculatedRoute);
 	vector<SHARED_PTR<RouteSegmentResult>> r = searchRouteInternal(c, false);
@@ -1573,7 +1584,6 @@ extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_nativeRo
 		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "No route found");
 	}
 	fflush(stdout);
-	ienv->DeleteLocalRef(jRouteConfig);
 	ienv->DeleteLocalRef(progress);
 	ienv->DeleteLocalRef(precalculatedRoute);
 	if (c != NULL && !ienv->GetBooleanField(jCtx, jfield_RoutingContext_keepNativeRoutingContext)) {
@@ -1938,7 +1948,8 @@ extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_searchRe
 				((searchText[i]->visible && !searchText[i]->drawOnPath && !searchText[i]->path) || notvisible)) {
 				jobject jo = convertRenderedObjectToJava(ienv, &searchText[i]->object, searchText[i]->text,
 														 searchText[i]->bounds, searchText[i]->textOrder,
-														 searchText[i]->visible);
+														 searchText[i]->visible,
+														 searchText[i]->drawOnPath || searchText[i]->path);
 				collected.push_back(jo);
 				intersects = true;
 			}
@@ -1948,7 +1959,7 @@ extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_searchRe
 		for (uint32_t i = 0; i < icons.size(); i++) {
 			if (SkRect::Intersects(icons[i]->bbox, bbox) && (icons[i]->visible || notvisible)) {
 				jobject jo = convertRenderedObjectToJava(ienv, &icons[i]->object, "", icons[i]->bbox, icons[i]->order,
-														 icons[i]->visible);
+														 icons[i]->visible, false);
 
 				jstring nm = ienv->NewStringUTF(icons[i]->bmpId.c_str());
 				ienv->CallVoidMethod(jo, jmethod_RenderedObject_setIconRes, nm);

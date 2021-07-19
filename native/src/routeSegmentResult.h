@@ -66,6 +66,9 @@ struct RouteSegmentResult {
 
 	void readFromBundle(SHARED_PTR<RouteDataBundle>& bundle);
 	void writeToBundle(SHARED_PTR<RouteDataBundle>& bundle);
+	LatLon getStartPoint();
+	LatLon getEndPoint();
+	LatLon getPoint(int i);
 
 	inline void updateCapacity() {
 		int capacity = abs(endPointIndex - startPointIndex) + 1;
