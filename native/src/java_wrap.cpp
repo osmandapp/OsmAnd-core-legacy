@@ -118,7 +118,7 @@ extern "C" JNIEXPORT jboolean JNICALL Java_net_osmand_NativeLibrary_initFontType
 	//jbyte* be = ienv->GetByteArrayElements(byteData, NULL);
 	std::string pathToFont = getString(ienv, path);
 	//jsize sz = ienv->GetArrayLength(byteData);
-	globalFontRegistry.registerStream(pathToFont.c_str(), fName, bold, italic);
+	globalFontRegistry.registerFonts(pathToFont.c_str(), fName, bold, italic);
 
 	//ienv->ReleaseByteArrayElements(byteData, be, JNI_ABORT);
 	//ienv->DeleteLocalRef(byteData);

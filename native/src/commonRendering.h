@@ -24,10 +24,10 @@ struct FontEntry {
 	sk_sp<SkTypeface> fSkiaTypeface = nullptr;
 	std::unique_ptr<hb_face_t, HBFDel> fHarfBuzzFace;
 	string fontName;
-
-	FontEntry() : FontEntry("/Users/macmini/OsmAnd/resources/rendering_styles/fonts/05_NotoSans-Regular.ttf", 0) {}
+	string pathToFont;
 
 	FontEntry(const char *path, int index) {
+		pathToFont = path;
 		// fairly portable mmap impl
 		auto data = SkData::MakeFromFileName(path);
 		assert(data);
@@ -66,8 +66,9 @@ class FontRegistry {
 	std::vector<FontEntry*> cache;
 
    public:
-	const sk_sp<SkTypeface> registerStream(const char* data, string fontName, bool bold, bool italic);
-	void updateFontEntry(FontEntry* fontEntry, std::string text, bool bold, bool italic);
+	int index = 0;
+	void registerFonts(const char* pathToFont, string fontName, bool bold, bool italic);
+	FontEntry*  updateFontEntry(std::string text, bool bold, bool italic);
 	void drawHbText(SkCanvas* cv, std::string textS, FontEntry* fontEntry, SkPaint& paint, SkFont& font, float centerX, float centerY);
 	void drawHbTextOnPath(SkCanvas* canvas, std::string textS, SkPath& path, FontEntry* fontEntry, SkFont& font, SkPaint& paint, float h_offset, float v_offset);
 	void drawSkiaTextOnPath(SkCanvas* canvas, std::string textS, SkPath& path, FontEntry* fontEntry, SkFont& font, SkPaint& paint, float h_offset, float v_offset);

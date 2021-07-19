@@ -13,6 +13,8 @@ OSMAND_SKIA := $(LOCAL_PATH)/../../../externals/skia/upstream.patched
 OSMAND_EXPAT := $(LOCAL_PATH)/../../../externals/skia/upstream.patched/third_party/externals/expat
 OSMAND_CORE_RELATIVE := ../../../native
 OSMAND_CORE := $(LOCAL_PATH)/$(OSMAND_CORE_RELATIVE)
+OSMAND_HARFBUZZ_ROOT := $(LOCAL_PATH)/../../../externals/skia/upstream.patched/third_party/harfbuzz
+OSMAND_HARFBUZZ := $(LOCAL_PATH)/../../../externals/skia/upstream.patched/third_party/externals/harfbuzz
 
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/src \
 	$(OSMAND_PROTOBUF)/src \

@@ -19,7 +19,6 @@
 #include <algorithm>
 #include <set>
 #include <vector>
-#include <iostream>
 
 #include "Logging.h"
 #include "renderRules.h"
@@ -83,42 +82,45 @@ bool containsText(SkTypeface* typeface, std::string textString) {
 	return true;
 }
 
-const sk_sp<SkTypeface> FontRegistry::registerStream(const char* pathToFont, string fontName, bool bold,
+void FontRegistry::registerFonts(const char* pathToFont, string fontName, bool bold,
 													 bool italic) {
-	//OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Ivan font path %s", pathToFont);
-	FontEntry* entry = new FontEntry(pathToFont, 0);
+	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Font path %s index %d", pathToFont, index);
+	FontEntry* entry = new FontEntry(pathToFont, index);
+	index++;
 	if (!entry->fSkiaTypeface) {
-		return nullptr;
+		return;
 	}
 	entry->bold = bold;
 	entry->italic = italic;
 	entry->fontName = fontName;	
 	cache.push_back(entry);
-	return entry->fSkiaTypeface;
 }
 
 
-void FontRegistry::updateFontEntry(FontEntry* fontEntry, std::string text, bool bold, bool italic) {
-	sk_sp<SkTypeface> bestMatchTypeface = nullptr;
+FontEntry* FontRegistry::updateFontEntry(std::string text, bool bold, bool italic) {
+	if (cache.size() == 0) {
+		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "Fonts are not registered. Set fonts by FontRegistry::registerFonts");
+		return nullptr;
+	}
+	FontEntry* fontEntry = nullptr;
 	for (uint i = 0; i < cache.size(); i++) {
-		if (bestMatchTypeface != nullptr && (bold != cache[i]->bold) && (italic != cache[i]->italic)) {
+		if (fontEntry != nullptr && (bold != cache[i]->bold) && (italic != cache[i]->italic)) {
 			continue;
 		}
 		if (!containsText(cache[i]->fSkiaTypeface.get(), text)) {
 			continue;
 		}
 		fontEntry = cache[i];
-		//OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Ivan FOUND font path %s", fontEntry->pathToFont.c_str());
-		bestMatchTypeface = cache[i]->fSkiaTypeface;
 		// If this entry fully matches the request, stop search
-		if (cache[i]->bold == bold && cache[i]->italic == italic) break;
+		if (cache[i]->bold == bold && cache[i]->italic == italic) {
+			break;
+		}
 	}
 
-	// If there's no best match, fallback to default typeface
-	if (bestMatchTypeface == nullptr) {
-		fontEntry = new FontEntry();
-		//OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Ivan FOUND ALTERNATIVE font path %s", fontEntry->pathToFont.c_str());
+	if (fontEntry == nullptr) {
+		fontEntry = cache[0];
 	}
+	return fontEntry;
 }
 
 inline float sqr(float a) {
@@ -500,7 +502,7 @@ bool findTextIntersection(SkCanvas* cv, RenderingContext* rc, quad_tree<SHARED_P
 	vector<SHARED_PTR<TextDrawInfo>> searchText;
 	int textWrap = text->textWrap == 0 ? 22 : text->textWrap;
 	int text1Line = text->text.length() > textWrap && !text->drawOnPath ? textWrap : text->text.length();
-	skFontText->measureText(text->text.c_str(), text1Line, SkTextEncoding::kUTF8, &text->textBounds, paintText);
+	skFontText->measureText(text->text.c_str(), text->text.length(), SkTextEncoding::kUTF8, &text->textBounds, paintText);
 	text->bounds = text->textBounds;
 	// make wider and multiline
 	text->bounds.inset(-rc->getDensityValue(3),
@@ -730,23 +732,6 @@ void drawTextOverCanvas(RenderingContext* rc, RenderingRuleSearchRequest* req, S
 	quad_tree<SHARED_PTR<TextDrawInfo>> boundsIntersect(r, 4, 0.6);
 	DebugTextInfo db(req);
 
-#if defined(ANDROID)
-	// This is never released because of always +1 of reference counter
-	if (!sDefaultTypeface)
-		sDefaultTypeface = SkTypeface::MakeFromName(
-			"Droid Serif",
-			SkFontStyle(SkFontStyle::kNormal_Weight, SkFontStyle::kNormal_Width, SkFontStyle::kUpright_Slant));
-	if (!sBoldTypeface)
-		sBoldTypeface = SkTypeface::MakeFromName(
-			"", SkFontStyle(SkFontStyle::kBold_Weight, SkFontStyle::kNormal_Width, SkFontStyle::kUpright_Slant));
-	if (!sItalicTypeface)
-		sItalicTypeface = SkTypeface::MakeFromName(
-			"", SkFontStyle(SkFontStyle::kNormal_Weight, SkFontStyle::kNormal_Width, SkFontStyle::kItalic_Slant));
-	if (!sBoldItalicTypeface)
-		sBoldItalicTypeface = SkTypeface::MakeFromName(
-			"", SkFontStyle(SkFontStyle::kBold_Weight, SkFontStyle::kNormal_Width, SkFontStyle::kItalic_Slant));
-#endif
-
 	SkPaint paintIcon;
 	paintIcon.setStyle(SkPaint::kStroke_Style);
 	paintIcon.setStrokeWidth(1);
@@ -759,7 +744,7 @@ void drawTextOverCanvas(RenderingContext* rc, RenderingRuleSearchRequest* req, S
 	paintText.setAntiAlias(true);
 	SkFontMetrics fm;
 	SkFont skFontText;
-	FontEntry fontEntry;
+	FontEntry* fontEntry = nullptr;
 
 	// 1. Sort text using text order
 	std::sort(rc->textToDraw.begin(), rc->textToDraw.end(), textOrder);
@@ -775,12 +760,11 @@ void drawTextOverCanvas(RenderingContext* rc, RenderingRuleSearchRequest* req, S
 		if (textDrawInfo->combined) continue;
 		if (textDrawInfo->icon && !textDrawInfo->icon->visible) continue;
 
-		globalFontRegistry.updateFontEntry(&fontEntry, rc->getReshapedString(textDrawInfo->text.c_str()),
+		fontEntry = globalFontRegistry.updateFontEntry(rc->getReshapedString(textDrawInfo->text.c_str()),
 										  textDrawInfo->bold,  // false,
 										  textDrawInfo->italic);
-		// sest text size before finding intersection (it is used there)
+		// set text size before finding intersection (it is used there)
 		float textSize = textDrawInfo->textSize;
-		//skFontText.setTypeface(fontEntry.fSkiaTypeface);
 		skFontText.setSize(textSize);
 		skFontText.getMetrics(&fm);
 
@@ -789,7 +773,7 @@ void drawTextOverCanvas(RenderingContext* rc, RenderingRuleSearchRequest* req, S
 			textDrawInfo->centerY += textDrawInfo->icon->bmp->height() / 2;
 			textDrawInfo->centerY += ((-fm.fAscent));
 		}
-		bool intersects = findTextIntersection(cv, rc, boundsIntersect, textDrawInfo, &paintText, &paintIcon, db, &skFontText, &fontEntry);
+		bool intersects = findTextIntersection(cv, rc, boundsIntersect, textDrawInfo, &paintText, &paintIcon, db, &skFontText, fontEntry);
 		if (!intersects) {
 			if (rc->interrupted()) {
 				return;
@@ -804,36 +788,26 @@ void drawTextOverCanvas(RenderingContext* rc, RenderingRuleSearchRequest* req, S
 	for (auto itdi = rc->textToDraw.rbegin(); itdi != rc->textToDraw.rend(); ++itdi) {
 		SHARED_PTR<TextDrawInfo> textDrawInfo = *itdi;
 
-		// Prepare font
-		// sk_sp<SkTypeface> def = sDefaultTypeface;
-		// if (textDrawInfo->bold && textDrawInfo->italic)
-		// 	def = sBoldItalicTypeface;
-		// else if (textDrawInfo->italic)
-		// 	def = sItalicTypeface;
-		// else if (textDrawInfo->bold)
-		// 	def = sBoldTypeface;
-		globalFontRegistry.updateFontEntry(&fontEntry, rc->getReshapedString(textDrawInfo->text.c_str()),
+		fontEntry = globalFontRegistry.updateFontEntry(rc->getReshapedString(textDrawInfo->text.c_str()),
 										  textDrawInfo->bold,
 										  textDrawInfo->italic);
 		float textSize = textDrawInfo->textSize;
 		skFontText.setSize(textSize);
-		//skFontText.setTypeface(fontEntry.fSkiaTypeface);
-
-		// paintText.setFakeBoldText(textDrawInfo->bold);
 		paintText.setColor(textDrawInfo->textColor);
 		// align center y
 		skFontText.getMetrics(&fm);
 
 		if (textDrawInfo->visible) {
+			//OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Text %s font %s", textDrawInfo->text.c_str(), fontEntry->pathToFont.c_str());
 			if (rc->interrupted()) return;
 			if (textDrawInfo->drawOnPath && textDrawInfo->path != NULL) {
-				textDrawInfo->text = rc->getReshapedString(textDrawInfo->text);
+				textDrawInfo->text = rc->getReshapedString(textDrawInfo->text);				
 				if (textDrawInfo->textShadow > 0) {
 					paintText.setColor(textDrawInfo->textShadowColor);
 					paintText.setStyle(SkPaint::kStroke_Style);
 					paintText.setStrokeWidth(2 + textDrawInfo->textShadow);
 					rc->nativeOperations.Pause();
-					//globalFontRegistry.drawHbTextOnPath(cv, textDrawInfo->text, *textDrawInfo->path, &fontEntry, skFontText, paintText, textDrawInfo->hOffset, textDrawInfo->vOffset - fm.fTop / 4);
+					globalFontRegistry.drawHbTextOnPath(cv, textDrawInfo->text, *textDrawInfo->path, fontEntry, skFontText, paintText, textDrawInfo->hOffset, textDrawInfo->vOffset - fm.fTop / 4);
 					rc->nativeOperations.Start();
 					// reset
 					paintText.setStyle(SkPaint::kFill_Style);
@@ -841,12 +815,12 @@ void drawTextOverCanvas(RenderingContext* rc, RenderingRuleSearchRequest* req, S
 					paintText.setColor(textDrawInfo->textColor);
 				}
 				rc->nativeOperations.Pause();
-				globalFontRegistry.drawHbTextOnPath(cv, textDrawInfo->text, *textDrawInfo->path, &fontEntry, skFontText, paintText, textDrawInfo->hOffset, textDrawInfo->vOffset - fm.fTop / 4);
+				globalFontRegistry.drawHbTextOnPath(cv, textDrawInfo->text, *textDrawInfo->path, fontEntry, skFontText, paintText, textDrawInfo->hOffset, textDrawInfo->vOffset - fm.fTop / 4);
 				rc->nativeOperations.Start();
 			} else {
 				drawShield(textDrawInfo, textDrawInfo->shieldRes, &paintIcon, rc, cv, r, fm);
 				drawShield(textDrawInfo, textDrawInfo->shieldResIcon, &paintIcon, rc, cv, r, fm);
-				drawWrappedText(rc, cv, textDrawInfo, textSize, paintText, skFontText, &fontEntry);
+				drawWrappedText(rc, cv, textDrawInfo, textSize, paintText, skFontText, fontEntry);
 			}
 		}
 	}
@@ -875,8 +849,6 @@ void FontRegistry::drawSkiaTextOnPath(SkCanvas *canvas, std::string textS, SkPat
 
 	SkPathMeasure meas(path, false);
 	unsigned int count = font.countText(text, length, SkTextEncoding::kUTF8);
-	std::cout << textS << std::endl;
-	std::cout << "count:" << count << std::endl;
 	size_t size = count * (sizeof(SkRSXform) + sizeof(SkScalar));
 	SkAutoSMalloc<512> storage(size);
 	SkRSXform *xform = (SkRSXform *)storage.get();
@@ -938,7 +910,7 @@ void FontRegistry::drawHbTextOnPath(SkCanvas *canvas, std::string textS, SkPath 
 	double x = 0, y = 0;
 	SkPoint xy[length];
 	for (unsigned int i = 0; i < length; i++) {
-		glyphs[i] = info[i].codepoint;		
+		glyphs[i] = info[i].codepoint;
 		xy[i].set(x + pos[i].x_offset / HARFBUZZ_FONT_SIZE_SCALE, y - pos[i].y_offset / HARFBUZZ_FONT_SIZE_SCALE);
 		x += pos[i].x_advance / HARFBUZZ_FONT_SIZE_SCALE;
 		y += pos[i].y_advance / HARFBUZZ_FONT_SIZE_SCALE;
@@ -948,22 +920,16 @@ void FontRegistry::drawHbTextOnPath(SkCanvas *canvas, std::string textS, SkPath 
 	hb_buffer_destroy(hb_buffer);
 	hb_font_destroy(hb_font);
 
-	unsigned int count = font.countText(text, strlen(text), SkTextEncoding::kUTF8);
-	std::cout << text << " count:" << count << " sizeof(SkRSXform)" << sizeof(SkRSXform) << " sizeof(SkScalar):" << sizeof(SkScalar) << std::endl;
-	size_t size = count * (sizeof(SkRSXform) + sizeof(SkScalar));
-	std::cout << text << " size:" << size << std::endl;
+	size_t size = length * (sizeof(SkRSXform) + sizeof(SkScalar));
 	SkAutoSMalloc<512> storage(size);
 	SkRSXform *xform = (SkRSXform *)storage.get();
-	SkScalar *widths = (SkScalar *)(xform + count);
+	SkScalar *widths = (SkScalar *)(xform + length);
 
-	font.getWidths(glyphs.get(), count, widths);
-	std::cout << text << " width:" << widths << std::endl;
-	float textLength = xy[count - 1].x() + widths[count - 1];
-	std::cout << text << " textLength:" << textLength << std::endl;
+	font.getWidths(glyphs.get(), length, widths);
+	float textLength = xy[length - 1].x() + widths[length - 1];
 	SkPathMeasure meas(path, false);
 	float startOffset = h_offset + (meas.getLength() - textLength) / 2;
-	std::cout << text << " startOffset:" << startOffset << std::endl;
-	for (int i = 0; i < count; ++i)
+	for (int i = 0; i < length; ++i)
 	{
 		// we want to position each character on the center of its advance
 		const SkScalar offset = SkScalarHalf(widths[i]);
@@ -979,21 +945,23 @@ void FontRegistry::drawHbTextOnPath(SkCanvas *canvas, std::string textS, SkPath 
 			xform[i].fSSin = tan.y();
 			xform[i].fTx = pos.x() - tan.y() * xy[i].y() - tan.x() * offset;
 			xform[i].fTy = pos.y() + tan.x() * xy[i].y() - tan.y() * offset;
-			std::cout << xform[i].fSCos << " " << xform[i].fSSin << " " << xform[i].fTx << " " <<  xform[i].fTy << std::endl;
 		}
 	}
-	canvas->drawTextBlob(SkTextBlob::MakeFromRSXform(glyphs.get(), count * sizeof(SkGlyphID),
-	 												 &xform[0], font, SkTextEncoding::kGlyphID),
-	 					 0, 0, paint);
+	sk_sp<SkTextBlob> blob = SkTextBlob::MakeFromRSXform(glyphs.get(), length * sizeof(SkGlyphID),
+	 												 &xform[0], font, SkTextEncoding::kGlyphID);
+	canvas->drawTextBlob(blob, 0, 0, paint);
 	
-	//For debug only
-	const SkRect fontb = SkFontPriv::GetFontBounds(font);
-	const SkScalar max = std::max(std::max(SkScalarAbs(fontb.fLeft), SkScalarAbs(fontb.fRight)),
-								  std::max(SkScalarAbs(fontb.fTop), SkScalarAbs(fontb.fBottom)));
-	const SkRect bounds = path.getBounds().makeOutset(max, max);
-	SkPaint p;
-	p.setStyle(SkPaint::kStroke_Style);
-	canvas->drawRect(bounds, p);
+	// For debug only, don't remove
+	// const SkRect fontb = SkFontPriv::GetFontBounds(font);
+	// const SkScalar max = std::max(std::max(SkScalarAbs(fontb.fLeft), SkScalarAbs(fontb.fRight)),
+	//  							  std::max(SkScalarAbs(fontb.fTop), SkScalarAbs(fontb.fBottom)));
+	// const SkRect bounds = path.getBounds().makeOutset(max, max);
+	// SkPaint p;
+	// p.setStyle(SkPaint::kStroke_Style);
+	// p.setColor(0xFFFF0000);//argb - red color
+	// canvas->drawRect(bounds, p);
+	// p.setColor(0xFF0000FF);//argb - blue color
+	// canvas->drawRect(blob->bounds(), p);
 }
 
 void FontRegistry::drawHbText(SkCanvas *cv, std::string textS, FontEntry *face, SkPaint &paint, SkFont &font, float centerX, float centerY) {
@@ -1025,10 +993,8 @@ void FontRegistry::drawHbText(SkCanvas *cv, std::string textS, FontEntry *face, 
 
 	double x = 0;
 	double y = 0;
-	//std::cout << text << std::endl;
 	for (unsigned int i = 0; i < length; i++) {
-		runBuffer.glyphs[i] = info[i].codepoint;
-		//std::cout << info[i].codepoint << std::endl;
+		runBuffer.glyphs[i] = info[i].codepoint;	
 		reinterpret_cast<SkPoint *>(runBuffer.pos)[i] =
 			SkPoint::Make(SkDoubleToScalar(x + pos[i].x_offset / HARFBUZZ_FONT_SIZE_SCALE),
 						  SkDoubleToScalar(y - pos[i].y_offset / HARFBUZZ_FONT_SIZE_SCALE));
