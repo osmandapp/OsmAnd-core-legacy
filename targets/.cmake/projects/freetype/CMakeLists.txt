@@ -9,7 +9,7 @@ include_directories(AFTER SYSTEM
 )
 if(CMAKE_TARGET_OS STREQUAL "linux")
 	include_directories(AFTER SYSTEM
-		"${OSMAND_ROOT}/externals/skia/upstream.patched/third_party/freetype/include/"
+		"${OSMAND_ROOT}/externals/skia/upstream.patched/third_party/freetype2/include/"
 	)
 	add_definitions(-D"FT_CONFIG_MODULES_H=<freetype-android/ftmodule.h>" 
 		-D"FT_CONFIG_OPTIONS_H=<freetype-android/ftoption.h>")
