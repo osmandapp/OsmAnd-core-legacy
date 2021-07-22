@@ -9,6 +9,7 @@
 #define isinf !_finite
 #elif defined(__APPLE__)
 #include <mach/mach_time.h>
+#include <iostream>
 #else
 #include <time.h>
 #endif
@@ -384,14 +385,17 @@ void trimspec(std::string &text) {
 	// unicode symbols \u200e \u200f \u202a \u202c \u202b
 	const char *symbols[] = { "\xE2\x80\x8E", "\xE2\x80\x8F", "\xE2\x80\xAA", "\xE2\x80\xAC", "\xE2\x80\xAB"};
 	int length = text.length();
-	for (auto t : symbols) {
-		if (t[0] == text.at(0) && t[1] == text.at(1) && t[2] == text.at(2)) {
+	for (auto t : symbols) {		
+		if (length >= 3 && t[0] == text.at(0) && t[1] == text.at(1) && t[2] == text.at(2)) {
 			text.erase(0, 3);
 			length = text.length();
-		}
-		if (t[0] == text.at(length - 3) && t[1] == text.at(length - 2) && t[2] == text.at(length - 1)) {
+		}		
+		if (length >= 3 && t[0] == text.at(length - 3) && t[1] == text.at(length - 2) && t[2] == text.at(length - 1)) {
 			text.erase(length - 3);
 			length = text.length();
+		}
+		if (length < 3) {
+			return;
 		}
 	}
 }
