@@ -112,15 +112,16 @@ extern "C" JNIEXPORT jboolean JNICALL Java_net_osmand_NativeLibrary_initBinaryMa
 }
 
 extern "C" JNIEXPORT jboolean JNICALL Java_net_osmand_NativeLibrary_initFontType(JNIEnv* ienv, jobject obj,
-																				 jbyteArray byteData, jstring name,
+																				 jstring path, jstring name,
 																				 jboolean bold, jboolean italic) {
 	std::string fName = getString(ienv, name);
-	jbyte* be = ienv->GetByteArrayElements(byteData, NULL);
-	jsize sz = ienv->GetArrayLength(byteData);
-	globalFontRegistry.registerStream((const char*)be, sz, fName, bold, italic);
+	//jbyte* be = ienv->GetByteArrayElements(byteData, NULL);
+	std::string pathToFont = getString(ienv, path);
+	//jsize sz = ienv->GetArrayLength(byteData);
+	globalFontRegistry.registerFonts(pathToFont.c_str(), fName, bold, italic);
 
-	ienv->ReleaseByteArrayElements(byteData, be, JNI_ABORT);
-	ienv->DeleteLocalRef(byteData);
+	//ienv->ReleaseByteArrayElements(byteData, be, JNI_ABORT);
+	//ienv->DeleteLocalRef(byteData);
 	return true;
 }
 
@@ -1617,7 +1618,6 @@ extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_nativeRo
 
 	// convert results
 	jobjectArray res = ienv->NewObjectArray(r.size(), jclass_RouteSegmentResult, NULL);
-	int prevX = 0, prevY = 0;
 	for (uint i = 0; i < r.size(); i++) {
 		clearDirectionPointFromRouteResult(r[i]);
 		jobject resobj = convertRouteSegmentResultToJava(ienv, r[i], indexes, regions);
@@ -1899,8 +1899,7 @@ jobject convertTransportRouteToJava(JNIEnv* ienv, SHARED_PTR<TransportRoute>& ro
 		tmpIds[k] = (jlong)route->forwardWays.at(k)->id;
 		int nsize = route->forwardWays.at(k)->nodes.size();
 		jdoubleArray j_wayNodesLats = ienv->NewDoubleArray(nsize);
-		jdoubleArray j_wayNodesLons = ienv->NewDoubleArray(nsize);
-		jlong tmpNodesIds[nsize];
+		jdoubleArray j_wayNodesLons = ienv->NewDoubleArray(nsize);		
 		jdouble tmpNodesLats[nsize];
 		jdouble tmpNodesLons[nsize];
 		for (n = 0; n < nsize; n++) {
@@ -2156,13 +2155,12 @@ SkBitmap* JNIRenderingContext::getCachedBitmap(const std::string& bitmapResource
 
 		return NULL;
 	}
-	SkPMColor ctStorage[256];
-	sk_sp<SkColorTable> ctable(new SkColorTable(ctStorage, 256));
-	int count = ctable->count();
+	//SkPMColor ctStorage[256];
+	//sk_sp<SkColorTable> ctable(new SkColorTable(ctStorage, 256));
+	//int count = ctable->count();
 	SkBitmap* iconBitmap = new SkBitmap();
-	if (!iconBitmap->tryAllocPixels(gen->getInfo(), nullptr, ctable.get()) ||
-		!gen->getPixels(gen->getInfo().makeColorSpace(nullptr), iconBitmap->getPixels(), iconBitmap->rowBytes(),
-						const_cast<SkPMColor*>(ctable->readColors()), &count)) {
+	if (!iconBitmap->tryAllocPixels(gen->getInfo()) ||
+		!gen->getPixels(gen->getInfo(), iconBitmap->getPixels(), iconBitmap->rowBytes())) {
 		delete iconBitmap;
 
 		this->nativeOperations.Start();

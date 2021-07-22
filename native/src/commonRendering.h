@@ -5,6 +5,10 @@
 #include <SkPaint.h>
 #include <SkStream.h>
 #include <SkTypeface.h>
+#include <SkFont.h>
+#include <SkFontMgr.h>
+#include <hb-ot.h>
+#include <iostream>
 
 #include "CommonCollections.h"
 #include "SkBlurDrawLooper.h"
@@ -16,16 +20,58 @@ using namespace std;
 struct FontEntry {
 	bool bold;
 	bool italic;
-	sk_sp<SkTypeface> typeface;
+	struct HBFDel { void operator()(hb_face_t *f) { hb_face_destroy(f); }};
+	sk_sp<SkTypeface> fSkiaTypeface = nullptr;
+	std::unique_ptr<hb_face_t, HBFDel> fHarfBuzzFace;
 	string fontName;
+	string pathToFont;
+
+	FontEntry(const char *path, int index) {
+		pathToFont = path;
+		// fairly portable mmap impl
+		auto data = SkData::MakeFromFileName(path);
+		assert(data);
+		if (!data) {
+			return;
+		}
+		fSkiaTypeface = SkTypeface::MakeFromFile(path);
+		assert(fSkiaTypeface);
+		if (!fSkiaTypeface) {
+			return;
+		}
+		auto destroy = [](void *d) { static_cast<SkData *>(d)->unref(); };
+		const char *bytes = (const char *)data->data();
+		unsigned int size = (unsigned int)data->size();
+		hb_blob_t *blob = hb_blob_create(bytes,
+										 size,
+										 HB_MEMORY_MODE_READONLY,
+										 data.release(),
+										 destroy);
+		assert(blob);
+		hb_blob_make_immutable(blob);
+		hb_face_t *face = hb_face_create(blob, (unsigned)index);
+		hb_blob_destroy(blob);
+		assert(face);
+		if (!face) {
+			fSkiaTypeface.reset();
+			return;
+		}
+		hb_face_set_index(face, (unsigned)index);
+		hb_face_set_upem(face, fSkiaTypeface->getUnitsPerEm());
+		fHarfBuzzFace.reset(face);
+	}
 };
 
 class FontRegistry {
 	std::vector<FontEntry*> cache;
 
    public:
-	const sk_sp<SkTypeface> registerStream(const char* data, uint32_t length, string fontName, bool bold, bool italic);
-	void updateTypeface(SkPaint* paint, std::string text, bool bold, bool italic, sk_sp<SkTypeface> def);
+	int index = 0;
+	void registerFonts(const char* pathToFont, string fontName, bool bold, bool italic);
+	FontEntry*  updateFontEntry(std::string text, bool bold, bool italic);
+	void drawHbText(SkCanvas* cv, std::string textS, FontEntry* fontEntry, SkPaint& paint, SkFont& font, float centerX, float centerY);
+	void drawHbTextOnPath(SkCanvas* canvas, std::string textS, SkPath& path, FontEntry* fontEntry, SkFont& font, SkPaint& paint, float h_offset, float v_offset);
+	void drawSkiaTextOnPath(SkCanvas* canvas, std::string textS, SkPath& path, FontEntry* fontEntry, SkFont& font, SkPaint& paint, float h_offset, float v_offset);
 };
 
 extern FontRegistry globalFontRegistry;
