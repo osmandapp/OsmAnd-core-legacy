@@ -7,6 +7,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <iostream>
 
 #include "Internal.h"
 
@@ -414,5 +415,7 @@ const static char* trim_chars = " \t\n\r\f\v";
 std::string rtrim(const std::string& in, const char* t = trim_chars);
 std::string ltrim(const std::string& in, const char* t = trim_chars);
 std::string trim(const std::string& in, const char* t = trim_chars);
+
+void trimspec(std::string &text);
 
 #endif /*_OSMAND_COMMON_CORE_H*/

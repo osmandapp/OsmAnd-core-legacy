@@ -240,7 +240,7 @@ void drawWrappedText(RenderingContext* rc, SkCanvas* cv, SHARED_PTR<TextDrawInfo
 		}
 	} else {
 		PROFILE_NATIVE_OPERATION(
-			rc, drawTextOnCanvas(rc, cv, text->text.data(), text->text.length(), text->centerX, text->centerY,
+			rc, drawTextOnCanvas(rc, cv, text->text.c_str(), std::strlen(text->text.c_str()), text->centerX, text->centerY,
 								 paintText, text->textShadowColor, text->textShadow, skFontText, fontEntry));
 	}
 }
@@ -967,6 +967,7 @@ void FontRegistry::drawHbTextOnPath(SkCanvas *canvas, std::string textS, SkPath 
 void FontRegistry::drawHbText(SkCanvas *cv, std::string textS, FontEntry *face, SkPaint &paint, SkFont &font, float centerX, float centerY) {
 
 	font.setTypeface(face->fSkiaTypeface);
+	trimspec(textS);
 	const char *text = textS.c_str();
 	
 	hb_font_t *hb_font = hb_font_create(face->fHarfBuzzFace.get());
@@ -994,7 +995,7 @@ void FontRegistry::drawHbText(SkCanvas *cv, std::string textS, FontEntry *face, 
 	double x = 0;
 	double y = 0;
 	for (unsigned int i = 0; i < length; i++) {
-		runBuffer.glyphs[i] = info[i].codepoint;	
+		runBuffer.glyphs[i] = info[i].codepoint;
 		reinterpret_cast<SkPoint *>(runBuffer.pos)[i] =
 			SkPoint::Make(SkDoubleToScalar(x + pos[i].x_offset / HARFBUZZ_FONT_SIZE_SCALE),
 						  SkDoubleToScalar(y - pos[i].y_offset / HARFBUZZ_FONT_SIZE_SCALE));
