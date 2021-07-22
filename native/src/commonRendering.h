@@ -8,7 +8,7 @@
 #include <SkFont.h>
 #include <SkFontMgr.h>
 #include <hb-ot.h>
-#include <iostream>
+#include <assert.h>
 
 #include "CommonCollections.h"
 #include "SkBlurDrawLooper.h"
