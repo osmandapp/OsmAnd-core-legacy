@@ -12,6 +12,7 @@ include_directories(AFTER SYSTEM
 	"${UPSTREAM}/src/sksl"
 	"${UPSTREAM}/third_party/externals/expat/lib"
 	"${UPSTREAM}/third_party/externals/freetype/include"
+	"${UPSTREAM}/third_party/externals/freetype/src"
 	"${UPSTREAM}/third_party/externals/libjpeg-turbo"
 	"${UPSTREAM}/third_party/libpng"
 	"${UPSTREAM}/third_party/externals/libpng"
