@@ -52,6 +52,7 @@ add_library(freetype2_osmand STATIC
 	"${UPSTREAM}/src/type1/t1driver.c"
 	"${UPSTREAM}/src/type1/t1objs.c"
 	"${UPSTREAM}/src/type1/t1gload.c"
+	"${UPSTREAM}/src/type1/t1amf.c"
 )
 
 if(CMAKE_TARGET_OS STREQUAL "linux")
