@@ -1,5 +1,7 @@
 project(freetype2_osmand)
 
+# NOT USED ANYMORE  !!!!
+
 set(ROOT "${OSMAND_ROOT}/externals/skia/upstream.patched/third_party/externals/freetype")
 
 set(UPSTREAM "${ROOT}")
