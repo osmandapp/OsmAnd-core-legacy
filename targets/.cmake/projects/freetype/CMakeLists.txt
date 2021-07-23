@@ -6,6 +6,7 @@ set(UPSTREAM "${ROOT}")
 include_directories(AFTER SYSTEM
 	"${ROOT}"
 	"${UPSTREAM}/include"
+	"${UPSTREAM}/src"
 )
 if(CMAKE_TARGET_OS STREQUAL "linux")
 	include_directories(AFTER SYSTEM
