@@ -48,6 +48,7 @@ add_library(freetype2_osmand STATIC
 	"${UPSTREAM}/src/truetype/truetype.c"
 	"${UPSTREAM}/src/cid/cidriver.c"
 	"${UPSTREAM}/src/cid/cidobjs.c"
+	"${UPSTREAM}/src/cid/cidgload.c"
 )
 
 if(CMAKE_TARGET_OS STREQUAL "linux")
