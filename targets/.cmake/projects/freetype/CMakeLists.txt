@@ -50,6 +50,7 @@ add_library(freetype2_osmand STATIC
 	"${UPSTREAM}/src/cid/cidobjs.c"
 	"${UPSTREAM}/src/cid/cidgload.c"
 	"${UPSTREAM}/src/type1/t1driver.c"
+	"${UPSTREAM}/src/type1/t1objs.c"
 )
 
 if(CMAKE_TARGET_OS STREQUAL "linux")
