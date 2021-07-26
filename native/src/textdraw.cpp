@@ -104,7 +104,7 @@ FontEntry* FontRegistry::updateFontEntry(std::string text, bool bold, bool itali
 	}
 	FontEntry* fontEntry = nullptr;
 	for (uint i = 0; i < cache.size(); i++) {
-		if (fontEntry != nullptr && (bold != cache[i]->bold) && (italic != cache[i]->italic)) {
+		if (fontEntry != nullptr && (bold != cache[i]->bold || italic != cache[i]->italic)) {
 			continue;
 		}
 		if (!containsText(cache[i]->fSkiaTypeface.get(), text)) {
