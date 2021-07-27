@@ -1,11 +1,14 @@
 project(freetype2_osmand)
 
+# NOT USED ANYMORE  !!!!
+
 set(ROOT "${OSMAND_ROOT}/externals/skia/upstream.patched/third_party/externals/freetype")
 
 set(UPSTREAM "${ROOT}")
 include_directories(AFTER SYSTEM
 	"${ROOT}"
 	"${UPSTREAM}/include"
+	"${UPSTREAM}/src"
 )
 if(CMAKE_TARGET_OS STREQUAL "linux")
 	include_directories(AFTER SYSTEM
@@ -45,6 +48,13 @@ add_library(freetype2_osmand STATIC
 	"${UPSTREAM}/src/sfnt/sfnt.c"
 	"${UPSTREAM}/src/smooth/smooth.c"
 	"${UPSTREAM}/src/truetype/truetype.c"
+	"${UPSTREAM}/src/cid/cidriver.c"
+	"${UPSTREAM}/src/cid/cidobjs.c"
+	"${UPSTREAM}/src/cid/cidgload.c"
+	"${UPSTREAM}/src/type1/t1driver.c"
+	"${UPSTREAM}/src/type1/t1objs.c"
+	"${UPSTREAM}/src/type1/t1gload.c"
+	"${UPSTREAM}/src/type1/t1afm.c"
 )
 
 if(CMAKE_TARGET_OS STREQUAL "linux")
