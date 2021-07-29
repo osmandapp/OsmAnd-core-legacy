@@ -22,7 +22,7 @@ include_directories(AFTER SYSTEM
 	#"${OSMAND_ROOT}/externals/giflib/upstream.patched/lib"
 	"${OSMAND_ROOT}/externals/skia/upstream.patched/third_party/externals/libjpeg-turbo"
 	"${OSMAND_ROOT}/externals/skia/upstream.patched/third_party/libpng"
-	"${OSMAND_ROOT}/externals/skia/upstream.patched/third_party/externals/harfbuzz/src"
+	#"${OSMAND_ROOT}/externals/harfbuzz/upstream.patched/src"
 	"${OSMAND_ROOT}/externals/protobuf/upstream.patched/src"
 	"${OSMAND_ROOT}/native/include"
 	"${OSMAND_ROOT}/native/src"
@@ -106,5 +106,5 @@ add_library(osmand SHARED
 target_link_libraries(osmand LINK_PUBLIC
 	skia_osmand
 	protobuf_osmand
-	harfbuzz_osmand
+	harfbuzz
 )
