@@ -65,4 +65,4 @@ add_dependencies(skia_osmand png_osmand jpeg_osmand expat_osmand)
 
 # OsmAnd core
 add_subdirectory("${OSMAND_PROJECTS_ROOT}/OsmAndCore" "OsmAndCore")
-add_dependencies(osmand	skia_osmand protobuf_osmand harfbuzz)
+add_dependencies(osmand	skia_osmand protobuf_osmand)
