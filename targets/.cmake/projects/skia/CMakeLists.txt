@@ -168,14 +168,15 @@ add_library(skia_osmand STATIC
 	${target_specific_sources}
 )
 
-find_package(Freetype REQUIRED)
+#find_package(Freetype REQUIRED)
 target_link_libraries(skia_osmand LINK_PUBLIC
 	expat_osmand
 	png_osmand
 	jpeg_osmand
-	${FREETYPE_LIBRARIES}
+	freetype2_osmand
 )
-target_include_directories(skia_osmand PRIVATE ${FREETYPE_INCLUDE_DIRS})
+#${FREETYPE_LIBRARIES}
+#target_include_directories(skia_osmand PRIVATE ${FREETYPE_INCLUDE_DIRS})
 	
 if(CMAKE_TARGET_OS STREQUAL "linux")
 	find_library(FONTCONFIG_LIBRARY fontconfig)

@@ -12,7 +12,7 @@
 #include <SkFontPriv.h>
 #include <SkAutoMalloc.h>
 #include <SkTextBlob.h>
-#include <hb-ot.h>
+#include "hb-ot.h"
 #include <math.h>
 #include <time.h>
 

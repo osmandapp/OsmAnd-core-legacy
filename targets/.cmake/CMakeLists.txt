@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.7 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.0.0 FATAL_ERROR)
 project(osmand_core_legacy)
 set(OSMAND_ROOT "${CMAKE_CURRENT_LIST_DIR}/../..")
 set(OSMAND_PROJECTS_ROOT "${CMAKE_CURRENT_LIST_DIR}/projects")
@@ -34,6 +34,9 @@ if(CMAKE_CXX_COMPILER_FLAGS)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_COMPILER_FLAGS}")
 endif()
 
+#set(CMAKE_IGNORE_PATH "/usr/local/lib")
+link_directories("${CMAKE_LIBRARY_OUTPUT_DIRECTORY}")
+
 # External : z
 add_subdirectory("${OSMAND_PROJECTS_ROOT}/zlib" "zlib")
 
@@ -65,4 +68,4 @@ add_dependencies(skia_osmand png_osmand jpeg_osmand expat_osmand)
 
 # OsmAnd core
 add_subdirectory("${OSMAND_PROJECTS_ROOT}/OsmAndCore" "OsmAndCore")
-add_dependencies(osmand	skia_osmand protobuf_osmand harfbuzz)
+add_dependencies(osmand	skia_osmand protobuf_osmand)

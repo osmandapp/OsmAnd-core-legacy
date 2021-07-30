@@ -7,7 +7,7 @@
 #include <SkTypeface.h>
 #include <SkFont.h>
 #include <SkFontMgr.h>
-#include <hb-ot.h>
+#include "hb-ot.h"
 #include <assert.h>
 
 #include "CommonCollections.h"
