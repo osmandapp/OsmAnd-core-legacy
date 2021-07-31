@@ -319,8 +319,8 @@ struct RoutingContext {
 								if (type != -1) {
 									d->types.push_back(type);
 								}
-								d->types.push_back(createType);
 							}
+							d->types.push_back(createType);
 						}
 					}
 
