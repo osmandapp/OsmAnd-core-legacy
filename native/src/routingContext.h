@@ -175,8 +175,8 @@ struct RoutingContext {
 		, publicTransport(false)
 		, geocoding(false)
 		, conditionalTime(0)
-		, progress(std::make_shared<RouteCalculationProgress>())
-		, precalcRoute(std::make_shared<PrecalculatedRouteDirection>()) {
+		, progress(new RouteCalculationProgress())
+		, precalcRoute(new PrecalculatedRouteDirection()) {
 			this->basemap = RouteCalculationMode::BASE == calcMode;
 	}
 
