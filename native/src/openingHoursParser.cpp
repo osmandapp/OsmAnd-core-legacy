@@ -379,7 +379,7 @@ bool OpeningHoursParser::BasicOpeningHourRule::containsPreviousDay(const tm& dat
 
 bool OpeningHoursParser::BasicOpeningHourRule::containsMonth(const tm& dateTime) const {
 	int i = dateTime.tm_mon;
-	return containsYear(dateTime) && _months[i];
+	return containsYear(dateTime) && find(_months, i) != _months.end();
 }
 
 bool OpeningHoursParser::BasicOpeningHourRule::containsYear(const tm& dateTime) const {
@@ -387,8 +387,10 @@ bool OpeningHoursParser::BasicOpeningHourRule::containsYear(const tm& dateTime) 
 
 	int month = dateTime.tm_mon;
 	int year = dateTime.tm_year + 1900;
-	if ((!_firstYearMonths.empty() && _firstYearMonths[month] == year) ||
-		(!_lastYearMonths.empty() && _lastYearMonths[month] == year) ||
+	const auto firstYear = find(_firstYearMonths, month);
+	const auto lastYear = find(_lastYearMonths, month);
+	if ((!_firstYearMonths.empty() && firstYear != _firstYearMonths.end() && *firstYear == year) ||
+		(!_lastYearMonths.empty() && lastYear != _lastYearMonths.end() && *lastYear == year) ||
 		(_firstYearMonths.empty() && _lastYearMonths.empty() && _year == year)) {
 		return true;
 	}
