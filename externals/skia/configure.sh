@@ -23,6 +23,14 @@ mkdir -p "$SRCLOC/upstream.original"
 	git fetch --depth=1 && \
 	git checkout $VERSION)
 
+# sync deps
+cd $SRCLOC/upstream.original/tools
+./git-sync-deps
+
+VERSION_HARFBUZZ="b37f03f" #2.8.1
+(cd $SRCLOC/upstream.original/third_party/externals/harfbuzz && \
+	git checkout $VERSION_HARFBUZZ)
+
 # Patch
 cp -rf $SRCLOC/upstream.original $SRCLOC/upstream.patched
 if [ -d $SRCLOC/patches ]; then
@@ -36,13 +44,7 @@ if [ -d $SRCLOC/patches ]; then
 	done
 fi
 
-# sync deps
-cd $SRCLOC/upstream.patched/tools
-./git-sync-deps
 
-VERSION_HARFBUZZ="b37f03f" #2.8.1
-(cd $SRCLOC/upstream.patched/third_party/externals/harfbuzz && \
-	git checkout $VERSION_HARFBUZZ)
 	
 #Patch jerror.c after git sync, before it is not available
 patch $SRCLOC/upstream.patched/third_party/externals/libjpeg-turbo/jerror.c $SRCLOC/patches/12-libjpeg-jerror.after_git_sync_patch

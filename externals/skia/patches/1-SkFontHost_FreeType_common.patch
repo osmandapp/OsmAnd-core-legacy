@@ -1,5 +1,5 @@
---- upstream.original/src/ports/SkFontHost_FreeType_common.cpp	2021-06-16 13:17:29.000000000 +0300
-+++ /Users/macmini/OsmAnd/skia/src/ports/SkFontHost_FreeType_common.cpp	2021-06-15 11:29:20.000000000 +0300
+--- upstream.original/src/ports/SkFontHost_FreeType_common.cpp	2021-07-29 17:19:54.000000000 +0300
++++ upstream.patched/src/ports/SkFontHost_FreeType_common.cpp	2021-07-29 17:19:56.000000000 +0300
 @@ -760,8 +760,12 @@
      };
  };
