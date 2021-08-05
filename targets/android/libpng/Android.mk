@@ -3,44 +3,31 @@ LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
 
 PROJECT_ROOT_RELATIVE := ../../../../platforms/android/OsmAnd
+OSMAND_LIBPNG_ROOT_RELATIVE := ../../../externals/skia/upstream.patched/third_party/libpng
+OSMAND_LIBPNG_ROOT := $(LOCAL_PATH)/$(OSMAND_LIBPNG_ROOT_RELATIVE)
 OSMAND_LIBPNG_RELATIVE := ../../../externals/skia/upstream.patched/third_party/libpng
 OSMAND_LIBPNG := $(LOCAL_PATH)/$(OSMAND_LIBPNG_RELATIVE)
 	
 LOCAL_CFLAGS += -DPNG_CONFIGURE_LIBPNG -fPIC
 
-LOCAL_C_INCLUDES := \
-	$(OSMAND_LIBPNG) \
-	$(OSMAND_LIBPNG)/../externals/libpng
-
 LOCAL_SRC_FILES := \
-	$(OSMAND_LIBPNG_RELATIVE)/../externals/libpng/png.c \
-	$(OSMAND_LIBPNG_RELATIVE)/../externals/libpng/pngerror.c \
-	$(OSMAND_LIBPNG_RELATIVE)/../externals/libpng/pngget.c \
-	$(OSMAND_LIBPNG_RELATIVE)/../externals/libpng/pngmem.c \
-	$(OSMAND_LIBPNG_RELATIVE)/../externals/libpng/pngpread.c \
-	$(OSMAND_LIBPNG_RELATIVE)/../externals/libpng/pngread.c \
-	$(OSMAND_LIBPNG_RELATIVE)/../externals/libpng/pngrio.c \
-	$(OSMAND_LIBPNG_RELATIVE)/../externals/libpng/pngrtran.c \
-	$(OSMAND_LIBPNG_RELATIVE)/../externals/libpng/pngrutil.c \
-	$(OSMAND_LIBPNG_RELATIVE)/../externals/libpng/pngset.c \
-	$(OSMAND_LIBPNG_RELATIVE)/../externals/libpng/pngtrans.c \
-	$(OSMAND_LIBPNG_RELATIVE)/../externals/libpng/pngwio.c \
-	$(OSMAND_LIBPNG_RELATIVE)/../externals/libpng/pngwrite.c \
-	$(OSMAND_LIBPNG_RELATIVE)/../externals/libpng/pngwtran.c \
-	$(OSMAND_LIBPNG_RELATIVE)/../externals/libpng/pngwutil.c
-
-
-ifeq ($(TARGET_ARCH),$(filter $(TARGET_ARCH),arm arm64))
-	LOCAL_SRC_FILES += \
-		$(OSMAND_LIBPNG_RELATIVE)/../externals/libpng/arm/arm_init.c \
-		$(OSMAND_LIBPNG_RELATIVE)/../externals/libpng/arm/filter_neon_intrinsics.c \
-		$(OSMAND_LIBPNG_RELATIVE)/../externals/libpng/arm/palette_neon_intrinsics.c
-
-else ifeq ($(TARGET_ARCH),$(filter $(TARGET_ARCH),x86 x86_64))
-	LOCAL_SRC_FILES += \
-		$(OSMAND_LIBPNG_RELATIVE)/../externals/libpng/intel/filter_sse2_intrinsics.c \
-		$(OSMAND_LIBPNG_RELATIVE)/../externals/libpng/intel/intel_init.c
-endif		
+	$(OSMAND_LIBPNG_RELATIVE)/png.c \
+	$(OSMAND_LIBPNG_RELATIVE)/pngerror.c \
+	$(OSMAND_LIBPNG_RELATIVE)/pngget.c \
+	$(OSMAND_LIBPNG_RELATIVE)/pngmem.c \
+	$(OSMAND_LIBPNG_RELATIVE)/pngpread.c \
+	$(OSMAND_LIBPNG_RELATIVE)/pngread.c \
+	$(OSMAND_LIBPNG_RELATIVE)/pngrio.c \
+	$(OSMAND_LIBPNG_RELATIVE)/pngrtran.c \
+	$(OSMAND_LIBPNG_RELATIVE)/pngrutil.c \
+	$(OSMAND_LIBPNG_RELATIVE)/pngset.c \
+	$(OSMAND_LIBPNG_RELATIVE)/pngtrans.c \
+	$(OSMAND_LIBPNG_RELATIVE)/pngwio.c \
+	$(OSMAND_LIBPNG_RELATIVE)/pngwrite.c \
+	$(OSMAND_LIBPNG_RELATIVE)/pngwtran.c \
+	$(OSMAND_LIBPNG_RELATIVE)/pngwutil.c \
+	$(OSMAND_LIBPNG_RELATIVE)/arm/arm_init.c \
+    $(OSMAND_LIBPNG_RELATIVE)/arm/filter_neon_intrinsics.c
 
 LOCAL_MODULE := osmand_png
 

@@ -1,11 +1,10 @@
 project(png_osmand)
 
-set(ROOT "${OSMAND_ROOT}/externals/skia/upstream.patched/third_party/externals/libpng")
+set(ROOT "${OSMAND_ROOT}/externals/skia/upstream.patched/third_party/libpng")
 set(UPSTREAM "${ROOT}")
 include_directories(AFTER SYSTEM
 	"${UPSTREAM}"
 	"${OSMAND_ROOT}/externals/skia/upstream.patched/third_party/externals/zlib"
-	"${OSMAND_ROOT}/externals/skia/upstream.patched/third_party/libpng"
 )
 add_definitions(-DPNG_CONFIGURE_LIBPNG -DZ_PREFIX)
 
@@ -13,8 +12,8 @@ set(target_arch_specific_sources "")
 
 if(CMAKE_TARGET_CPU_ARCH STREQUAL "intel")
         set(target_arch_specific_sources "${target_arch_specific_sources}"
-        	"${UPSTREAM}/intel/filter_sse2_intrinsics.c"
-        	"${UPSTREAM}/intel/intel_init.c"
+        	"${UPSTREAM}/contrib/intel/filter_sse2_intrinsics.c"
+        	"${UPSTREAM}/contrib/intel/intel_init.c"
         )
         add_definitions(-DPNG_INTEL_SSE)
 endif()

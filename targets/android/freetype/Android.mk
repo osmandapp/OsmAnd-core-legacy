@@ -7,8 +7,6 @@ OSMAND_FREETYPE_ROOT_RELATIVE := ../../../externals/skia/upstream.patched/third_
 OSMAND_FREETYPE_ROOT := $(LOCAL_PATH)/$(OSMAND_FREETYPE_ROOT_RELATIVE)
 OSMAND_FREETYPE_RELATIVE := ../../../externals/skia/upstream.patched/third_party/externals/freetype
 OSMAND_FREETYPE := $(LOCAL_PATH)/$(OSMAND_FREETYPE_RELATIVE)
-OSMAND_FREETYPE2_RELATIVE := ../../../externals/skia/upstream.patched/third_party/freetype2
-OSMAND_FREETYPE2 := $(LOCAL_PATH)/$(OSMAND_FREETYPE2_RELATIVE)
 
 LOCAL_SRC_FILES:= \
  	$(OSMAND_FREETYPE_RELATIVE)/src/autofit/autofit.c \
@@ -17,7 +15,6 @@ LOCAL_SRC_FILES:= \
   	$(OSMAND_FREETYPE_RELATIVE)/src/base/ftbdf.c \
   	$(OSMAND_FREETYPE_RELATIVE)/src/base/ftbitmap.c \
   	$(OSMAND_FREETYPE_RELATIVE)/src/base/ftcid.c \
-	$(OSMAND_FREETYPE_RELATIVE)/src/base/ftdebug.c \
   	$(OSMAND_FREETYPE_RELATIVE)/src/base/ftfntfmt.c \
   	$(OSMAND_FREETYPE_RELATIVE)/src/base/ftfstype.c \
   	$(OSMAND_FREETYPE_RELATIVE)/src/base/ftgasp.c \
@@ -55,7 +52,6 @@ LOCAL_SRC_FILES:= \
   	$(OSMAND_FREETYPE_RELATIVE)/src/winfonts/winfnt.c
 
 LOCAL_C_INCLUDES += \
-	$(OSMAND_FREETYPE2)/include/freetype-android \
 	$(OSMAND_FREETYPE)/include
 
 LOCAL_CFLAGS += -DFT2_BUILD_LIBRARY -fPIC

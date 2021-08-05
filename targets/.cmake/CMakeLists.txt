@@ -45,13 +45,13 @@ add_dependencies(png_osmand z_osmand)
 add_subdirectory("${OSMAND_PROJECTS_ROOT}/expat" "expat")
 
 # External : freetype2
-#add_subdirectory("${OSMAND_PROJECTS_ROOT}/freetype" "freetype")
+add_subdirectory("${OSMAND_PROJECTS_ROOT}/freetype" "freetype")
 
 # External : gif
 #add_subdirectory("${OSMAND_PROJECTS_ROOT}/giflib" "giflib")
 
 # External : harfbuzz
-add_subdirectory("${OSMAND_PROJECTS_ROOT}/harfbuzz" "harfbuzz")
+#add_subdirectory("${OSMAND_PROJECTS_ROOT}/harfbuzz" "harfbuzz")
 
 # External : jpeg
 add_subdirectory("${OSMAND_PROJECTS_ROOT}/jpeg" "jpeg")
@@ -61,8 +61,8 @@ add_subdirectory("${OSMAND_PROJECTS_ROOT}/protobuf" "protobuf")
 
 # External : skia
 add_subdirectory("${OSMAND_PROJECTS_ROOT}/skia" "skia")
-add_dependencies(skia_osmand png_osmand jpeg_osmand expat_osmand)
+add_dependencies(skia_osmand png_osmand jpeg_osmand expat_osmand freetype2_osmand)
 
 # OsmAnd core
 add_subdirectory("${OSMAND_PROJECTS_ROOT}/OsmAndCore" "OsmAndCore")
-add_dependencies(osmand	skia_osmand protobuf_osmand harfbuzz)
+add_dependencies(osmand	skia_osmand protobuf_osmand)
