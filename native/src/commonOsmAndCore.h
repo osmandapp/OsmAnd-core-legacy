@@ -73,7 +73,7 @@ class quad_tree {
 	std::unique_ptr<node> root;
 
    public:
-	quad_tree(SkRect r = SkRect::MakeLTRB(0, 0, 0x7FFFFFFF, 0x7FFFFFFF), int depth = 8, double ratio = 0.55)
+	quad_tree(SkRect r = SkRect::MakeIWH(0x7FFFFFFF, 0x7FFFFFFF), int depth = 8, double ratio = 0.55)
 		: ratio(ratio), max_depth(depth), root(new node(r)) {
 	}
 
