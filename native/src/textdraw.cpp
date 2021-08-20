@@ -12,6 +12,7 @@
 #include <SkFontPriv.h>
 #include <SkAutoMalloc.h>
 #include <SkTextBlob.h>
+#include <SkImageFilters.h>
 #include "hb-ot.h"
 #include <math.h>
 #include <time.h>
@@ -804,14 +805,16 @@ void drawTextOverCanvas(RenderingContext* rc, RenderingRuleSearchRequest* req, S
 				textDrawInfo->text = rc->getReshapedString(textDrawInfo->text);				
 				if (textDrawInfo->textShadow > 0) {
 					paintText.setColor(textDrawInfo->textShadowColor);
-					paintText.setStyle(SkPaint::kStroke_Style);
-					paintText.setStrokeWidth(2 + textDrawInfo->textShadow);
+					//paintText.setStyle(SkPaint::kStroke_Style);
+					//paintText.setStrokeWidth(2 + textDrawInfo->textShadow);					
+					paintText.setImageFilter(SkImageFilters::Dilate(2 + textDrawInfo->textShadow, 2 + textDrawInfo->textShadow, nullptr));
 					rc->nativeOperations.Pause();
 					globalFontRegistry.drawHbTextOnPath(cv, textDrawInfo->text, *textDrawInfo->path, fontEntry, skFontText, paintText, textDrawInfo->hOffset, textDrawInfo->vOffset - fm.fTop / 4);
 					rc->nativeOperations.Start();
 					// reset
-					paintText.setStyle(SkPaint::kFill_Style);
-					paintText.setStrokeWidth(2);
+					//paintText.setStyle(SkPaint::kFill_Style);
+					paintText.setImageFilter(nullptr);
+					//paintText.setStrokeWidth(2);
 					paintText.setColor(textDrawInfo->textColor);
 				}
 				rc->nativeOperations.Pause();
@@ -844,7 +847,7 @@ void FontRegistry::drawSkiaTextOnPath(SkCanvas *canvas, std::string textS, SkPat
 	for (int i = 0; i < length; ++i) {
 		xy[i].set(x, 0);
 		x += font.measureText(&text[i], 1, SkTextEncoding::kUTF8, nullptr, &paint);
-		x *= 64;
+		//x *= 64;
 	}
 
 	SkPathMeasure meas(path, false);
@@ -893,8 +896,8 @@ void FontRegistry::drawHbTextOnPath(SkCanvas *canvas, std::string textS, SkPath 
 
 	hb_font_t *hb_font = hb_font_create(face->fHarfBuzzFace.get());
 	hb_font_set_scale(hb_font,
-					  HARFBUZZ_FONT_SIZE_SCALE * font.getSize(),
-					  HARFBUZZ_FONT_SIZE_SCALE * font.getSize());
+					  font.getSize(),
+					  font.getSize());
 	hb_ot_font_set_funcs(hb_font);
 	hb_buffer_t *hb_buffer = hb_buffer_create();
 	hb_buffer_add_utf8(hb_buffer, text, -1, 0, -1);
@@ -911,9 +914,10 @@ void FontRegistry::drawHbTextOnPath(SkCanvas *canvas, std::string textS, SkPath 
 	SkPoint xy[length];
 	for (unsigned int i = 0; i < length; i++) {
 		glyphs[i] = info[i].codepoint;
-		xy[i].set(x + pos[i].x_offset / HARFBUZZ_FONT_SIZE_SCALE, y - pos[i].y_offset / HARFBUZZ_FONT_SIZE_SCALE);
-		x += pos[i].x_advance / HARFBUZZ_FONT_SIZE_SCALE;
-		y += pos[i].y_advance / HARFBUZZ_FONT_SIZE_SCALE;
+		xy[i].set(x + pos[i].x_offset, y - pos[i].y_offset);
+		// divide on 1.05 for avoid overflow rendering field when use highlighting of text
+		x += pos[i].x_advance / 1.05;
+		y += pos[i].y_advance;
 	}
 	
 	//destroy Harfbuzz variables
