@@ -920,6 +920,18 @@ void FontRegistry::drawHbTextOnPath(SkCanvas *canvas, std::string textS, SkPath 
 	hb_buffer_destroy(hb_buffer);
 	hb_font_destroy(hb_font);
 
+	SkPathMeasure meas(path, false);
+	// check correlation between harfbuzz and skia
+	if (xy[length - 1].x() > meas.getLength()) 
+	{
+		SkScalar correlation = meas.getLength() / xy[length - 1].x();
+		for (int i = 0; i < length; ++i)
+		{
+			xy[i].set(xy[i].x() * correlation, xy[i].y());
+		}
+	}
+
+
 	size_t size = length * (sizeof(SkRSXform) + sizeof(SkScalar));
 	SkAutoSMalloc<512> storage(size);
 	SkRSXform *xform = (SkRSXform *)storage.get();
@@ -927,7 +939,6 @@ void FontRegistry::drawHbTextOnPath(SkCanvas *canvas, std::string textS, SkPath 
 
 	font.getWidths(glyphs.get(), length, widths);
 	float textLength = xy[length - 1].x() + widths[length - 1];
-	SkPathMeasure meas(path, false);
 	float startOffset = h_offset + (meas.getLength() - textLength) / 2;
 	for (int i = 0; i < length; ++i)
 	{
@@ -935,16 +946,27 @@ void FontRegistry::drawHbTextOnPath(SkCanvas *canvas, std::string textS, SkPath 
 		const SkScalar offset = SkScalarHalf(widths[i]);
 
 		float pathOffset = startOffset + xy[i].x() + offset;
+		if (pathOffset < 0)
+		{
+			// centering of the start glyph is out of range
+			pathOffset = 0;
+		}
 
 		SkPoint pos;
 		SkVector tan;
-		if (pathOffset >= 0 && pathOffset < meas.getLength() && meas.getPosTan(pathOffset, &pos, &tan))
+		if (pathOffset <= meas.getLength() && meas.getPosTan(pathOffset, &pos, &tan))
 		{
 			pos += SkVector::Make(-tan.fY, tan.fX) * v_offset;
 			xform[i].fSCos = tan.x();
 			xform[i].fSSin = tan.y();
 			xform[i].fTx = pos.x() - tan.y() * xy[i].y() - tan.x() * offset;
 			xform[i].fTy = pos.y() + tan.x() * xy[i].y() - tan.y() * offset;
+		}
+		else
+		{
+			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, 
+				"Rendering error \"OUT of meas in drawHbTextOnPath\". Values: xy[i].x() %f pathOffset %f meas.getLength() %f startOffset %f offset %f",
+				xy[i].x(), pathOffset, meas.getLength(), startOffset, offset);
 		}
 	}
 	sk_sp<SkTextBlob> blob = SkTextBlob::MakeFromRSXform(glyphs.get(), length * sizeof(SkGlyphID),
