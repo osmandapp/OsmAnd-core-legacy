@@ -903,6 +903,9 @@ void FontRegistry::drawHbTextOnPath(SkCanvas *canvas, std::string textS, SkPath 
 	hb_shape(hb_font, hb_buffer, NULL, 0);
 
 	unsigned int length = hb_buffer_get_length(hb_buffer);
+	if (length == 0) {
+		return;
+	}
 
 	SkAutoTArray<SkGlyphID> glyphs(length);
 	hb_glyph_info_t *info = hb_buffer_get_glyph_infos(hb_buffer, NULL);
@@ -922,9 +925,12 @@ void FontRegistry::drawHbTextOnPath(SkCanvas *canvas, std::string textS, SkPath 
 
 	SkPathMeasure meas(path, false);
 	// check correlation between harfbuzz and skia
-	if (xy[length - 1].x() > meas.getLength()) 
-	{
+	if (xy[length - 1].x() > meas.getLength()) {
 		SkScalar correlation = meas.getLength() / xy[length - 1].x();
+		if (correlation < 0.5) {
+			// avoid show glyphs over each other 
+			return;
+		}
 		for (int i = 0; i < length; ++i)
 		{
 			xy[i].set(xy[i].x() * correlation, xy[i].y());
@@ -940,30 +946,25 @@ void FontRegistry::drawHbTextOnPath(SkCanvas *canvas, std::string textS, SkPath 
 	font.getWidths(glyphs.get(), length, widths);
 	float textLength = xy[length - 1].x() + widths[length - 1];
 	float startOffset = h_offset + (meas.getLength() - textLength) / 2;
-	for (int i = 0; i < length; ++i)
-	{
+	for (int i = 0; i < length; ++i) {
 		// we want to position each character on the center of its advance
 		const SkScalar offset = SkScalarHalf(widths[i]);
 
 		float pathOffset = startOffset + xy[i].x() + offset;
-		if (pathOffset < 0)
-		{
+		if (pathOffset < 0) {
 			// centering of the start glyph is out of range
 			pathOffset = 0;
 		}
 
 		SkPoint pos;
 		SkVector tan;
-		if (pathOffset <= meas.getLength() && meas.getPosTan(pathOffset, &pos, &tan))
-		{
+		if (pathOffset <= meas.getLength() && meas.getPosTan(pathOffset, &pos, &tan)) {
 			pos += SkVector::Make(-tan.fY, tan.fX) * v_offset;
 			xform[i].fSCos = tan.x();
 			xform[i].fSSin = tan.y();
 			xform[i].fTx = pos.x() - tan.y() * xy[i].y() - tan.x() * offset;
 			xform[i].fTy = pos.y() + tan.x() * xy[i].y() - tan.y() * offset;
-		}
-		else
-		{
+		} else {
 			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, 
 				"Rendering error \"OUT of meas in drawHbTextOnPath\". Values: xy[i].x() %f pathOffset %f meas.getLength() %f startOffset %f offset %f",
 				xy[i].x(), pathOffset, meas.getLength(), startOffset, offset);
