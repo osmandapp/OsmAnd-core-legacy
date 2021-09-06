@@ -967,6 +967,7 @@ void FontRegistry::drawHbTextOnPath(SkCanvas *canvas, std::string textS, SkPath 
 			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, 
 				"Rendering error \"OUT of meas in drawHbTextOnPath\". Values: xy[i].x() %f pathOffset %f meas.getLength() %f startOffset %f offset %f",
 				xy[i].x(), pathOffset, meas.getLength(), startOffset, offset);
+			return;
 		}
 	}
 	sk_sp<SkTextBlob> blob = SkTextBlob::MakeFromRSXform(glyphs.get(), length * sizeof(SkGlyphID),
