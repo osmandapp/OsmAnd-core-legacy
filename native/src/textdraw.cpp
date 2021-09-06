@@ -398,7 +398,7 @@ bool calculatePathToRotate(RenderingContext* rc, SHARED_PTR<TextDrawInfo>& p, De
 		}
 		float scale = 0.5f;
 		float plen = sqrt(px * px + py * py);
-		// vector ox,oy orthogonal to px,py to measure height
+		// vector ox,oy orthogonal to px,py to \ure height
 		float ox = -py;
 		float oy = px;
 		if (plen > 0) {
@@ -931,8 +931,7 @@ void FontRegistry::drawHbTextOnPath(SkCanvas *canvas, std::string textS, SkPath 
 			// avoid show glyphs over each other 
 			return;
 		}
-		for (int i = 0; i < length; ++i)
-		{
+		for (int i = 0; i < length; ++i) {
 			xy[i].set(xy[i].x() * correlation, xy[i].y());
 		}
 	}
