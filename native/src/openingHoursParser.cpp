@@ -1504,9 +1504,9 @@ void OpeningHoursParser::parseRuleV2(const std::string& rl, int sequenceIndex,
 		}
 	}
 	// recognize hours minutes ( Dec 25: 08:30-20:00)
-	for (int i = (int)tokens.size() - 1; i >= 0; i--) {
+	for (int i = (int)tokens.size() - 1; i > 0; i--) {
 		if (tokens[i]->type == TokenType::TOKEN_COLON) {
-			if (i > 0 && i < (int)tokens.size() - 1) {
+			if (i < (int)tokens.size() - 1) {
 				if (tokens[i - 1]->type == TokenType::TOKEN_UNKNOWN && tokens[i - 1]->mainNumber != -1 &&
 					tokens[i + 1]->type == TokenType::TOKEN_UNKNOWN && tokens[i + 1]->mainNumber != -1) {
 					tokens[i]->mainNumber = 60 * tokens[i - 1]->mainNumber + tokens[i + 1]->mainNumber;
@@ -1515,6 +1515,9 @@ void OpeningHoursParser::parseRuleV2(const std::string& rl, int sequenceIndex,
 					tokens.erase(tokens.begin() + (i - 1));
 				}
 			}
+		} else if (tokens[i]->type == TokenType::TOKEN_OFF_ON
+					&& tokens[i - 1]->type == TokenType::TOKEN_OFF_ON) {
+			tokens.erase(tokens.begin() + (i - 1));
 		}
 	}
 	buildRule(basic, tokens, rules);
@@ -2204,6 +2207,10 @@ void OpeningHoursParser::runTest() {
 	testOpened("08.08.2012 23:59", hours, true);
 	testOpened("08.08.2012 12:23", hours, true);
 	testOpened("08.08.2012 06:23", hours, true);
+	hours = parseOpenedHours("24/7 closed \"Temporarily, for major repairs\"");
+	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
+	testOpened("13.10.2019 18:00", hours, false);
+	testInfo("13.10.2019 18:00", hours, "24/7 off - Temporarily, for major repairs");
 
 	// some people seem to use the following syntax:
 	hours = parseOpenedHours("Sa-Su 24/7");
