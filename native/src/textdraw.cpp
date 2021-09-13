@@ -944,6 +944,29 @@ void FontRegistry::drawHbTextOnPath(SkCanvas *canvas, std::string textS, SkPath 
 
 	font.getWidths(glyphs.get(), length, widths);
 	float textLength = xy[length - 1].x() + widths[length - 1];
+	
+	// Make text straight if path is too short
+	if (length <= 4) {		
+		SkPath simplePath;
+		int countPoints = path.countPoints();
+		// select point on 1/3 and 2/3 of path
+		SkPoint firstPoint = path.getPoint((int)(countPoints / 3));
+		SkPoint lastPoint = path.getPoint((int)((countPoints / 3) * 2));
+		SkScalar dx = lastPoint.x() - firstPoint.x();
+		SkScalar dy = lastPoint.y() - firstPoint.y();		
+		// increase path between points 3 times
+		lastPoint.set(lastPoint.x() +  dx, lastPoint.y() + dy);
+		firstPoint.set(firstPoint.x() - dx, firstPoint.y() - dy);
+		simplePath.moveTo(firstPoint);
+		simplePath.lineTo(lastPoint);
+		meas.setPath(&simplePath, false);
+		if (meas.getLength() < textLength) {
+			// path is very crooked
+		 	return;			
+		}		
+	}
+
+	// set text to the middle of the path
 	float startOffset = h_offset + (meas.getLength() - textLength) / 2;
 	for (int i = 0; i < length; ++i) {
 		// we want to position each character on the center of its advance
