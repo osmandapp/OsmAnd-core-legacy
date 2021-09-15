@@ -13,6 +13,7 @@
 #include "CommonCollections.h"
 #include "SkBlurDrawLooper.h"
 #include "commonOsmAndCore.h"
+#include <set>
 
 // Better don't do this
 using namespace std;
@@ -25,6 +26,14 @@ struct FontEntry {
 	std::unique_ptr<hb_face_t, HBFDel> fHarfBuzzFace;
 	string fontName;
 	string pathToFont;
+
+	std::set<uint32_t> delCodePoints;//calculated deleting codepoint for current ttf
+	uint32_t repCodePoint;//calculated replacement codepoint for current ttf
+	
+	//\xE2\x80\x8B (\u200b) ZERO WIDTH SPACE - used for replacement, must be always in 0 index!
+	//\x41 - character A just use as divider
+	//\xE2\x80\x8C (\u200c) ZERO WIDTH NON-JOINER for avoid create ligature in arabic text
+	const char *repChars = "\xE2\x80\x8B\x41\xE2\x80\x8C";//just add code to the end with \x41 divider
 
 	FontEntry(const char *path, int index) {
 		pathToFont = path;
@@ -59,6 +68,27 @@ struct FontEntry {
 		hb_face_set_index(face, (unsigned)index);
 		hb_face_set_upem(face, fSkiaTypeface->getUnitsPerEm());
 		fHarfBuzzFace.reset(face);
+
+		//here calculating replacement symbols
+		hb_font_t *hb_font = hb_font_create(fHarfBuzzFace.get());
+		hb_ot_font_set_funcs(hb_font);
+		hb_buffer_t *hb_buffer = hb_buffer_create();
+		hb_buffer_add_utf8(hb_buffer, repChars, -1, 0, -1);
+		hb_buffer_guess_segment_properties(hb_buffer);
+		hb_shape(hb_font, hb_buffer, NULL, 0);
+		unsigned int length = hb_buffer_get_length(hb_buffer);
+		hb_glyph_info_t *info = hb_buffer_get_glyph_infos(hb_buffer, NULL);
+		for (int i = 0; i < length; i++) {
+			if (i == 0) {
+				repCodePoint = info[i].codepoint;
+			} else if (i == 1) {
+				continue;
+			} else {
+				delCodePoints.insert(info[i].codepoint);
+			}
+		}
+		hb_buffer_destroy(hb_buffer);
+		hb_font_destroy(hb_font);
 	}
 };
 

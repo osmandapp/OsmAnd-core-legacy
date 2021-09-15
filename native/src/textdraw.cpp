@@ -1041,7 +1041,11 @@ void FontRegistry::drawHbText(SkCanvas *cv, std::string textS, FontEntry *face, 
 	double x = 0;
 	double y = 0;
 	for (unsigned int i = 0; i < length; i++) {
-		runBuffer.glyphs[i] = info[i].codepoint;
+		if (face->delCodePoints.count(info[i].codepoint)) {
+			runBuffer.glyphs[i] = face->repCodePoint;
+		} else {
+			runBuffer.glyphs[i] = info[i].codepoint;
+		}
 		reinterpret_cast<SkPoint *>(runBuffer.pos)[i] =
 			SkPoint::Make(SkDoubleToScalar(x + pos[i].x_offset / HARFBUZZ_FONT_SIZE_SCALE),
 						  SkDoubleToScalar(y - pos[i].y_offset / HARFBUZZ_FONT_SIZE_SCALE));
