@@ -130,10 +130,8 @@ UNORDERED(map)<std::string, RenderingRulesStorage*> cachedStorages;
 
 RenderingRulesStorage* getStorage(JNIEnv* env, jobject storage) {
 	std::string hash = getStringMethod(env, storage, jmethod_Object_toString);
-	if (cachedStorages.find(hash) == cachedStorages.end()) {
-		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "Init rendering storage %s ", hash.c_str());
-		cachedStorages[hash] = createRenderingRulesStorage(env, storage);
-	}
+	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "Init rendering storage %s ", hash.c_str());
+	cachedStorages[hash] = createRenderingRulesStorage(env, storage);
 	return cachedStorages[hash];
 }
 
