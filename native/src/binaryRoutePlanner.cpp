@@ -644,7 +644,7 @@ void processRestriction(RoutingContext* ctx, SHARED_PTR<RouteSegment>& inputNext
 				if (!reverseWay) {
 					exclusiveRestriction = true;
 					ctx->segmentsToVisitNotForbidden.clear();
-                    ctx->segmentsToVisitNotForbidden.shrink_to_fit();
+					ctx->segmentsToVisitNotForbidden.shrink_to_fit();
 					ctx->segmentsToVisitPrescripted.push_back(next);
 				} else {
 					ctx->segmentsToVisitNotForbidden.push_back(next);
@@ -673,9 +673,9 @@ bool proccessRestrictions(RoutingContext* ctx, SHARED_PTR<RouteSegment>& segment
 		return false;
 	}
 	ctx->segmentsToVisitPrescripted.clear();
-    ctx->segmentsToVisitPrescripted.shrink_to_fit();
+	ctx->segmentsToVisitPrescripted.shrink_to_fit();
 	ctx->segmentsToVisitNotForbidden.clear();
-    ctx->segmentsToVisitNotForbidden.shrink_to_fit();
+	ctx->segmentsToVisitNotForbidden.shrink_to_fit();
 	processRestriction(ctx, inputNext, reverseWay, 0, road);
 	if (parent.get() != NULL) {
 		processRestriction(ctx, inputNext, reverseWay, segment->road->id, parent->road);
