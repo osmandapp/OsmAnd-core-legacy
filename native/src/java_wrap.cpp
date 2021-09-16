@@ -142,6 +142,10 @@ extern "C" JNIEXPORT void JNICALL Java_net_osmand_NativeLibrary_initRenderingRul
 	getStorage(ienv, storage);
 }
 
+extern "C" JNIEXPORT void JNICALL Java_net_osmand_NativeLibrary_clearRenderingRulesStorage(JNIEnv* ienv, jobject obj) {
+ cachedStorages.clear();
+}
+
 RenderingRuleSearchRequest* initSearchRequest(JNIEnv* env, jobject renderingRuleSearchRequest) {
 	jobject storage = env->GetObjectField(renderingRuleSearchRequest, RenderingRuleSearchRequest_storage);
 	RenderingRulesStorage* st = getStorage(env, storage);
