@@ -43,7 +43,7 @@ struct RoutingSubregionTile {
 	}
 
 	void unload() {
-		routes.clear();
+		routes = UNORDERED(map)<int64_t, SHARED_PTR<RouteSegment> >();
 		size = 0;
 		loaded = - abs(loaded);
 	}
@@ -190,8 +190,8 @@ struct RoutingContext {
 				}
 			}
 		}
-		subregionTiles.clear();
-		indexedSubregions.clear();
+		subregionTiles = MAP_SUBREGION_TILES();
+		indexedSubregions = UNORDERED(map)<int64_t, std::vector<SHARED_PTR<RoutingSubregionTile> > >();
 	}
 	
 	bool isInterrupted() {
