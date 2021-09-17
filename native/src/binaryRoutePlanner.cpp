@@ -220,6 +220,7 @@ bool checkIfGraphIsEmpty(RoutingContext* ctx, bool allowDirection, SEGMENTS_QUEU
 					break;
 				}
 			}
+			pnt->others.shrink_to_fit();
 			if (graphSegments.size() == 0) {
 				OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "Route is not found to selected target point.");
 				return true;
@@ -565,6 +566,12 @@ void processRouteSegment(RoutingContext* ctx, bool reverseWaySearch, SEGMENTS_QU
 	//}
 }
 
+void clearSegments(vector<SHARED_PTR<RouteSegment> >& segments)
+{
+	segments.clear();
+	segments.shrink_to_fit();
+}
+
 void processRestriction(RoutingContext* ctx, SHARED_PTR<RouteSegment>& inputNext, bool reverseWay, int64_t viaId,
 						SHARED_PTR<RouteDataObject>& road) {
 	bool via = viaId != 0;
@@ -643,8 +650,7 @@ void processRestriction(RoutingContext* ctx, SHARED_PTR<RouteSegment>& inputNext
 				// 2. in case we are going forward we have one "in" and many "out"
 				if (!reverseWay) {
 					exclusiveRestriction = true;
-					ctx->segmentsToVisitNotForbidden.clear();
-					ctx->segmentsToVisitNotForbidden.shrink_to_fit();
+					clearSegments(ctx->segmentsToVisitNotForbidden);
 					ctx->segmentsToVisitPrescripted.push_back(next);
 				} else {
 					ctx->segmentsToVisitNotForbidden.push_back(next);
@@ -658,6 +664,7 @@ void processRestriction(RoutingContext* ctx, SHARED_PTR<RouteSegment>& inputNext
 											   ctx->segmentsToVisitNotForbidden.begin(),
 											   ctx->segmentsToVisitNotForbidden.end());
 	}
+	ctx->segmentsToVisitPrescripted.shrink_to_fit();
 }
 
 bool proccessRestrictions(RoutingContext* ctx, SHARED_PTR<RouteSegment>& segment, SHARED_PTR<RouteSegment>& inputNext,
@@ -672,10 +679,8 @@ bool proccessRestrictions(RoutingContext* ctx, SHARED_PTR<RouteSegment>& segment
 		(parent.get() == NULL || parent->road->restrictions.size() == 0)) {
 		return false;
 	}
-	ctx->segmentsToVisitPrescripted.clear();
-	ctx->segmentsToVisitPrescripted.shrink_to_fit();
-	ctx->segmentsToVisitNotForbidden.clear();
-	ctx->segmentsToVisitNotForbidden.shrink_to_fit();
+	clearSegments(ctx->segmentsToVisitPrescripted);
+	clearSegments(ctx->segmentsToVisitNotForbidden);
 	processRestriction(ctx, inputNext, reverseWay, 0, road);
 	if (parent.get() != NULL) {
 		processRestriction(ctx, inputNext, reverseWay, segment->road->id, parent->road);
