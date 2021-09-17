@@ -389,9 +389,9 @@ mainLoop:
 	while (start->routeToTarget.size() > segmendInd + 1) {
 		SHARED_PTR<RouteSegmentResult> removed = start->routeToTarget[segmendInd + 1];
 		start->routeToTarget.erase(start->routeToTarget.begin() + segmendInd + 1);
-        start->routeToTarget.shrink_to_fit();
 		start->stepBackRoute.push_back(removed);
 	}
+	start->routeToTarget.shrink_to_fit();
 	SHARED_PTR<RouteSegmentResult>& res = start->routeToTarget[segmendInd];
 	next->pnt = std::make_shared<RouteSegmentPoint>(res->object, res->getEndPointIndex());
 	return true;
@@ -506,7 +506,7 @@ void RoutePlannerFrontEnd::cleanupResultAndAddTurns(SHARED_PTR<GpxRouteApproxima
 			}
 		}
 	}
-    gctx->result.shrink_to_fit();
+	gctx->result.shrink_to_fit();
 	for (SHARED_PTR<RouteSegmentResult> r : gctx->result) {
 		r->turnType = nullptr;
 		r->description = "";
