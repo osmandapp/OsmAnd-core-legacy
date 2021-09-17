@@ -664,7 +664,7 @@ void processRestriction(RoutingContext* ctx, SHARED_PTR<RouteSegment>& inputNext
 											   ctx->segmentsToVisitNotForbidden.begin(),
 											   ctx->segmentsToVisitNotForbidden.end());
 	}
-    ctx->segmentsToVisitPrescripted.shrink_to_fit();
+	ctx->segmentsToVisitPrescripted.shrink_to_fit();
 }
 
 bool proccessRestrictions(RoutingContext* ctx, SHARED_PTR<RouteSegment>& segment, SHARED_PTR<RouteSegment>& inputNext,
