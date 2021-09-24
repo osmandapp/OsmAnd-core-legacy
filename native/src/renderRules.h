@@ -518,6 +518,7 @@ public:
 		delete[] tagValueGlobalRules;
 	}
 	const void* storageId;
+	int32_t internalVersion;
 
 	RenderingRule* getRule(int state, int itag, int ivalue);
 

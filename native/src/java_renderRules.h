@@ -35,6 +35,7 @@ jmethodID RenderingRulesStorage_getRules;
 jmethodID RenderingRulesStorage_getRuleTagValueKey;
 jmethodID RenderingRulesStorage_getRenderingAttributeNames;
 jmethodID RenderingRulesStorage_getRenderingAttributeValues;
+jmethodID RenderingRulesStorage_getInternalVersion;
 
 jclass RenderingRuleSearchRequestClass;
 jfieldID RenderingRuleSearchRequest_storage;
@@ -198,6 +199,7 @@ void initRules(JNIEnv* env, RenderingRulesStorage* st, jobject javaStorage) {
 
 RenderingRulesStorage* createRenderingRulesStorage(JNIEnv* env, jobject storage) {
 	RenderingRulesStorage* res = new RenderingRulesStorage(storage, false);
+	res->internalVersion = env->CallIntMethod(storage, RenderingRulesStorage_getInternalVersion);
 	initDictionary(env, res, storage);
 	initProperties(env, res, storage);
 	initRules(env, res, storage);
@@ -303,6 +305,7 @@ void loadJniRenderingRules(JNIEnv* env) {
 		env->GetMethodID(RenderingRulesStorageClass, "getRenderingAttributeNames", "()[Ljava/lang/String;");
 	RenderingRulesStorage_getRenderingAttributeValues = env->GetMethodID(
 		RenderingRulesStorageClass, "getRenderingAttributeValues", "()[Lnet/osmand/render/RenderingRule;");
+	RenderingRulesStorage_getInternalVersion = env->GetMethodID(RenderingRulesStorageClass, "getInternalVersion", "()I");
 
 	ListClass = findGlobalClass(env, "java/util/List");
 	List_size = env->GetMethodID(ListClass, "size", "()I");
