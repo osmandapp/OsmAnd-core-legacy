@@ -27,6 +27,7 @@ private:
     int currentLocation;
 public:
     UNORDERED_map<RouteTypeRule, uint32_t> rules;
+    vector<RouteTypeRule> insertOrder;
     vector<Location> locations;
     UNORDERED_map<SHARED_PTR<RouteDataObject>, vector<vector<uint32_t>>> pointNamesMap;
     

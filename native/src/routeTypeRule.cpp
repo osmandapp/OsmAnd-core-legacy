@@ -104,7 +104,7 @@ void RouteTypeRule::writeToBundle(SHARED_PTR<RouteDataBundle>& bundle) const {
 
 bool RouteTypeRule::operator==(const RouteTypeRule& other) const {
 	bool res = false;
-	res = t == other.t || res;
-	res = v == other.v || res;
+	res = t == other.t;
+	res = v == other.v && res;
 	return res;
 }
