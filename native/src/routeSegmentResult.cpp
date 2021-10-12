@@ -25,20 +25,20 @@ void RouteSegmentResult::collectTypes(SHARED_PTR<RouteDataResources>& resources)
 
 void RouteSegmentResult::collectNames(SHARED_PTR<RouteDataResources>& resources) {
 	auto& rules = resources->rules;
-    auto& insertOrder = resources->insertOrder;
+	auto& insertOrder = resources->insertOrder;
 	RoutingIndex* region = object->region;
 	if (region->nameTypeRule != -1) {
 		auto& r = region->quickGetEncodingRule(region->nameTypeRule);
 		if (rules.find(r) == rules.end()) {
 			rules[r] = (uint32_t)rules.size();
-            insertOrder.push_back(r);
+			insertOrder.push_back(r);
 		}
 	}
 	if (region->refTypeRule != -1) {
 		auto& r = region->quickGetEncodingRule(region->refTypeRule);
 		if (rules.find(r) == rules.end()) {
 			rules[r] = (uint32_t)rules.size();
-            insertOrder.push_back(r);
+			insertOrder.push_back(r);
 		}
 	}
 	if (object->namesIds.size() > 0) {
@@ -48,7 +48,7 @@ void RouteSegmentResult::collectNames(SHARED_PTR<RouteDataResources>& resources)
 			RouteTypeRule r(tag, name);
 			if (rules.find(r) == rules.end()) {
 				rules[r] = (uint32_t)rules.size();
-                insertOrder.push_back(r);
+				insertOrder.push_back(r);
 			}
 		}
 	}
@@ -62,7 +62,7 @@ void RouteSegmentResult::collectNames(SHARED_PTR<RouteDataResources>& resources)
 					auto& r = region->quickGetEncodingRule(type);
 					if (rules.find(r) == rules.end()) {
 						rules[r] = (uint32_t)rules.size();
-                        insertOrder.push_back(r);
+						insertOrder.push_back(r);
 					}
 				}
 			}
@@ -81,7 +81,7 @@ void RouteSegmentResult::collectRules(UNORDERED_map<RouteTypeRule, uint32_t>& ru
 		}
 		if (rules.find(rule) == rules.end()) {
 			rules[rule] = (uint32_t)rules.size();
-            insertOrder.push_back(rule);
+			insertOrder.push_back(rule);
 		}
 	}
 }
@@ -165,7 +165,7 @@ vector<vector<uint32_t>> RouteSegmentResult::convertPointNames(vector<vector<uin
 				if (it == rules.end()) {
 					ruleId = (uint32_t)rules.size();
 					rules[rule] = ruleId;
-                    insertOrder.push_back(rule);
+					insertOrder.push_back(rule);
 				} else {
 					ruleId = it->second;
 				}
