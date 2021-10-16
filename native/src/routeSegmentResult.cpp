@@ -9,7 +9,7 @@
 void RouteSegmentResult::collectTypes(SHARED_PTR<RouteDataResources>& resources) {
 	auto& rules = resources->rules;
 	if (object->types.size() > 0) {
-		collectRules(rules, object->types);
+		collectRules(rules, resources->insertOrder, object->types);
 	}
 	if (object->pointTypes.size() > 0) {
 		int start = min(startPointIndex, endPointIndex);
@@ -17,7 +17,7 @@ void RouteSegmentResult::collectTypes(SHARED_PTR<RouteDataResources>& resources)
 		for (int i = start; i <= end && i < object->pointTypes.size(); i++) {
 			vector<uint32_t> types = object->pointTypes[i];
 			if (types.size() > 0) {
-				collectRules(rules, types);
+				collectRules(rules, resources->insertOrder, types);
 			}
 		}
 	}
@@ -25,17 +25,20 @@ void RouteSegmentResult::collectTypes(SHARED_PTR<RouteDataResources>& resources)
 
 void RouteSegmentResult::collectNames(SHARED_PTR<RouteDataResources>& resources) {
 	auto& rules = resources->rules;
+	auto& insertOrder = resources->insertOrder;
 	RoutingIndex* region = object->region;
 	if (region->nameTypeRule != -1) {
 		auto& r = region->quickGetEncodingRule(region->nameTypeRule);
 		if (rules.find(r) == rules.end()) {
 			rules[r] = (uint32_t)rules.size();
+			insertOrder.push_back(r);
 		}
 	}
 	if (region->refTypeRule != -1) {
 		auto& r = region->quickGetEncodingRule(region->refTypeRule);
 		if (rules.find(r) == rules.end()) {
 			rules[r] = (uint32_t)rules.size();
+			insertOrder.push_back(r);
 		}
 	}
 	if (object->namesIds.size() > 0) {
@@ -45,6 +48,7 @@ void RouteSegmentResult::collectNames(SHARED_PTR<RouteDataResources>& resources)
 			RouteTypeRule r(tag, name);
 			if (rules.find(r) == rules.end()) {
 				rules[r] = (uint32_t)rules.size();
+				insertOrder.push_back(r);
 			}
 		}
 	}
@@ -58,6 +62,7 @@ void RouteSegmentResult::collectNames(SHARED_PTR<RouteDataResources>& resources)
 					auto& r = region->quickGetEncodingRule(type);
 					if (rules.find(r) == rules.end()) {
 						rules[r] = (uint32_t)rules.size();
+						insertOrder.push_back(r);
 					}
 				}
 			}
@@ -65,7 +70,7 @@ void RouteSegmentResult::collectNames(SHARED_PTR<RouteDataResources>& resources)
 	}
 }
 
-void RouteSegmentResult::collectRules(UNORDERED_map<RouteTypeRule, uint32_t>& rules, vector<uint32_t>& types) {
+void RouteSegmentResult::collectRules(UNORDERED_map<RouteTypeRule, uint32_t>& rules, vector<RouteTypeRule>& insertOrder, vector<uint32_t>& types) {
 	RoutingIndex* region = object->region;
 	for (uint32_t type : types) {
 		auto& rule = region->quickGetEncodingRule(type);
@@ -76,6 +81,7 @@ void RouteSegmentResult::collectRules(UNORDERED_map<RouteTypeRule, uint32_t>& ru
 		}
 		if (rules.find(rule) == rules.end()) {
 			rules[rule] = (uint32_t)rules.size();
+			insertOrder.push_back(rule);
 		}
 	}
 }
@@ -139,7 +145,8 @@ vector<uint32_t> RouteSegmentResult::convertNameIds(vector<pair<uint32_t, uint32
 
 vector<vector<uint32_t>> RouteSegmentResult::convertPointNames(vector<vector<uint32_t>>& nameTypes,
 															   vector<vector<string>>& pointNames,
-															   UNORDERED_map<RouteTypeRule, uint32_t>& rules) {
+															   UNORDERED_map<RouteTypeRule, uint32_t>& rules,
+                                                               vector<RouteTypeRule>& insertOrder) {
 	vector<vector<uint32_t>> res(nameTypes.size());
 	if (nameTypes.size() == 0) {
 		return res;
@@ -158,6 +165,7 @@ vector<vector<uint32_t>> RouteSegmentResult::convertPointNames(vector<vector<uin
 				if (it == rules.end()) {
 					ruleId = (uint32_t)rules.size();
 					rules[rule] = ruleId;
+					insertOrder.push_back(rule);
 				} else {
 					ruleId = it->second;
 				}
@@ -335,7 +343,7 @@ void RouteSegmentResult::writeToBundle(SHARED_PTR<RouteDataBundle>& bundle) {
 			reverse(types.begin(), types.end());
 			reverse(names.begin(), names.end());
 		}
-		bundle->putVectors("pointNames", convertPointNames(types, names, rules));
+		bundle->putVectors("pointNames", convertPointNames(types, names, rules, bundle->resources->insertOrder));
 	}
 }
 

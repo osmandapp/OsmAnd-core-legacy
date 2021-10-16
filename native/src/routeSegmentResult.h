@@ -19,14 +19,14 @@ struct RouteSegmentResult {
 	int startPointIndex;
 	int endPointIndex;
 
-	void collectRules(UNORDERED_map<RouteTypeRule, uint32_t>& rules, vector<uint32_t>& types);
+	void collectRules(UNORDERED_map<RouteTypeRule, uint32_t>& rules, vector<RouteTypeRule>& insertOrder, vector<uint32_t>& types);
 	vector<uint32_t> convertTypes(vector<uint32_t>& types, UNORDERED_map<RouteTypeRule, uint32_t>& rules);
 	vector<vector<uint32_t>> convertTypes(vector<vector<uint32_t>>& types,
 										  UNORDERED_map<RouteTypeRule, uint32_t>& rules);
 	vector<uint32_t> convertNameIds(vector<pair<uint32_t, uint32_t>>& nameIds,
 									UNORDERED_map<RouteTypeRule, uint32_t>& rules);
 	vector<vector<uint32_t>> convertPointNames(vector<vector<uint32_t>>& nameTypes, vector<vector<string>>& pointNames,
-											   UNORDERED_map<RouteTypeRule, uint32_t>& rules);
+											   UNORDERED_map<RouteTypeRule, uint32_t>& rules, vector<RouteTypeRule>& insertOrder);
 
    public:
 	SHARED_PTR<RouteDataObject> object;
