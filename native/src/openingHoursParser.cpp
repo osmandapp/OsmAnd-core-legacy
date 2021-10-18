@@ -1760,7 +1760,8 @@ void OpeningHoursParser::buildRule(std::shared_ptr<BasicOpeningHourRule>& basic,
 		auto& days = basic->getDays();
 		std::fill(days.begin(), days.end(), true);
 		basic->setHasDays(true);
-	} else if (presentTokens.find(TokenType::TOKEN_DAY_WEEK) != presentTokens.end()) {
+	} else if (presentTokens.find(TokenType::TOKEN_DAY_WEEK) != presentTokens.end() &&
+		presentTokens.find(TokenType::TOKEN_HOLIDAY) != presentTokens.end()) {
 		basic->setHasDays(true);
 	}
 	rules.insert(rules.begin(), basic);
@@ -2022,8 +2023,13 @@ std::vector<std::shared_ptr<OpeningHoursParser::OpeningHours::Info>> OpeningHour
 void OpeningHoursParser::runTest() {
 	// 0. not properly supported
 	// hours = parseOpenedHours("Mo-Su (sunrise-00:30)-(sunset+00:30)");
-
-	auto hours = parseOpenedHours(
+	auto hours = parseOpenedHours("PH,Mo-Su 09:00-22:00");
+	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
+	testOpened("13.10.2021 11:54", hours, true);
+	hours = parseOpenedHours("Mo-We 07:00-21:00, Th-Fr 07:00-21:30, PH,Sa-Su 08:00-21:00");
+	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
+	testOpened("29.08.2021 10:09", hours, true);
+	hours = parseOpenedHours(
 		"Mo-Fr 08:00-12:30, Mo-We 12:30-16:30 \"Sur rendez-vous\", Fr 12:30-15:30 \"Sur rendez-vous\"");
 	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
 	testInfo("13.10.2019 18:00", hours, "Will open tomorrow at 08:00");
