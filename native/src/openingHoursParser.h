@@ -162,9 +162,10 @@ struct OpeningHoursParser {
 		 *
 		 * @param cal the date to check
 		 * @param r the rule to check
+		 * @param info true when filling Info struct
 		 * @return true if the this rule times overlap with r times
 		 */
-		virtual bool hasOverlapTimes(const tm& dateTime, const std::shared_ptr<OpeningHoursRule>& r) const = 0;
+		virtual bool hasOverlapTimes(const tm& dateTime, const std::shared_ptr<OpeningHoursRule>& r, bool info) const = 0;
 
 		virtual int getSequenceIndex() const = 0;
 
@@ -394,7 +395,7 @@ struct OpeningHoursParser {
 
 		bool hasOverlapTimes() const;
 
-		bool hasOverlapTimes(const tm& dateTime, const std::shared_ptr<OpeningHoursRule>& r) const;
+		bool hasOverlapTimes(const tm& dateTime, const std::shared_ptr<OpeningHoursRule>& r, bool info) const;
 
 		/**
 		 * Check if the next weekday of time "date" is part of this rule
@@ -476,7 +477,7 @@ struct OpeningHoursParser {
 		bool isOpenedForTime(const tm& dateTime, bool checkPrevious) const;
 		bool containsPreviousDay(const tm& dateTime) const;
 		bool hasOverlapTimes() const;
-		bool hasOverlapTimes(const tm& dateTime, const std::shared_ptr<OpeningHoursRule>& r) const;
+		bool hasOverlapTimes(const tm& dateTime, const std::shared_ptr<OpeningHoursRule>& r, bool info) const;
 		bool containsDay(const tm& dateTime) const;
 		bool containsNextDay(const tm& dateTime) const;
 		bool containsMonth(const tm& dateTime) const;
