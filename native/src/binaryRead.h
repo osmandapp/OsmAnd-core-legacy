@@ -609,7 +609,7 @@ struct RouteDataObject {
 			// translate into meters
 			total += abs(px - x) * 0.011 + abs(py - y) * 0.01863;
 		} while (total < dist);
-		return -atan2((float)x - px, (float)y - py);
+		return -atan2(x - px, y - py);
 	}
 
 	static double parseLength(string v, double def) {
