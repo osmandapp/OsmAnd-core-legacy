@@ -882,8 +882,7 @@ bool OpeningHoursParser::BasicOpeningHourRule::hasOverlapTimes() const {
 }
 
 bool OpeningHoursParser::BasicOpeningHourRule::hasOverlapTimes(const tm& dateTime,
-															   const std::shared_ptr<OpeningHoursRule>& r,
-															   bool info) const {
+	const std::shared_ptr<OpeningHoursRule>& r, bool strictOverlap) const {
 	if (_off) return true;
 
 	if (r != nullptr && r->contains(dateTime)) {
@@ -907,9 +906,8 @@ bool OpeningHoursParser::BasicOpeningHourRule::hasOverlapTimes(const tm& dateTim
 					else if (rStartTime >= rEndTime)
 						rEndTime = 24 * 60 + rEndTime;
 
-					if ((rStartTime >= startTime && rStartTime < endTime) ||
-						(startTime >= rStartTime && startTime < rEndTime) ||
-						(info && startTime <= rEndTime)) {
+					if ((rStartTime >= startTime && (strictOverlap ? rStartTime <= endTime : rStartTime < endTime)) ||
+						(startTime >= rStartTime && (strictOverlap ? startTime <= rEndTime : startTime < rEndTime))) {
 						return true;
 					}
 				}
@@ -938,7 +936,7 @@ bool OpeningHoursParser::UnparseableRule::hasOverlapTimes() const {
 }
 
 bool OpeningHoursParser::UnparseableRule::hasOverlapTimes(const tm& dateTime,
-														  const std::shared_ptr<OpeningHoursRule>& r, bool info) const {
+	const std::shared_ptr<OpeningHoursRule>& r, bool strictOverlap) const {
 	return false;
 }
 
