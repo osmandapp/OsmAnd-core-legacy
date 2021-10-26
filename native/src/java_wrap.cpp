@@ -1243,10 +1243,13 @@ jobject convertRouteSegmentResultToJava(JNIEnv* ienv, SHARED_PTR<RouteSegmentRes
 	}
 	jobject robj = convertRouteDataObjectToJava(ienv, rdo, reg);
 	jobject turnType = NULL;
-	if (r->turnType != nullptr){
+	if (r->turnType != nullptr) {
 		const auto& tt = r->turnType;
+		jintArray lanes = ienv->NewIntArray(tt->getLanes().size());
+		ienv->SetIntArrayRegion(lanes, 0, tt->getLanes().size(), (jint*)&tt->getLanes()[0]);
 		turnType = ienv->NewObject(jclass_TurnType, jmethod_TurnType_init, tt->getValue(),tt->getExitOut(), tt->getTurnAngle(),
-		                           tt->isSkipToSpeak(), &tt->getLanes()[0], tt->isPossibleLeftTurn(), tt->isPossibleRightTurn());
+		                           tt->isSkipToSpeak(), lanes, tt->isPossibleLeftTurn(), tt->isPossibleRightTurn());
+		ienv->DeleteLocalRef(lanes);
 	}
 	jobject resobj = ienv->NewObject(jclass_RouteSegmentResult, jmethod_RouteSegmentResult_init, robj,
 	                                 r->getStartPointIndex(), r->getEndPointIndex(), ar,
