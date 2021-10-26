@@ -605,9 +605,10 @@ jfieldID jfield_RouteRegion_filePointer = NULL;
 
 jclass jclass_RouteSegmentResult = NULL;
 jclass jclass_RouteSegmentResultAr = NULL;
-jmethodID jmethod_RouteSegmentResult_ctor = NULL;
-jfieldID jfield_RouteSegmentResult_preAttachedRoutes = NULL;
-jfieldID jfield_RouteSegmentResult_routingTime = NULL;
+jmethodID jmethod_RouteSegmentResult_init = NULL;
+
+jclass jclass_TurnType = NULL;
+jmethodID jmethod_TurnType_init = NULL;
 
 //--- Transport routing result class
 jclass jclass_NativeTransportRoutingResult = NULL;
@@ -763,11 +764,12 @@ void loadJniRenderingContext(JNIEnv* env) {
 
 	jclass_RouteSegmentResult = findGlobalClass(env, "net/osmand/router/RouteSegmentResult");
 	jclass_RouteSegmentResultAr = findGlobalClass(env, "[Lnet/osmand/router/RouteSegmentResult;");
-	jmethod_RouteSegmentResult_ctor =
-		env->GetMethodID(jclass_RouteSegmentResult, "<init>", "(Lnet/osmand/binary/RouteDataObject;II)V");
-	jfield_RouteSegmentResult_routingTime = getFid(env, jclass_RouteSegmentResult, "routingTime", "F");
-	jfield_RouteSegmentResult_preAttachedRoutes =
-		getFid(env, jclass_RouteSegmentResult, "preAttachedRoutes", "[[Lnet/osmand/router/RouteSegmentResult;");
+	jmethod_RouteSegmentResult_init =
+		env->GetMethodID(jclass_RouteSegmentResult, "<init>", "(Lnet/osmand/binary/RouteDataObject;"
+		                 "II[[Lnet/osmand/router/RouteSegmentResult;FFFFLnet/osmand/router/TurnType;)V");
+
+	jclass_TurnType = findGlobalClass(env, "net/osmand/router/TurnType");
+	jmethod_TurnType_init = env->GetMethodID(jclass_TurnType, "<init>", "(IIFZ[IZZ)V");
 
 	jclass_RoutingContext = findGlobalClass(env, "net/osmand/router/RoutingContext");
 	jfield_RoutingContext_startX = getFid(env, jclass_RoutingContext, "startX", "I");
@@ -1240,10 +1242,15 @@ jobject convertRouteSegmentResultToJava(JNIEnv* ienv, SHARED_PTR<RouteSegmentRes
 		ienv->DeleteLocalRef(art);
 	}
 	jobject robj = convertRouteDataObjectToJava(ienv, rdo, reg);
-	jobject resobj = ienv->NewObject(jclass_RouteSegmentResult, jmethod_RouteSegmentResult_ctor, robj,
-									 r->getStartPointIndex(), r->getEndPointIndex());
-	ienv->SetFloatField(resobj, jfield_RouteSegmentResult_routingTime, (jfloat)r->routingTime);
-	ienv->SetObjectField(resobj, jfield_RouteSegmentResult_preAttachedRoutes, ar);
+	jobject turnType = NULL;
+	if (r->turnType != nullptr){
+		const auto& tt = r->turnType;
+		turnType = ienv->NewObject(jclass_TurnType, jmethod_TurnType_init, tt->getValue(),tt->getExitOut(), tt->getTurnAngle(),
+		                           tt->isSkipToSpeak(), &tt->getLanes()[0], tt->isPossibleLeftTurn(), tt->isPossibleRightTurn());
+	}
+	jobject resobj = ienv->NewObject(jclass_RouteSegmentResult, jmethod_RouteSegmentResult_init, robj,
+	                                 r->getStartPointIndex(), r->getEndPointIndex(), ar,
+	                                 r->segmentTime, r->routingTime, r->segmentSpeed, r->distance, turnType);
 	if (reg != NULL) {
 		ienv->DeleteLocalRef(reg);
 	}
