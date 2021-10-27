@@ -1076,7 +1076,8 @@ void inferCommonActiveLane(const SHARED_PTR<TurnType>& currentTurn, const SHARED
     int singleTurn = 0;
     if (turnSet.size() == 1) {
         singleTurn = *turnSet.begin();
-    } else if (currentTurn->goAhead() && turnSet.find(nextTurn->getValue()) != turnSet.end()) {
+    } else if ((currentTurn->goAhead() || currentTurn->keepLeft() || currentTurn->keepRight())
+               && turnSet.find(nextTurn->getValue()) != turnSet.end()) {
         if (currentTurn->isPossibleLeftTurn() && TurnType::isLeftTurn(nextTurn->getValue())) {
             singleTurn = nextTurn->getValue();
         } else if(currentTurn->isPossibleLeftTurn() && TurnType::isLeftTurn(nextTurn->getActiveCommonLaneTurn())) {
