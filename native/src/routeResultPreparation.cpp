@@ -723,10 +723,6 @@ SHARED_PTR<TurnType> createSimpleKeepLeftRightTurn(bool leftSide, SHARED_PTR<Rou
             lanes[it] = (laneType << 1) + 1;
         }
     }
-    // sometimes links are
-    if ((current <= rs.leftLanes + rs.rightLanes) && (rs.leftLanes > 1 || rs.rightLanes > 1)) {
-        rs.speak = true;
-    }
     t->setSkipToSpeak(!rs.speak);
     t->setLanes(lanes);
     return t;
@@ -867,10 +863,10 @@ SHARED_PTR<TurnType> createKeepLeftRightTurnBasedOnTurnTypes(RoadSplitStructure&
 SHARED_PTR<TurnType> getTurnByCurrentTurns(std::vector<std::vector<int>> lanesInfo, vector<int>& rawLanes, int keepTurnType, bool leftSide) {
     set<int> followTurns;
     if (!lanesInfo.empty()) {
-        for (auto const& li : lanesInfo) {
+        for (std::vector<int> li : lanesInfo) {
             if (!li.empty()) {
-                for (auto const& i : li) {
-                    TurnType::collectTurnTypes(li[i], followTurns);
+                for (int i : li) {
+                    TurnType::collectTurnTypes(i, followTurns);
                 }
             }
         }
