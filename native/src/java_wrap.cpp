@@ -491,6 +491,8 @@ jfieldID jfield_TransportRoutingConfiguration_maxRouteIncreaseSpeed = NULL;
 // jfieldID jfield_jclass_TransportRoutingConfiguration_speed = NULL;
 
 jclass jclass_RoutingConfiguration = NULL;
+
+jfieldID jfield_RoutingConfiguration_nativeMemoryLimitation = NULL;
 jfieldID jfield_RoutingConfiguration_heuristicCoefficient = NULL;
 jfieldID jfield_RoutingConfiguration_ZOOM_TO_LOAD_TILES = NULL;
 jfieldID jfield_RoutingConfiguration_planRoadDirection = NULL;
@@ -867,6 +869,8 @@ void loadJniRenderingContext(JNIEnv* env) {
 	// "___");
 
 	jclass_RoutingConfiguration = findGlobalClass(env, "net/osmand/router/RoutingConfiguration");
+	jfield_RoutingConfiguration_nativeMemoryLimitation =
+		getFid(env, jclass_RoutingConfiguration, "nativeMemoryLimitation", "J");
 	jfield_RoutingConfiguration_heuristicCoefficient =
 		getFid(env, jclass_RoutingConfiguration, "heuristicCoefficient", "F");
 	jfield_RoutingConfiguration_ZOOM_TO_LOAD_TILES =
@@ -1429,6 +1433,10 @@ void parseRouteAttributeEvalRule(JNIEnv* ienv, jobject rule, shared_ptr<RouteAtt
 
 void parseRouteConfiguration(JNIEnv* ienv, SHARED_PTR<RoutingConfiguration> rConfig, jobject jRouteConfig) {
 	rConfig->planRoadDirection = ienv->GetIntField(jRouteConfig, jfield_RoutingConfiguration_planRoadDirection);
+	jlong nativeMemoryLimitation = ienv->GetLongField(jRouteConfig, jfield_RoutingConfiguration_nativeMemoryLimitation);
+	if (nativeMemoryLimitation != 0) {
+		rConfig->memoryLimitation = nativeMemoryLimitation;
+	}
 	rConfig->heurCoefficient = ienv->GetFloatField(jRouteConfig, jfield_RoutingConfiguration_heuristicCoefficient);
 	rConfig->zoomToLoad = ienv->GetIntField(jRouteConfig, jfield_RoutingConfiguration_ZOOM_TO_LOAD_TILES);
 	rConfig->routeCalculationTime =

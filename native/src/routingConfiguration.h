@@ -1,10 +1,10 @@
 #ifndef _OSMAND_ROUTING_CONFIGURATION_H
 #define _OSMAND_ROUTING_CONFIGURATION_H
+#include <algorithm>
+
 #include "CommonCollections.h"
 #include "commonOsmAndCore.h"
 #include "generalRouter.h"
-#include <algorithm>
-
 struct RoutingRule {
     string tagName;
     string t;
@@ -56,7 +56,7 @@ struct DirectionPoint {
 
 struct RoutingConfiguration {
 
-    const static int DEFAULT_MEMORY_LIMIT = 100;
+    const static int DEFAULT_MEMORY_LIMIT = 256;
     const static int DEVIATION_RADIUS = 3000;
     MAP_STR_STR attributes;
     quad_tree<SHARED_PTR<DirectionPoint>> directionPoints;
