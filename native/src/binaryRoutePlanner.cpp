@@ -10,7 +10,7 @@
 
 //	static bool PRINT_TO_CONSOLE_ROUTE_INFORMATION_TO_TEST = true;
 
-static const bool TRACE_ROUTING = true;
+static const bool TRACE_ROUTING = false;
 static const bool ASSERT_CHECKS = true;
 static const bool TEST_SPECIFIC = true;
 static const int TEST_ID = 50725;
@@ -534,7 +534,6 @@ void processRouteSegment(RoutingContext* ctx, bool reverseWaySearch, SEGMENTS_QU
 
 		// 3. upload segment itself to visited segments
 		int64_t nextPntId = calculateRoutePointId(currentSegment);
-        //visitedSegments[nextPntId] = std::move(currentSegment);
         SHARED_PTR<RouteSegment> &existingSegment = visitedSegments[nextPntId];
 		if (existingSegment != nullptr) {
 			if (distFromStartPlusSegmentTime > existingSegment->distanceFromStart) {
