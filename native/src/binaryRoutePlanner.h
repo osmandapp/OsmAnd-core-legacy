@@ -18,6 +18,10 @@ static const short RESTRICTION_ONLY_STRAIGHT_ON = 7;
 struct RoutingContext;
 struct RouteSegmentResult;
 struct RouteSegmentPoint;
+struct RouteSegment;
+struct RouteSegmentNULL;
+
+typedef UNORDERED(map)<int64_t, SHARED_PTR<RouteSegment> > VISITED_MAP;
 
 // typedef std::pair<int, std::pair<string, string> > ROUTE_TRIPLE;
 
@@ -25,5 +29,8 @@ SHARED_PTR<RouteSegmentPoint> findRouteSegment(int px, int py, RoutingContext* c
 											   int64_t roadId = -1, int segmentInd = 0);
 
 vector<SHARED_PTR<RouteSegmentResult> > searchRouteInternal(RoutingContext* ctx, bool leftSideNavigation);
+
+bool checkMovementAllowed(RoutingContext* ctx, bool reverseWaySearch, SHARED_PTR<RouteSegment>& segment);
+bool containsKey(VISITED_MAP& visited, int64_t routePointId);
 
 #endif /*_OSMAND_BINARY_ROUTE_PLANNER_H*/

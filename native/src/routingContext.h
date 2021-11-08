@@ -68,11 +68,11 @@ struct RoutingSubregionTile {
 			} else {
 				SHARED_PTR<RouteSegment> orig = routes[l];
 				int cnt = 0;
-				while (orig->next.get() != NULL) {
-					orig = orig->next;
+				while (orig->nextLoaded.get() != NULL) {
+					orig = orig->nextLoaded;
 					cnt++;
 				}
-				orig->next = segment;
+				orig->nextLoaded = segment;
 			}
 		}
 	}
@@ -156,7 +156,6 @@ struct RoutingContext {
 					auto s = itr->second;
 					while (s) {
 						s->parentRoute.reset();
-						s->parentSegmentEnd = 0;
 						s->distanceFromStart = 0;
 						s->distanceToEnd = 0;
 						s = s->next;
@@ -436,9 +435,13 @@ struct RoutingContext {
 			progress->timeToLoad.Pause();
 		}
 	}
+    
+    SHARED_PTR<RouteSegment> loadRouteSegment(int x31, int y31) {
+            return loadRouteSegment(x31, y31, false);
+        }
 
 	// void searchRouteRegion(SearchQuery* q, std::vector<RouteDataObject*>& list, RoutingIndex* rs, RouteSubregion* sub)
-	SHARED_PTR<RouteSegment> loadRouteSegment(int x31, int y31) {
+	SHARED_PTR<RouteSegment> loadRouteSegment(int x31, int y31, bool reverseWaySearch) {
 		if (progress && progress.get()) {
 			progress->timeToLoad.Start();
 		}
@@ -468,11 +471,21 @@ struct RoutingContext {
 					SHARED_PTR<RouteDataObject> toCmp = excludeDuplications[calcRouteId(ro, segment->getSegmentStart())];
 					if (!isExcluded(ro->id, j, subregions) && (toCmp.get() == NULL || toCmp->pointsX.size() < ro->pointsX.size())) {
 						excludeDuplications[calcRouteId(ro, segment->getSegmentStart())] = ro;
-						SHARED_PTR<RouteSegment> s = std::make_shared<RouteSegment>(ro, segment->getSegmentStart());
-						s->next = original;
-						original = 	s;
+//						SHARED_PTR<RouteSegment> s = std::make_shared<RouteSegment>(ro, segment->getSegmentStart());
+//						s->next = original;
+//						original = 	s;
+                        if (reverseWaySearch) {
+                            if (segment->reverseSearch == NULL) {
+                                segment->reverseSearch = std::make_shared<RouteSegment>(ro, segment->getSegmentStart());
+                                segment->reverseSearch->reverseSearch = segment;
+                                segment->reverseSearch->nextLoaded = segment->nextLoaded;
+                            }
+                            segment = segment->reverseSearch;
+                        }
+                        segment->next = original;
+                        original = segment;
 					}
-					segment = segment->next;
+					segment = segment->nextLoaded;
 				}
 			}
 		}
