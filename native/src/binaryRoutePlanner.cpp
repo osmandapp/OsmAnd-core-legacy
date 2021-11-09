@@ -10,7 +10,7 @@
 
 //	static bool PRINT_TO_CONSOLE_ROUTE_INFORMATION_TO_TEST = true;
 
-static const bool TRACE_ROUTING = false;
+static const bool TRACE_ROUTING = true;
 static const bool ASSERT_CHECKS = true;
 static const bool TEST_SPECIFIC = true;
 static const int TEST_ID = 50725;
@@ -355,14 +355,13 @@ SHARED_PTR<RouteSegment> searchRouteInternal(RoutingContext* ctx, SHARED_PTR<Rou
 			return finalSegment;
 		}
 	}
-	if (ctx->progress != NULL) {
+	if (ctx->progress.get()) {
+        ctx->progress->timeToCalculate.Pause();
 		ctx->progress->visitedDirectSegments += visitedDirectSegments.size();
 		ctx->progress->visitedOppositeSegments += visitedOppositeSegments.size();
-		ctx->progress->directQueueSize += graphDirectSegments.size(); // Math.max(ctx.directQueueSize,
-																			  // graphDirectSegments.size());
+		ctx->progress->directQueueSize += graphDirectSegments.size();
 		ctx->progress->oppositeQueueSize += graphReverseSegments.size();
-		ctx->progress->visitedOppositeSegments += visitedOppositeSegments.size();
-	}
+    }
 	return finalSegment;
 }
 
@@ -537,8 +536,7 @@ void processRouteSegment(RoutingContext* ctx, bool reverseWaySearch, SEGMENTS_QU
         SHARED_PTR<RouteSegment> &existingSegment = visitedSegments[nextPntId];
 		if (existingSegment != nullptr) {
 			if (distFromStartPlusSegmentTime > existingSegment->distanceFromStart) {
-				// insert back original segment (test case with large area way)
-                visitedSegments[nextPntId];
+				// leave the original segment (test case with large area way)
 				directionAllowed = false;
 
 				if (TRACE_ROUTING) {
@@ -553,7 +551,9 @@ void processRouteSegment(RoutingContext* ctx, bool reverseWaySearch, SEGMENTS_QU
                     printRoad("ExistingSegment ", existingSegment);
 				}
 			}
-		}
+        } else {
+            visitedSegments[nextPntId] = currentSegment;
+        }
 
 		// reassign @distanceFromStart to make it correct for visited segment
 		currentSegment->distanceFromStart = distFromStartPlusSegmentTime;
@@ -700,7 +700,7 @@ SHARED_PTR<RouteSegment> processIntersections(RoutingContext* ctx, SEGMENTS_QUEU
 	// reassign @distanceToEnd to make it correct for visited segment
 	currentSegment->distanceToEnd = distanceToEnd;
 
-	SHARED_PTR<RouteSegment> connectedNextSegment = ctx->loadRouteSegment(x, y, ctx->config->memoryLimitation);
+	SHARED_PTR<RouteSegment> connectedNextSegment = ctx->loadRouteSegment(x, y);
 	SHARED_PTR<RouteSegment> roadIter = connectedNextSegment;
 	bool directionAllowed = true;
 	bool singleRoad = true;
@@ -736,8 +736,8 @@ SHARED_PTR<RouteSegment> processIntersections(RoutingContext* ctx, SEGMENTS_QUEU
 
 	// Calculate possible turns to put into priority queue
 	SHARED_PTR<RouteSegment> next = connectedNextSegment;
-	bool hasNext = *nextIterator != nullptr ? nextIterator != ctx->segmentsToVisitPrescripted.end() : next.get() != NULL;
-	while (hasNext && !ctx->isInterrupted()) {
+	bool hasNext = *nextIterator != nullptr ? nextIterator != ctx->segmentsToVisitPrescripted.end() && ctx->segmentsToVisitPrescripted.size() > 0 : next.get() != nullptr;
+	while (hasNext) {
         if (*nextIterator != nullptr) {
 			next = *nextIterator;
 		}
@@ -755,26 +755,26 @@ SHARED_PTR<RouteSegment> processIntersections(RoutingContext* ctx, SEGMENTS_QUEU
 			next = next->next;
 			hasNext = next != nullptr;
 		} else {
-			hasNext = nextIterator < (ctx->segmentsToVisitPrescripted.end() - 1);
+			hasNext = nextIterator != ctx->segmentsToVisitPrescripted.end();
 		}
-
-		if (nextCurrentSegment == nullptr && directionAllowed) {
-			if (ctx->calculationMode != RouteCalculationMode::BASE) {
-				
-			} else {
-				// TODO (create issue): we know bug in data, so we workaround it
-				int newEnd = currentSegment->getSegmentEnd() + (currentSegment->isPositive() ? +1 : -1);
-				if (newEnd >= 0 && newEnd < currentSegment->getRoad()->getPointsLength() - 1) {
-                    nextCurrentSegment = make_shared<RouteSegment>(currentSegment->getRoad(), (int) currentSegment->getSegmentEnd(),(int) newEnd);
-					nextCurrentSegment->parentRoute = currentSegment;
-					nextCurrentSegment->distanceFromStart = currentSegment->distanceFromStart;
-					nextCurrentSegment->distanceToEnd = distanceToEnd;
-				}
-			}
-		}
-		return nextCurrentSegment;
 	}
+    if (nextCurrentSegment == nullptr && directionAllowed) {
+        if (ctx->calculationMode != RouteCalculationMode::BASE) {
+            throw std::invalid_argument("nextCurrentSegment");
+        } else {
+            // TODO (create issue): we know bug in data, so we workaround it
+            int newEnd = currentSegment->getSegmentEnd() + (currentSegment->isPositive() ? +1 : -1);
+            if (newEnd >= 0 && newEnd < currentSegment->getRoad()->getPointsLength() - 1) {
+                nextCurrentSegment = make_shared<RouteSegment>(currentSegment->getRoad(), (int) currentSegment->getSegmentEnd(),(int) newEnd);
+                nextCurrentSegment->parentRoute = currentSegment;
+                nextCurrentSegment->distanceFromStart = currentSegment->distanceFromStart;
+                nextCurrentSegment->distanceToEnd = distanceToEnd;
+            }
+        }
+    }
+    return nextCurrentSegment;
 }
+
 bool sortRoutePoints(const SHARED_PTR<RouteSegmentPoint>& i, const SHARED_PTR<RouteSegmentPoint>& j) {
 	return (i->dist < j->dist);
 }
