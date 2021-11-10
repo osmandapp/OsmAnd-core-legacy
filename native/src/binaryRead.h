@@ -1,7 +1,6 @@
 #ifndef _OSMAND_BINARY_READ_H
 #define _OSMAND_BINARY_READ_H
 
-#include <OsmAndCore/ICU.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -28,6 +27,10 @@
 #define close _close
 #endif
 #include "renderRules.h"
+
+#ifdef _IOS_BUILD
+#include <OsmAndCore/ICU.h>
+#endif
 
 static const uint MAP_VERSION = 2;
 static const int SHIFT_ID = 6;
@@ -336,11 +339,20 @@ struct RouteDataObject {
 
 	void processConditionalTags(const tm& time);
 
+   #ifdef _IOS_BUILD
 	inline string transliterate(const string& s) {
         QString transliterateName = OsmAnd::ICU::transliterateToLatin(QString::fromStdString(s));
         return transliterateName.toStdString();
 	}
-
+   #endif
+    
+   #ifndef _IOS_BUILD
+   inline string transliterate(const string& s) {
+       return s;
+   }
+   #endif
+    
+    
 	inline string getDestinationName(string& lang, bool translit, bool direction) {
 		// Issue #3289: Treat destination:ref like a destination, not like a ref
 		string destRef =
