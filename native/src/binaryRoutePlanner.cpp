@@ -705,15 +705,26 @@ SHARED_PTR<RouteSegment> processIntersections(RoutingContext* ctx, SEGMENTS_QUEU
 	bool directionAllowed = true;
 	bool singleRoad = true;
 	while (roadIter != nullptr) {
-		if (currentSegment->getSegmentEnd() == roadIter->getSegmentStart() && roadIter->road->getId() == currentSegment->getRoad()->getId()) {
+		if (currentSegment->getSegmentEnd() == roadIter->getSegmentStart() && roadIter->road->getId() == currentSegment->getRoad()->getId() ) {
 			nextCurrentSegment = RouteSegment::initRouteSegment(roadIter, currentSegment->isPositive());
-			if (nextCurrentSegment == nullptr) {
-				// end of route (-1 or length + 1)
+			if (nextCurrentSegment == nullptr) { 
 				directionAllowed = false;
 			} else {
-				nextCurrentSegment->parentRoute = currentSegment;
-				nextCurrentSegment->distanceFromStart = currentSegment->distanceFromStart;
-				nextCurrentSegment->distanceToEnd = distanceToEnd;
+				if (nextCurrentSegment->isSegmentAttachedToStart()) {
+					SegmentsComparator sgmCmp(ctx);
+					SEGMENTS_QUEUE emptyGraphSegments(sgmCmp);
+					directionAllowed = processOneRoadIntersection(ctx, reverseWaySearch, emptyGraphSegments, visitedSegments, currentSegment, nextCurrentSegment);
+				} else {
+					nextCurrentSegment->parentRoute = currentSegment;
+					nextCurrentSegment->distanceFromStart = currentSegment->distanceFromStart;
+					nextCurrentSegment->distanceToEnd = distanceToEnd;
+					int nx = nextCurrentSegment->getRoad()->pointsX[nextCurrentSegment->getSegmentEnd()];
+					int ny = nextCurrentSegment->getRoad()->pointsY[nextCurrentSegment->getSegmentEnd()];
+					if (nx == x && ny == y) {
+						// don't process other intersections (let process further segment)
+						return nextCurrentSegment;
+					}
+				}
 			}
 		} else {
 			singleRoad = false;
@@ -736,10 +747,11 @@ SHARED_PTR<RouteSegment> processIntersections(RoutingContext* ctx, SEGMENTS_QUEU
 
 	// Calculate possible turns to put into priority queue
 	SHARED_PTR<RouteSegment> next = connectedNextSegment;
-	bool hasNext = *nextIterator != nullptr ? nextIterator != ctx->segmentsToVisitPrescripted.end() && ctx->segmentsToVisitPrescripted.size() > 0 : next.get() != nullptr;
+	bool hasNext = !thereAreRestrictions ? next.get() != NULL : nextIterator != ctx->segmentsToVisitPrescripted.end();
 	while (hasNext) {
-        if (*nextIterator != nullptr) {
+		if (thereAreRestrictions && nextIterator != ctx->segmentsToVisitPrescripted.end()) {			
 			next = *nextIterator;
+			nextIterator++;
 		}
 		// TODO - (OK) double check not to add itself (doesn't look correct)
 		if (next->getSegmentStart() == currentSegment->getSegmentEnd() && next->road->getId() == currentSegment->road->getId()) {
@@ -751,7 +763,7 @@ SHARED_PTR<RouteSegment> processIntersections(RoutingContext* ctx, SEGMENTS_QUEU
 			processOneRoadIntersection(ctx, reverseWaySearch, graphSegments, visitedSegments, currentSegment, nextNeg);
 		}
 		// iterate to next road
-		if (*nextIterator == nullptr) {
+		if (!thereAreRestrictions) {
 			next = next->next;
 			hasNext = next != nullptr;
 		} else {
@@ -950,27 +962,15 @@ bool processOneRoadIntersection(RoutingContext* ctx, bool reverseWaySearch, SEGM
 				printRoad("  >?", visitedSegments.at(calculateRoutePointId(next)));
 			}
 			toAdd = false;
-			// TODO update comment
-			// the segment was already visited! We need to follow better route if it exists
-			// that is very exceptional situation and almost exception, it can happen
-			// 1. when we underestimate distanceToEnd - wrong h() of A*
-			// 2. because we process not small segments but the whole road, it could be that
-			// deviation from the road is faster than following the whole road itself!
 			if (distFromStart < visIt->second.get()->distanceFromStart) { // TODO ??? && next.getParentRoute() == null
 				double routeSegmentTime = calculateRouteSegmentTime(ctx, reverseWaySearch, std::make_shared<RouteSegment> (*visIt->second.get()));
 				if (distFromStart + routeSegmentTime < visIt->second.get()->distanceFromStart) {
-					// TODO can we add again ? without breaking final segment
-					// Here it's not very legitimate cause we need to go up to final segment & decrease final time
 					toAdd = true;
 					if (ctx->getHeuristicCoefficient() <= 1) {
 						OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "! ALERT new faster path to a visited segment: %f < %f",(distFromStart + routeSegmentTime), visIt->second.get()->distanceFromStart);
                         printRoad("next", next);
                         printRoad("visIt", visIt->second.get());
 					}
-					// TODO is it needed here (works with and without)s?
-					//						visIt.setParentRoute(segment);
-					//						visIt.distanceFromStart = (float) (distFromStart + routeSegmentTime);
-					//						visIt.distanceToEnd = segment.distanceToEnd;
 				}
 			}
 		}
@@ -985,9 +985,7 @@ bool processOneRoadIntersection(RoutingContext* ctx, bool reverseWaySearch, SEGM
 			}
 			// put additional information to recover whole route after
 			next->parentRoute = segment;
-			if (graphSegments.size() == 0) {
-				graphSegments.push(next);
-			}
+			graphSegments.push(next);
 			return true;
 		}
 	}

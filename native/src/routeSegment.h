@@ -68,7 +68,8 @@ struct RouteSegment {
     };
     
     bool isSegmentAttachedToStart() {
-        if (!parentRoute.lock()) {
+        auto parentRoutePtr = parentRoute.lock();
+        if (parentRoutePtr != nullptr) {
             return true;
         }
         return false;
