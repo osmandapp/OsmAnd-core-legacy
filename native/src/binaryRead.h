@@ -28,6 +28,10 @@
 #endif
 #include "renderRules.h"
 
+#ifdef _IOS_BUILD
+#include <OsmAndCore/ICU.h>
+#endif
+
 static const uint MAP_VERSION = 2;
 static const int SHIFT_ID = 6;
 struct MapTreeBounds {
@@ -335,11 +339,20 @@ struct RouteDataObject {
 
 	void processConditionalTags(const tm& time);
 
-	inline const string& transliterate(const string& s) {
-		// TODO transliteration
-		return s;
+   #ifdef _IOS_BUILD
+	inline string transliterate(const string& s) {
+        QString transliterateName = OsmAnd::ICU::transliterateToLatin(QString::fromStdString(s));
+        return transliterateName.toStdString();
 	}
-
+   #endif
+    
+   #ifndef _IOS_BUILD
+   inline string transliterate(const string& s) {
+       return s;
+   }
+   #endif
+    
+    
 	inline string getDestinationName(string& lang, bool translit, bool direction) {
 		// Issue #3289: Treat destination:ref like a destination, not like a ref
 		string destRef =
