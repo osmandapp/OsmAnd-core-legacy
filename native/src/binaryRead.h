@@ -1,6 +1,7 @@
 #ifndef _OSMAND_BINARY_READ_H
 #define _OSMAND_BINARY_READ_H
 
+#include <OsmAndCore/ICU.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -335,9 +336,9 @@ struct RouteDataObject {
 
 	void processConditionalTags(const tm& time);
 
-	inline const string& transliterate(const string& s) {
-		// TODO transliteration
-		return s;
+	inline string transliterate(const string& s) {
+        QString transliterateName = OsmAnd::ICU::transliterateToLatin(QString::fromStdString(s));
+        return transliterateName.toStdString();
 	}
 
 	inline string getDestinationName(string& lang, bool translit, bool direction) {
