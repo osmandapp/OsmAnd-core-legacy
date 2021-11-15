@@ -1336,16 +1336,6 @@ void addTurnInfoDescriptions(vector<SHARED_PTR<RouteSegmentResult> >& result) {
     }
 }
 
-float calcRoutingTime(float parentRoutingTime, const SHARED_PTR<RouteSegment>& finalSegment, const SHARED_PTR<RouteSegment>& segment, SHARED_PTR<RouteSegmentResult>& res) {
-    if (segment != finalSegment) {
-        if (parentRoutingTime != -1) {
-            res->routingTime = parentRoutingTime - segment->distanceFromStart;
-        }
-        parentRoutingTime = segment->distanceFromStart;
-    }
-    return parentRoutingTime;
-}
-
 bool combineTwoSegmentResult(SHARED_PTR<RouteSegmentResult>& toAdd, SHARED_PTR<RouteSegmentResult>& previous, bool reverse) {
     bool ld = previous->getEndPointIndex() > previous->getStartPointIndex();
     bool rd = toAdd->getEndPointIndex() > toAdd->getStartPointIndex();
@@ -1385,7 +1375,7 @@ vector<SHARED_PTR<RouteSegmentResult> > convertFinalSegmentToResults(RoutingCont
 
         OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Routing calculated time distance %f", finalSegment->distanceFromStart);
         // Get results from opposite direction roads
-        auto segment = finalSegment->reverseWaySearch ? finalSegment : finalSegment->opposite;
+        SHARED_PTR<RouteSegment> segment = finalSegment->reverseWaySearch ? finalSegment->getParentRoute().lock() : finalSegment->opposite;
         while (segment) {
             auto res = std::make_shared<RouteSegmentResult>(segment->road, segment->getSegmentEnd(), segment->getSegmentStart());
             float parentRoutingTime = segment->getParentRoute().lock() != nullptr ? segment->parentRoute.lock()->distanceFromStart : 0;
@@ -1396,10 +1386,10 @@ vector<SHARED_PTR<RouteSegmentResult> > convertFinalSegmentToResults(RoutingCont
         // reverse it just to attach good direction roads
         std::reverse(result.begin(), result.end());
 
-        segment = finalSegment->reverseWaySearch ? finalSegment->opposite : finalSegment;
+        segment = finalSegment->reverseWaySearch ? finalSegment->opposite : finalSegment->getParentRoute().lock();
         while (segment) {
             auto res = std::make_shared<RouteSegmentResult>(segment->road, segment->getSegmentStart(), segment->getSegmentEnd());
-            float parentRoutingTime = segment->parentRoute.lock() != NULL ? segment->parentRoute.lock()->distanceFromStart : 0;
+            float parentRoutingTime = segment->parentRoute.lock() != nullptr ? segment->parentRoute.lock()->distanceFromStart : 0;
             res->routingTime = segment->distanceFromStart - parentRoutingTime;
 
             segment = segment->parentRoute.lock();

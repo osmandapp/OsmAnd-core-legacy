@@ -38,10 +38,7 @@ struct RouteSegment {
     // TODO explain difference for visited & non visited segment
     float distanceFromStart;
     float distanceToEnd;
-    
-    inline bool isFinal() {
-        return reverseWaySearch != 0;
-    }
+    bool isFinalSegment;
     
     inline bool isReverseWaySearch() {
         return reverseWaySearch == 1;
@@ -109,7 +106,8 @@ struct RouteSegment {
         , reverseWaySearch(0)
         , opposite()
         , distanceFromStart(0)
-        , distanceToEnd(0) {
+        , distanceToEnd(0)
+        , isFinalSegment(false) {
     }
     
     RouteSegment(SHARED_PTR<RouteDataObject> road, int segmentStart, int segmentEnd)
@@ -122,7 +120,8 @@ struct RouteSegment {
         , reverseWaySearch(0)
         , opposite()
         , distanceFromStart(0)
-        , distanceToEnd(0) {
+        , distanceToEnd(0)
+        , isFinalSegment(false) {
     }
 
     RouteSegment(SHARED_PTR<RouteDataObject>& road, int segmentStart)
@@ -135,7 +134,8 @@ struct RouteSegment {
         , reverseWaySearch(0)
         , opposite()
         , distanceFromStart(0)
-        , distanceToEnd(0) {
+        , distanceToEnd(0)
+        , isFinalSegment(false) {
     }
 };
 
@@ -145,7 +145,7 @@ struct RouteSegmentNULL : RouteSegment {
 
 struct RouteSegmentPoint : RouteSegment {
 	RouteSegmentPoint(SHARED_PTR<RouteDataObject>& road, int segmentStart) : RouteSegment(road, segmentStart) {}
-	RouteSegmentPoint(SHARED_PTR<RouteSegmentPoint>& pnt) : RouteSegment(pnt->road, pnt->segmentStart, pnt->segmentEnd),
+	RouteSegmentPoint(SHARED_PTR<RouteSegmentPoint>& pnt) : RouteSegment(pnt->road, pnt->segmentStart),
 		/*distSquare(pnt->distSquare),*/ preciseX(pnt->preciseX), preciseY(pnt->preciseY) {}
 	double dist;
 	int preciseX;
