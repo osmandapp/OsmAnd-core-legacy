@@ -27,11 +27,11 @@ inline int roadPriorityComparator(float o1DistanceFromStart, float o1DistanceToE
 }
 
 void printRoad(const char* prefix, RouteSegment* segment) {
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "%s Road id=%lld ind=%d ds=%f es=%f pend=%d parent=%lld",
-					  prefix, segment->road->id / 64, segment->getSegmentStart(),
+	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "%s Road id=%lld ind=%d->%d ds=%f es=%f pend=%d parent=%lld",
+					  prefix, segment->road->id / 64, segment->getSegmentStart(), segment->getSegmentEnd(),
 					  segment->distanceFromStart, segment->distanceToEnd,
 					  segment->parentRoute.lock().get() != NULL ? segment->parentRoute.lock()->segmentEnd : 0,
-					  segment->parentRoute.lock().get() != NULL ? segment->parentRoute.lock()->road->id : 0);
+					  segment->parentRoute.lock().get() != NULL && segment->parentRoute.lock()->road != nullptr ? segment->parentRoute.lock()->road->id / 64: 0);
 }
 
 void printRoad(const char* prefix, SHARED_PTR<RouteSegment>& segment) {
@@ -164,10 +164,6 @@ void initQueuesWithStartEnd(RoutingContext* ctx, SHARED_PTR<RouteSegment> start,
 			}
 		}
 	}
-	// int targetEndX = end->road->pointsX[end->segmentStart];
-	// int targetEndY = end->road->pointsY[end->segmentStart];
-	// int startX = start->road->pointsX[start->segmentStart];
-	// int startY = start->road->pointsY[start->segmentStart];
 
 	double estimatedDist = estimatedDistance(ctx, ctx->targetX, ctx->targetY, ctx->startX, ctx->startY);
 	if (startPos.get() != NULL && checkMovementAllowed(ctx, false, startPos)) {
@@ -398,7 +394,7 @@ float calculateTimeWithObstacles(RoutingContext* ctx, SHARED_PTR<RouteDataObject
 }
 
 bool checkViaRestrictions(SHARED_PTR<RouteSegment>& from, SHARED_PTR<RouteSegment>& to) {
-	if (from.get() != NULL && to.get() != NULL) {
+	if (from.get() != NULL && to.get() != NULL && from->getRoad() != nullptr && to->getRoad() != nullptr) {
 		int64_t fid = to->getRoad()->getId();
 		for (uint i = 0; i < from->getRoad()->restrictions.size(); i++) {
 			int64_t id = from->getRoad()->restrictions[i].to;
@@ -419,7 +415,7 @@ bool checkViaRestrictions(SHARED_PTR<RouteSegment>& from, SHARED_PTR<RouteSegmen
 }
 
 SHARED_PTR<RouteSegment> getParentDiffId(SHARED_PTR<RouteSegment> s) {
-	while (s->parentRoute.lock().get() != NULL && s->parentRoute.lock()->getRoad()->id == s->getRoad()->id) {
+	while (s->parentRoute.lock().get() != NULL && s->parentRoute.lock()->getRoad() != nullptr && s->parentRoute.lock()->getRoad()->id == s->getRoad()->id) {
 		s = s->parentRoute.lock();
 	}
 	return s->parentRoute.lock();
@@ -669,13 +665,13 @@ bool proccessRestrictions(RoutingContext* ctx, SHARED_PTR<RouteSegment>& segment
 	SHARED_PTR<RouteSegment> parent = getParentDiffId(segment);
 
 	if (!reverseWay && road->restrictions.size() == 0 &&
-		(parent.get() == NULL || parent->road->restrictions.size() == 0)) {
+		(parent.get() == NULL || parent->road == nullptr || parent->road->restrictions.size() == 0)) {
 		return false;
 	}
 	clearSegments(ctx->segmentsToVisitPrescripted);
 	clearSegments(ctx->segmentsToVisitNotForbidden);
 	processRestriction(ctx, inputNext, reverseWay, 0, road);
-	if (parent.get() != NULL) {
+	if (parent.get() != NULL && parent->road != nullptr) {
 		processRestriction(ctx, inputNext, reverseWay, segment->road->id, parent->road);
 	}
 	return true;
@@ -968,7 +964,6 @@ bool processOneRoadIntersection(RoutingContext* ctx, bool reverseWaySearch, SEGM
 		}
 		if (toAdd && (!next->isSegmentAttachedToStart()
                       || roadPriorityComparator(next->distanceFromStart, next->distanceToEnd, distFromStart, segment->distanceToEnd, ctx->getHeuristicCoefficient()) > 0)) {
-			//if (toAdd && next.getParentRoute() == null) {
 			next->distanceFromStart = distFromStart;
 			next->distanceToEnd = segment->distanceToEnd;
 			if (TRACE_ROUTING) {
@@ -976,9 +971,7 @@ bool processOneRoadIntersection(RoutingContext* ctx, bool reverseWaySearch, SEGM
 			}
 			// put additional information to recover whole route after
 			next->parentRoute = segment;
-            if (graphSegments.size() != 0) {
-                graphSegments.push(next);
-            }
+            graphSegments.push(next);
 			return true;
 		}
 	}
@@ -989,11 +982,9 @@ vector<SHARED_PTR<RouteSegmentResult> > convertFinalSegmentToResults(RoutingCont
 																	 SHARED_PTR<RouteSegment>& finalSegment) {
 	vector<SHARED_PTR<RouteSegmentResult> > result;
 	if (finalSegment.get() != NULL) {
-		// OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Routing calculated time distance %f",
-		// finalSegment->distanceFromStart); Get results from opposite direction roads
 		SHARED_PTR<RouteSegment> segment =
 			finalSegment->isReverseWaySearch() ? finalSegment->parentRoute.lock() : finalSegment->opposite;
-        while (segment) {
+        while (segment != nullptr && segment->getRoad() != nullptr) {
             auto res = std::make_shared<RouteSegmentResult>(segment->road, segment->getSegmentEnd(), segment->getSegmentStart());
             float parentRoutingTime = segment->getParentRoute().lock() != nullptr ? segment->parentRoute.lock()->distanceFromStart : 0;
             res->routingTime = segment->distanceFromStart - parentRoutingTime;
@@ -1002,12 +993,11 @@ vector<SHARED_PTR<RouteSegmentResult> > convertFinalSegmentToResults(RoutingCont
         }
 		// reverse it just to attach good direction roads
 		std::reverse(result.begin(), result.end());
-        segment = finalSegment->reverseWaySearch ? finalSegment->opposite : finalSegment;
-        while (segment) {
+        segment = finalSegment->reverseWaySearch ? finalSegment->opposite : finalSegment->parentRoute.lock();
+        while (segment != nullptr && segment->getRoad() != nullptr) {
             auto res = std::make_shared<RouteSegmentResult>(segment->road, segment->getSegmentStart(), segment->getSegmentEnd());
             float parentRoutingTime = segment->parentRoute.lock() != NULL ? segment->parentRoute.lock()->distanceFromStart : 0;
             res->routingTime = segment->distanceFromStart - parentRoutingTime;
-
             segment = segment->parentRoute.lock();
             // happens in smart recalculation
             addRouteSegmentToResult(result, res, true);

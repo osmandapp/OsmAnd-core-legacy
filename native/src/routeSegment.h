@@ -5,10 +5,6 @@
 #include "routeSegmentResult.h"
 #include "Logging.h"
 
-struct RouteSegmentNULL;
-
-static const SHARED_PTR<RouteSegmentNULL> routeSegmentNULL;
-
 struct RouteSegment {
     
     uint16_t segmentStart;
@@ -60,10 +56,6 @@ struct RouteSegment {
         return road;
     }
     
-    inline std::weak_ptr<RouteSegment> getParentRoute() {
-        return parentRoute.lock() == routeSegmentNULL ? std::weak_ptr<RouteSegment>() : parentRoute;
-    };
-    
     bool isSegmentAttachedToStart() {
         auto parentRoutePtr = parentRoute.lock();
         if (parentRoutePtr != nullptr) {
@@ -71,6 +63,8 @@ struct RouteSegment {
         }
         return false;
     }
+    
+    inline std::weak_ptr<RouteSegment> getParentRoute();
     
     static SHARED_PTR<RouteSegment> initRouteSegment(SHARED_PTR<RouteSegment>& th, bool positiveDirection) {
         if(th->segmentStart == 0 && !positiveDirection) {
@@ -140,7 +134,15 @@ struct RouteSegment {
 };
 
 struct RouteSegmentNULL : RouteSegment {
-    RouteSegmentNULL(SHARED_PTR<RouteDataObject> road = nullptr, int segmentStart = 0, int segmentEnd = 1) : RouteSegment(road, segmentStart, segmentEnd) {}
+    RouteSegmentNULL() : RouteSegment(nullptr, 0, 1) {}
+};
+
+const SHARED_PTR<RouteSegmentNULL> routeSegmentNULL = std::make_shared<RouteSegmentNULL>();
+
+inline std::weak_ptr<RouteSegment> RouteSegment::getParentRoute() {
+    return (parentRoute.lock() != nullptr && parentRoute.lock()->segmentStart == 0 && parentRoute.lock()->segmentEnd == 1 && parentRoute.lock()->road == nullptr)
+    ? std::weak_ptr<RouteSegment>()
+    : parentRoute;
 };
 
 struct RouteSegmentPoint : RouteSegment {

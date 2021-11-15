@@ -1357,7 +1357,7 @@ void addRouteSegmentToResult(RoutingContext* ctx, vector<SHARED_PTR<RouteSegment
     if (res->getStartPointIndex() != res->getEndPointIndex()) {
         if (result.size() > 0) {
             auto last = result.back();
-            if (last->object->id == res->object->id && ctx->calculationMode != RouteCalculationMode::BASE) {
+            if (ctx->calculationMode != RouteCalculationMode::BASE) {
                 if (combineTwoSegmentResult(res, last, reverse)) {
                     return;
                 }
