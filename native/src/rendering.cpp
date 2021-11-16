@@ -604,6 +604,9 @@ void drawPolyline(MapDataObject* mObj, RenderingRuleSearchRequest* req, SkCanvas
 			PROFILE_NATIVE_OPERATION(rc, cv->drawPath(path, *paint));
 		}
 		if (updatePaint(req, paint, 0, 0, rc)) {
+			// if (paint->getStrokeWidth() <= 4) {
+			//  	paint->setColor(SkColorSetRGB(rand()%255, rand()%255, 0));
+			// }
 			PROFILE_NATIVE_OPERATION(rc, cv->drawPath(path, *paint));
 		}
 		// looks like double drawing (check if there are any issues)
@@ -1045,18 +1048,27 @@ void filterLinesByDensity(RenderingContext* rc, std::vector<MapDataObjectPrimiti
 		if (ts.first == "highway") {
 			accept = false;
 			int64_t prev = 0;
+			int dist = 0;
+			int prev_x = -1, prev_y = -1;
 			for (uint k = 0; k < line->points.size(); k++) {
+				int x31 = line->points[k].first;
+				int y31 = line->points[k].second;
+				if (prev_x > 0 && prev_y > 0) {
+					dist += (int)(squareRootDist31(prev_x, prev_y, x31, y31));
+				}
+				prev_x = x31;
+				prev_y = y31;
 				int dz = rc->getZoom() + densityZ;
-				int64_t x = (line->points[k].first) >> (31 - dz);
-				int64_t y = (line->points[k].second) >> (31 - dz);
+				int64_t x = x31 >> (31 - dz);
+				int64_t y = y31 >> (31 - dz);
 				int64_t tl = (x << dz) + y;
 				if (prev != tl) {
 					prev = tl;
 					pair<int, int>& p = densityMap[tl];
-					if (p.first < roadsLimit /* && p.second > o */) {
+					if (p.first < roadsLimit || p.second < dist) {
 						accept = true;
 						p.first++;
-						p.second = o;
+						p.second = (p.second + dist) / p.first;
 						densityMap[tl] = p;
 					}
 				}
