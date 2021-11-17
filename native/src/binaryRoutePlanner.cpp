@@ -53,9 +53,9 @@ int64_t calculateRoutePointId(SHARED_PTR<RouteSegment>& segm) {
 	// return calculateRoutePointInternalId(segm.getRoad(), segm.getSegmentStart(), segm.getSegmentEnd());
 }
 
-static double estimatedDistance(RoutingContext* ctx, int targetEndX, int targetEndY, int startX, int startY) {
+static float estimatedDistance(RoutingContext* ctx, int targetEndX, int targetEndY, int startX, int startY) {
 	double distance = squareRootDist31(startX, startY, targetEndX, targetEndY);
-	return (double)(distance / ctx->config->router->getMaxSpeed());
+	return (float) (distance / ctx->config->router->getMaxSpeed());
 }
 
 static double h(RoutingContext* ctx, int begX, int begY, int endX, int endY) {
@@ -165,7 +165,7 @@ void initQueuesWithStartEnd(RoutingContext* ctx, SHARED_PTR<RouteSegment> start,
 		}
 	}
 
-	double estimatedDist = estimatedDistance(ctx, ctx->targetX, ctx->targetY, ctx->startX, ctx->startY);
+	float estimatedDist = estimatedDistance(ctx, ctx->targetX, ctx->targetY, ctx->startX, ctx->startY);
 	if (startPos.get() != NULL && checkMovementAllowed(ctx, false, startPos)) {
 		startPos->distanceToEnd = estimatedDist;
 		graphDirectSegments.push(startPos);
@@ -192,7 +192,7 @@ bool checkIfGraphIsEmpty(RoutingContext* ctx, bool allowDirection, bool reverseW
 			while (pntIterator != pnt->others.end()) {
 				SHARED_PTR<RouteSegment> next = *pntIterator;
 				pntIterator = pnt->others.erase(pntIterator);
-                float estimatedDist = (float) estimatedDistance(ctx, ctx->targetX, ctx->targetY, ctx->startX, ctx->startY);
+                float estimatedDist = estimatedDistance(ctx, ctx->targetX, ctx->targetY, ctx->startX, ctx->startY);
 				SHARED_PTR<RouteSegment> pos = RouteSegment::initRouteSegment(next, true);
 				if (pos.get() != nullptr && !containsKey(visited, calculateRoutePointId(pos)) &&
                     checkMovementAllowed(ctx, reverseWaySearch, pos)) {
