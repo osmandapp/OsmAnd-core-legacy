@@ -7,6 +7,7 @@
 #include "Logging.h"
 #include "binaryRead.h"
 #include "routingContext.h"
+#include <iostream>
 
 //	static bool PRINT_TO_CONSOLE_ROUTE_INFORMATION_TO_TEST = true;
 
@@ -98,7 +99,7 @@ SHARED_PTR<RouteSegment> processIntersections(RoutingContext* ctx, SEGMENTS_QUEU
                                               bool reverseWaySearch, bool doNotAddIntersections);
 
 bool processOneRoadIntersection(RoutingContext* ctx, bool reverseWaySearch, SEGMENTS_QUEUE& graphSegments,
-                                VISITED_MAP& visitedSegments, SHARED_PTR<RouteSegment>& segment, SHARED_PTR<RouteSegment>& next);
+                                VISITED_MAP& visitedSegments, SHARED_PTR<RouteSegment>& segment, SHARED_PTR<RouteSegment>& next, bool nullGraph);
 
 long calculateSizeOfSearchMaps(SEGMENTS_QUEUE& graphDirectSegments, SEGMENTS_QUEUE& graphReverseSegments,
 							  VISITED_MAP& visitedDirectSegments, VISITED_MAP& visitedOppositeSegments) {
@@ -186,7 +187,7 @@ void initQueuesWithStartEnd(RoutingContext* ctx, SHARED_PTR<RouteSegment> start,
 
 bool checkIfGraphIsEmpty(RoutingContext* ctx, bool allowDirection, bool reverseWaySearch, SEGMENTS_QUEUE& graphSegments,
 						 SHARED_PTR<RouteSegmentPoint>& pnt, VISITED_MAP& visited, string msg) {
-	if (allowDirection && graphSegments.size() == 0) {
+	if (allowDirection && graphSegments.empty()) {
 		if (pnt->others.size() > 0) {
 			vector<SHARED_PTR<RouteSegmentPoint>>::iterator pntIterator = pnt->others.begin();
 			while (pntIterator != pnt->others.end()) {
@@ -695,13 +696,11 @@ SHARED_PTR<RouteSegment> processIntersections(RoutingContext* ctx, SEGMENTS_QUEU
 	while (roadIter != nullptr) {
 		if (currentSegment->getSegmentEnd() == roadIter->getSegmentStart() && roadIter->road->getId() == currentSegment->getRoad()->getId() ) {
 			nextCurrentSegment = RouteSegment::initRouteSegment(roadIter, currentSegment->isPositive());
-			if (nextCurrentSegment == nullptr) { 
+			if (nextCurrentSegment == nullptr) {
 				directionAllowed = false;
 			} else {
 				if (nextCurrentSegment->isSegmentAttachedToStart()) {
-					SegmentsComparator sgmCmp(ctx);
-					SEGMENTS_QUEUE emptyGraphSegments(sgmCmp);
-					directionAllowed = processOneRoadIntersection(ctx, reverseWaySearch, emptyGraphSegments, visitedSegments, currentSegment, nextCurrentSegment);
+					directionAllowed = processOneRoadIntersection(ctx, reverseWaySearch, graphSegments, visitedSegments, currentSegment, nextCurrentSegment, true);
 				} else {
 					nextCurrentSegment->parentRoute = currentSegment;
 					nextCurrentSegment->distanceFromStart = currentSegment->distanceFromStart;
@@ -735,32 +734,33 @@ SHARED_PTR<RouteSegment> processIntersections(RoutingContext* ctx, SEGMENTS_QUEU
 
 	// Calculate possible turns to put into priority queue
 	SHARED_PTR<RouteSegment> next = connectedNextSegment;
-	bool hasNext = !thereAreRestrictions ? next.get() != NULL : nextIterator != ctx->segmentsToVisitPrescripted.end();
+	bool hasNext = !thereAreRestrictions ? next != nullptr : nextIterator != ctx->segmentsToVisitPrescripted.end();
 	while (hasNext) {
-		if (thereAreRestrictions && nextIterator != ctx->segmentsToVisitPrescripted.end()) {			
+		if (thereAreRestrictions) {
 			next = *nextIterator;
-			nextIterator++;
 		}
 		// TODO - (OK) double check not to add itself (doesn't look correct)
 		if (next->getSegmentStart() == currentSegment->getSegmentEnd() && next->road->getId() == currentSegment->road->getId()) {
 			// skip itself
 		} else if (!doNotAddIntersections) {
 			SHARED_PTR<RouteSegment> nextPos = RouteSegment::initRouteSegment(next, true);
-			processOneRoadIntersection(ctx, reverseWaySearch, graphSegments, visitedSegments, currentSegment, nextPos);
+			processOneRoadIntersection(ctx, reverseWaySearch, graphSegments, visitedSegments, currentSegment, nextPos, false);
 			SHARED_PTR<RouteSegment> nextNeg = RouteSegment::initRouteSegment(next, false);
-			processOneRoadIntersection(ctx, reverseWaySearch, graphSegments, visitedSegments, currentSegment, nextNeg);
+			processOneRoadIntersection(ctx, reverseWaySearch, graphSegments, visitedSegments, currentSegment, nextNeg, false);
 		}
 		// iterate to next road
 		if (!thereAreRestrictions) {
 			next = next->next;
 			hasNext = next != nullptr;
 		} else {
+            nextIterator++;
 			hasNext = nextIterator != ctx->segmentsToVisitPrescripted.end();
 		}
 	}
     if (nextCurrentSegment == nullptr && directionAllowed) {
         if (ctx->calculationMode != RouteCalculationMode::BASE) {
-            throw std::invalid_argument("nextCurrentSegment");
+            //std::cout << "!!!!!!!!!!" << thereAreRestrictions << std::endl;
+            return nextCurrentSegment;
         } else {
             // TODO (create issue): we know bug in data, so we workaround it
             int newEnd = currentSegment->getSegmentEnd() + (currentSegment->isPositive() ? +1 : -1);
@@ -932,7 +932,7 @@ void attachConnectedRoads(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentRes
 	}
 }
 
-bool processOneRoadIntersection(RoutingContext* ctx, bool reverseWaySearch, SEGMENTS_QUEUE& graphSegments, VISITED_MAP& visitedSegments, SHARED_PTR<RouteSegment>& segment, SHARED_PTR<RouteSegment>& next) {
+bool processOneRoadIntersection(RoutingContext* ctx, bool reverseWaySearch, SEGMENTS_QUEUE& graphSegments, VISITED_MAP& visitedSegments, SHARED_PTR<RouteSegment>& segment, SHARED_PTR<RouteSegment>& next, bool isNullGraph) {
 	if (next.get() != NULL) {
 		if (!checkMovementAllowed(ctx, reverseWaySearch, next)) {
 			return false;
@@ -971,7 +971,9 @@ bool processOneRoadIntersection(RoutingContext* ctx, bool reverseWaySearch, SEGM
 			}
 			// put additional information to recover whole route after
 			next->parentRoute = segment;
-            graphSegments.push(next);
+            if (!isNullGraph) {
+                graphSegments.push(next);
+            }
 			return true;
 		}
 	}
