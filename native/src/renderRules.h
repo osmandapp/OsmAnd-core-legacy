@@ -263,7 +263,7 @@ public:
 	RenderingRuleProperty* R_COLOR_0;
 	RenderingRuleProperty* R_COLOR__1;
 	RenderingRuleProperty* R_COLOR__2;
-	
+
 	RenderingRuleProperty* R_TEXT_ITALIC;
 	RenderingRuleProperty* R_TEXT_BOLD;
 	RenderingRuleProperty* R_TEXT_ORDER;
@@ -308,7 +308,8 @@ public:
 	RenderingRuleProperty* R_ATTR_STRING_VALUE;
 	RenderingRuleProperty* R_IGNORE_POLYGON_AS_POINT_AREA;
 	RenderingRuleProperty* R_ADD_POINT;
-
+	
+	RenderingRuleProperty* R_RENDERING_PRIORITY;
 
 	UNORDERED(map)<string, RenderingRuleProperty*> properties;
 	vector<RenderingRuleProperty*> rules;
@@ -472,6 +473,8 @@ public:
 		R_ONEWAY_ARROWS_COLOR = registerRuleInternal(RenderingRuleProperty::createOutputColorProperty("onewayArrowsColor"));
 		R_IGNORE_POLYGON_AS_POINT_AREA = registerRuleInternal(RenderingRuleProperty::createOutputBooleanProperty("ignorePolygonAsPointArea"));
 		R_ADD_POINT = registerRuleInternal(RenderingRuleProperty::createOutputBooleanProperty("addPoint"));
+
+		R_RENDERING_PRIORITY = registerRuleInternal(RenderingRuleProperty::createOutputIntProperty("renderingPriority"));
 	}
 
 };
