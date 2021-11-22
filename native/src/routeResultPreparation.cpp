@@ -1375,24 +1375,23 @@ vector<SHARED_PTR<RouteSegmentResult> > convertFinalSegmentToResults(RoutingCont
 
         OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Routing calculated time distance %f", finalSegment->distanceFromStart);
         // Get results from opposite direction roads
-        SHARED_PTR<RouteSegment> segment = finalSegment->reverseWaySearch ? finalSegment->getParentRoute().lock() : finalSegment->opposite;
+        SHARED_PTR<RouteSegment> segment = finalSegment->reverseWaySearch ? finalSegment->getParentRoute() : finalSegment->opposite;
         while (segment.get() != NULL && segment->getRoad() != nullptr) {
             auto res = std::make_shared<RouteSegmentResult>(segment->road, segment->getSegmentEnd(), segment->getSegmentStart());
-            float parentRoutingTime = segment->getParentRoute().lock() != nullptr ? segment->getParentRoute().lock()->distanceFromStart : 0;
+            float parentRoutingTime = segment->getParentRoute() != nullptr ? segment->getParentRoute()->distanceFromStart : 0;
             res->routingTime = segment->distanceFromStart - parentRoutingTime;
-            segment = segment->getParentRoute().lock();
+            segment = segment->getParentRoute();
             addRouteSegmentToResult(ctx, result, res, false);
         }
         // reverse it just to attach good direction roads
         std::reverse(result.begin(), result.end());
 
-        segment = finalSegment->reverseWaySearch ? finalSegment->opposite : finalSegment->getParentRoute().lock();
+        segment = finalSegment->reverseWaySearch ? finalSegment->opposite : finalSegment->getParentRoute();
         while (segment.get() != NULL && segment->getRoad() != nullptr) {
             auto res = std::make_shared<RouteSegmentResult>(segment->road, segment->getSegmentStart(), segment->getSegmentEnd());
-            float parentRoutingTime = segment->getParentRoute().lock() != nullptr ? segment->getParentRoute().lock()->distanceFromStart : 0;
+            float parentRoutingTime = segment->getParentRoute() != nullptr ? segment->getParentRoute()->distanceFromStart : 0;
             res->routingTime = segment->distanceFromStart - parentRoutingTime;
-
-            segment = segment->getParentRoute().lock();
+            segment = segment->getParentRoute();
             // happens in smart recalculation
             addRouteSegmentToResult(ctx, result, res, true);
         }

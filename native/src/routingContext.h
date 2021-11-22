@@ -199,7 +199,7 @@ struct RoutingContext {
 
 	void setConditionalTime(time_t tm) {
 		conditionalTime = tm;
-		if(conditionalTime != 0) {
+		if (conditionalTime != 0) {
 			conditionalTimeStr = *localtime(&conditionalTime);
 		}
 	}
@@ -471,10 +471,7 @@ struct RoutingContext {
 					SHARED_PTR<RouteDataObject> toCmp = excludeDuplications[calcRouteId(ro, segment->getSegmentStart())];
 					if (!isExcluded(ro->id, j, subregions) && (toCmp.get() == NULL || toCmp->pointsX.size() < ro->pointsX.size())) {
 						excludeDuplications[calcRouteId(ro, segment->getSegmentStart())] = ro;
-//						SHARED_PTR<RouteSegment> s = std::make_shared<RouteSegment>(ro, segment->getSegmentStart());
-//						s->next = original;
-//						original = 	s;
-                        if (reverseWaySearch) {
+						if (reverseWaySearch) {
                             if (segment->reverseSearch == NULL) {
                                 segment->reverseSearch = std::make_shared<RouteSegment>(ro, segment->getSegmentStart());
                                 segment->reverseSearch->reverseSearch = segment;
