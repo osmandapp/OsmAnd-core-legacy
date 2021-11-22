@@ -1561,20 +1561,6 @@ jobject convertGpxPointToJava(JNIEnv* ienv, SHARED_PTR<GpxPoint> result, UNORDER
 	return jGpxPoint;
 }
 
-// RouteCalculationMode getCalculationMode(JNIEnv* ienv) {
-// 	jmethodID getRouteCalculationModeValue = ienv->GetMethodID(jclass_RouteCalculationMode, "ordinal", "()I");
-//     jint value = ienv->CallIntMethod(jclass_RouteCalculationMode, getRouteCalculationModeValue);
-//     switch (value) {
-//         case 0:
-//         return RouteCalculationMode::BASE;
-//         case 1:
-//         return RouteCalculationMode::NORMAL;
-//         case 2:
-//         return RouteCalculationMode::COMPLEX;
-//     }
-//    return RouteCalculationMode::BASE;
-// }
-
 RoutingContext* getRoutingContext(JNIEnv* ienv, jobject jCtx, jfloat initDirection, bool basemap, jobject progress) {
 	jobject jRouteConfig = ienv->GetObjectField(jCtx, jfield_RoutingContext_config);
 
