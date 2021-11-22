@@ -426,8 +426,9 @@ bool checkIfOppositeSegmentWasVisited(bool reverseWaySearch, SEGMENTS_QUEUE &gra
 									   SHARED_PTR<RouteSegment> &currentSegment, VISITED_MAP &oppositeSegments) {
 	// check inverse direction for opposite
 	int64_t currPoint = calculateRoutePointInternalId(currentSegment->getRoad(), currentSegment->getSegmentEnd(), currentSegment->getSegmentStart());
-	if (containsKey(oppositeSegments, currPoint)) {
-		SHARED_PTR<RouteSegment> opposite = oppositeSegments.at(currPoint);
+    VISITED_MAP::iterator opIt = oppositeSegments.find(currPoint);
+	if (opIt != oppositeSegments.end() && opIt->second.get() != NULL) {
+		SHARED_PTR<RouteSegment> opposite = opIt->second;
 		SHARED_PTR<RouteSegment> curParent = getParentDiffId(currentSegment);
 		SHARED_PTR<RouteSegment> oppParent = getParentDiffId(opposite);
 		SHARED_PTR<RouteSegment> to = reverseWaySearch ? curParent : oppParent;
@@ -983,24 +984,23 @@ bool processOneRoadIntersection(RoutingContext* ctx, bool reverseWaySearch, SEGM
 vector<SHARED_PTR<RouteSegmentResult> > convertFinalSegmentToResults(RoutingContext* ctx,
 																	 SHARED_PTR<RouteSegment>& finalSegment) {
 	vector<SHARED_PTR<RouteSegmentResult> > result;
-	if (finalSegment.get() != NULL) {
-		SHARED_PTR<RouteSegment> segment =
-			finalSegment->isReverseWaySearch() ? finalSegment->parentRoute.lock() : finalSegment->opposite;
-        while (segment != nullptr && segment->getRoad() != nullptr) {
+    if (finalSegment.get() != NULL) {
+        SHARED_PTR<RouteSegment> segment = finalSegment->isReverseWaySearch() ? finalSegment->getParentRoute().lock() : finalSegment->opposite;
+        while (segment.get() != NULL && segment->getRoad() != nullptr) {
             auto res = std::make_shared<RouteSegmentResult>(segment->road, segment->getSegmentEnd(), segment->getSegmentStart());
-            float parentRoutingTime = segment->getParentRoute().lock() != nullptr ? segment->parentRoute.lock()->distanceFromStart : 0;
+            float parentRoutingTime = segment->getParentRoute().lock() != nullptr ? segment->getParentRoute().lock()->distanceFromStart : 0;
             res->routingTime = segment->distanceFromStart - parentRoutingTime;
-            segment = segment->parentRoute.lock();
+            segment = segment->getParentRoute().lock();
             addRouteSegmentToResult(result, res, false);
         }
 		// reverse it just to attach good direction roads
 		std::reverse(result.begin(), result.end());
-        segment = finalSegment->reverseWaySearch ? finalSegment->opposite : finalSegment->parentRoute.lock();
-        while (segment != nullptr && segment->getRoad() != nullptr) {
+        segment = finalSegment->isReverseWaySearch() ? finalSegment->opposite : finalSegment->getParentRoute().lock();
+        while (segment.get() != NULL && segment->getRoad() != nullptr) {
             auto res = std::make_shared<RouteSegmentResult>(segment->road, segment->getSegmentStart(), segment->getSegmentEnd());
-            float parentRoutingTime = segment->parentRoute.lock() != NULL ? segment->parentRoute.lock()->distanceFromStart : 0;
+            float parentRoutingTime = segment->getParentRoute().lock() != nullptr ? segment->getParentRoute().lock()->distanceFromStart : 0;
             res->routingTime = segment->distanceFromStart - parentRoutingTime;
-            segment = segment->parentRoute.lock();
+            segment = segment->getParentRoute().lock();
             // happens in smart recalculation
             addRouteSegmentToResult(result, res, true);
         }
