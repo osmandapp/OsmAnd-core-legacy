@@ -1657,7 +1657,6 @@ extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_nativeRo
 
 	parsePrecalculatedRoute(ienv, c, precalculatedRoute);
 	vector<SHARED_PTR<RouteSegmentResult>> r = searchRouteInternal(c, false);
-	
 	UNORDERED(map)<int64_t, int> indexes;
 	for (int t = 0; t < ienv->GetArrayLength(regions); t++) {
 		jobject oreg = ienv->GetObjectArrayElement(regions, t);
