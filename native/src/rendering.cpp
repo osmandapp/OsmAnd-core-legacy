@@ -1028,21 +1028,21 @@ double polygonArea(MapDataObject* obj, float mult) {
 	return abs(area) * mult * mult * .5;
 }
 
-/*int getSquareSegmentLength(MapDataObject* obj) {
-	int dist = 0;
+double getSquareSegmentLength(MapDataObject* obj) {
+	double dist = 0;
 	int prev_x = 0;
 	int prev_y = 0;
 	for (uint k = 0; k < obj->points.size(); k++) {
 		int x31 = obj->points[k].first;
 		int y31 = obj->points[k].second;
 		if (prev_x != 0 && prev_y != 0) {
-			dist += (int)(squareDist31TileMetric(prev_x, prev_y, x31, y31));
+			dist += squareDist31TileMetric(prev_x, prev_y, x31, y31);
 		}
 		prev_x = x31;
 		prev_y = y31;
 	}
 	return dist;
-}*/
+}
 
 void filterLinesByDensity(RenderingContext* rc, std::vector<MapDataObjectPrimitive>& linesResArray,
 						  std::vector<MapDataObjectPrimitive>& linesArray) {
@@ -1101,8 +1101,7 @@ bool sortByOrder(const MapDataObjectPrimitive& i, const MapDataObjectPrimitive& 
 }
 bool sortByPriority(const MapDataObjectPrimitive& i, const MapDataObjectPrimitive& j) {
 	if (i.priority == j.priority) {
-		return sortByOrder(i, j);
-		//return getSquareSegmentLength(i.obj) < getSquareSegmentLength(j.obj);
+		return getSquareSegmentLength(i.obj) < getSquareSegmentLength(j.obj);
 	}
 	return (i.priority < j.priority);
 }
