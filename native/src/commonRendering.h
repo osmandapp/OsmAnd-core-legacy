@@ -44,15 +44,15 @@ struct FontEntry {
 			return;
 		}
 
-		const auto pBlob = hb_blob_create_from_file_or_fail(path);
-		if (!pBlob) {
+		const auto pBlob = hb_blob_create_from_file(path);
+		if (!pBlob || pBlob == hb_blob_get_empty()) {
 			assert(false);
 			fSkiaTypeface.reset();
 			return;
 		}
 		const auto pFace = hb_face_create(pBlob, (unsigned)index);
 		hb_blob_destroy(pBlob);
-		if (!pFace) {
+		if (!pFace || pFace == hb_face_get_empty()) {
 			assert(false);
 			fSkiaTypeface.reset();
 			return;
