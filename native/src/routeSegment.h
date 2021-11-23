@@ -6,28 +6,42 @@
 #include "Logging.h"
 
 struct RouteSegment {
+    // Route segment represents part (segment) of the road. 
+	// In our current data it's always length of 1: [X, X + 1] or [X - 1, X] 
     
+    // # Final fields that store objects
     uint16_t segmentStart;
     uint16_t segmentEnd;
     SHARED_PTR<RouteDataObject> road;
-    // needed to store intersection of routes
+    // Segments only allowed for Navigation connected to the same end point
     SHARED_PTR<RouteSegment> next;
+    // # Represents cheap-storage of LinkedList connected segments
+	// All the road segments from map data connected to the same end point 
     SHARED_PTR<RouteSegment> nextLoaded;
     SHARED_PTR<RouteSegment> oppositeDirection;
+    // Same Road/ same Segment but used for opposite A* search (important to have different cause #parentRoute is different)
+	// Note: if we use 1-direction A* then this is field is not needed
     SHARED_PTR<RouteSegment> reverseSearch;
     
-    // search context (needed for searching route)
-    // Initially it should be null (!) because it checks was it segment visited before
+    // # Important for A*-search to distinguish whether segment was visited or not
+	// Initially all segments null and startSegment/endSegment.parentRoute = RouteSegment.NULL;
+	// After iteration stores previous segment i.e. how it was reached from startSegment
     SHARED_PTR<RouteSegment> parentRoute;
     
     // final route segment
     int8_t reverseWaySearch;
+    // # Caches of similar segments to speed up routing calculation 
+	// Segment of opposite direction i.e. for [4 -> 5], opposite [5 -> 4]
     SHARED_PTR<RouteSegment> opposite;
     
-    // distance measured in time (seconds)
-    // doesn't include distance from @segStart to @segStart + @directionAssgn
-    // TODO explain difference for visited & non visited segment
+    // # A* routing - Distance measured in time (seconds)
+	// There is a small (important!!!) difference how it's calculated for visited (parentRoute != null) and non-visited
+	// NON-VISITED: time from Start [End for reverse A*] to @segStart of @this, including turn time from previous segment (@parentRoute)
+	// VISITED: time from Start [End for reverse A*] to @segEnd of @this, 
+	//          including turn time from previous segment (@parentRoute) and obstacle / distance time between @segStart-@segEnd on @this 
     float distanceFromStart;
+    // NON-VISITED: Approximated (h(x)) time from @segStart of @this route segment to End [Start for reverse A*] 
+	// VISITED: Approximated (h(x)) time from @segEnd of @this route segment to End [Start for reverse A*]
     float distanceToEnd;
     bool isFinalSegment;
     

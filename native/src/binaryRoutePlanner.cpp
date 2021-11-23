@@ -767,7 +767,7 @@ SHARED_PTR<RouteSegment> processIntersections(RoutingContext* ctx, SEGMENTS_QUEU
             //std::cout << "!!!!!!!!!!" << thereAreRestrictions << std::endl;
             return nextCurrentSegment;
         } else {
-            // TODO (create issue): we know bug in data, so we workaround it
+            // TODO Issue #...: we know that bug in data (how we simplify base data and connect between regions), so we workaround it
             int newEnd = currentSegment->getSegmentEnd() + (currentSegment->isPositive() ? +1 : -1);
             if (newEnd >= 0 && newEnd < currentSegment->getRoad()->getPointsLength() - 1) {
                 nextCurrentSegment = make_shared<RouteSegment>(currentSegment->getRoad(), (int) currentSegment->getSegmentEnd(),(int) newEnd);
@@ -955,15 +955,32 @@ bool processOneRoadIntersection(RoutingContext* ctx, bool reverseWaySearch, SEGM
 				printRoad("  >?", visitedSegments.at(calculateRoutePointId(next)));
 			}
 			toAdd = false;
+			// The segment was already visited! We can try to follow new route if it's shorter.
+			// That is very exceptional situation and almost exception, it can happen
+			// 1. We underestimate distanceToEnd - wrong h() of A* (heuristic > 1)
+			// 2. We don't process small segments 1 by 1 from the queue but the whole road, 
+			//  and it could be that deviation from the road is faster than following the whole road itself!
 			if (distFromStart < visIt->second.get()->distanceFromStart) {
 				double routeSegmentTime = calculateRouteSegmentTime(ctx, reverseWaySearch, std::make_shared<RouteSegment> (*visIt->second.get()));
+				// we need to properly compare @distanceFromStart VISITED and NON-VISITED segment
 				if (distFromStart + routeSegmentTime < visIt->second.get()->distanceFromStart) {
+					// Here it's not very legitimate action cause in theory we need to go up to the final segment in the queue & decrease final time
+					// But it's compensated by chain reaction cause next.distanceFromStart < finalSegment.distanceFromStart and revisiting all segments
+
+					// We don't check ```next.getParentRoute() == null``` cause segment could be unloaded
+					// so we need to add segment back to the queue & reassign the parent (same as for next.getParentRoute() == null)
 					toAdd = true;
 					if (ctx->getHeuristicCoefficient() <= 1) {
 						OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "! ALERT new faster path to a visited segment: %f < %f",(distFromStart + routeSegmentTime), visIt->second.get()->distanceFromStart);
                         printRoad("next", next);
                         printRoad("visIt", visIt->second.get());
 					}
+					// ??? It's not clear whether this block is needed or not ???
+					// All Test cases work with and without it
+					// visIt.setParentRoute(segment);
+					// visIt.distanceFromStart = (float) (distFromStart + routeSegmentTime);
+					// visIt.distanceToEnd = segment.distanceToEnd;
+					// ???
 				}
 			}
 		}
