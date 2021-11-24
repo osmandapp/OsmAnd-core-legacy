@@ -1099,7 +1099,7 @@ bool sortByOrder(const MapDataObjectPrimitive& i, const MapDataObjectPrimitive& 
 	}
 	return (i.order < j.order);
 }
-bool sortByPriority(const MapDataObjectPrimitive& i, const MapDataObjectPrimitive& j) {
+bool sortByDensityPriority(const MapDataObjectPrimitive& i, const MapDataObjectPrimitive& j) {
 	if (i.priority == j.priority) {
 		return getSquareSegmentLength(i.obj) < getSquareSegmentLength(j.obj);
 	}
@@ -1136,7 +1136,7 @@ void sortObjectsByProperOrder(std::vector<FoundMapDataObject>& mapDataObjects, R
 				if (req->searchRule(RenderingRulesStorage::ORDER_RULES)) {
 					int objectType = req->getIntPropertyValue(req->props()->R_OBJECT_TYPE);
 					int order = req->getIntPropertyValue(req->props()->R_ORDER);
-					int priority = req->getIntPropertyValue(req->props()->R_RENDERING_PRIORITY);
+					int priority = req->getIntPropertyValue(req->props()->R_DENSITY_PRIORITY);
 					bool addTextForSmallAreas = req->getBoolPropertyValue(req->props()->R_IGNORE_POLYGON_AS_POINT_AREA);
 					bool addPoint = req->getBoolPropertyValue(req->props()->R_ADD_POINT);
 					if (order >= 0) {
@@ -1190,7 +1190,7 @@ void sortObjectsByProperOrder(std::vector<FoundMapDataObject>& mapDataObjects, R
 		}
 		sort(polygonsArray.begin(), polygonsArray.end(), sortByOrder);
 		sort(pointsArray.begin(), pointsArray.end(), sortByOrder);
-		sort(linesArray.begin(), linesArray.end(), sortByPriority);
+		sort(linesArray.begin(), linesArray.end(), sortByDensityPriority);
 		filterLinesByDensity(rc, linesResArray, linesArray);
 		sort(linesResArray.begin(), linesResArray.end(), sortByOrder);
 	}

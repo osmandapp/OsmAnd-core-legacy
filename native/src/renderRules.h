@@ -309,7 +309,7 @@ public:
 	RenderingRuleProperty* R_IGNORE_POLYGON_AS_POINT_AREA;
 	RenderingRuleProperty* R_ADD_POINT;
 	
-	RenderingRuleProperty* R_RENDERING_PRIORITY;
+	RenderingRuleProperty* R_DENSITY_PRIORITY;
 
 	UNORDERED(map)<string, RenderingRuleProperty*> properties;
 	vector<RenderingRuleProperty*> rules;
@@ -474,7 +474,7 @@ public:
 		R_IGNORE_POLYGON_AS_POINT_AREA = registerRuleInternal(RenderingRuleProperty::createOutputBooleanProperty("ignorePolygonAsPointArea"));
 		R_ADD_POINT = registerRuleInternal(RenderingRuleProperty::createOutputBooleanProperty("addPoint"));
 
-		R_RENDERING_PRIORITY = registerRuleInternal(RenderingRuleProperty::createOutputIntProperty("renderingPriority"));
+		R_DENSITY_PRIORITY = registerRuleInternal(RenderingRuleProperty::createOutputIntProperty("densityPriority"));
 	}
 
 };
