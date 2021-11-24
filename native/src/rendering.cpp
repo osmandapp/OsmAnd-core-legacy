@@ -48,6 +48,7 @@ struct MapDataObjectPrimitive {
 	int objectType;
 	double area;
 	bool pointAdded;
+	int priority;
 };
 
 void calcPoint(std::pair<int, int> c, RenderingContext* rc) {
@@ -1027,6 +1028,22 @@ double polygonArea(MapDataObject* obj, float mult) {
 	return abs(area) * mult * mult * .5;
 }
 
+double getSquareSegmentLength(MapDataObject* obj) {
+	double dist = 0;
+	int prev_x = 0;
+	int prev_y = 0;
+	for (uint k = 0; k < obj->points.size(); k++) {
+		int x31 = obj->points[k].first;
+		int y31 = obj->points[k].second;
+		if (prev_x != 0 && prev_y != 0) {
+			dist += squareDist31TileMetric(prev_x, prev_y, x31, y31);
+		}
+		prev_x = x31;
+		prev_y = y31;
+	}
+	return dist;
+}
+
 void filterLinesByDensity(RenderingContext* rc, std::vector<MapDataObjectPrimitive>& linesResArray,
 						  std::vector<MapDataObjectPrimitive>& linesArray) {
 	int roadsLimit = rc->roadsDensityLimitPerTile;
@@ -1082,6 +1099,12 @@ bool sortByOrder(const MapDataObjectPrimitive& i, const MapDataObjectPrimitive& 
 	}
 	return (i.order < j.order);
 }
+bool sortByDensityPriority(const MapDataObjectPrimitive& i, const MapDataObjectPrimitive& j) {
+	if (i.priority == j.priority) {
+		return getSquareSegmentLength(i.obj) < getSquareSegmentLength(j.obj);
+	}
+	return (i.priority < j.priority);
+}
 bool sortPolygonsOrder(const MapDataObjectPrimitive& i, const MapDataObjectPrimitive& j) {
 	if (i.order == j.order) return i.typeInd < j.typeInd;
 	return (i.order > j.order);
@@ -1113,6 +1136,7 @@ void sortObjectsByProperOrder(std::vector<FoundMapDataObject>& mapDataObjects, R
 				if (req->searchRule(RenderingRulesStorage::ORDER_RULES)) {
 					int objectType = req->getIntPropertyValue(req->props()->R_OBJECT_TYPE);
 					int order = req->getIntPropertyValue(req->props()->R_ORDER);
+					int priority = req->getIntPropertyValue(req->props()->R_DENSITY_PRIORITY);
 					bool addTextForSmallAreas = req->getBoolPropertyValue(req->props()->R_IGNORE_POLYGON_AS_POINT_AREA);
 					bool addPoint = req->getBoolPropertyValue(req->props()->R_ADD_POINT);
 					if (order >= 0) {
@@ -1124,6 +1148,7 @@ void sortObjectsByProperOrder(std::vector<FoundMapDataObject>& mapDataObjects, R
 						mapObj.pointAdded = false;
 						mapObj.typeInd = j;
 						mapObj.obj = mobj;
+						mapObj.priority = priority;
 						// polygon
 						if (objectType == 3) {
 							mapObj.pointAdded = addPoint;
@@ -1165,8 +1190,9 @@ void sortObjectsByProperOrder(std::vector<FoundMapDataObject>& mapDataObjects, R
 		}
 		sort(polygonsArray.begin(), polygonsArray.end(), sortByOrder);
 		sort(pointsArray.begin(), pointsArray.end(), sortByOrder);
-		sort(linesArray.begin(), linesArray.end(), sortByOrder);
+		sort(linesArray.begin(), linesArray.end(), sortByDensityPriority);
 		filterLinesByDensity(rc, linesResArray, linesArray);
+		sort(linesResArray.begin(), linesResArray.end(), sortByOrder);
 	}
 }
 
