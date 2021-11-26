@@ -24,7 +24,7 @@ struct RoutingSubregionTile {
 	UNORDERED(map)<int64_t, SHARED_PTR<RouteSegment>> routes;
 	UNORDERED(set)<int64_t> excludedIds;
 
-	RoutingSubregionTile(RouteSubregion &sub) : subregion(sub), access(0), loaded(0) {
+	RoutingSubregionTile(RouteSubregion& sub) : subregion(sub), access(0), loaded(0) {
 		size = sizeof(RoutingSubregionTile);
 	}
 	~RoutingSubregionTile() {}
@@ -42,7 +42,7 @@ struct RoutingSubregionTile {
 
 	long getSize() { return size + routes.size() * sizeof(std::pair<int64_t, SHARED_PTR<RouteSegment>>); }
 
-	void add(SHARED_PTR<RouteDataObject> &o) {
+	void add(SHARED_PTR<RouteDataObject>& o) {
 		size += o->getSize() + sizeof(RouteSegment) * o->pointsX.size();
 		for (uint i = 0; i < o->pointsX.size(); i++) {
 			uint64_t x31 = o->pointsX[i];
@@ -64,7 +64,7 @@ struct RoutingSubregionTile {
 	}
 };
 
-static int64_t calcRouteId(SHARED_PTR<RouteDataObject> &o, int ind) { return ((int64_t)o->id << 10) + ind; }
+static int64_t calcRouteId(SHARED_PTR<RouteDataObject>& o, int ind) { return ((int64_t)o->id << 10) + ind; }
 
 inline int intpow(int base, int pw) {
 	int r = 1;
@@ -74,7 +74,7 @@ inline int intpow(int base, int pw) {
 	return r;
 }
 
-inline int compareRoutingSubregionTile(SHARED_PTR<RoutingSubregionTile> &o1, SHARED_PTR<RoutingSubregionTile> &o2) {
+inline int compareRoutingSubregionTile(SHARED_PTR<RoutingSubregionTile>& o1, SHARED_PTR<RoutingSubregionTile>& o2) {
 	int v1 = (o1->access + 1) * intpow(10, o1->getUnloadCount() - 1);
 	int v2 = (o2->access + 1) * intpow(10, o2->getUnloadCount() - 1);
 	return v1 < v2;
@@ -118,7 +118,7 @@ struct RoutingContext {
 	MAP_SUBREGION_TILES subregionTiles;
 	UNORDERED(map)<int64_t, std::vector<SHARED_PTR<RoutingSubregionTile>>> indexedSubregions;
 
-	RoutingContext(RoutingContext *cp) {
+	RoutingContext(RoutingContext* cp) {
 		this->config = cp->config;
 		this->calculationMode = cp->calculationMode;
 		this->leftSideNavigation = cp->leftSideNavigation;
@@ -164,7 +164,7 @@ struct RoutingContext {
 		this->basemap = RouteCalculationMode::BASE == calcMode;
 	}
 
-	void unloadAllData(RoutingContext *except = NULL) {
+	void unloadAllData(RoutingContext* except = NULL) {
 		auto it = subregionTiles.begin();
 		for (; it != subregionTiles.end(); it++) {
 			auto tl = it->second;
@@ -187,7 +187,7 @@ struct RoutingContext {
 		}
 	}
 
-	int searchSubregionTile(RouteSubregion &subregion) {
+	int searchSubregionTile(RouteSubregion& subregion) {
 		auto it = subregionTiles.begin();
 		int i = 0;
 		int ind = -1;
@@ -210,7 +210,7 @@ struct RoutingContext {
 		return ind;
 	}
 
-	bool acceptLine(SHARED_PTR<RouteDataObject> &r) { return config->router->acceptLine(r); }
+	bool acceptLine(SHARED_PTR<RouteDataObject>& r) { return config->router->acceptLine(r); }
 
 	long getSize() {
 		// multiply 2 for to maps
@@ -261,7 +261,7 @@ struct RoutingContext {
 		if (itSubregions == indexedSubregions.end()) {
 			return;
 		}
-		auto &subregions = itSubregions->second;
+		auto& subregions = itSubregions->second;
 		bool gc = false;
 		for (uint j = 0; j < subregions.size(); j++) {
 			if (!subregions[j]->isLoaded()) {
@@ -286,13 +286,13 @@ struct RoutingContext {
 					std::vector<SHARED_PTR<DirectionPoint>> points;
 					if (config->directionPoints.count() > 0) {
 						// retrieve direction points for attach to routing
-						RouteSubregion &subregion = subregions[j]->subregion;
+						RouteSubregion& subregion = subregions[j]->subregion;
 						SkIRect rect =
 							SkIRect::MakeLTRB(subregion.left, subregion.top, subregion.right, subregion.bottom);
 						config->directionPoints.query_in_box(rect, points);
 						uint32_t createType = subregion.routingIndex->findOrCreateRouteType(DirectionPoint_TAG,
 																							DirectionPoint_CREATE_TYPE);
-						for (SHARED_PTR<DirectionPoint> &d : points) {
+						for (SHARED_PTR<DirectionPoint>& d : points) {
 							d->types.clear();
 							for (std::pair<std::string, std::string> e : d->tags) {
 								uint32_t type = subregion.routingIndex->searchRouteEncodingRule(e.first, e.second);
@@ -309,9 +309,9 @@ struct RoutingContext {
 					}
 					subregions[j]->setLoaded();
 					SearchQuery q;
-					vector<RouteDataObject *> res;
+					vector<RouteDataObject*> res;
 					searchRouteDataForSubRegion(&q, res, &subregions[j]->subregion, geocoding);
-					vector<RouteDataObject *>::iterator i = res.begin();
+					vector<RouteDataObject*>::iterator i = res.begin();
 					for (; i != res.end(); i++) {
 						if (*i != NULL) {
 							SHARED_PTR<RouteDataObject> o;
@@ -352,7 +352,7 @@ struct RoutingContext {
 			searchRouteSubregions(&q, tempResult, basemap, geocoding);
 			std::vector<SHARED_PTR<RoutingSubregionTile>> collection;
 			for (uint i = 0; i < tempResult.size(); i++) {
-				RouteSubregion &rs = tempResult[i];
+				RouteSubregion& rs = tempResult[i];
 				int64_t key = ((int64_t)rs.left << 31) + rs.filePointer;
 				if (subregionTiles.find(key) == subregionTiles.end()) {
 					subregionTiles[key] = std::make_shared<RoutingSubregionTile>(rs);
@@ -367,7 +367,7 @@ struct RoutingContext {
 		loadHeaderObjects(tileId);
 	}
 
-	void loadTileData(int x31, int y31, int zoomAround, vector<SHARED_PTR<RouteDataObject>> &dataObjects) {
+	void loadTileData(int x31, int y31, int zoomAround, vector<SHARED_PTR<RouteDataObject>>& dataObjects) {
 		if (progress && progress.get()) {
 			progress->timeToLoad.Start();
 		}
@@ -390,7 +390,7 @@ struct RoutingContext {
 				const auto itSubregions = indexedSubregions.find(tileId);
 				if (itSubregions == indexedSubregions.end()) continue;
 
-				auto &subregions = itSubregions->second;
+				auto& subregions = itSubregions->second;
 				for (uint j = 0; j < subregions.size(); j++) {
 					if (subregions[j]->isLoaded()) {
 						UNORDERED(map)<int64_t, SHARED_PTR<RouteSegment>>::iterator s = subregions[j]->routes.begin();
@@ -437,7 +437,7 @@ struct RoutingContext {
 			return SHARED_PTR<RouteSegment>();
 		}
 
-		auto &subregions = itSubregions->second;
+		auto& subregions = itSubregions->second;
 		UNORDERED(map)<int64_t, SHARED_PTR<RouteDataObject>> excludeDuplications;
 		SHARED_PTR<RouteSegment> original;
 		for (uint j = 0; j < subregions.size(); j++) {
@@ -472,7 +472,7 @@ struct RoutingContext {
 		return original;
 	}
 
-	bool isExcluded(int64_t roadId, uint subIndex, vector<shared_ptr<RoutingSubregionTile>> &subregions) {
+	bool isExcluded(int64_t roadId, uint subIndex, vector<shared_ptr<RoutingSubregionTile>>& subregions) {
 		for (uint j = 0; j < subIndex; j++) {
 			if (subregions.at(j)->excludedIds.count(roadId) > 0) {
 				return true;
@@ -487,7 +487,7 @@ struct RoutingContext {
 
 	int getPlanRoadDirection() { return config->planRoadDirection; }
 
-	void initTargetPoint(SHARED_PTR<RouteSegment> &end) {
+	void initTargetPoint(SHARED_PTR<RouteSegment>& end) {
 		targetX = end->road->pointsX[end->segmentStart];
 		targetY = end->road->pointsY[end->segmentStart];
 		targetRoadId = end->road->id;
@@ -503,11 +503,11 @@ struct RoutingContext {
 	}
 
 	void connectPoint(SHARED_PTR<RoutingSubregionTile> subRegTile, SHARED_PTR<RouteDataObject> ro,
-					  std::vector<SHARED_PTR<DirectionPoint>> &points) {
+					  std::vector<SHARED_PTR<DirectionPoint>>& points) {
 		uint32_t createType = ro->region->findOrCreateRouteType(DirectionPoint_TAG, DirectionPoint_CREATE_TYPE);
 		uint32_t deleteType = ro->region->findOrCreateRouteType(DirectionPoint_TAG, DirectionPoint_DELETE_TYPE);
 
-		for (SHARED_PTR<DirectionPoint> &np : points) {
+		for (SHARED_PTR<DirectionPoint>& np : points) {
 			if (np->types.size() == 0) {
 				continue;
 			}
