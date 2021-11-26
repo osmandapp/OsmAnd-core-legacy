@@ -777,8 +777,8 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jclass_TurnType = findGlobalClass(env, "net/osmand/router/TurnType");
 	jmethod_TurnType_init = env->GetMethodID(jclass_TurnType, "<init>", "(IIFZ[IZZ)V");
 
-    jclass_RouteCalculationMode = findGlobalClass(env, "net/osmand/router/RoutePlannerFrontEnd$RouteCalculationMode");
 	jclass_RoutingContext = findGlobalClass(env, "net/osmand/router/RoutingContext");
+	jclass_RouteCalculationMode = findGlobalClass(env, "net/osmand/router/RoutePlannerFrontEnd$RouteCalculationMode");
 	jfield_RoutingContext_startX = getFid(env, jclass_RoutingContext, "startX", "I");
 	jfield_RoutingContext_startY = getFid(env, jclass_RoutingContext, "startY", "I");
 	jfield_RoutingContext_startRoadId = getFid(env, jclass_RoutingContext, "startRoadId", "J");
@@ -797,9 +797,9 @@ void loadJniRenderingContext(JNIEnv* env) {
 		getFid(env, jclass_RoutingContext, "config", "Lnet/osmand/router/RoutingConfiguration;");
 	jfield_RoutingContext_precalculatedRouteDirection = getFid(
 		env, jclass_RoutingContext, "precalculatedRouteDirection", "Lnet/osmand/router/PrecalculatedRouteDirection;");
+	jfield_RoutingContext_calculationMode = getFid(env, jclass_RoutingContext, "calculationMode", "Lnet/osmand/router/RoutePlannerFrontEnd$RouteCalculationMode;");
 	jfield_RoutingContext_calculationProgress =
 		getFid(env, jclass_RoutingContext, "calculationProgress", "Lnet/osmand/router/RouteCalculationProgress;");
-    jfield_RoutingContext_calculationMode = getFid(env, jclass_RoutingContext, "calculationMode", "Lnet/osmand/router/RoutePlannerFrontEnd$RouteCalculationMode;");
 
 	jclass_RouteCalculationProgress = findGlobalClass(env, "net/osmand/router/RouteCalculationProgress");
 	jfield_RouteCalculationProgress_isCancelled = getFid(env, jclass_RouteCalculationProgress, "isCancelled", "Z");
@@ -1582,11 +1582,11 @@ RoutingContext* getRoutingContext(JNIEnv* ienv, jobject jCtx, jfloat initDirecti
 	c->targetY = ienv->GetIntField(jCtx, jfield_RoutingContext_targetY);
 	c->targetRoadId = ienv->GetLongField(jCtx, jfield_RoutingContext_targetRoadId);
 	c->targetSegmentInd = ienv->GetIntField(jCtx, jfield_RoutingContext_targetSegmentInd);
-	c->targetTransportStop = ienv->GetBooleanField(jCtx, jfield_RoutingContext_targetTransportStop);
-    jmethodID getOrdinalValueMethod = ienv->GetMethodID(jclass_RouteCalculationMode, "ordinal", "()I");
+	jmethodID getOrdinalValueMethod = ienv->GetMethodID(jclass_RouteCalculationMode, "ordinal", "()I");
     jobject calculationMode = ienv->GetObjectField(jCtx, jfield_RoutingContext_calculationMode);
     jint value = ienv->CallIntMethod(calculationMode, getOrdinalValueMethod);
     c->calculationMode  = (RouteCalculationMode)(value);
+	c->targetTransportStop = ienv->GetBooleanField(jCtx, jfield_RoutingContext_targetTransportStop);
 
 	c->basemap = basemap;
 	c->setConditionalTime(c->config->routeCalculationTime);
