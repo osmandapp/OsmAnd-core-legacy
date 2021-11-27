@@ -1190,9 +1190,10 @@ void sortObjectsByProperOrder(std::vector<FoundMapDataObject>& mapDataObjects, R
 		}
 		sort(polygonsArray.begin(), polygonsArray.end(), sortByOrder);
 		sort(pointsArray.begin(), pointsArray.end(), sortByOrder);
-		sort(linesArray.begin(), linesArray.end(), sortByDensityPriority);
+		//sort(linesArray.begin(), linesArray.end(), sortByDensityPriority);
+		sort(linesArray.begin(), linesArray.end(), sortByOrder);
 		filterLinesByDensity(rc, linesResArray, linesArray);
-		sort(linesResArray.begin(), linesResArray.end(), sortByOrder);
+		//sort(linesResArray.begin(), linesResArray.end(), sortByOrder);
 	}
 }
 
