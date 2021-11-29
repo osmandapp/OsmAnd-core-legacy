@@ -1,7 +1,6 @@
 #include "binaryRoutePlanner.h"
 
 #include <functional>
-#include <iostream>
 #include <iterator>
 #include <queue>
 
@@ -29,11 +28,11 @@ inline int roadPriorityComparator(float o1DistanceFromStart, float o1DistanceToE
 
 void printRoad(const char* prefix, RouteSegment* segment) {
 	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "%s Road id=%lld ind=%d->%d ds=%f es=%f pend=%d parent=%lld",
-					  prefix, segment->road->id / 64, segment->getSegmentStart(), segment->getSegmentEnd(),
+					  prefix, segment->getRoad()->id / 64, segment->getSegmentStart(), segment->getSegmentEnd(),
 					  segment->distanceFromStart, segment->distanceToEnd,
 					  segment->parentRoute.get() != NULL ? segment->getParentRoute()->segmentEnd : 0,
 					  segment->parentRoute.get() != NULL && segment->getParentRoute()->road != nullptr
-						  ? segment->getParentRoute()->road->id / 64
+						  ? segment->getParentRoute()->getRoad()->id / 64
 						  : 0);
 }
 
@@ -157,7 +156,7 @@ void initQueuesWithStartEnd(RoutingContext* ctx, SHARED_PTR<RouteSegment> start,
 
 	// for start : f(start) = g(start) + h(start) = 0 + h(start) = h(start)
 	if (ctx->config->initialDirection > -180 && ctx->config->initialDirection < 180) {
-		double plusDir = start->road->directionRoute(start->getSegmentStart(), true);
+		double plusDir = start->getRoad()->directionRoute(start->getSegmentStart(), true);
 		double diff = plusDir - ctx->config->initialDirection;
 		if (abs(alignAngleDifference(diff)) <= M_PI / 3) {
 			if (startNeg.get() != NULL) {
@@ -281,7 +280,7 @@ SHARED_PTR<RouteSegment> searchRouteInternal(RoutingContext* ctx, SHARED_PTR<Rou
 		if (TRACE_ROUTING) {
 			printRoad(forwardSearch ? "F>" : "B>", segment);
 		}
-		if (segment->isFinalSegment == true) {
+		if (segment->isFinalSegment) {
 			finalSegment = segment;
 			ctx->finalRouteSegment = segment;
 			if (TRACE_ROUTING) {
@@ -575,7 +574,7 @@ void processRestriction(RoutingContext* ctx, SHARED_PTR<RouteSegment>& inputNext
 		int type = -1;
 		if (!reverseWay) {
 			for (uint i = 0; i < road->restrictions.size(); i++) {
-				if (road->restrictions[i].to == next->road->id) {
+				if (road->restrictions[i].to == next->getRoad()->id) {
 					if (!via || road->restrictions[i].via == viaId) {
 						type = road->restrictions[i].type;
 						;
@@ -589,16 +588,16 @@ void processRestriction(RoutingContext* ctx, SHARED_PTR<RouteSegment>& inputNext
 				}
 			}
 		} else {
-			for (uint i = 0; i < next->road->restrictions.size(); i++) {
-				int rt = next->road->restrictions[i].type;
-				int64_t restrictedTo = next->road->restrictions[i].to;
+			for (uint i = 0; i < next->getRoad()->restrictions.size(); i++) {
+				int rt = next->getRoad()->restrictions[i].type;
+				int64_t restrictedTo = next->getRoad()->restrictions[i].to;
 				if (restrictedTo == road->id) {
-					if (!via || next->road->restrictions[i].via == viaId) {
+					if (!via || next->getRoad()->restrictions[i].via == viaId) {
 						type = rt;
 						break;
 					}
 				}
-				if (next->road->restrictions[i].via == viaId && via && rt == RESTRICTION_ONLY_STRAIGHT_ON) {
+				if (next->getRoad()->restrictions[i].via == viaId && via && rt == RESTRICTION_ONLY_STRAIGHT_ON) {
 					type = RESTRICTION_NO_STRAIGHT_ON;
 					break;
 				}
@@ -609,7 +608,7 @@ void processRestriction(RoutingContext* ctx, SHARED_PTR<RouteSegment>& inputNext
 					// check if that restriction applies to considered junk
 					SHARED_PTR<RouteSegment> foundNext = inputNext;
 					while (foundNext.get() != NULL) {
-						if (foundNext->road->id == restrictedTo) {
+						if (foundNext->getRoad()->id == restrictedTo) {
 							break;
 						}
 						foundNext = foundNext->next;
@@ -670,14 +669,14 @@ bool proccessRestrictions(RoutingContext* ctx, SHARED_PTR<RouteSegment>& segment
 	SHARED_PTR<RouteSegment> parent = getParentDiffId(segment);
 
 	if (!reverseWay && road->restrictions.size() == 0 &&
-		(parent.get() == NULL || parent->road == nullptr || parent->road->restrictions.size() == 0)) {
+		(parent.get() == NULL || parent->road == nullptr || parent->getRoad()->restrictions.size() == 0)) {
 		return false;
 	}
 	clearSegments(ctx->segmentsToVisitPrescripted);
 	clearSegments(ctx->segmentsToVisitNotForbidden);
 	processRestriction(ctx, inputNext, reverseWay, 0, road);
 	if (parent.get() != NULL && parent->road != nullptr) {
-		processRestriction(ctx, inputNext, reverseWay, segment->road->id, parent->road);
+		processRestriction(ctx, inputNext, reverseWay, segment->getRoad()->id, parent->road);
 	}
 	return true;
 }
@@ -700,7 +699,7 @@ SHARED_PTR<RouteSegment> processIntersections(RoutingContext* ctx, SEGMENTS_QUEU
 	bool singleRoad = true;
 	while (roadIter != nullptr) {
 		if (currentSegment->getSegmentEnd() == roadIter->getSegmentStart() &&
-			roadIter->road->getId() == currentSegment->getRoad()->getId()) {
+			roadIter->getRoad()->getId() == currentSegment->getRoad()->getId()) {
 			nextCurrentSegment = RouteSegment::initRouteSegment(roadIter, currentSegment->isPositive());
 			if (nextCurrentSegment == nullptr) {
 				directionAllowed = false;
@@ -748,7 +747,7 @@ SHARED_PTR<RouteSegment> processIntersections(RoutingContext* ctx, SEGMENTS_QUEU
 		}
 		// TODO - (OK) double check not to add itself (doesn't look correct)
 		if (next->getSegmentStart() == currentSegment->getSegmentEnd() &&
-			next->road->getId() == currentSegment->road->getId()) {
+			next->getRoad()->getId() == currentSegment->getRoad()->getId()) {
 			// skip itself
 		} else if (!doNotAddIntersections) {
 			SHARED_PTR<RouteSegment> nextPos = RouteSegment::initRouteSegment(next, true);
@@ -951,6 +950,7 @@ bool processOneRoadIntersection(RoutingContext* ctx, bool reverseWaySearch, SEGM
 		if (!checkMovementAllowed(ctx, reverseWaySearch, next)) {
 			return false;
 		}
+		// Can lose 1 during cast double to float
 		float obstaclesTime = (float)ctx->config->router->calculateTurnTime(
 			next, next->isPositive() ? next->getRoad()->getPointsLength() - 1 : 0, segment, segment->getSegmentEnd());
 		if (obstaclesTime < 0) {
