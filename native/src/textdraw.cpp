@@ -525,7 +525,7 @@ bool findTextIntersection(SkCanvas* cv, RenderingContext* rc, quad_tree<SHARED_P
 
 	// for text purposes
 	if (db.debugTextDisplayBBox) {
-		//drawTestBox(cv, &text->bounds, text->pathRotate, paintIcon, text->text, NULL /*paintText*/, skFontText, fontEntry);
+		drawTestBox(cv, &text->bounds, text->pathRotate, paintIcon, text->text, NULL /*paintText*/, skFontText, fontEntry);
 	}
 	boundIntersections.query_in_box(text->bounds, searchText);
 	for (uint32_t i = 0; i < searchText.size(); i++) {
@@ -540,7 +540,7 @@ bool findTextIntersection(SkCanvas* cv, RenderingContext* rc, quad_tree<SHARED_P
 						   -max(rc->getDensityValue(15.0f), text->minDistance));
 		boundIntersections.query_in_box(boundsSearch, searchText);
 		if (db.debugTextDisplayShieldBBox) {
-			//drawTestBox(cv, &boundsSearch, text->pathRotate, paintIcon, text->text, paintText, skFontText, fontEntry);
+			drawTestBox(cv, &boundsSearch, text->pathRotate, paintIcon, text->text, paintText, skFontText, fontEntry);
 		}
 		for (uint32_t i = 0; i < searchText.size(); i++) {
 			SHARED_PTR<TextDrawInfo> t = searchText.at(i);

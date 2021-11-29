@@ -1428,11 +1428,8 @@ void parseRouteAttributeEvalRule(JNIEnv* ienv, jobject rule, shared_ptr<RouteAtt
 
 		jstring jvalueType = (jstring)ienv->GetObjectField(expr, jfield_RouteAttributeExpression_valueType);
 		string valueType;
-		if (jselectType) {
+		if (jvalueType) {
 			valueType = getString(ienv, jvalueType);
-
-			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "valueType: %s", valueType.c_str());
-
 			ienv->DeleteLocalRef(jvalueType);
 		}
 

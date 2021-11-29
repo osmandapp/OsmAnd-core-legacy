@@ -137,13 +137,13 @@ void RouteDataObject::processConditionalTags(const tm& time) {
 				auto& rtr = region->quickGetEncodingRule(vl);
 				std::string nonCondTag = rtr.getTag();
 				uint32_t ks = 0;
-				for (; ks < sz; ks++) {
+				for (; ks < types.size(); ks++) {
 					auto& toReplace = region->quickGetEncodingRule(types[ks]);
 					if (toReplace.getTag() == nonCondTag) {
 						break;
 					}
 				}
-				if (ks == sz) {
+				if (ks == types.size()) {
 					std::vector<uint32_t> ntypes(1);
 					ntypes.insert(ntypes.begin(), types.begin(), types.end());
 					types = ntypes;
@@ -164,14 +164,14 @@ void RouteDataObject::processConditionalTags(const tm& time) {
 					auto& rtr = region->quickGetEncodingRule(vl);
 					std::string nonCondTag = rtr.getTag();
 					uint32_t ks = 0;
-					for (; ks < pSz; ks++) {
+					for (; ks < ptypes.size(); ks++) {
 						auto& toReplace = region->quickGetEncodingRule(ptypes[ks]);
 						if (toReplace.getTag() == nonCondTag) {
 							ptypes[ks] = vl;
 							break;
 						}
 					}
-					if (ks == pSz) {
+					if (ks == ptypes.size()) {
 						ptypes.push_back(vl);
 					}
 				}
