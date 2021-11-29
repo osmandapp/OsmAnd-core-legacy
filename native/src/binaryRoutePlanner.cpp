@@ -515,14 +515,6 @@ void processRouteSegment(RoutingContext* ctx, bool reverseWaySearch, SEGMENTS_QU
 		}
 		// calculate new start segment time as we're going to assign to put to visited segments
 		float distFromStartPlusSegmentTime = currentSegment->distanceFromStart + segmentAndObstaclesTime;
-		if (ctx->precalcRoute != nullptr && ctx->precalcRoute->followNext) {
-			// speed up calculation with calculated route by using different distance from start
-			const int x = road->pointsX[currentSegment->getSegmentStart()];
-			const int y = road->pointsY[currentSegment->getSegmentStart()];
-			// TODO double check is it correct (looks OK)
-			distFromStartPlusSegmentTime =
-				ctx->precalcRoute->getDeviationDistance(x, y) / ctx->config->router->getMaxSpeed();
-		}
 		// 2. check if segment was already visited in opposite direction
 		// We check before we calculate segmentTime (to not calculate it twice with opposite and calculate turns
 		// onto each segment).
