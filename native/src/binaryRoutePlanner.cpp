@@ -786,7 +786,7 @@ SHARED_PTR<RouteSegmentPoint> findRouteSegment(int px, int py, RoutingContext* c
 	vector<SHARED_PTR<RouteSegmentPoint> > list;
 	vector<SHARED_PTR<RouteDataObject> >::iterator it = dataObjects.begin();
 	for (; it != dataObjects.end(); it++) {
-		SHARED_PTR<RouteDataObject> r = *it;
+		SHARED_PTR<RouteDataObject>& r = *it;
 		if (r->id == roadId && roadId > 0 && segmentInd < r->pointsX.size()) {
 			SHARED_PTR<RouteSegmentPoint> road = std::make_shared<RouteSegmentPoint>(r, segmentInd);
 			road->preciseX = px;
@@ -800,7 +800,7 @@ SHARED_PTR<RouteSegmentPoint> findRouteSegment(int px, int py, RoutingContext* c
 		it = dataObjects.begin();
 	}
 	for (; it != dataObjects.end(); it++) {
-		SHARED_PTR<RouteDataObject> r = *it;
+		SHARED_PTR<RouteDataObject>& r = *it;
 		if (r->pointsX.size() > 1) {
 			SHARED_PTR<RouteSegmentPoint> road;
 			for (uint j = 1; j < r->pointsX.size(); j++) {

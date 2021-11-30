@@ -419,7 +419,7 @@ struct RoutingContext {
 						while (s != subregions[j]->routes.end()) {
 							SHARED_PTR<RouteSegment> seg = s->second;
 							while (seg.get() != NULL) {
-								SHARED_PTR<RouteDataObject> ro = seg->road;
+								SHARED_PTR<RouteDataObject>& ro = seg->road;
 								// excludeDuplications.insert(ro->id).second - true if it was inserted
 								if (!isExcluded(ro->id, j, subregions) && excludeDuplications.insert(ro->id).second) {
 									dataObjects.push_back(ro);
@@ -464,8 +464,8 @@ struct RoutingContext {
 				SHARED_PTR<RouteSegment> segment = subregions[j]->routes[l];
 				subregions[j]->access++;
 				while (segment.get() != NULL) {
-					SHARED_PTR<RouteDataObject> ro = segment->road;
-					SHARED_PTR<RouteDataObject> toCmp = excludeDuplications[calcRouteId(ro, segment->getSegmentStart())];
+					SHARED_PTR<RouteDataObject>& ro = segment->road;
+					SHARED_PTR<RouteDataObject>& toCmp = excludeDuplications[calcRouteId(ro, segment->getSegmentStart())];
 					if (!isExcluded(ro->id, j, subregions) && (toCmp.get() == NULL || toCmp->pointsX.size() < ro->pointsX.size())) {
 						excludeDuplications[calcRouteId(ro, segment->getSegmentStart())] = ro;
 						SHARED_PTR<RouteSegment> s = std::make_shared<RouteSegment>(ro, segment->getSegmentStart());
@@ -518,11 +518,11 @@ struct RoutingContext {
 		startSegmentInd = start->segmentStart;
 	}
     
-	void connectPoint(SHARED_PTR<RoutingSubregionTile> subRegTile, SHARED_PTR<RouteDataObject> ro, std::vector<SHARED_PTR<DirectionPoint>> & points) {
+	void connectPoint(SHARED_PTR<RoutingSubregionTile>& subRegTile, SHARED_PTR<RouteDataObject>& ro, std::vector<SHARED_PTR<DirectionPoint>>& points) {
 		uint32_t createType = ro->region->findOrCreateRouteType(DirectionPoint_TAG, DirectionPoint_CREATE_TYPE);
 		uint32_t deleteType = ro->region->findOrCreateRouteType(DirectionPoint_TAG, DirectionPoint_DELETE_TYPE);
 
-		for (SHARED_PTR<DirectionPoint> & np : points) {
+		for (SHARED_PTR<DirectionPoint>& np : points) {
 			if (np->types.size() == 0) {
 				continue;
 			}
