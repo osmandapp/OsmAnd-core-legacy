@@ -10,10 +10,10 @@
 #include "CommonCollections.h"
 #include "binaryRead.h"
 #include "binaryRoutePlanner.h"
-#include "routePlannerFrontEnd.h"
 #include "java_renderRules.h"
 #include "java_wrap.h"
 #include "rendering.h"
+#include "routePlannerFrontEnd.h"
 #include "routingContext.h"
 #include "transportRoutePlanner.h"
 #include "transportRouteResult.h"
@@ -115,13 +115,13 @@ extern "C" JNIEXPORT jboolean JNICALL Java_net_osmand_NativeLibrary_initFontType
 																				 jstring path, jstring name,
 																				 jboolean bold, jboolean italic) {
 	std::string fName = getString(ienv, name);
-	//jbyte* be = ienv->GetByteArrayElements(byteData, NULL);
+	// jbyte* be = ienv->GetByteArrayElements(byteData, NULL);
 	std::string pathToFont = getString(ienv, path);
-	//jsize sz = ienv->GetArrayLength(byteData);
+	// jsize sz = ienv->GetArrayLength(byteData);
 	globalFontRegistry.registerFonts(pathToFont.c_str(), fName, bold, italic);
 
-	//ienv->ReleaseByteArrayElements(byteData, be, JNI_ABORT);
-	//ienv->DeleteLocalRef(byteData);
+	// ienv->ReleaseByteArrayElements(byteData, be, JNI_ABORT);
+	// ienv->DeleteLocalRef(byteData);
 	return true;
 }
 
@@ -132,7 +132,8 @@ RenderingRulesStorage* getStorage(JNIEnv* env, jobject storage) {
 	std::string hash = getStringMethod(env, storage, jmethod_Object_toString);
 	int32_t internalVersion = env->CallIntMethod(storage, RenderingRulesStorage_getInternalVersion);
 	if (cachedStorages.find(hash) == cachedStorages.end() || internalVersion != cachedStorages[hash]->internalVersion) {
-		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "Init rendering storage %s %d", hash.c_str(), internalVersion);
+		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "Init rendering storage %s %d", hash.c_str(),
+						  internalVersion);
 		cachedStorages[hash] = createRenderingRulesStorage(env, storage);
 	}
 	return cachedStorages[hash];
@@ -433,7 +434,10 @@ jfieldID jfield_RoutingContext_publicTransport = NULL;
 jfieldID jfield_RoutingContext_config = NULL;
 jfieldID jfield_RoutingContext_precalculatedRouteDirection = NULL;
 jfieldID jfield_RoutingContext_calculationProgress = NULL;
+jfieldID jfield_RoutingContext_calculationMode = NULL;
 
+jclass jclass_RouteCalculationMode = NULL;
+jclass jclass_RoutePlannerFrontEnd = NULL;
 jclass jclass_RouteCalculationProgress = NULL;
 jfieldID jfield_RouteCalculationProgress_segmentNotFound = NULL;
 jfieldID jfield_RouteCalculationProgress_distanceFromBegin = NULL;
@@ -500,7 +504,7 @@ jfieldID jfield_RoutingConfiguration_routeCalculationTime = NULL;
 jfieldID jfield_RoutingConfiguration_routerName = NULL;
 jfieldID jfield_RoutingConfiguration_router = NULL;
 jmethodID jmethod_RoutingConfiguration_getDirectionPoints = NULL;
-		
+
 jclass jclass_DirectionPoint = NULL;
 jfieldID jfield_DirectionPoint_x31 = NULL;
 jfieldID jfield_DirectionPoint_y31 = NULL;
@@ -515,6 +519,7 @@ jfieldID jfield_GeneralRouter_minSpeed = NULL;
 jfieldID jfield_GeneralRouter_defaultSpeed = NULL;
 jfieldID jfield_GeneralRouter_maxSpeed = NULL;
 jfieldID jfield_GeneralRouter_heightObstacles = NULL;
+jfieldID jfield_GeneralRouter_shortestRoute = NULL;
 jfieldID jfield_GeneralRouter_objectAttributes = NULL;
 jmethodID jmethod_GeneralRouter_getImpassableRoadIds = NULL;
 
@@ -767,13 +772,15 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jclass_RouteSegmentResult = findGlobalClass(env, "net/osmand/router/RouteSegmentResult");
 	jclass_RouteSegmentResultAr = findGlobalClass(env, "[Lnet/osmand/router/RouteSegmentResult;");
 	jmethod_RouteSegmentResult_init =
-		env->GetMethodID(jclass_RouteSegmentResult, "<init>", "(Lnet/osmand/binary/RouteDataObject;"
-		                 "II[[Lnet/osmand/router/RouteSegmentResult;FFFFLnet/osmand/router/TurnType;)V");
+		env->GetMethodID(jclass_RouteSegmentResult, "<init>",
+						 "(Lnet/osmand/binary/RouteDataObject;"
+						 "II[[Lnet/osmand/router/RouteSegmentResult;FFFFLnet/osmand/router/TurnType;)V");
 
 	jclass_TurnType = findGlobalClass(env, "net/osmand/router/TurnType");
 	jmethod_TurnType_init = env->GetMethodID(jclass_TurnType, "<init>", "(IIFZ[IZZ)V");
 
 	jclass_RoutingContext = findGlobalClass(env, "net/osmand/router/RoutingContext");
+	jclass_RouteCalculationMode = findGlobalClass(env, "net/osmand/router/RoutePlannerFrontEnd$RouteCalculationMode");
 	jfield_RoutingContext_startX = getFid(env, jclass_RoutingContext, "startX", "I");
 	jfield_RoutingContext_startY = getFid(env, jclass_RoutingContext, "startY", "I");
 	jfield_RoutingContext_startRoadId = getFid(env, jclass_RoutingContext, "startRoadId", "J");
@@ -792,6 +799,8 @@ void loadJniRenderingContext(JNIEnv* env) {
 		getFid(env, jclass_RoutingContext, "config", "Lnet/osmand/router/RoutingConfiguration;");
 	jfield_RoutingContext_precalculatedRouteDirection = getFid(
 		env, jclass_RoutingContext, "precalculatedRouteDirection", "Lnet/osmand/router/PrecalculatedRouteDirection;");
+	jfield_RoutingContext_calculationMode = getFid(env, jclass_RoutingContext, "calculationMode",
+												   "Lnet/osmand/router/RoutePlannerFrontEnd$RouteCalculationMode;");
 	jfield_RoutingContext_calculationProgress =
 		getFid(env, jclass_RoutingContext, "calculationProgress", "Lnet/osmand/router/RouteCalculationProgress;");
 
@@ -883,14 +892,13 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jfield_RoutingConfiguration_router =
 		getFid(env, jclass_RoutingConfiguration, "router", "Lnet/osmand/router/GeneralRouter;");
 
-	jmethod_RoutingConfiguration_getDirectionPoints = 
-		env->GetMethodID(jclass_RoutingConfiguration, "getNativeDirectionPoints", "()[Lnet/osmand/NativeLibrary$NativeDirectionPoint;");	
+	jmethod_RoutingConfiguration_getDirectionPoints = env->GetMethodID(
+		jclass_RoutingConfiguration, "getNativeDirectionPoints", "()[Lnet/osmand/NativeLibrary$NativeDirectionPoint;");
 
 	jclass_DirectionPoint = findGlobalClass(env, "net/osmand/NativeLibrary$NativeDirectionPoint");
 	jfield_DirectionPoint_x31 = getFid(env, jclass_DirectionPoint, "x31", "I");
-	jfield_DirectionPoint_y31 = getFid(env, jclass_DirectionPoint, "y31", "I");	
+	jfield_DirectionPoint_y31 = getFid(env, jclass_DirectionPoint, "y31", "I");
 	jfield_DirectionPoint_tags = getFid(env, jclass_DirectionPoint, "tags", "[[Ljava/lang/String;");
-	
 
 	jclass_GeneralRouter = findGlobalClass(env, "net/osmand/router/GeneralRouter");
 	jfield_GeneralRouter_restrictionsAware = getFid(env, jclass_GeneralRouter, "restrictionsAware", "Z");
@@ -901,6 +909,7 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jfield_GeneralRouter_defaultSpeed = getFid(env, jclass_GeneralRouter, "defaultSpeed", "F");
 	jfield_GeneralRouter_maxSpeed = getFid(env, jclass_GeneralRouter, "maxSpeed", "F");
 	jfield_GeneralRouter_heightObstacles = getFid(env, jclass_GeneralRouter, "heightObstacles", "Z");
+	jfield_GeneralRouter_shortestRoute = getFid(env, jclass_GeneralRouter, "shortestRoute", "Z");
 	jfield_GeneralRouter_objectAttributes = getFid(env, jclass_GeneralRouter, "objectAttributes",
 												   "[Lnet/osmand/router/GeneralRouter$RouteAttributeContext;");
 	jmethod_GeneralRouter_getImpassableRoadIds = env->GetMethodID(jclass_GeneralRouter, "getImpassableRoadIds", "()[J");
@@ -1037,19 +1046,22 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jfield_RouteSubregion_shiftToData = getFid(env, jclass_RouteSubregion, "shiftToData", "I");
 
 	jclass_nativeGpxPointApproximation = findGlobalClass(env, "net/osmand/NativeLibrary$NativeGpxPointApproximation");
-	jmethod_nativeGpxPointApproximation_init = env->GetMethodID(jclass_nativeGpxPointApproximation, "<init>", "(IDDD)V");
-	jmethod_nativeGpxPointApproximation_addRouteToTarget = env->GetMethodID(jclass_nativeGpxPointApproximation, "addRouteToTarget", "(Lnet/osmand/router/RouteSegmentResult;)V");
+	jmethod_nativeGpxPointApproximation_init =
+		env->GetMethodID(jclass_nativeGpxPointApproximation, "<init>", "(IDDD)V");
+	jmethod_nativeGpxPointApproximation_addRouteToTarget = env->GetMethodID(
+		jclass_nativeGpxPointApproximation, "addRouteToTarget", "(Lnet/osmand/router/RouteSegmentResult;)V");
 	jfield_nativeGpxPointApproximation_lat = getFid(env, jclass_nativeGpxPointApproximation, "lat", "D");
 	jfield_nativeGpxPointApproximation_lon = getFid(env, jclass_nativeGpxPointApproximation, "lon", "D");
 	jfield_nativeGpxPointApproximation_cumDist = getFid(env, jclass_nativeGpxPointApproximation, "cumDist", "D");
 
-	jclass_GpxRouteApproximationResult = findGlobalClass(env, "net/osmand/NativeLibrary$NativeGpxRouteApproximationResult");
-	jmethod_GpxRouteApproximationResult_init =
-		env->GetMethodID(jclass_GpxRouteApproximationResult, "<init>", "()V");
+	jclass_GpxRouteApproximationResult =
+		findGlobalClass(env, "net/osmand/NativeLibrary$NativeGpxRouteApproximationResult");
+	jmethod_GpxRouteApproximationResult_init = env->GetMethodID(jclass_GpxRouteApproximationResult, "<init>", "()V");
 	jmethod_GpxRouteApproximationResult_addFinalPoint =
-		env->GetMethodID(jclass_GpxRouteApproximationResult, "addFinalPoint", "(Lnet/osmand/NativeLibrary$NativeGpxPointApproximation;)V");
-	jmethod_GpxRouteApproximationResult_addResultSegment =
-		env->GetMethodID(jclass_GpxRouteApproximationResult, "addResultSegment", "(Lnet/osmand/router/RouteSegmentResult;)V");
+		env->GetMethodID(jclass_GpxRouteApproximationResult, "addFinalPoint",
+						 "(Lnet/osmand/NativeLibrary$NativeGpxPointApproximation;)V");
+	jmethod_GpxRouteApproximationResult_addResultSegment = env->GetMethodID(
+		jclass_GpxRouteApproximationResult, "addResultSegment", "(Lnet/osmand/router/RouteSegmentResult;)V");
 }
 
 void pullFromJavaRenderingContext(JNIEnv* env, jobject jrc, JNIRenderingContext* rc) {
@@ -1251,13 +1263,14 @@ jobject convertRouteSegmentResultToJava(JNIEnv* ienv, SHARED_PTR<RouteSegmentRes
 		const auto& tt = r->turnType;
 		jintArray lanes = ienv->NewIntArray(tt->getLanes().size());
 		ienv->SetIntArrayRegion(lanes, 0, tt->getLanes().size(), (jint*)&tt->getLanes()[0]);
-		turnType = ienv->NewObject(jclass_TurnType, jmethod_TurnType_init, tt->getValue(),tt->getExitOut(), tt->getTurnAngle(),
-		                           tt->isSkipToSpeak(), lanes, tt->isPossibleLeftTurn(), tt->isPossibleRightTurn());
+		turnType = ienv->NewObject(jclass_TurnType, jmethod_TurnType_init, tt->getValue(), tt->getExitOut(),
+								   tt->getTurnAngle(), tt->isSkipToSpeak(), lanes, tt->isPossibleLeftTurn(),
+								   tt->isPossibleRightTurn());
 		ienv->DeleteLocalRef(lanes);
 	}
 	jobject resobj = ienv->NewObject(jclass_RouteSegmentResult, jmethod_RouteSegmentResult_init, robj,
-	                                 r->getStartPointIndex(), r->getEndPointIndex(), ar,
-	                                 r->segmentTime, r->routingTime, r->segmentSpeed, r->distance, turnType);
+									 r->getStartPointIndex(), r->getEndPointIndex(), ar, r->segmentTime, r->routingTime,
+									 r->segmentSpeed, r->distance, turnType);
 	if (reg != NULL) {
 		ienv->DeleteLocalRef(reg);
 	}
@@ -1288,8 +1301,7 @@ class RouteCalculationProgressWrapper : public RouteCalculationProgress {
 	jobject j;
 
    public:
-	RouteCalculationProgressWrapper(JNIEnv* ienv, jobject j) : RouteCalculationProgress(), ienv(ienv), j(j) {
-	}
+	RouteCalculationProgressWrapper(JNIEnv* ienv, jobject j) : RouteCalculationProgress(), ienv(ienv), j(j) {}
 	virtual bool isCancelled() {
 		if (j == NULL) {
 			return false;
@@ -1451,6 +1463,7 @@ void parseRouteConfiguration(JNIEnv* ienv, SHARED_PTR<RoutingConfiguration> rCon
 	rConfig->router->defaultSpeed = ienv->GetFloatField(router, jfield_GeneralRouter_defaultSpeed);
 	rConfig->router->maxSpeed = ienv->GetFloatField(router, jfield_GeneralRouter_maxSpeed);
 	rConfig->router->heightObstacles = ienv->GetBooleanField(router, jfield_GeneralRouter_heightObstacles);
+	rConfig->router->shortestRoute = ienv->GetBooleanField(router, jfield_GeneralRouter_shortestRoute);
 
 	// Map<String, String> attributes; // Attributes are not sync not used for calculation
 	// Map<String, RoutingParameter> parameters;  // not used for calculation
@@ -1497,7 +1510,8 @@ void parseRouteConfiguration(JNIEnv* ienv, SHARED_PTR<RoutingConfiguration> rCon
 
 	SkIRect rect = SkIRect::MakeLTRB(0, 0, INT_MAX, INT_MAX);
 	rConfig->directionPoints = quad_tree<SHARED_PTR<DirectionPoint>>(rect, 14, 0.5);
-	jobjectArray directionPoints = (jobjectArray)ienv->CallObjectMethod(jRouteConfig, jmethod_RoutingConfiguration_getDirectionPoints);
+	jobjectArray directionPoints =
+		(jobjectArray)ienv->CallObjectMethod(jRouteConfig, jmethod_RoutingConfiguration_getDirectionPoints);
 	for (int j = 0; j < ienv->GetArrayLength(directionPoints); j++) {
 		jobject jdp = ienv->GetObjectArrayElement(directionPoints, j);
 		SHARED_PTR<DirectionPoint> dp = std::make_shared<DirectionPoint>();
@@ -1506,7 +1520,7 @@ void parseRouteConfiguration(JNIEnv* ienv, SHARED_PTR<RoutingConfiguration> rCon
 		jobjectArray tagsKeyValue = (jobjectArray)ienv->GetObjectField(jdp, jfield_DirectionPoint_tags);
 		for (int s = 0; s < ienv->GetArrayLength(tagsKeyValue); s++) {
 			jobjectArray jstrArr = (jobjectArray)ienv->GetObjectArrayElement(tagsKeyValue, s);
-			if(ienv->GetArrayLength(jstrArr) > 0) {
+			if (ienv->GetArrayLength(jstrArr) > 0) {
 				jobject jkey = (jobject)ienv->GetObjectArrayElement(jstrArr, 0);
 				jobject jvalue = (jobject)ienv->GetObjectArrayElement(jstrArr, 1);
 				const char* key = ienv->GetStringUTFChars((jstring)jkey, NULL);
@@ -1516,11 +1530,11 @@ void parseRouteConfiguration(JNIEnv* ienv, SHARED_PTR<RoutingConfiguration> rCon
 				ienv->DeleteLocalRef(jvalue);
 			}
 			ienv->DeleteLocalRef(jstrArr);
-		}		
+		}
 		ienv->DeleteLocalRef(tagsKeyValue);
 		ienv->DeleteLocalRef(jdp);
 		SkIRect rectDp = SkIRect::MakeLTRB(dp->x31, dp->y31, dp->x31, dp->y31);
-        rConfig->directionPoints.insert(dp, rectDp);
+		rConfig->directionPoints.insert(dp, rectDp);
 	}
 	ienv->DeleteLocalRef(directionPoints);
 
@@ -1539,9 +1553,10 @@ void addLongField(JNIEnv* ienv, jobject obj, jfieldID fid, jlong val) {
 	ienv->SetLongField(obj, fid, ienv->GetLongField(obj, fid) + val);
 }
 
-jobject convertGpxPointToJava(JNIEnv* ienv, SHARED_PTR<GpxPoint> result, UNORDERED(map) < int64_t, int > &indexes, jobjectArray regions) {
+jobject convertGpxPointToJava(JNIEnv* ienv, SHARED_PTR<GpxPoint> result, UNORDERED(map) < int64_t, int > &indexes,
+							  jobjectArray regions) {
 	jobject jGpxPoint = ienv->NewObject(jclass_nativeGpxPointApproximation, jmethod_nativeGpxPointApproximation_init,
-	                                    result->ind, result->lat, result->lon, result->cumDist);
+										result->ind, result->lat, result->lon, result->cumDist);
 	for (uint i = 0; i < result->routeToTarget.size(); i++) {
 		jobject resobj = convertRouteSegmentResultToJava(ienv, result->routeToTarget[i], indexes, regions);
 		ienv->CallVoidMethod(jGpxPoint, jmethod_nativeGpxPointApproximation_addRouteToTarget, resobj);
@@ -1571,7 +1586,12 @@ RoutingContext* getRoutingContext(JNIEnv* ienv, jobject jCtx, jfloat initDirecti
 	c->targetY = ienv->GetIntField(jCtx, jfield_RoutingContext_targetY);
 	c->targetRoadId = ienv->GetLongField(jCtx, jfield_RoutingContext_targetRoadId);
 	c->targetSegmentInd = ienv->GetIntField(jCtx, jfield_RoutingContext_targetSegmentInd);
+	jmethodID getOrdinalValueMethod = ienv->GetMethodID(jclass_RouteCalculationMode, "ordinal", "()I");
+	jobject calculationMode = ienv->GetObjectField(jCtx, jfield_RoutingContext_calculationMode);
+	jint value = ienv->CallIntMethod(calculationMode, getOrdinalValueMethod);
+	c->calculationMode = (RouteCalculationMode)(value);
 	c->targetTransportStop = ienv->GetBooleanField(jCtx, jfield_RoutingContext_targetTransportStop);
+
 	c->basemap = basemap;
 	c->setConditionalTime(c->config->routeCalculationTime);
 	c->publicTransport = ienv->GetBooleanField(jCtx, jfield_RoutingContext_publicTransport);
@@ -1580,21 +1600,23 @@ RoutingContext* getRoutingContext(JNIEnv* ienv, jobject jCtx, jfloat initDirecti
 }
 
 extern "C" JNIEXPORT jobject JNICALL Java_net_osmand_NativeLibrary_nativeSearchGpxRoute(JNIEnv* ienv, jobject obj,
-	jobject jCtx, jobjectArray jGpxPoints, jobjectArray regions) {
+																						jobject jCtx,
+																						jobjectArray jGpxPoints,
+																						jobjectArray regions) {
 	vector<SHARED_PTR<GpxPoint>> gpxPoints;
 	for (int i = 0; i < ienv->GetArrayLength(jGpxPoints); i++) {
 		jobject jGpxPoint = ienv->GetObjectArrayElement(jGpxPoints, i);
-		SHARED_PTR<GpxPoint> gp = shared_ptr<GpxPoint>(new GpxPoint(i,
-			ienv->GetDoubleField(jGpxPoint, jfield_nativeGpxPointApproximation_lat),
-			ienv->GetDoubleField(jGpxPoint, jfield_nativeGpxPointApproximation_lon),
-			ienv->GetDoubleField(jGpxPoint, jfield_nativeGpxPointApproximation_cumDist)));
+		SHARED_PTR<GpxPoint> gp = shared_ptr<GpxPoint>(
+			new GpxPoint(i, ienv->GetDoubleField(jGpxPoint, jfield_nativeGpxPointApproximation_lat),
+						 ienv->GetDoubleField(jGpxPoint, jfield_nativeGpxPointApproximation_lon),
+						 ienv->GetDoubleField(jGpxPoint, jfield_nativeGpxPointApproximation_cumDist)));
 		gpxPoints.push_back(gp);
 		ienv->DeleteLocalRef(jGpxPoint);
 	}
 	jobject progress = ienv->GetObjectField(jCtx, jfield_RoutingContext_calculationProgress);
 	RoutingContext* c = getRoutingContext(ienv, jCtx, -360, false, progress);
 	SHARED_PTR<GpxRouteApproximation> r = shared_ptr<GpxRouteApproximation>(new GpxRouteApproximation(c));
-	SHARED_PTR<RoutePlannerFrontEnd> rpfe =  shared_ptr<RoutePlannerFrontEnd>(new RoutePlannerFrontEnd()) ;
+	SHARED_PTR<RoutePlannerFrontEnd> rpfe = shared_ptr<RoutePlannerFrontEnd>(new RoutePlannerFrontEnd());
 	rpfe->searchGpxRoute(r, gpxPoints);
 	jobject jResult = ienv->NewObject(jclass_GpxRouteApproximationResult, jmethod_GpxRouteApproximationResult_init);
 	UNORDERED(map)<int64_t, int> indexes;
@@ -1919,7 +1941,7 @@ jobject convertTransportRouteToJava(JNIEnv* ienv, SHARED_PTR<TransportRoute>& ro
 		tmpIds[k] = (jlong)route->forwardWays.at(k)->id;
 		int nsize = route->forwardWays.at(k)->nodes.size();
 		jdoubleArray j_wayNodesLats = ienv->NewDoubleArray(nsize);
-		jdoubleArray j_wayNodesLons = ienv->NewDoubleArray(nsize);		
+		jdoubleArray j_wayNodesLons = ienv->NewDoubleArray(nsize);
 		jdouble tmpNodesLats[nsize];
 		jdouble tmpNodesLons[nsize];
 		for (n = 0; n < nsize; n++) {
@@ -2042,10 +2064,9 @@ extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_searchRe
 		for (uint32_t i = 0; i < searchText.size(); i++) {
 			if (SkRect::Intersects(searchText[i]->bounds, bbox) &&
 				((searchText[i]->visible && !searchText[i]->drawOnPath && !searchText[i]->path) || notvisible)) {
-				jobject jo = convertRenderedObjectToJava(ienv, &searchText[i]->object, searchText[i]->text,
-														 searchText[i]->bounds, searchText[i]->textOrder,
-														 searchText[i]->visible,
-														 searchText[i]->drawOnPath || searchText[i]->path);
+				jobject jo = convertRenderedObjectToJava(
+					ienv, &searchText[i]->object, searchText[i]->text, searchText[i]->bounds, searchText[i]->textOrder,
+					searchText[i]->visible, searchText[i]->drawOnPath || searchText[i]->path);
 				collected.push_back(jo);
 				intersects = true;
 			}
@@ -2175,9 +2196,9 @@ SkBitmap* JNIRenderingContext::getCachedBitmap(const std::string& bitmapResource
 
 		return NULL;
 	}
-	//SkPMColor ctStorage[256];
-	//sk_sp<SkColorTable> ctable(new SkColorTable(ctStorage, 256));
-	//int count = ctable->count();
+	// SkPMColor ctStorage[256];
+	// sk_sp<SkColorTable> ctable(new SkColorTable(ctStorage, 256));
+	// int count = ctable->count();
 	SkBitmap* iconBitmap = new SkBitmap();
 	if (!iconBitmap->tryAllocPixels(gen->getInfo()) ||
 		!gen->getPixels(gen->getInfo(), iconBitmap->getPixels(), iconBitmap->rowBytes())) {
@@ -2225,8 +2246,9 @@ std::string JNIRenderingContext::getReshapedString(const std::string& name) {
 	return res;
 }
 
-void clearDirectionPointFromRouteResult(SHARED_PTR<RouteSegmentResult> r ) {
-	// Delete dynamicaly DirectionPoint types for backward compatibility with Java (avoid crash in BinaryMapRouteReaderAdapter quickGetEncodingRule)
+void clearDirectionPointFromRouteResult(SHARED_PTR<RouteSegmentResult> r) {
+	// Delete dynamicaly DirectionPoint types for backward compatibility with Java (avoid crash in
+	// BinaryMapRouteReaderAdapter quickGetEncodingRule)
 	uint32_t createType = r->object->region->findOrCreateRouteType(DirectionPoint_TAG, DirectionPoint_CREATE_TYPE);
 	uint32_t deleteType = r->object->region->findOrCreateRouteType(DirectionPoint_TAG, DirectionPoint_DELETE_TYPE);
 	int clearPointIndex = -1;
@@ -2246,5 +2268,5 @@ void clearDirectionPointFromRouteResult(SHARED_PTR<RouteSegmentResult> r ) {
 	if (clearPointIndex != -1) {
 		std::vector<uint32_t> empty;
 		r->object->pointTypes[clearPointIndex] = empty;
-	}	
+	}
 }

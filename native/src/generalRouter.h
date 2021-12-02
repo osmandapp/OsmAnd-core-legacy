@@ -1,7 +1,7 @@
 #ifndef _OSMAND_GENERAL_ROUTER_H
 #define _OSMAND_GENERAL_ROUTER_H
 
-#include <algorithm>
+#include   <algorithm>
 
 #include "CommonCollections.h"
 #include "binaryRead.h"

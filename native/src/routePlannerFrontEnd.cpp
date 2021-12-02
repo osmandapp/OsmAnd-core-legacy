@@ -31,10 +31,9 @@ SHARED_PTR<RouteSegment> RoutePlannerFrontEnd::getRecalculationEnd(RoutingContex
 			SHARED_PTR<RouteSegment> previous;
 			for (int i = 0; i <= rlist.size() - 1; i++) {
 				auto rr = rlist[i];
-				SHARED_PTR<RouteSegment> segment = std::make_shared<RouteSegment>(rr->object, rr->getEndPointIndex());
+				SHARED_PTR<RouteSegment> segment = std::make_shared<RouteSegment>(rr->object, rr->getStartPointIndex(), rr->getEndPointIndex());
 				if (previous) {
 					previous->parentRoute = segment;
-					previous->parentSegmentEnd = rr->getStartPointIndex();
 				} else {
 					recalculationEnd = segment;
 				}
@@ -161,9 +160,9 @@ vector<SHARED_PTR<RouteSegmentResult>> runRouting(RoutingContext* ctx, SHARED_PT
 		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "[Native] use precalculated route");
 		SHARED_PTR<RouteSegment> current = recalculationEnd;
 
-		while (current->parentRoute.lock()) {
-			SHARED_PTR<RouteSegment> pr = current->parentRoute.lock();
-			auto segmentResult = std::make_shared<RouteSegmentResult>(pr->road, current->parentSegmentEnd, pr->segmentStart);
+		while (current->getParentRoute() != nullptr) {
+			SHARED_PTR<RouteSegment> pr = current->getParentRoute();
+			auto segmentResult = std::make_shared<RouteSegmentResult>(pr->road, pr->getSegmentEnd(), pr->segmentStart);
 			result.push_back(segmentResult);
 			current = pr;
 		}

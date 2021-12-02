@@ -6,32 +6,44 @@
 #include "Logging.h"
 
 struct RouteSegment {
+    // Route segment represents part (segment) of the road. 
+	// In our current data it's always length of 1: [X, X + 1] or [X - 1, X] 
+    
+    // # Final fields that store objects
     uint16_t segmentStart;
+    uint16_t segmentEnd;
     SHARED_PTR<RouteDataObject> road;
-    // needed to store intersection of routes
+    // Segments only allowed for Navigation connected to the same end point
     SHARED_PTR<RouteSegment> next;
-    SHARED_PTR<RouteSegment>  oppositeDirection ;
+    // # Represents cheap-storage of LinkedList connected segments
+	// All the road segments from map data connected to the same end point 
+    SHARED_PTR<RouteSegment> nextLoaded;
+    SHARED_PTR<RouteSegment> oppositeDirection;
+    // Same Road/ same Segment but used for opposite A* search (important to have different cause #parentRoute is different)
+	// Note: if we use 1-direction A* then this is field is not needed
+    SHARED_PTR<RouteSegment> reverseSearch;
     
-    // search context (needed for searching route)
-    // Initially it should be null (!) because it checks was it segment visited before
-    std::weak_ptr<RouteSegment> parentRoute;
-    uint16_t parentSegmentEnd;
-    
-    
-    // 1 - positive , -1 - negative, 0 not assigned
-    int8_t directionAssgn;
+    // # Important for A*-search to distinguish whether segment was visited or not
+	// Initially all segments null and startSegment/endSegment.parentRoute = RouteSegment.NULL;
+	// After iteration stores previous segment i.e. how it was reached from startSegment
+    SHARED_PTR<RouteSegment> parentRoute;
     
     // final route segment
     int8_t reverseWaySearch;
+    // # Caches of similar segments to speed up routing calculation 
+	// Segment of opposite direction i.e. for [4 -> 5], opposite [5 -> 4]
     SHARED_PTR<RouteSegment> opposite;
     
-    // distance measured in time (seconds)
+    // # A* routing - Distance measured in time (seconds)
+	// There is a small (important!!!) difference how it's calculated for visited (parentRoute != null) and non-visited
+	// NON-VISITED: time from Start [End for reverse A*] to @segStart of @this, including turn time from previous segment (@parentRoute)
+	// VISITED: time from Start [End for reverse A*] to @segEnd of @this, 
+	//          including turn time from previous segment (@parentRoute) and obstacle / distance time between @segStart-@segEnd on @this 
     float distanceFromStart;
+    // NON-VISITED: Approximated (h(x)) time from @segStart of @this route segment to End [Start for reverse A*] 
+	// VISITED: Approximated (h(x)) time from @segEnd of @this route segment to End [Start for reverse A*]
     float distanceToEnd;
-    
-    inline bool isFinal() {
-        return reverseWaySearch != 0;
-    }
+    bool isFinalSegment;
     
     inline bool isReverseWaySearch() {
         return reverseWaySearch == 1;
@@ -40,14 +52,28 @@ struct RouteSegment {
     inline uint16_t getSegmentStart() {
         return segmentStart;
     }
+
+    inline uint16_t getSegmentEnd() {
+        return segmentEnd;
+    }
     
     inline bool isPositive() {
-        return directionAssgn == 1;
+        return segmentEnd > segmentStart;
     }
     
     inline SHARED_PTR<RouteDataObject>& getRoad() {
         return road;
     }
+    
+    bool isSegmentAttachedToStart() {
+        if (parentRoute != nullptr) {
+            return true;
+        }
+        return false;
+    }
+    
+    inline SHARED_PTR<RouteSegment> getParentRoute();
+    inline bool isNull();
     
     static SHARED_PTR<RouteSegment> initRouteSegment(SHARED_PTR<RouteSegment>& th, bool positiveDirection) {
         if(th->segmentStart == 0 && !positiveDirection) {
@@ -56,22 +82,22 @@ struct RouteSegment {
         if(th->segmentStart == th->road->getPointsLength() - 1 && positiveDirection) {
             return SHARED_PTR<RouteSegment>();
         }
-        SHARED_PTR<RouteSegment> rs = th;
-        if(th->directionAssgn == 0) {
-            rs->directionAssgn = positiveDirection ? 1 : -1;
+
+        if (th->segmentStart == th->segmentEnd) {
+            throw std::invalid_argument("segmentStart or segmentEnd");
         } else {
-            if(positiveDirection != (th->directionAssgn == 1)) {
-                if(th->oppositeDirection.get() == NULL) {
-                    th->oppositeDirection = std::make_shared<RouteSegment>(th->road, th->segmentStart);
-                    th->oppositeDirection->directionAssgn = positiveDirection ? 1 : -1;
+            if (positiveDirection == (th->segmentEnd > th->segmentStart)) {
+                return th;
+            } else {
+                if (th->oppositeDirection.get() == nullptr) {
+                    th->oppositeDirection = std::make_shared<RouteSegment>(th->road, th->segmentStart,
+                                                         th->segmentEnd > th->segmentStart ? (th->segmentStart - 1) : (th->segmentStart + 1));
+                    th->oppositeDirection->oppositeDirection = th;
                 }
-                if ((th->oppositeDirection->directionAssgn == 1) != positiveDirection) {
-                    OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "Alert failed - directionAssgn wrongly");
-                }
-                rs = th->oppositeDirection;
+                return th->oppositeDirection;
             }
         }
-        return rs;
+        return nullptr;
     }
     
     RouteSegment()
@@ -80,27 +106,48 @@ struct RouteSegment {
         , next()
         , oppositeDirection()
         , parentRoute()
-        , parentSegmentEnd(0)
-        , directionAssgn(0)
         , reverseWaySearch(0)
         , opposite()
         , distanceFromStart(0)
-        , distanceToEnd(0) {
+        , distanceToEnd(0)
+        , isFinalSegment(false) {
     }
     
-    RouteSegment(SHARED_PTR<RouteDataObject>& road, int segmentStart)
+    RouteSegment(SHARED_PTR<RouteDataObject> road, int segmentStart, int segmentEnd)
         : segmentStart(segmentStart)
+        , segmentEnd(segmentEnd)
         , road(road)
         , next()
         , oppositeDirection()
         , parentRoute()
-        , parentSegmentEnd(0)
-        , directionAssgn(0)
         , reverseWaySearch(0)
         , opposite()
         , distanceFromStart(0)
-        , distanceToEnd(0) {
+        , distanceToEnd(0)
+        , isFinalSegment(false) {
     }
+
+    RouteSegment(SHARED_PTR<RouteDataObject>& road, int segmentStart)
+        : segmentStart(segmentStart)
+        , segmentEnd(segmentStart < road->getPointsLength() - 1 ? segmentStart + 1 : segmentStart - 1)
+        , road(road)
+        , next()
+        , oppositeDirection()
+        , parentRoute()
+        , reverseWaySearch(0)
+        , opposite()
+        , distanceFromStart(0)
+        , distanceToEnd(0)
+        , isFinalSegment(false) {
+    }
+};
+
+inline bool RouteSegment::isNull() {
+    return parentRoute != nullptr && parentRoute->segmentStart == 0 && parentRoute->segmentEnd == 1 && parentRoute->road == nullptr;
+}
+
+inline SHARED_PTR<RouteSegment> RouteSegment::getParentRoute() {
+    return isNull() ? nullptr : parentRoute;
 };
 
 struct RouteSegmentPoint : RouteSegment {
@@ -116,7 +163,7 @@ struct RouteSegmentPoint : RouteSegment {
 };
 
 struct FinalRouteSegment : RouteSegment {
-	FinalRouteSegment(SHARED_PTR<RouteDataObject>& road, int segmentStart) : RouteSegment(road, segmentStart) {}
+	FinalRouteSegment(SHARED_PTR<RouteDataObject>& road, int segmentStart, int segmentEnd) : RouteSegment(road, segmentStart, segmentEnd) {}
 	bool reverseWaySearch;
 	SHARED_PTR<RouteSegment> opposite;
 };

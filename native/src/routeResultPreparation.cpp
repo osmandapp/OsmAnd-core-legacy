@@ -173,7 +173,7 @@ void attachRoadSegments(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResul
     if (!rr->getPreAttachedRoutes(pointInd).empty()) {
         const auto& list = rr->getPreAttachedRoutes(pointInd);
         for (auto r : list) {
-            auto rs = std::make_shared<RouteSegment>(r->object, r->getStartPointIndex());
+            auto rs = std::make_shared<RouteSegment>(r->object, r->getStartPointIndex(), r->getEndPointIndex());
             attachSegments(ctx, rs, road, rr, previousRoadId, pointInd, prevL, nextL);
         }
     } else {
@@ -1336,16 +1336,6 @@ void addTurnInfoDescriptions(vector<SHARED_PTR<RouteSegmentResult> >& result) {
     }
 }
 
-float calcRoutingTime(float parentRoutingTime, const SHARED_PTR<RouteSegment>& finalSegment, const SHARED_PTR<RouteSegment>& segment, SHARED_PTR<RouteSegmentResult>& res) {
-    if (segment != finalSegment) {
-        if (parentRoutingTime != -1) {
-            res->routingTime = parentRoutingTime - segment->distanceFromStart;
-        }
-        parentRoutingTime = segment->distanceFromStart;
-    }
-    return parentRoutingTime;
-}
-
 bool combineTwoSegmentResult(SHARED_PTR<RouteSegmentResult>& toAdd, SHARED_PTR<RouteSegmentResult>& previous, bool reverse) {
     bool ld = previous->getEndPointIndex() > previous->getStartPointIndex();
     bool rd = toAdd->getEndPointIndex() > toAdd->getStartPointIndex();
@@ -1367,7 +1357,7 @@ void addRouteSegmentToResult(RoutingContext* ctx, vector<SHARED_PTR<RouteSegment
     if (res->getStartPointIndex() != res->getEndPointIndex()) {
         if (result.size() > 0) {
             auto last = result.back();
-            if (last->object->id == res->object->id && ctx->calculationMode != RouteCalculationMode::BASE) {
+            if (ctx->calculationMode != RouteCalculationMode::BASE) {
                 if (combineTwoSegmentResult(res, last, reverse)) {
                     return;
                 }
@@ -1379,41 +1369,44 @@ void addRouteSegmentToResult(RoutingContext* ctx, vector<SHARED_PTR<RouteSegment
 
 vector<SHARED_PTR<RouteSegmentResult> > convertFinalSegmentToResults(RoutingContext* ctx, const SHARED_PTR<FinalRouteSegment>& finalSegment) {
     vector<SHARED_PTR<RouteSegmentResult> > result;
-    if (finalSegment) {
+    if (finalSegment.get() != NULL) {
         if (ctx->progress)
             ctx->progress->routingCalculatedTime += finalSegment->distanceFromStart;
 
         OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Routing calculated time distance %f", finalSegment->distanceFromStart);
         // Get results from opposite direction roads
-        auto segment = finalSegment->reverseWaySearch ? finalSegment : finalSegment->opposite->parentRoute.lock();
-        int parentSegmentStart = finalSegment->reverseWaySearch ? finalSegment->opposite->getSegmentStart() :
-        finalSegment->opposite->parentSegmentEnd;
-        float parentRoutingTime = -1;
-        while (segment) {
-            auto res = std::make_shared<RouteSegmentResult>(segment->road, parentSegmentStart, segment->getSegmentStart());
-            parentRoutingTime = calcRoutingTime(parentRoutingTime, finalSegment, segment, res);
-            parentSegmentStart = segment->parentSegmentEnd;
-            segment = segment->parentRoute.lock();
+        SHARED_PTR<RouteSegment> segment = finalSegment->reverseWaySearch ? finalSegment->getParentRoute() : finalSegment->opposite;
+        while (segment.get() != NULL && segment->getRoad() != nullptr) {
+            auto res = std::make_shared<RouteSegmentResult>(segment->road, segment->getSegmentEnd(), segment->getSegmentStart());
+            float parentRoutingTime = segment->getParentRoute() != nullptr ? segment->getParentRoute()->distanceFromStart : 0;
+            res->routingTime = segment->distanceFromStart - parentRoutingTime;
+            segment = segment->getParentRoute();
             addRouteSegmentToResult(ctx, result, res, false);
         }
         // reverse it just to attach good direction roads
         std::reverse(result.begin(), result.end());
-        
-        segment = finalSegment->reverseWaySearch ? finalSegment->opposite->parentRoute.lock() : finalSegment;
-        int parentSegmentEnd = finalSegment->reverseWaySearch ? finalSegment->opposite->parentSegmentEnd : finalSegment->opposite->getSegmentStart();
-        parentRoutingTime = -1;
-        while (segment) {
-            auto res = std::make_shared<RouteSegmentResult>(segment->road, segment->getSegmentStart(), parentSegmentEnd);
-            parentRoutingTime = calcRoutingTime(parentRoutingTime, finalSegment, segment, res);
-            parentSegmentEnd = segment->parentSegmentEnd;
-            segment = segment->parentRoute.lock();
+
+        segment = finalSegment->reverseWaySearch ? finalSegment->opposite : finalSegment->getParentRoute();
+        while (segment.get() != NULL && segment->getRoad() != nullptr) {
+            auto res = std::make_shared<RouteSegmentResult>(segment->road, segment->getSegmentStart(), segment->getSegmentEnd());
+            float parentRoutingTime = segment->getParentRoute() != nullptr ? segment->getParentRoute()->distanceFromStart : 0;
+            res->routingTime = segment->distanceFromStart - parentRoutingTime;
+            segment = segment->getParentRoute();
             // happens in smart recalculation
             addRouteSegmentToResult(ctx, result, res, true);
         }
         std::reverse(result.begin(), result.end());
-        // checkTotalRoutingTime(result);
+        checkTotalRoutingTime(result, finalSegment->distanceFromStart);
     }
     return result;
+}
+
+void checkTotalRoutingTime(vector<SHARED_PTR<RouteSegmentResult> > result, float cmp) {
+    float totalRoutingTime = 0;
+    for (auto r : result) {
+        totalRoutingTime += r->routingTime;
+    }
+    OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug,"Total sum routing time ! totalRoutingTime=%f  == cmp=%f", totalRoutingTime, cmp);
 }
 
 void printAdditionalPointInfo(SHARED_PTR<RouteSegmentResult>& res) {
@@ -1483,15 +1476,18 @@ void printResults(RoutingContext* ctx, int startX, int startY, int endX, int end
                 name += " (" + ref + ") ";
             }
             string additional;
-            additional.append("time = \"").append(std::to_string(res->segmentTime)).append("\" ");
-            additional.append("rtime = \"").append(std::to_string(res->routingTime)).append("\" ");
+            additional.append("time = \"").append(std::to_string((int)(res->segmentTime)*100/100.0f)).append("\" ");
+            if (res->routingTime > 0) {
+                additional.append("rtime = \"").append(std::to_string((int)(res->segmentTime)*100/100.0f)).append("\" ");
+            }
             additional.append("name = \"").append(name).append("\" ");
             //				float ms = res->getSegmentSpeed();
             float ms = res->object->getMaximumSpeed(res->isForwardDirection());
             if (ms > 0) {
-                additional.append("maxspeed = \"").append(std::to_string(ms * 3.6f)).append("\" ").append(res->object->getHighway()).append(" ");
+                additional.append("maxspeed = \"").append(std::to_string(ms * 3.6f)).append("\" ");
             }
-            additional.append("distance = \"").append(std::to_string(res->distance)).append("\" ");
+            additional.append("distance = \"").append(std::to_string((int)(res->segmentTime)*100/100.0f)).append("\" ");
+			additional.append(res->object->getHighway()).append(" ");
             if (res->turnType) {
                 additional.append("turn = \"").append(res->turnType->toString()).append("\" ");
                 additional.append("turn_angle = \"").append(std::to_string(res->turnType->getTurnAngle())).append("\" ");
