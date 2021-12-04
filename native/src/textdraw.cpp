@@ -842,9 +842,9 @@ void FontRegistry::drawSkiaTextOnPath(SkCanvas *canvas, std::string textS, SkPat
 
 	font.setTypeface(face->fSkiaTypeface);
 
-	char* str = (char*)textS.c_str();    // utf-8 string
-    char* str_i = str;                  // string iterator
-    char* end = str+strlen(str)+1;      // end iterator
+	char* str = (char*)textS.c_str();// utf-8 string
+    char* str_i = str;               // string iterator
+    char* end = str+strlen(str)+1;   // end iterator
     unsigned char symbol[5] = {0,0,0,0,0};	
 	std::vector<SkScalar> measureX;
 	SkScalar x = 0;
@@ -927,7 +927,7 @@ void FontRegistry::drawSkiaTextOnPath(SkCanvas *canvas, std::string textS, SkPat
 
 void FontRegistry::drawHbTextOnPath(SkCanvas *canvas, std::string textS, SkPath &path, FontEntry *face, SkFont &font, SkPaint &paint, float h_offset, float v_offset) {
 
-	if (true || !face->fHarfBuzzFace) {
+	if (!face->fHarfBuzzFace) {
 		// Using only Skia
 		drawSkiaTextOnPath(canvas, textS, path, face, font, paint, h_offset, v_offset);
 		return;
@@ -1061,7 +1061,7 @@ void FontRegistry::drawHbText(SkCanvas *cv, std::string textS, FontEntry *face, 
 	trimspec(textS);
 	const char *text = textS.c_str();
 
-	if (true || !face->fHarfBuzzFace) {
+	if (!face->fHarfBuzzFace) {
 		//Using only Skia
 		SkScalar width = font.measureText(text, strlen(text), SkTextEncoding::kUTF8, nullptr, &paint);
 		cv->drawSimpleText(text, textS.length(), SkTextEncoding::kUTF8, centerX - width/2, centerY, font, paint);
