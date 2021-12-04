@@ -82,6 +82,11 @@ struct FontEntry {
 		hb_buffer_destroy(hb_buffer);
 		hb_font_destroy(hb_font);
 	}
+
+	FontEntry() {
+		pathToFont = "DEFAULT SYSTEM FONT. NO HARFBUZZ LIBRARY";
+		fSkiaTypeface = SkTypeface::MakeDefault();
+	}
 };
 
 class FontRegistry {

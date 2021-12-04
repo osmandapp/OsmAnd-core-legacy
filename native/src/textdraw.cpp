@@ -100,7 +100,12 @@ void FontRegistry::registerFonts(const char* pathToFont, string fontName, bool b
 FontEntry* FontRegistry::updateFontEntry(std::string text, bool bold, bool italic) {
 	if (cache.size() == 0) {
 		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "Fonts are not registered. Set fonts by FontRegistry::registerFonts");
-		return nullptr;
+		FontEntry* entry = new FontEntry();//default system font
+		cache.push_back(entry);
+	}
+	if (cache.size() == 1 && !cache[0]->fHarfBuzzFace) {
+		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "Harfbuzz library disabled. Using default system font");
+		return cache[0];
 	}
 	FontEntry* fontEntry = nullptr;
 	for (uint i = 0; i < cache.size(); i++) {
@@ -837,18 +842,35 @@ void FontRegistry::drawSkiaTextOnPath(SkCanvas *canvas, std::string textS, SkPat
 
 	font.setTypeface(face->fSkiaTypeface);
 
-	const char *text = textS.c_str();
-	const int length = strlen(text);
-	SkPoint xy[length];
+	char* str = (char*)textS.c_str();    // utf-8 string
+    char* str_i = str;                  // string iterator
+    char* end = str+strlen(str)+1;      // end iterator
+    unsigned char symbol[5] = {0,0,0,0,0};	
+	std::vector<SkScalar> measureX;
 	SkScalar x = 0;
-	for (int i = 0; i < length; ++i) {
-		xy[i].set(x, 0);
-		x += font.measureText(&text[i], 1, SkTextEncoding::kUTF8, nullptr, &paint);
-		x *= 64;
+
+    do {
+        uint32_t code = utf8::unchecked::next(str_i); // get 32 bit code of a utf-8 symbol
+        if (code == 0)
+            continue;
+        memset(symbol, 0, sizeof(symbol));
+        utf8::unchecked::append(code, symbol); // initialize array `symbol`
+		measureX.push_back(x);
+		x += font.measureText(symbol, sizeof(symbol), SkTextEncoding::kUTF8, nullptr, &paint);
+    } while ( str_i < end );	
+
+	SkPoint xy[measureX.size()];	
+	for (int i = 0; i < measureX.size(); ++i) {
+		xy[i].set(measureX[i], 0);
 	}
 
-	SkPathMeasure meas(path, false);
+	const char *text = textS.c_str();
+	const int length = strlen(text);	
 	unsigned int count = font.countText(text, length, SkTextEncoding::kUTF8);
+
+	if (count != measureX.size())
+		return;
+
 	size_t size = count * (sizeof(SkRSXform) + sizeof(SkScalar));
 	SkAutoSMalloc<512> storage(size);
 	SkRSXform *xform = (SkRSXform *)storage.get();
@@ -857,18 +879,35 @@ void FontRegistry::drawSkiaTextOnPath(SkCanvas *canvas, std::string textS, SkPat
 	SkAutoTArray<SkGlyphID> glyphs(count);
 	font.textToGlyphs(text, length, SkTextEncoding::kUTF8, glyphs.get(), count);
 	font.getWidths(glyphs.get(), count, widths);
+	SkPathMeasure meas(path, false);
+
+	// set text to the middle of the path
+	float textLength = xy[count - 1].x() + widths[count - 1];
+	float startOffset = h_offset + (meas.getLength() - textLength) / 2;
 
 	for (int i = 0; i < count; ++i) {
 		// we want to position each character on the center of its advance
 		const SkScalar offset = SkScalarHalf(widths[i]);
+
+		float pathOffset = startOffset + xy[i].x() + offset;
+		if (pathOffset < 0) {
+			// centering of the start glyph is out of range
+			pathOffset = 0;
+		}
+
 		SkPoint pos;
 		SkVector tan;
-		if (meas.getPosTan(xy[i].x() + offset, &pos, &tan)) {
+		if (pathOffset <= meas.getLength() && meas.getPosTan(pathOffset, &pos, &tan)) {
 			pos += SkVector::Make(-tan.fY, tan.fX) * v_offset;
 			xform[i].fSCos = tan.x();
 			xform[i].fSSin = tan.y();
-			xform[i].fTx = pos.x() - tan.y() * xy[i].y() - tan.x() * offset;
-			xform[i].fTy = pos.y() + tan.x() * xy[i].y() - tan.y() * offset;
+			xform[i].fTx = pos.x() - tan.x() * offset;
+			xform[i].fTy = pos.y() - tan.y() * offset;
+		} else {
+			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, 
+				"Rendering error \"OUT of meas in drawHbTextOnPath\". Values: xy[i].x() %f pathOffset %f meas.getLength() %f startOffset %f offset %f",
+				xy[i].x(), pathOffset, meas.getLength(), startOffset, offset);
+			return;
 		}
 	}
 
@@ -877,16 +916,22 @@ void FontRegistry::drawSkiaTextOnPath(SkCanvas *canvas, std::string textS, SkPat
 						 0, 0, paint);
 
     // For debug only
-    const SkRect fontb = SkFontPriv::GetFontBounds(font);
+    /*const SkRect fontb = SkFontPriv::GetFontBounds(font);
     const SkScalar max = std::max(std::max(SkScalarAbs(fontb.fLeft), SkScalarAbs(fontb.fRight)),
                                 std::max(SkScalarAbs(fontb.fTop), SkScalarAbs(fontb.fBottom)));
     const SkRect bounds = path.getBounds().makeOutset(max, max);
     SkPaint p;
     p.setStyle(SkPaint::kStroke_Style);
-    canvas->drawRect(bounds, p);
+    canvas->drawRect(bounds, p);*/
 }
 
 void FontRegistry::drawHbTextOnPath(SkCanvas *canvas, std::string textS, SkPath &path, FontEntry *face, SkFont &font, SkPaint &paint, float h_offset, float v_offset) {
+
+	if (true || !face->fHarfBuzzFace) {
+		// Using only Skia
+		drawSkiaTextOnPath(canvas, textS, path, face, font, paint, h_offset, v_offset);
+		return;
+	}
 
 	font.setTypeface(face->fSkiaTypeface);
 	const char *text = textS.c_str();
@@ -1015,6 +1060,13 @@ void FontRegistry::drawHbText(SkCanvas *cv, std::string textS, FontEntry *face, 
 	font.setTypeface(face->fSkiaTypeface);
 	trimspec(textS);
 	const char *text = textS.c_str();
+
+	if (true || !face->fHarfBuzzFace) {
+		//Using only Skia
+		SkScalar width = font.measureText(text, strlen(text), SkTextEncoding::kUTF8, nullptr, &paint);
+		cv->drawSimpleText(text, textS.length(), SkTextEncoding::kUTF8, centerX - width/2, centerY, font, paint);
+		return;
+	}
 	
 	hb_font_t *hb_font = hb_font_create(face->fHarfBuzzFace.get());
 	hb_font_set_scale(hb_font,
