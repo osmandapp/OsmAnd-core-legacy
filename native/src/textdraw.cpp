@@ -842,22 +842,22 @@ void FontRegistry::drawSkiaTextOnPath(SkCanvas *canvas, std::string textS, SkPat
 
 	font.setTypeface(face->fSkiaTypeface);
 
-	char* str = (char*)textS.c_str();// utf-8 string
-    char* str_i = str;               // string iterator
-    char* end = str+strlen(str)+1;   // end iterator
-    unsigned char symbol[5] = {0,0,0,0,0};	
+	char *str = (char *)textS.c_str();	// utf-8 string
+	char *str_i = str;					// string iterator
+	char *end = str + strlen(str) + 1;	// end iterator
+	unsigned char symbol[5] = {0, 0, 0, 0, 0};
 	std::vector<SkScalar> measureX;
 	SkScalar x = 0;
 
-    do {
-        uint32_t code = utf8::unchecked::next(str_i); // get 32 bit code of a utf-8 symbol
-        if (code == 0)
-            continue;
-        memset(symbol, 0, sizeof(symbol));
-        utf8::unchecked::append(code, symbol); // initialize array `symbol`
+	do {
+		uint32_t code = utf8::unchecked::next(str_i); // get 32 bit code of a utf-8 symbol
+		if (code == 0)
+			continue;
+		memset(symbol, 0, sizeof(symbol));
+		utf8::unchecked::append(code, symbol); // initialize array `symbol`
 		measureX.push_back(x);
 		x += font.measureText(symbol, sizeof(symbol), SkTextEncoding::kUTF8, nullptr, &paint);
-    } while ( str_i < end );	
+	} while (str_i < end);
 
 	SkPoint xy[measureX.size()];	
 	for (int i = 0; i < measureX.size(); ++i) {
