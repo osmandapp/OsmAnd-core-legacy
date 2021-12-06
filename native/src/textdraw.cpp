@@ -100,8 +100,7 @@ void FontRegistry::registerFonts(const char* pathToFont, string fontName, bool b
 FontEntry* FontRegistry::updateFontEntry(std::string text, bool bold, bool italic) {
 	if (cache.size() == 0) {
 		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "Fonts are not registered. Set fonts by FontRegistry::registerFonts");
-		FontEntry* entry = new FontEntry();//default system font
-		cache.push_back(entry);
+		return nullptr;
 	}
 	FontEntry* fontEntry = nullptr;
 	for (uint i = 0; i < cache.size(); i++) {
@@ -764,6 +763,10 @@ void drawTextOverCanvas(RenderingContext* rc, RenderingRuleSearchRequest* req, S
 		fontEntry = globalFontRegistry.updateFontEntry(rc->getReshapedString(textDrawInfo->text.c_str()),
 										  textDrawInfo->bold,  // false,
 										  textDrawInfo->italic);
+		if (!fontEntry) {
+			// fonts are not initialized
+			return;
+		}
 		// set text size before finding intersection (it is used there)
 		float textSize = textDrawInfo->textSize;
 		skFontText.setSize(textSize);
@@ -792,6 +795,10 @@ void drawTextOverCanvas(RenderingContext* rc, RenderingRuleSearchRequest* req, S
 		fontEntry = globalFontRegistry.updateFontEntry(rc->getReshapedString(textDrawInfo->text.c_str()),
 										  textDrawInfo->bold,
 										  textDrawInfo->italic);
+		if (!fontEntry) {
+			// fonts are not initialized
+			return;
+		}
 		float textSize = textDrawInfo->textSize;
 		skFontText.setSize(textSize);
 		paintText.setColor(textDrawInfo->textColor);
