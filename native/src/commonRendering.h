@@ -86,6 +86,8 @@ struct FontEntry {
 	FontEntry() {
 		pathToFont = "DEFAULT SYSTEM FONT. NO HARFBUZZ LIBRARY";
 		fSkiaTypeface = SkTypeface::MakeDefault();
+		bold = false;
+		italic = false;
 	}
 };
 

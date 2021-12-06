@@ -103,10 +103,6 @@ FontEntry* FontRegistry::updateFontEntry(std::string text, bool bold, bool itali
 		FontEntry* entry = new FontEntry();//default system font
 		cache.push_back(entry);
 	}
-	if (cache.size() == 1 && !cache[0]->fHarfBuzzFace) {
-		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "Harfbuzz library disabled. Using default system font");
-		return cache[0];
-	}
 	FontEntry* fontEntry = nullptr;
 	for (uint i = 0; i < cache.size(); i++) {
 		if (fontEntry != nullptr && (bold != cache[i]->bold || italic != cache[i]->italic)) {
@@ -838,6 +834,7 @@ void drawTextOverCanvas(RenderingContext* rc, RenderingRuleSearchRequest* req, S
 	rc->textIntersect = boundsIntersect;
 }
 
+// Not used. For debug only
 void FontRegistry::drawSkiaTextOnPath(SkCanvas *canvas, std::string textS, SkPath &path, FontEntry *face, SkFont &font, SkPaint &paint, float h_offset, float v_offset) {
 
 	font.setTypeface(face->fSkiaTypeface);
@@ -916,23 +913,21 @@ void FontRegistry::drawSkiaTextOnPath(SkCanvas *canvas, std::string textS, SkPat
 						 0, 0, paint);
 
     // For debug only
-    /*const SkRect fontb = SkFontPriv::GetFontBounds(font);
+    const SkRect fontb = SkFontPriv::GetFontBounds(font);
     const SkScalar max = std::max(std::max(SkScalarAbs(fontb.fLeft), SkScalarAbs(fontb.fRight)),
                                 std::max(SkScalarAbs(fontb.fTop), SkScalarAbs(fontb.fBottom)));
     const SkRect bounds = path.getBounds().makeOutset(max, max);
     SkPaint p;
     p.setStyle(SkPaint::kStroke_Style);
-    canvas->drawRect(bounds, p);*/
+    canvas->drawRect(bounds, p);
 }
 
 void FontRegistry::drawHbTextOnPath(SkCanvas *canvas, std::string textS, SkPath &path, FontEntry *face, SkFont &font, SkPaint &paint, float h_offset, float v_offset) {
 
 	if (!face->fHarfBuzzFace) {
-		// Using only Skia
-		drawSkiaTextOnPath(canvas, textS, path, face, font, paint, h_offset, v_offset);
+		// fonts are not initialized
 		return;
 	}
-
 	font.setTypeface(face->fSkiaTypeface);
 	const char *text = textS.c_str();
 
@@ -1057,17 +1052,14 @@ void FontRegistry::drawHbTextOnPath(SkCanvas *canvas, std::string textS, SkPath 
 
 void FontRegistry::drawHbText(SkCanvas *cv, std::string textS, FontEntry *face, SkPaint &paint, SkFont &font, float centerX, float centerY) {
 
+	if (!face->fHarfBuzzFace) {
+		// fonts are not initialized
+		return;
+	}
 	font.setTypeface(face->fSkiaTypeface);
 	trimspec(textS);
 	const char *text = textS.c_str();
 
-	if (!face->fHarfBuzzFace) {
-		//Using only Skia
-		SkScalar width = font.measureText(text, strlen(text), SkTextEncoding::kUTF8, nullptr, &paint);
-		cv->drawSimpleText(text, textS.length(), SkTextEncoding::kUTF8, centerX - width/2, centerY, font, paint);
-		return;
-	}
-	
 	hb_font_t *hb_font = hb_font_create(face->fHarfBuzzFace.get());
 	hb_font_set_scale(hb_font,
 					  HARFBUZZ_FONT_SIZE_SCALE * font.getSize(),
