@@ -8,12 +8,12 @@
 #include <SkColorFilter.h>
 #include <SkDashPathEffect.h>
 #include <SkFilterQuality.h>
+#include <SkImageFilter.h>
 #include <SkPaint.h>
 #include <SkPath.h>
 #include <SkPathEffect.h>
 #include <SkShader.h>
 #include <SkTypes.h>
-#include <SkImageFilter.h>
 #include <math.h>
 #include <stdio.h>
 #include <time.h>
@@ -160,7 +160,7 @@ int updatePaint(RenderingRuleSearchRequest* req, SkPaint* paint, int ind, int ar
 	if (area) {
 		paint->setColorFilter(NULL);
 		paint->setShader(NULL);
-		paint->setImageFilter(NULL);		
+		paint->setImageFilter(NULL);
 		paint->setStyle(SkPaint::kStrokeAndFill_Style);
 		paint->setStrokeWidth(0);
 	} else {
@@ -217,11 +217,11 @@ int updatePaint(RenderingRuleSearchRequest* req, SkPaint* paint, int ind, int ar
 		}
 		if (shadowColor == 0) shadowLayer = 0;
 
-		//if (shadowLayer > 0)
-			//SkScalar sigma = SkBlurMaskFilter::ConvertRadiusToSigma(shadowLayer);
-			//paint->setImageFilter(SkImageFilters::DropShadow(0, 0, sigma, sigma, (uint32_t)shadowColor, nullptr));
-			/*paint->setLooper(
-				SkBlurDrawLooper::Make(shadowColor, SkBlurMaskFilter::ConvertRadiusToSigma(shadowLayer), 0, 0));*/
+		// if (shadowLayer > 0)
+		// SkScalar sigma = SkBlurMaskFilter::ConvertRadiusToSigma(shadowLayer);
+		// paint->setImageFilter(SkImageFilters::DropShadow(0, 0, sigma, sigma, (uint32_t)shadowColor, nullptr));
+		/*paint->setLooper(
+			SkBlurDrawLooper::Make(shadowColor, SkBlurMaskFilter::ConvertRadiusToSigma(shadowLayer), 0, 0));*/
 	}
 	return 1;
 }
@@ -315,7 +315,7 @@ void renderText(MapDataObject* obj, RenderingRuleSearchRequest* req, RenderingCo
 void drawPolylineShadow(SkCanvas* cv, SkPaint* paint, RenderingContext* rc, SkPath* path, int shadowColor,
 						int shadowRadius) {
 	// blurred shadows
-	//if (rc->getShadowRenderingMode() == 2 && shadowRadius > 0) {
+	// if (rc->getShadowRenderingMode() == 2 && shadowRadius > 0) {
 	//	// simply draw shadow? difference from option 3 ?
 	//	// paint->setColor(0xffffffff);
 	//	paint->setLooper(
@@ -693,9 +693,7 @@ int countIntersections(vector<pair<int, int>>& points, int x, int y) {
 	return intersections;
 }
 
-bool contains(vector<pair<int, int>>& points, int x, int y) {
-	return countIntersections(points, x, y) % 2 == 1;
-}
+bool contains(vector<pair<int, int>>& points, int x, int y) { return countIntersections(points, x, y) % 2 == 1; }
 
 void drawPolygon(MapDataObject* mObj, RenderingRuleSearchRequest* req, SkCanvas* cv, SkPaint* paint,
 				 RenderingContext* rc, tag_value pair, const MapDataObjectPrimitive& prim) {
@@ -818,7 +816,6 @@ void drawPolygon(MapDataObject* mObj, RenderingRuleSearchRequest* req, SkCanvas*
 
 void drawPoint(MapDataObject* mObj, RenderingRuleSearchRequest* req, SkCanvas* cv, SkPaint* paint, RenderingContext* rc,
 			   std::pair<std::string, std::string> pair, uint ord) {
-	bool renderTxt = ord == 0;
 	std::string tag = pair.first;
 	std::string value = pair.second;
 
@@ -830,7 +827,7 @@ void drawPoint(MapDataObject* mObj, RenderingRuleSearchRequest* req, SkCanvas* c
 
 	SkBitmap* bmp = getCachedBitmap(rc, resId);
 
-	if (bmp == NULL && !renderTxt) return;
+	if (bmp == NULL) return;
 	SkBitmap* shield = getCachedBitmap(rc, shieldId);
 
 	size_t length = mObj->points.size();
@@ -876,9 +873,8 @@ void drawPoint(MapDataObject* mObj, RenderingRuleSearchRequest* req, SkCanvas* c
 		ico->secondOrder = ((mObj->id % 10000) << 8) + ord;
 		if (ico->order >= 0) rc->iconsToDraw.push_back(ico);
 	}
-	if (renderTxt) {
-		renderText(mObj, req, rc, pair.first, pair.second, px, py, 0, NULL, ico);
-	}
+
+	renderText(mObj, req, rc, pair.first, pair.second, px, py, 0, NULL, ico);
 }
 
 void drawObject(RenderingContext* rc, SkCanvas* cv, RenderingRuleSearchRequest* req, SkPaint* paint,
@@ -1190,10 +1186,10 @@ void sortObjectsByProperOrder(std::vector<FoundMapDataObject>& mapDataObjects, R
 		}
 		sort(polygonsArray.begin(), polygonsArray.end(), sortByOrder);
 		sort(pointsArray.begin(), pointsArray.end(), sortByOrder);
-		//sort(linesArray.begin(), linesArray.end(), sortByDensityPriority);
+		// sort(linesArray.begin(), linesArray.end(), sortByDensityPriority);
 		sort(linesArray.begin(), linesArray.end(), sortByOrder);
 		filterLinesByDensity(rc, linesResArray, linesArray);
-		//sort(linesResArray.begin(), linesResArray.end(), sortByOrder);
+		// sort(linesResArray.begin(), linesResArray.end(), sortByOrder);
 	}
 }
 
