@@ -951,6 +951,8 @@ void FontRegistry::drawHbTextOnPath(SkCanvas *canvas, std::string textS, SkPath 
 
 	unsigned int length = hb_buffer_get_length(hb_buffer);
 	if (length == 0) {
+		hb_buffer_destroy(hb_buffer);
+		hb_font_destroy(hb_font);
 		return;
 	}
 
@@ -1081,6 +1083,8 @@ void FontRegistry::drawHbText(SkCanvas *cv, std::string textS, FontEntry *face, 
 
 	unsigned int length = hb_buffer_get_length(hb_buffer);
 	if (length == 0) {
+		hb_buffer_destroy(hb_buffer);
+		hb_font_destroy(hb_font);
 		return;
 	}	
 	hb_glyph_info_t *info = hb_buffer_get_glyph_infos(hb_buffer, NULL);
