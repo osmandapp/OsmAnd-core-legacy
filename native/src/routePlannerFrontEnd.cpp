@@ -162,7 +162,7 @@ vector<SHARED_PTR<RouteSegmentResult>> runRouting(RoutingContext* ctx, SHARED_PT
 
 		while (current->getParentRoute() != nullptr) {
 			SHARED_PTR<RouteSegment> pr = current->getParentRoute();
-			auto segmentResult = std::make_shared<RouteSegmentResult>(pr->road, pr->getSegmentEnd(), pr->segmentStart);
+			auto segmentResult = std::make_shared<RouteSegmentResult>(pr->road, pr->getSegmentEnd(), pr->getSegmentStart());
 			result.push_back(segmentResult);
 			current = pr;
 		}

@@ -1369,7 +1369,7 @@ void addRouteSegmentToResult(RoutingContext* ctx, vector<SHARED_PTR<RouteSegment
 
 vector<SHARED_PTR<RouteSegmentResult> > convertFinalSegmentToResults(RoutingContext* ctx, const SHARED_PTR<FinalRouteSegment>& finalSegment) {
     vector<SHARED_PTR<RouteSegmentResult> > result;
-    if (finalSegment.get() != NULL) {
+    if (finalSegment) {
         if (ctx->progress)
             ctx->progress->routingCalculatedTime += finalSegment->distanceFromStart;
 

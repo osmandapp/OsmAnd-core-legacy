@@ -35,7 +35,7 @@ struct DirectionPoint {
     // get angle in degrees or NO_ANGLE if empty
     double getAngle() {
         std::string angle = "";
-        for (std::pair<std::string, std::string> tag : tags) {
+        for (std::pair<std::string, std::string>& tag : tags) {
             if (tag.first == DirectionPoint_ANGLE_TAG) {
                 angle = tag.second;
                 break;

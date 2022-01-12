@@ -66,10 +66,7 @@ struct RouteSegment {
     }
     
     bool isSegmentAttachedToStart() {
-        if (parentRoute != nullptr) {
-            return true;
-        }
-        return false;
+		return parentRoute != nullptr;
     }
     
     inline SHARED_PTR<RouteSegment> getParentRoute();
@@ -89,7 +86,7 @@ struct RouteSegment {
             if (positiveDirection == (th->segmentEnd > th->segmentStart)) {
                 return th;
             } else {
-                if (th->oppositeDirection.get() == nullptr) {
+                if (!th->oppositeDirection) {
                     th->oppositeDirection = std::make_shared<RouteSegment>(th->road, th->segmentStart,
                                                          th->segmentEnd > th->segmentStart ? (th->segmentStart - 1) : (th->segmentStart + 1));
                     th->oppositeDirection->oppositeDirection = th;
