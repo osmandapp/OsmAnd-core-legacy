@@ -2678,10 +2678,10 @@ ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, 
 		q->publisher->clear();
 		q->publisher->publishOnlyUnique(tempResult);
 		q->publisher->publishAll(extResult);
-		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
-						  "Search : tree - read( %d), accept( %d), objs - visit( %d), accept(%d), in result(%d) ",
-						  q->numberOfReadSubtrees, q->numberOfAcceptedSubtrees, q->numberOfVisitedObjects,
-						  q->numberOfAcceptedObjects, q->publisher->result.size());
+		// OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
+		// 				  "Search : tree - read( %d), accept( %d), objs - visit( %d), accept(%d), in result(%d) ",
+		// 				  q->numberOfReadSubtrees, q->numberOfAcceptedSubtrees, q->numberOfVisitedObjects,
+		// 				  q->numberOfAcceptedObjects, q->publisher->result.size());
 	}
 	return q->publisher;
 }

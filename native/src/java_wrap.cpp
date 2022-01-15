@@ -308,8 +308,8 @@ extern "C" JNIEXPORT jobject JNICALL Java_net_osmand_plus_render_NativeOsmandLib
 	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Native ok (init %d, native op %d) ",
 					  (int)initObjects.GetElapsedMs(), (int)rc.nativeOperations.GetElapsedMs());
 #else
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Native ok (init %d, rendering %d) ",
-					  (int)initObjects.GetElapsedMs(), (int)rc.nativeOperations.GetElapsedMs());
+	// OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Native ok (init %d, rendering %d) ",
+	// 				  (int)initObjects.GetElapsedMs(), (int)rc.nativeOperations.GetElapsedMs());
 #endif
 
 	/* Construct a result object */
@@ -327,8 +327,7 @@ extern "C" JNIEXPORT jobject JNICALL Java_net_osmand_NativeLibrary_generateRende
 	JNIRenderingContext rc;
 	pullFromJavaRenderingContext(ienv, renderingContext, &rc);
 
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Creating SkBitmap in native w:%d h:%d!", rc.getWidth(),
-					  rc.getHeight());
+	// OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Creating SkBitmap in native w:%d h:%d!", rc.getWidth(), rc.getHeight());
 
 	SkBitmap* bitmap = new SkBitmap();
 	SkImageInfo imageInfo;
@@ -346,7 +345,7 @@ extern "C" JNIEXPORT jobject JNICALL Java_net_osmand_NativeLibrary_generateRende
 	if (bitmapData == NULL && bitmapDataSize == 0) {
 		bitmapDataSize = reqDataSize;
 		bitmapData = malloc(bitmapDataSize);
-		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Allocated %d bytes at %p", bitmapDataSize, bitmapData);
+		// OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Allocated %d bytes at %p", bitmapDataSize, bitmapData);
 	}
 
 	bitmap->installPixels(imageInfo, bitmapData, imageInfo.minRowBytes());
@@ -377,8 +376,8 @@ extern "C" JNIEXPORT jobject JNICALL Java_net_osmand_NativeLibrary_generateRende
 	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Native ok (init %d, native op %d) ",
 					  (int)initObjects.GetElapsedMs(), (int)rc.nativeOperations.GetElapsedMs());
 #else
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Native ok (init %d, rendering %d) ",
-					  (int)initObjects.GetElapsedMs(), (int)rc.nativeOperations.GetElapsedMs());
+	// OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Native ok (init %d, rendering %d) ",
+	// 				  (int)initObjects.GetElapsedMs(), (int)rc.nativeOperations.GetElapsedMs());
 #endif
 	// Allocate ctor paramters
 	jobject bitmapBuffer;
