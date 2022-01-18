@@ -993,26 +993,47 @@ void FontRegistry::drawHbTextOnPath(SkCanvas *canvas, std::string textS, SkPath 
 
 	font.getWidths(glyphs.get(), length, widths);
 	float textLength = xy[length - 1].x() + widths[length - 1];
-	
-	// Make text straight if path is too short
-	if (length <= 4) {		
-		SkPath simplePath;
+
+	// Make text straight
+	SkPath simplePath;
+	simplePath.moveTo(path.getPoint(0));
+	if (length <= 4) {
 		int countPoints = path.countPoints();
 		// select point on 1/3 and 2/3 of path
 		SkPoint firstPoint = path.getPoint((int)(countPoints / 3));
 		SkPoint lastPoint = path.getPoint((int)((countPoints / 3) * 2));
 		SkScalar dx = lastPoint.x() - firstPoint.x();
-		SkScalar dy = lastPoint.y() - firstPoint.y();		
+		SkScalar dy = lastPoint.y() - firstPoint.y();
 		// increase path between points 3 times
-		lastPoint.set(lastPoint.x() +  dx, lastPoint.y() + dy);
-		firstPoint.set(firstPoint.x() - dx, firstPoint.y() - dy);
-		simplePath.moveTo(firstPoint);
+		lastPoint.set(lastPoint.x() + 1.5 * dx, lastPoint.y() + 1.5 * dy);
+		firstPoint.set(firstPoint.x() - 1.5 * dx, firstPoint.y() - 1.5 * dy);
+		simplePath.lineTo(firstPoint);
 		simplePath.lineTo(lastPoint);
-		meas.setPath(&simplePath, false);
-		if (meas.getLength() < textLength) {
-			// path is very crooked
-		 	return;			
-		}		
+		simplePath.lineTo(path.getPoint(path.countPoints() - 1));
+	}
+	else
+	{
+		float start = h_offset + (meas.getLength() - textLength) / 2;
+		for (int i = 0; i < length - 3; i = i + 3)
+		{
+			SkScalar s = start + xy[i].x();
+			SkScalar e = start + xy[i + 1].x() + widths[i + 1];
+			SkPath textPath;
+			meas.getSegment(s, e, &textPath, true);
+			simplePath.lineTo(textPath.getPoint(0));
+			simplePath.lineTo(textPath.getPoint(textPath.countPoints() - 1));
+		}
+		SkPath allPath;
+		meas.getSegment(start, start + xy[length - 1].x() + widths[length - 1], &allPath, true);
+		simplePath.lineTo(allPath.getPoint(allPath.countPoints() - 1));
+	}
+
+	simplePath.lineTo(path.getPoint(path.countPoints() - 1));
+	meas.setPath(&simplePath, false);
+	if (meas.getLength() < textLength)
+	{
+		// path is very crooked
+		return;
 	}
 
 	// set text to the middle of the path
