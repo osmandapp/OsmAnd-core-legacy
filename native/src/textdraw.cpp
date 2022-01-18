@@ -1010,12 +1010,9 @@ void FontRegistry::drawHbTextOnPath(SkCanvas *canvas, std::string textS, SkPath 
 		simplePath.lineTo(firstPoint);
 		simplePath.lineTo(lastPoint);
 		simplePath.lineTo(path.getPoint(path.countPoints() - 1));
-	}
-	else
-	{
+	} else {
 		float start = h_offset + (meas.getLength() - textLength) / 2;
-		for (int i = 0; i < length - 3; i = i + 3)
-		{
+		for (int i = 0; i < length - 3; i = i + 3) {
 			SkScalar s = start + xy[i].x();
 			SkScalar e = start + xy[i + 1].x() + widths[i + 1];
 			SkPath textPath;
@@ -1030,8 +1027,7 @@ void FontRegistry::drawHbTextOnPath(SkCanvas *canvas, std::string textS, SkPath 
 
 	simplePath.lineTo(path.getPoint(path.countPoints() - 1));
 	meas.setPath(&simplePath, false);
-	if (meas.getLength() < textLength)
-	{
+	if (meas.getLength() < textLength) {
 		// path is very crooked
 		return;
 	}
