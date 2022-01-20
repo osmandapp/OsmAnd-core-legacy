@@ -19,7 +19,7 @@ struct RouteSegment {
 	// All the road segments from map data connected to the same end point
     // removed due to leaks
     //SHARED_PTR<RouteSegment> nextLoaded;
-    SHARED_PTR<RouteSegment> oppositeDirection;
+    weak_ptr<RouteSegment> oppositeDirection;
     // Same Road/ same Segment but used for opposite A* search (important to have different cause #parentRoute is different)
 	// Note: if we use 1-direction A* then this is field is not needed
     SHARED_PTR<RouteSegment> reverseSearch;
@@ -87,12 +87,14 @@ struct RouteSegment {
             if (positiveDirection == (th->segmentEnd > th->segmentStart)) {
                 return th;
             } else {
-                if (!th->oppositeDirection) {
-                    th->oppositeDirection = std::make_shared<RouteSegment>(th->road, th->segmentStart,
-                                                         th->segmentEnd > th->segmentStart ? (th->segmentStart - 1) : (th->segmentStart + 1));
-                    th->oppositeDirection->oppositeDirection = th;
+                if (th->oppositeDirection.expired()) {
+                    auto seg  = std::make_shared<RouteSegment>(th->road, th->segmentStart,
+                                                               th->segmentEnd > th->segmentStart ? (th->segmentStart - 1) : (th->segmentStart + 1));
+                    seg->oppositeDirection = th;
+                    th->oppositeDirection = seg;
+                    return seg;
                 }
-                return th->oppositeDirection;
+                return th->oppositeDirection.lock();
             }
         }
         return nullptr;
