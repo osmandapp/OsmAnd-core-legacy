@@ -16,8 +16,9 @@ struct RouteSegment {
     // Segments only allowed for Navigation connected to the same end point
     SHARED_PTR<RouteSegment> next;
     // # Represents cheap-storage of LinkedList connected segments
-	// All the road segments from map data connected to the same end point 
-    SHARED_PTR<RouteSegment> nextLoaded;
+	// All the road segments from map data connected to the same end point
+    // removed due to leaks
+    //SHARED_PTR<RouteSegment> nextLoaded;
     SHARED_PTR<RouteSegment> oppositeDirection;
     // Same Road/ same Segment but used for opposite A* search (important to have different cause #parentRoute is different)
 	// Note: if we use 1-direction A* then this is field is not needed

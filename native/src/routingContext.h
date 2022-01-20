@@ -21,7 +21,7 @@ struct RoutingSubregionTile {
 	int access;
 	int loaded;
 	long size;
-	UNORDERED(map)<int64_t, SHARED_PTR<RouteSegment>> routes;
+	UNORDERED(map)<int64_t, std::vector<SHARED_PTR<RouteSegment>>> routes;
 	UNORDERED(set)<int64_t> excludedIds;
 
 	RoutingSubregionTile(RouteSubregion& sub) : subregion(sub), access(0), loaded(0) {
@@ -33,7 +33,7 @@ struct RoutingSubregionTile {
 	void setLoaded() { loaded = abs(loaded) + 1; }
 
 	void unload() {
-		routes = UNORDERED(map)<int64_t, SHARED_PTR<RouteSegment>>();
+		routes = UNORDERED(map)<int64_t, std::vector<SHARED_PTR<RouteSegment>>>();
 		size = 0;
 		loaded = -abs(loaded);
 	}
@@ -48,16 +48,7 @@ struct RoutingSubregionTile {
 			uint64_t x31 = o->pointsX[i];
 			uint64_t y31 = o->pointsY[i];
 			uint64_t l = (((uint64_t)x31) << 31) + (uint64_t)y31;
-			SHARED_PTR<RouteSegment> segment = std::make_shared<RouteSegment>(o, i);
-			if (routes.find(l) == routes.end()) {
-				routes[l] = segment;
-			} else {
-				SHARED_PTR<RouteSegment> orig = routes[l];
-				while (orig->nextLoaded) {
-					orig = orig->nextLoaded;
-				}
-				orig->nextLoaded = segment;
-			}
+            routes[l].push_back(std::make_shared<RouteSegment>(o, i));
 		}
 	}
 };
@@ -373,9 +364,9 @@ struct RoutingContext {
 				auto& subregions = itSubregions->second;
 				for (uint j = 0; j < subregions.size(); j++) {
 					if (subregions[j]->isLoaded()) {
-						UNORDERED(map)<int64_t, SHARED_PTR<RouteSegment>>::iterator s = subregions[j]->routes.begin();
+						UNORDERED(map)<int64_t, std::vector<SHARED_PTR<RouteSegment>>>::iterator s = subregions[j]->routes.begin();
 						while (s != subregions[j]->routes.end()) {
-							SHARED_PTR<RouteSegment> seg = s->second;
+                            SHARED_PTR<RouteSegment> seg = s->second.front();
 							while (seg) {
 								SHARED_PTR<RouteDataObject> ro = seg->road;
 								// excludeDuplications.insert(ro->id).second - true if it was inserted
@@ -422,28 +413,28 @@ struct RoutingContext {
 		SHARED_PTR<RouteSegment> original;
 		for (uint j = 0; j < subregions.size(); j++) {
 			if (subregions[j]->isLoaded()) {
-				SHARED_PTR<RouteSegment> segment = subregions[j]->routes[l];
-				subregions[j]->access++;
-				while (segment) {
-					SHARED_PTR<RouteDataObject> ro = segment->road;
-					SHARED_PTR<RouteDataObject> toCmp =
-						excludeDuplications[calcRouteId(ro, segment->getSegmentStart())];
-					if (!isExcluded(ro->id, j, subregions) &&
-						(!toCmp || toCmp->pointsX.size() < ro->pointsX.size())) {
-						excludeDuplications[calcRouteId(ro, segment->getSegmentStart())] = ro;
-						if (reverseWaySearch) {
-							if (!segment->reverseSearch) {
-								segment->reverseSearch = std::make_shared<RouteSegment>(ro, segment->getSegmentStart());
-								segment->reverseSearch->reverseSearch = segment;
-								segment->reverseSearch->nextLoaded = segment->nextLoaded;
-							}
-							segment = segment->reverseSearch;
-						}
-						segment->next = original;
-						original = segment;
-					}
-					segment = segment->nextLoaded;
-				}
+                std::vector<SHARED_PTR<RouteSegment>> segments = subregions[j]->routes[l];
+                subregions[j]->access++;
+                for (auto segment : segments) {
+                    if(segment != nullptr) {
+                        SHARED_PTR<RouteDataObject> ro = segment->road;
+                        SHARED_PTR<RouteDataObject> toCmp =
+                            excludeDuplications[calcRouteId(ro, segment->getSegmentStart())];
+                        if (!isExcluded(ro->id, j, subregions) &&
+                            (!toCmp || toCmp->pointsX.size() < ro->pointsX.size())) {
+                            excludeDuplications[calcRouteId(ro, segment->getSegmentStart())] = ro;
+                            if (reverseWaySearch) {
+                                if (!segment->reverseSearch) {
+                                    segment->reverseSearch = std::make_shared<RouteSegment>(ro, segment->getSegmentStart());
+                                    segment->reverseSearch->reverseSearch = segment;
+                                }
+                                segment = segment->reverseSearch;
+                            }
+                            segment->next = original;
+                            original = segment;
+                        }
+                    }
+                }
 			}
 		}
 		if (progress) {
