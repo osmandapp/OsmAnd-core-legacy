@@ -592,6 +592,29 @@ bool RoutePlannerFrontEnd::findGpxRouteSegment(SHARED_PTR<GpxRouteApproximation>
 			}
 		}
 		if (routeIsCorrect) {
+			for (SHARED_PTR<RouteSegmentResult> r : res) {
+				int st = r->getStartPointIndex();
+				int end = r->getEndPointIndex();
+				while (st != end) {
+					LatLon lp = r->getPoint(st);
+					bool pointIsClosed = false;
+					// TODO 50 is not correct cause we first need to cut start /end route segment result and after that check if route is correct
+					for (int k = std::max(start->ind - 50, 0); !pointIsClosed && k < target->ind; k++) {
+						pointIsClosed = pointCloseEnough(gctx, lp, gpxPoints[k], gpxPoints[k + 1]);
+					}
+					if (!pointIsClosed) {
+						routeIsCorrect = false;
+						break;
+					}
+					if (st < end) {
+						st++;
+					} else {
+						st--;
+					}
+				}
+			}
+		}
+		if (routeIsCorrect) {
 			// correct start point though don't change end point
 			if (!prevRouteCalculated) {
 				// make first position precise
@@ -613,6 +636,17 @@ bool RoutePlannerFrontEnd::findGpxRouteSegment(SHARED_PTR<GpxRouteApproximation>
 		}
 	}
 	return routeIsCorrect;
+}
+
+bool RoutePlannerFrontEnd::pointCloseEnough(SHARED_PTR<GpxRouteApproximation>& gctx, LatLon lp,
+                                           SHARED_PTR<GpxPoint>& gpxPoint, SHARED_PTR<GpxPoint>& gpxPoint2) {
+	std::pair<double, double> projection =
+		getProjection(gpxPoint->lat, gpxPoint->lon, gpxPoint2->lat,
+					  gpxPoint2->lon, lp.lat, lp.lon);
+	if (getDistance(projection.first, projection.second, lp.lat, lp.lon) <= gctx->MINIMUM_POINT_APPROXIMATION) {
+		return true;
+	}
+	return false;
 }
 
 bool RoutePlannerFrontEnd::pointCloseEnough(SHARED_PTR<GpxRouteApproximation>& gctx, SHARED_PTR<GpxPoint>& ipoint,
