@@ -424,11 +424,14 @@ struct RoutingContext {
                             (!toCmp || toCmp->pointsX.size() < ro->pointsX.size())) {
                             excludeDuplications[calcRouteId(ro, segment->getSegmentStart())] = ro;
                             if (reverseWaySearch) {
-                                if (!segment->reverseSearch) {
-                                    segment->reverseSearch = std::make_shared<RouteSegment>(ro, segment->getSegmentStart());
-                                    segment->reverseSearch->reverseSearch = segment;
+                                if (segment->reverseSearch.expired()) {
+                                    auto seg = std::make_shared<RouteSegment>(ro, segment->getSegmentStart());
+                                    seg->reverseSearch = segment;
+                                    segment->reverseSearch = seg;
+                                    segment = seg;
+                                } else {
+                                    segment = segment->reverseSearch.lock();
                                 }
-                                segment = segment->reverseSearch;
                             }
                             segment->next = original;
                             original = segment;

@@ -22,7 +22,7 @@ struct RouteSegment {
     weak_ptr<RouteSegment> oppositeDirection;
     // Same Road/ same Segment but used for opposite A* search (important to have different cause #parentRoute is different)
 	// Note: if we use 1-direction A* then this is field is not needed
-    SHARED_PTR<RouteSegment> reverseSearch;
+    weak_ptr<RouteSegment> reverseSearch;
     
     // # Important for A*-search to distinguish whether segment was visited or not
 	// Initially all segments null and startSegment/endSegment.parentRoute = RouteSegment.NULL;
