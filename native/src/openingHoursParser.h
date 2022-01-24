@@ -10,6 +10,11 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <OsmAndCore/QtExtensions.h>
+#include <QDateTime>
+
+//struct SimpleDateFormat;
+//struct Locale;
 
 struct StringsHolder {
 	std::vector<std::string> daysStr;
@@ -26,6 +31,7 @@ struct StringsHolder {
 
 struct OpeningHoursParser {
    private:
+
 	enum class TokenType : int {
 		TOKEN_UNKNOWN = 0,
 		TOKEN_COLON,
@@ -95,6 +101,7 @@ struct OpeningHoursParser {
 	 * - a collection of days/dates
 	 * - a time range
 	 */
+
 	struct OpeningHoursRule {
 		/**
 		 * Check if, for this rule, the feature is opened for time "date"
@@ -164,7 +171,7 @@ struct OpeningHoursParser {
 		 * @param r the rule to check
 		 * @return true if the this rule times overlap with r times
 		 */
-		virtual bool hasOverlapTimes(const tm& dateTime, const std::shared_ptr<OpeningHoursRule>& r) const = 0;
+		virtual bool hasOverlapTimes(const tm& dateTime, const std::shared_ptr<OpeningHoursRule>& r, bool strictOverlap) const = 0;
 
 		virtual int getSequenceIndex() const = 0;
 
@@ -394,7 +401,7 @@ struct OpeningHoursParser {
 
 		bool hasOverlapTimes() const;
 
-		bool hasOverlapTimes(const tm& dateTime, const std::shared_ptr<OpeningHoursRule>& r) const;
+		bool hasOverlapTimes(const tm& dateTime, const std::shared_ptr<OpeningHoursRule>& r, bool strictOverlap) const;
 
 		/**
 		 * Check if the next weekday of time "date" is part of this rule
@@ -476,7 +483,7 @@ struct OpeningHoursParser {
 		bool isOpenedForTime(const tm& dateTime, bool checkPrevious) const;
 		bool containsPreviousDay(const tm& dateTime) const;
 		bool hasOverlapTimes() const;
-		bool hasOverlapTimes(const tm& dateTime, const std::shared_ptr<OpeningHoursRule>& r) const;
+		bool hasOverlapTimes(const tm& dateTime, const std::shared_ptr<OpeningHoursRule>& r, bool strictOverlap) const;
 		bool containsDay(const tm& dateTime) const;
 		bool containsNextDay(const tm& dateTime) const;
 		bool containsMonth(const tm& dateTime) const;
@@ -647,11 +654,22 @@ struct OpeningHoursParser {
 	static void fillRuleArray(std::vector<bool>* array,
 							  const std::shared_ptr<std::vector<std::shared_ptr<Token>>>& pair);
 
+	static void formatTimeRange(int startMinute, int endMinute, std::stringstream& b);
+	static void formatTime(int minutes, std::stringstream& b);
+	static void formatTime(int minutes, std::stringstream& b, bool appendAmPM);
+	static void formatTime(int hours, int minutes, std::stringstream& b, bool appendAmPm);
+
+	static void testAmPm();
+	static std::string getHoursMinutes(int hours, int minutes);
+	static std::string convert12(std::string str, bool appendAmPm);
+
    public:
 	OpeningHoursParser(const std::string& openingHours);
 	~OpeningHoursParser();
 
 	static void setAdditionalString(const std::string& key, const std::string& value);
+
+    static void setTwelveHourFormattingEnabled(bool enabled);
 
 	static void parseRuleV2(const std::string& rl, int sequenceIndex,
 							std::vector<std::shared_ptr<OpeningHoursRule>>& rules);

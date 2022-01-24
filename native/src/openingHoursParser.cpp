@@ -13,6 +13,8 @@ static const int CURRENT_DAY_TIME_LIMIT = -2;
 
 static StringsHolder stringsHolder;
 
+static bool twelveHourFormatting;
+
 inline std::tm ohp_localtime(const std::time_t& time) {
 	std::tm tm_snapshot;
 #if (defined(WIN32) || defined(_WIN32) || defined(__WIN32__))
@@ -107,22 +109,91 @@ int getDayIndex(int i) {
 	}
 }
 
-void formatTime(int h, int t, std::stringstream& b) {
-	if (h < 10) b << "0";
-
-	std::string hs = ohp_to_string(h);
-	b << hs;
-	b << ":";
-	if (t < 10) b << "0";
-
-	std::string ts = ohp_to_string(t);
-	b << ts;
+void OpeningHoursParser::formatTimeRange(int startMinute, int endMinute, std::stringstream& b) {
+	int startHour = (startMinute / 60) % 24;
+	int endHour = (endMinute / 60) % 24;
+	bool sameDayPart = std::max(startHour, endHour) < 12 || std::min(startHour, endHour) >= 12;
+	if (twelveHourFormatting && sameDayPart) {
+		formatTime(startMinute, b, false);
+		b << "–";
+		formatTime(endMinute, b, true);
+	} else {
+		formatTime(startMinute, b);
+		b << "–";
+		formatTime(endMinute, b);
+	}
 }
 
-void formatTime(int minutes, std::stringstream& b) {
+void OpeningHoursParser::formatTime(int minutes, std::stringstream& b) {
+	formatTime(minutes, b, true);
+}
+
+void OpeningHoursParser::formatTime(int minutes, std::stringstream& b, bool appendAmPM) {
 	int hour = minutes / 60;
 	int time = minutes - hour * 60;
-	formatTime(hour, time, b);
+	formatTime(hour, time, b, appendAmPM);
+}
+
+void OpeningHoursParser::formatTime(int hours, int minutes, std::stringstream& b, bool appendAmPm) {
+	std::string hoursMinutes = OpeningHoursParser::getHoursMinutes(hours, minutes);
+	if (twelveHourFormatting) {
+        b << OpeningHoursParser::convert12(hoursMinutes, appendAmPm);
+	} else {
+		b << hoursMinutes;
+	}
+}
+
+std::string OpeningHoursParser::getHoursMinutes(int hours, int minutes) {
+    std::string str;
+    if (hours < 10) {
+        str.append("0");
+    }
+    str.append(std::to_string(hours)).append(":");
+    if (minutes < 10) {
+        str.append("0");
+    }
+    str.append(std::to_string(minutes));
+    return str;
+}
+
+std::string OpeningHoursParser::convert12(std::string str, bool appendAmPm) {
+	std::stringstream b;
+
+    int h1 = (int)str[0] - '0';
+    int h2 = (int)str[1] - '0';
+
+    int hh = h1 * 10 + h2;
+
+    std::string meridiem;
+    if (hh < 12) {
+        meridiem = "AM";
+    }
+    else {
+        meridiem = "PM";
+    }
+
+    hh %= 12;
+
+    if (hh == 0) {
+        b << "12";
+
+        for (int i = 2; i < 5; ++i) {
+            char ssss = str[i];
+            b << ssss;
+        }
+    }
+    else {
+        b << hh;
+        for (int i = 2; i < 5; ++i) {
+            char ssss = str[i];
+            b << ssss;
+        }
+    }
+
+	if (appendAmPm) {
+		b << " " << meridiem;
+	}
+	return b.str();
 }
 
 StringsHolder::StringsHolder() {
@@ -360,19 +431,19 @@ std::vector<int> OpeningHoursParser::BasicOpeningHourRule::getEndTimes() const {
 }
 
 bool OpeningHoursParser::BasicOpeningHourRule::containsDay(const tm& dateTime) const {
-	int i = dateTime.tm_wday + 1;
+	int i = dateTime.tm_wday;
 	int d = (i + 5) % 7;
 	return _days[d];
 }
 
 bool OpeningHoursParser::BasicOpeningHourRule::containsNextDay(const tm& dateTime) const {
-	int i = dateTime.tm_wday + 1;
+	int i = dateTime.tm_wday;
 	int n = (i + 6) % 7;
 	return _days[n];
 }
 
 bool OpeningHoursParser::BasicOpeningHourRule::containsPreviousDay(const tm& dateTime) const {
-	int i = dateTime.tm_wday + 1;
+	int i = dateTime.tm_wday;
 	int p = (i + 4) % 7;
 	return _days[p];
 }
@@ -400,7 +471,7 @@ bool OpeningHoursParser::BasicOpeningHourRule::containsYear(const tm& dateTime) 
 }
 
 int OpeningHoursParser::BasicOpeningHourRule::getCurrentDay(const tm& dateTime) const {
-	int i = dateTime.tm_wday + 1;
+	int i = dateTime.tm_wday;
 	return (i + 5) % 7;
 }
 
@@ -652,16 +723,10 @@ std::string OpeningHoursParser::BasicOpeningHourRule::toRuleString(const std::ve
 				int endTime = _endTimes[i];
 				if (i > 0) b << ", ";
 
-				int stHour = startTime / 60;
-				int stTime = startTime - stHour * 60;
-				int enHour = endTime / 60;
-				int enTime = endTime - enHour * 60;
-				formatTime(stHour, stTime, b);
-				b << "-";
-				formatTime(enHour, enTime, b);
+				formatTimeRange(startTime, endTime, b);
 			}
+            if (_off) b << " " << stringsHolder.additionalStrings["off"];
 		}
-		if (_off) b << " " << stringsHolder.additionalStrings["off"];
 	}
 	if (!_comment.empty()) {
 		std::string str = b.str();
@@ -826,7 +891,7 @@ int OpeningHoursParser::BasicOpeningHourRule::calculate(const tm& dateTime) cons
 	if (!containsMonth(dateTime)) return 0;
 
 	int dmonth = dateTime.tm_mday - 1;
-	int i = dateTime.tm_wday + 1;
+	int i = dateTime.tm_wday;
 	int day = (i + 5) % 7;
 	int previous = (day + 6) % 7;
 	bool thisDay = _hasDays || hasDayMonths();
@@ -882,7 +947,8 @@ bool OpeningHoursParser::BasicOpeningHourRule::hasOverlapTimes() const {
 }
 
 bool OpeningHoursParser::BasicOpeningHourRule::hasOverlapTimes(const tm& dateTime,
-															   const std::shared_ptr<OpeningHoursRule>& r) const {
+															   const std::shared_ptr<OpeningHoursRule>& r,
+                                                               bool strictOverlap) const {
 	if (_off) return true;
 
 	if (r != nullptr && r->contains(dateTime)) {
@@ -906,8 +972,8 @@ bool OpeningHoursParser::BasicOpeningHourRule::hasOverlapTimes(const tm& dateTim
 					else if (rStartTime >= rEndTime)
 						rEndTime = 24 * 60 + rEndTime;
 
-					if ((rStartTime >= startTime && rStartTime < endTime) ||
-						(startTime >= rStartTime && startTime < rEndTime)) {
+                    if ((rStartTime >= startTime && (strictOverlap ? rStartTime <= endTime : rStartTime < endTime))
+                            || (startTime >= rStartTime && (strictOverlap ? startTime <= rEndTime : startTime < rEndTime))) {
 						return true;
 					}
 				}
@@ -936,7 +1002,8 @@ bool OpeningHoursParser::UnparseableRule::hasOverlapTimes() const {
 }
 
 bool OpeningHoursParser::UnparseableRule::hasOverlapTimes(const tm& dateTime,
-														  const std::shared_ptr<OpeningHoursRule>& r) const {
+														  const std::shared_ptr<OpeningHoursRule>& r,
+                                                          bool strictOverlap) const {
 	return false;
 }
 
@@ -1128,7 +1195,7 @@ bool OpeningHoursParser::OpeningHours::isOpenedForTimeV2(const tm& dateTime, int
 		bool checkNext = false;
 		const auto rule = rules[i];
 		if (rule->contains(dateTime)) {
-			if (i > 0) checkNext = !rule->hasOverlapTimes(dateTime, rules[i - 1]);
+			if (i > 0) checkNext = !rule->hasOverlapTimes(dateTime, rules[i - 1], false);
 
 			bool open = rule->isOpenedForTime(dateTime);
 			if (open || (!overlap && !checkNext)) {
@@ -1245,7 +1312,7 @@ std::string OpeningHoursParser::OpeningHours::getTimeDay(const tm& dateTime, int
 	std::shared_ptr<OpeningHoursRule> prevRule = nullptr;
 	for (const auto r : rules) {
 		if (r->containsDay(dateTime) && r->containsMonth(dateTime)) {
-			if (atTime.length() > 0 && prevRule != nullptr && !r->hasOverlapTimes(dateTime, prevRule))
+			if (atTime.length() > 0 && prevRule != nullptr && !r->hasOverlapTimes(dateTime, prevRule, true))
 				return atTime;
 			else
 				atTime = r->getTime(dateTime, false, limit, opening);
@@ -1288,7 +1355,7 @@ std::string OpeningHoursParser::OpeningHours::getCurrentRuleTime(const tm& dateT
 		bool checkNext = false;
 		const auto rule = rules[i];
 		if (rule->contains(dateTime)) {
-			if (i > 0) checkNext = !rule->hasOverlapTimes(dateTime, rules[i - 1]);
+			if (i > 0) checkNext = !rule->hasOverlapTimes(dateTime, rules[i - 1], false);
 
 			bool open = rule->isOpenedForTime(dateTime);
 			if (open || (!overlap && !checkNext))
@@ -1760,7 +1827,8 @@ void OpeningHoursParser::buildRule(std::shared_ptr<BasicOpeningHourRule>& basic,
 		auto& days = basic->getDays();
 		std::fill(days.begin(), days.end(), true);
 		basic->setHasDays(true);
-	} else if (presentTokens.find(TokenType::TOKEN_DAY_WEEK) != presentTokens.end()) {
+	} else if (presentTokens.find(TokenType::TOKEN_DAY_WEEK) != presentTokens.end() ||
+			   presentTokens.find(TokenType::TOKEN_HOLIDAY) != presentTokens.end()) {
 		basic->setHasDays(true);
 	}
 	rules.insert(rules.begin(), basic);
@@ -1873,6 +1941,10 @@ bool OpeningHoursParser::parseTime(const std::string& time, tm& dateTime) {
 
 void OpeningHoursParser::setAdditionalString(const std::string& key, const std::string& value) {
 	stringsHolder.setAdditionalString(key, value);
+}
+
+void OpeningHoursParser::setTwelveHourFormattingEnabled(bool enabled) {
+	twelveHourFormatting = enabled;
 }
 
 /**
@@ -2023,8 +2095,18 @@ void OpeningHoursParser::runTest() {
 	// 0. not properly supported
 	// hours = parseOpenedHours("Mo-Su (sunrise-00:30)-(sunset+00:30)");
 
-	auto hours = parseOpenedHours(
-		"Mo-Fr 08:00-12:30, Mo-We 12:30-16:30 \"Sur rendez-vous\", Fr 12:30-15:30 \"Sur rendez-vous\"");
+	OpeningHoursParser::setTwelveHourFormattingEnabled(false);
+
+	auto hours = parseOpenedHours("Mo 09:00-12:00; We,Sa 13:30-17:00, Apr 01-Oct 31 We,Sa 17:00-18:30; PH off");
+	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
+	testInfo("03.10.2020 14:00", hours, "Open till 18:30");
+	hours = parseOpenedHours("PH,Mo-Su 09:00-22:00");
+	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
+	testOpened("13.10.2021 11:54", hours, true);
+	hours = parseOpenedHours("Mo-We 07:00-21:00, Th-Fr 07:00-21:30, PH,Sa-Su 08:00-21:00");
+	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
+	testOpened("29.08.2021 10:09", hours, true);
+	hours = parseOpenedHours("Mo-Fr 08:00-12:30, Mo-We 12:30-16:30 \"Sur rendez-vous\", Fr 12:30-15:30 \"Sur rendez-vous\"");
 	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
 	testInfo("13.10.2019 18:00", hours, "Will open tomorrow at 08:00");
 
@@ -2454,5 +2536,30 @@ void OpeningHoursParser::runTest() {
 	testParsedAndAssembledCorrectly("Mo-Fr 10:00-21:00; Sa 12:00-23:00; PH - Wird auf der Homepage bekannt gegeben.",
 									hours);
 
+	OpeningHoursParser::testAmPm();
+
 	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "OpeningHoursParser test done");
+}
+
+void OpeningHoursParser::testAmPm() {
+	OpeningHoursParser::setTwelveHourFormattingEnabled(true);
+
+	auto hours = parseOpenedHours("Mo-Fr: 9:00-13:00, 14:00-18:00");
+	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
+	testInfo("15.01.2018 08:00", hours, "Will open at 9:00 AM");
+	testInfo("15.01.2018 09:00", hours, "Open till 1:00 PM");
+	testInfo("15.01.2018 12:00", hours, "Will close at 1:00 PM");
+	testInfo("15.01.2018 13:10", hours, "Will open at 2:00 PM");
+	testInfo("15.01.2018 14:00", hours, "Open till 6:00 PM");
+	testInfo("15.01.2018 16:00", hours, "Will close at 6:00 PM");
+	testInfo("15.01.2018 18:10", hours, "Will open tomorrow at 9:00 AM");
+
+	// Don't write AM or PM twice for range
+	std::string string = "Mo-Fr 04:30-10:00, 07:30-23:00; Sa, Su, PH 13:30-23:00";
+	hours = parseOpenedHours(string);
+	testParsedAndAssembledCorrectly("Mo-Fr 4:30–10:00 AM, 7:30 AM–11:00 PM; Sa, Su, PH 1:30–11:00 PM", hours);
+
+	string = "Mo-Fr 00:00-12:00, 12:00-24:00;";
+	hours = parseOpenedHours(string);
+	testParsedAndAssembledCorrectly("Mo-Fr 12:00 AM–12:00 PM, 12:00 PM–12:00 AM", hours);
 }
