@@ -49,7 +49,7 @@ struct RoutingSubregionTile {
 			uint64_t x31 = o->pointsX[i];
 			uint64_t y31 = o->pointsY[i];
 			uint64_t l = (((uint64_t)x31) << 31) + (uint64_t)y31;
-            routes[l].push_back(std::make_shared<RouteSegment>(o, i));
+			routes[l].push_back(std::make_shared<RouteSegment>(o, i));
 		}
 	}
 };
@@ -125,13 +125,13 @@ struct RoutingContext {
 				   RouteCalculationMode calcMode = RouteCalculationMode::NORMAL)
 		: calculationMode(calcMode),
 		  config(config),
-          progress(new RouteCalculationProgress()),
+		  progress(new RouteCalculationProgress()),
 		  leftSideNavigation(false),
 		  startTransportStop(false),
 		  targetTransportStop(false),
 		  publicTransport(false),
-          geocoding(false),
-          conditionalTime(0),
+		  geocoding(false),
+		  conditionalTime(0),
 		  precalcRoute(new PrecalculatedRouteDirection()) {
 		this->basemap = RouteCalculationMode::BASE == calcMode;
 	}
@@ -365,9 +365,10 @@ struct RoutingContext {
 				auto& subregions = itSubregions->second;
 				for (uint j = 0; j < subregions.size(); j++) {
 					if (subregions[j]->isLoaded()) {
-						UNORDERED(map)<int64_t, std::vector<SHARED_PTR<RouteSegment>>>::iterator s = subregions[j]->routes.begin();
+						UNORDERED(map)<int64_t, std::vector<SHARED_PTR<RouteSegment>>>::iterator s =
+							subregions[j]->routes.begin();
 						while (s != subregions[j]->routes.end()) {
-                            auto segments = s->second;
+							auto segments = s->second;
 							for (auto segment : segments) {
 								SHARED_PTR<RouteDataObject> ro = segment->road;
 								if (!isExcluded(ro->id, j, subregions) && excludeDuplications.insert(ro->id).second) {
@@ -389,8 +390,8 @@ struct RoutingContext {
 
 	// void searchRouteRegion(SearchQuery* q, std::vector<RouteDataObject*>& list, RoutingIndex* rs, RouteSubregion*
 	// sub)
-    std::vector<SHARED_PTR<RouteSegment>> loadRouteSegment(int x31, int y31, bool reverseWaySearch) {
-        std::vector<SHARED_PTR<RouteSegment>> segmentsResult;
+	std::vector<SHARED_PTR<RouteSegment>> loadRouteSegment(int x31, int y31, bool reverseWaySearch) {
+		std::vector<SHARED_PTR<RouteSegment>> segmentsResult;
 		if (progress && progress.get()) {
 			progress->timeToLoad.Start();
 		}
@@ -413,8 +414,8 @@ struct RoutingContext {
 		SHARED_PTR<RouteSegment> original;
 		for (uint j = 0; j < subregions.size(); j++) {
 			if (subregions[j]->isLoaded()) {
-                std::vector<SHARED_PTR<RouteSegment>> segments = subregions[j]->routes[l];
-                subregions[j]->access++;
+				std::vector<SHARED_PTR<RouteSegment>> segments = subregions[j]->routes[l];
+				subregions[j]->access++;
 				for (auto segment : segments) {
 					SHARED_PTR<RouteDataObject> ro = segment->road;
 					SHARED_PTR<RouteDataObject> toCmp =
@@ -440,7 +441,7 @@ struct RoutingContext {
 		if (progress) {
 			progress->timeToLoad.Start();
 		}
-        std::reverse(segmentsResult.begin(),segmentsResult.end());
+		std::reverse(segmentsResult.begin(), segmentsResult.end());
 		return segmentsResult;
 	}
 
