@@ -14,10 +14,11 @@ struct RouteSegment {
     uint16_t segmentEnd;
     SHARED_PTR<RouteDataObject> road;
     // Segments only allowed for Navigation connected to the same end point
-    SHARED_PTR<RouteSegment> next;
+    // Removed due to leaks
+    //SHARED_PTR<RouteSegment> next;
     // # Represents cheap-storage of LinkedList connected segments
 	// All the road segments from map data connected to the same end point
-    // removed due to leaks
+    // Removed due to leaks
     //SHARED_PTR<RouteSegment> nextLoaded;
     weak_ptr<RouteSegment> oppositeDirection;
     // Same Road/ same Segment but used for opposite A* search (important to have different cause #parentRoute is different)
@@ -74,10 +75,10 @@ struct RouteSegment {
     inline bool isNull();
     
     static SHARED_PTR<RouteSegment> initRouteSegment(SHARED_PTR<RouteSegment>& th, bool positiveDirection) {
-        if(th->segmentStart == 0 && !positiveDirection) {
+        if (th->segmentStart == 0 && !positiveDirection) {
             return SHARED_PTR<RouteSegment>();
         }
-        if(th->segmentStart == th->road->getPointsLength() - 1 && positiveDirection) {
+        if (th->segmentStart == th->road->getPointsLength() - 1 && positiveDirection) {
             return SHARED_PTR<RouteSegment>();
         }
 
@@ -103,7 +104,6 @@ struct RouteSegment {
     RouteSegment()
         : segmentStart(0)
         , road(nullptr)
-        , next()
         , oppositeDirection()
         , parentRoute()
         , reverseWaySearch(0)
@@ -117,7 +117,6 @@ struct RouteSegment {
         : segmentStart(segmentStart)
         , segmentEnd(segmentEnd)
         , road(road)
-        , next()
         , oppositeDirection()
         , parentRoute()
         , reverseWaySearch(0)
@@ -131,7 +130,6 @@ struct RouteSegment {
         : segmentStart(segmentStart)
         , segmentEnd(segmentStart < road->getPointsLength() - 1 ? segmentStart + 1 : segmentStart - 1)
         , road(road)
-        , next()
         , oppositeDirection()
         , parentRoute()
         , reverseWaySearch(0)

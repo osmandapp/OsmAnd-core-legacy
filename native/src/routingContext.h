@@ -124,13 +124,13 @@ struct RoutingContext {
 				   RouteCalculationMode calcMode = RouteCalculationMode::NORMAL)
 		: calculationMode(calcMode),
 		  config(config),
+          progress(new RouteCalculationProgress()),
 		  leftSideNavigation(false),
 		  startTransportStop(false),
 		  targetTransportStop(false),
 		  publicTransport(false),
-		  geocoding(false),
-		  conditionalTime(0),
-		  progress(new RouteCalculationProgress()),
+          geocoding(false),
+          conditionalTime(0),
 		  precalcRoute(new PrecalculatedRouteDirection()) {
 		this->basemap = RouteCalculationMode::BASE == calcMode;
 	}
@@ -366,15 +366,16 @@ struct RoutingContext {
 					if (subregions[j]->isLoaded()) {
 						UNORDERED(map)<int64_t, std::vector<SHARED_PTR<RouteSegment>>>::iterator s = subregions[j]->routes.begin();
 						while (s != subregions[j]->routes.end()) {
-                            SHARED_PTR<RouteSegment> seg = s->second.front();
-							while (seg) {
-								SHARED_PTR<RouteDataObject> ro = seg->road;
-								// excludeDuplications.insert(ro->id).second - true if it was inserted
-								if (!isExcluded(ro->id, j, subregions) && excludeDuplications.insert(ro->id).second) {
-									dataObjects.push_back(ro);
-								}
-								seg = seg->next;
-							}
+                            auto segments = s->second;
+                                for (auto segment : segments) {
+                                    if (segment.get() != NULL) {
+                                        SHARED_PTR<RouteDataObject> ro = segment->road;
+                                        if (!isExcluded(ro->id, j, subregions) && excludeDuplications.insert(ro->id).second) {
+                                            dataObjects.push_back(ro);
+                                        }
+                                    } else
+                                        break;
+                                }
 							s++;
 						}
 					}
@@ -386,11 +387,12 @@ struct RoutingContext {
 		}
 	}
 
-	SHARED_PTR<RouteSegment> loadRouteSegment(int x31, int y31) { return loadRouteSegment(x31, y31, false); }
+    std::vector<SHARED_PTR<RouteSegment>> loadRouteSegment(int x31, int y31) { return loadRouteSegment(x31, y31, false); }
 
 	// void searchRouteRegion(SearchQuery* q, std::vector<RouteDataObject*>& list, RoutingIndex* rs, RouteSubregion*
 	// sub)
-	SHARED_PTR<RouteSegment> loadRouteSegment(int x31, int y31, bool reverseWaySearch) {
+    std::vector<SHARED_PTR<RouteSegment>> loadRouteSegment(int x31, int y31, bool reverseWaySearch) {
+        std::vector<SHARED_PTR<RouteSegment>> segmentsResult;
 		if (progress && progress.get()) {
 			progress->timeToLoad.Start();
 		}
@@ -405,7 +407,7 @@ struct RoutingContext {
 			if (progress && progress.get()) {
 				progress->timeToLoad.Start();
 			}
-			return SHARED_PTR<RouteSegment>();
+			return segmentsResult;
 		}
 
 		auto& subregions = itSubregions->second;
@@ -416,7 +418,7 @@ struct RoutingContext {
                 std::vector<SHARED_PTR<RouteSegment>> segments = subregions[j]->routes[l];
                 subregions[j]->access++;
                 for (auto segment : segments) {
-                    if(segment != nullptr) {
+                    if (segment) {
                         SHARED_PTR<RouteDataObject> ro = segment->road;
                         SHARED_PTR<RouteDataObject> toCmp =
                             excludeDuplications[calcRouteId(ro, segment->getSegmentStart())];
@@ -433,17 +435,18 @@ struct RoutingContext {
                                     segment = segment->reverseSearch.lock();
                                 }
                             }
-                            segment->next = original;
+                            segmentsResult.push_back(segment);
                             original = segment;
                         }
-                    }
+                    } else break;
                 }
 			}
 		}
 		if (progress) {
 			progress->timeToLoad.Start();
 		}
-		return original;
+        std::reverse(segmentsResult.begin(),segmentsResult.end());
+		return segmentsResult;
 	}
 
 	bool isExcluded(int64_t roadId, uint subIndex, vector<shared_ptr<RoutingSubregionTile>>& subregions) {
