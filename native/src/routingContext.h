@@ -386,7 +386,9 @@ struct RoutingContext {
 		}
 	}
 
-    std::vector<SHARED_PTR<RouteSegment>> loadRouteSegment(int x31, int y31) { return loadRouteSegment(x31, y31, false); }
+	std::vector<SHARED_PTR<RouteSegment>> loadRouteSegment(int x31, int y31) {
+		return loadRouteSegment(x31, y31, false);
+	}
 
 	// void searchRouteRegion(SearchQuery* q, std::vector<RouteDataObject*>& list, RoutingIndex* rs, RouteSubregion*
 	// sub)
