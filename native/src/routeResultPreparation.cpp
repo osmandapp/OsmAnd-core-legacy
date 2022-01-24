@@ -178,14 +178,10 @@ void attachRoadSegments(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResul
         }
     } else {
         auto segments = ctx->loadRouteSegment(road->pointsX[pointInd], road->pointsY[pointInd]);
-        if (!segments.empty()) {
-            for (auto segment : segments) {
-                if (segment) {
-                    attachSegments(ctx, segment, road, rr, previousRoadId, pointInd, prevL, nextL);
-                } else break;
-            }
-        }
-    }
+		for (auto segment : segments) {
+			attachSegments(ctx, segment, road, rr, previousRoadId, pointInd, prevL, nextL);
+		}
+	}
 }
 
 void splitRoadsAndAttachRoadSegments(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResult> >& result) {

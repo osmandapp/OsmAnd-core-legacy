@@ -13,14 +13,18 @@ struct RouteSegment {
     uint16_t segmentStart;
     uint16_t segmentEnd;
     SHARED_PTR<RouteDataObject> road;
-    // Segments only allowed for Navigation connected to the same end point
-    // Removed due to leaks
-    //SHARED_PTR<RouteSegment> next;
-    // # Represents cheap-storage of LinkedList connected segments
+	// Segments only allowed for Navigation connected to the same end point
+
+	// Removed due to leaks. It was replaced for std::vector<SHARED_PTR<RouteSegment>> segmentsResult in loadRouteSegment from routingContext
+	// SHARED_PTR<RouteSegment> next;
+
+	// # Represents cheap-storage of LinkedList connected segments
 	// All the road segments from map data connected to the same end point
-    // Removed due to leaks
-    //SHARED_PTR<RouteSegment> nextLoaded;
-    weak_ptr<RouteSegment> oppositeDirection;
+
+	// Removed due to leaks. It was replaced for std::vector<SHARED_PTR<RouteSegment>> segmentsResult in routes from routingContext
+	// SHARED_PTR<RouteSegment> nextLoaded;
+
+	weak_ptr<RouteSegment> oppositeDirection;
     // Same Road/ same Segment but used for opposite A* search (important to have different cause #parentRoute is different)
 	// Note: if we use 1-direction A* then this is field is not needed
     weak_ptr<RouteSegment> reverseSearch;

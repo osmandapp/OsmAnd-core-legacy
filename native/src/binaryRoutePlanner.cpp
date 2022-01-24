@@ -115,19 +115,18 @@ SHARED_PTR<RouteSegment> loadSameSegment(RoutingContext* ctx, SHARED_PTR<RouteSe
 	int x31 = segment->getRoad()->pointsX[ind];
 	int y31 = segment->getRoad()->pointsY[ind];
 
-    auto segments = ctx->loadRouteSegment(x31, y31, reverseSearchWay);
-    for (auto seg : segments) {
-        if (seg) {
-            if (seg->getRoad()->getId() == segment->getRoad()->getId()) {
-                return seg;
-            }
-        } else break;
-    }
+	auto segments = ctx->loadRouteSegment(x31, y31, reverseSearchWay);
+	for (auto seg : segments) {
+		if (seg->getRoad()->getId() == segment->getRoad()->getId()) {
+			segment = seg;
+			break;
+		}
+	}
 	return segment;
 }
 
-SHARED_PTR<RouteSegment> initRouteSegment(RoutingContext* ctx, SHARED_PTR<RouteSegment>& segment, bool positiveDirection,
-										  bool reverseSearchWay) {
+SHARED_PTR<RouteSegment> initRouteSegment(RoutingContext* ctx, SHARED_PTR<RouteSegment>& segment,
+										  bool positiveDirection, bool reverseSearchWay) {
 	if (segment->getSegmentStart() == 0 && !positiveDirection && segment->getRoad()->getPointsLength() > 0) {
 		segment = loadSameSegment(ctx, segment, 1, reverseSearchWay);
 		// } else if(segment->getSegmentStart() == segment->getRoad()->getPointsLength() -1 && positiveDirection &&
@@ -230,9 +229,7 @@ bool checkIfGraphIsEmpty(RoutingContext* ctx, bool allowDirection, bool reverseW
 	return graphSegments.empty();
 }
 
-bool containsKey(VISITED_MAP& visited, int64_t routePointId) {
-	return visited.find(routePointId) != visited.end();
-}
+bool containsKey(VISITED_MAP& visited, int64_t routePointId) { return visited.find(routePointId) != visited.end(); }
 
 /**
  * Calculate route between start.segmentEnd and end.segmentStart (using A* algorithm)
@@ -493,7 +490,7 @@ void processRouteSegment(RoutingContext* ctx, bool reverseWaySearch, SEGMENTS_QU
 						 VISITED_MAP& visitedSegments, SHARED_PTR<RouteSegment>& startSegment,
 						 VISITED_MAP& oppositeSegments, bool doNotAddIntersections) {
 	SHARED_PTR<RouteDataObject> road = startSegment->getRoad();
-//	bool directionAllowed = true;
+	//	bool directionAllowed = true;
 	// Go through all point of the way and find ways to continue
 	// ! Actually there is small bug when there is restriction to move forward on the way (it doesn't take into account)
 	// +/- diff from middle point
@@ -506,7 +503,7 @@ void processRouteSegment(RoutingContext* ctx, bool reverseWaySearch, SEGMENTS_QU
 		// 1. calculate obstacle for passing this segment
 		float segmentAndObstaclesTime = (float)calculateRouteSegmentTime(ctx, reverseWaySearch, currentSegment);
 		if (segmentAndObstaclesTime < 0) {
-//			directionAllowed = false;
+			// directionAllowed = false;
 			break;
 		}
 		// calculate new start segment time as we're going to assign to put to visited segments
@@ -526,14 +523,13 @@ void processRouteSegment(RoutingContext* ctx, bool reverseWaySearch, SEGMENTS_QU
 		int64_t nextPntId = calculateRoutePointId(currentSegment);
 		SHARED_PTR<RouteSegment> existingSegment;
 		const auto existingSegIt = visitedSegments.find(nextPntId);
-		if (existingSegIt != visitedSegments.end())
-			existingSegment = existingSegIt->second;
+		if (existingSegIt != visitedSegments.end()) existingSegment = existingSegIt->second;
 		visitedSegments[nextPntId] = currentSegment;
 		if (existingSegment) {
 			if (distFromStartPlusSegmentTime > existingSegment->distanceFromStart) {
 				// insert back original segment (test case with large area way)
 				visitedSegments[nextPntId] = existingSegment;
-//				directionAllowed = false;
+				// directionAllowed = false;
 				if (TRACE_ROUTING) {
 					OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "  >> Already visited");
 				}
@@ -565,117 +561,112 @@ void clearSegments(vector<SHARED_PTR<RouteSegment>>& segments) {
 	segments.shrink_to_fit();
 }
 
-void processRestriction(RoutingContext* ctx, std::vector<SHARED_PTR<RouteSegment>>& inputNext, bool reverseWay, int64_t viaId,
-                        SHARED_PTR<RouteDataObject>& road) {
-    bool via = viaId != 0;
-    std::vector<SHARED_PTR<RouteSegment>> segments = inputNext;
-    bool exclusiveRestriction = false;
+void processRestriction(RoutingContext* ctx, std::vector<SHARED_PTR<RouteSegment>>& inputNext, bool reverseWay,
+						int64_t viaId, SHARED_PTR<RouteDataObject>& road) {
+	bool via = viaId != 0;
+	std::vector<SHARED_PTR<RouteSegment>> segments = inputNext;
+	bool exclusiveRestriction = false;
 
-    for (auto segment : segments) {
-        if (segment) {
-            int type = -1;
-            if (!reverseWay) {
-                for (uint i = 0; i < road->restrictions.size(); i++) {
-                    if (road->restrictions[i].to == segment->getRoad()->id) {
-                        if (!via || road->restrictions[i].via == viaId) {
-                            type = road->restrictions[i].type;
-                            ;
-                            break;
-                        }
-                    }
-                    if (road->restrictions[i].via == viaId && via &&
-                        road->restrictions[i].type == RESTRICTION_ONLY_STRAIGHT_ON) {
-                        type = RESTRICTION_NO_STRAIGHT_ON;
-                        break;
-                    }
-                }
-            } else {
-                for (uint i = 0; i < segment->getRoad()->restrictions.size(); i++) {
-                    int rt = segment->getRoad()->restrictions[i].type;
-                    int64_t restrictedTo = segment->getRoad()->restrictions[i].to;
-                    if (restrictedTo == road->id) {
-                        if (!via || segment->getRoad()->restrictions[i].via == viaId) {
-                            type = rt;
-                            break;
-                        }
-                    }
-                    if (segment->getRoad()->restrictions[i].via == viaId && via && rt == RESTRICTION_ONLY_STRAIGHT_ON) {
-                        type = RESTRICTION_NO_STRAIGHT_ON;
-                        break;
-                    }
+	for (auto segment : segments) {
+		int type = -1;
+		if (!reverseWay) {
+			for (uint i = 0; i < road->restrictions.size(); i++) {
+				if (road->restrictions[i].to == segment->getRoad()->id) {
+					if (!via || road->restrictions[i].via == viaId) {
+						type = road->restrictions[i].type;
+						;
+						break;
+					}
+				}
+				if (road->restrictions[i].via == viaId && via &&
+					road->restrictions[i].type == RESTRICTION_ONLY_STRAIGHT_ON) {
+					type = RESTRICTION_NO_STRAIGHT_ON;
+					break;
+				}
+			}
+		} else {
+			for (uint i = 0; i < segment->getRoad()->restrictions.size(); i++) {
+				int rt = segment->getRoad()->restrictions[i].type;
+				int64_t restrictedTo = segment->getRoad()->restrictions[i].to;
+				if (restrictedTo == road->id) {
+					if (!via || segment->getRoad()->restrictions[i].via == viaId) {
+						type = rt;
+						break;
+					}
+				}
+				if (segment->getRoad()->restrictions[i].via == viaId && via && rt == RESTRICTION_ONLY_STRAIGHT_ON) {
+					type = RESTRICTION_NO_STRAIGHT_ON;
+					break;
+				}
 
-                    // Check if there is restriction only to the other than current road
-                    if (rt == RESTRICTION_ONLY_RIGHT_TURN || rt == RESTRICTION_ONLY_LEFT_TURN ||
-                        rt == RESTRICTION_ONLY_STRAIGHT_ON) {
-                        // check if that restriction applies to considered junk
-                        std::vector<SHARED_PTR<RouteSegment>> segments = inputNext;
-                        if (!segments.empty()) {
-                            for (auto segment : segments) {
-                                if (segment) {
-                                    if (segment->getRoad()->id == restrictedTo) {
-                                        break;
-                                    }
-                                } else break;
-                            }
-                            if (segments.front()) {
-                                type = REVERSE_WAY_RESTRICTION_ONLY;  // special constant
-                            }
-                        }
-                    }
-                }
-            }
-            if (type == REVERSE_WAY_RESTRICTION_ONLY) {
-                // next = next.next; continue;
-            } else if (type == -1 && exclusiveRestriction) {
-                // next = next.next; continue;
-            } else if (type == RESTRICTION_NO_LEFT_TURN || type == RESTRICTION_NO_RIGHT_TURN ||
-                       type == RESTRICTION_NO_STRAIGHT_ON || type == RESTRICTION_NO_U_TURN) {
-                // next = next.next; continue;
-                if (via) {
-                    auto it = find(ctx->segmentsToVisitPrescripted.begin(), ctx->segmentsToVisitPrescripted.end(), segment);
-                    if (it != ctx->segmentsToVisitPrescripted.end()) {
-                        ctx->segmentsToVisitPrescripted.erase(it);
-                    }
-                }
-            } else if (type == -1) {
-                // case no restriction
-                ctx->segmentsToVisitNotForbidden.push_back(segment);
-            } else {
-                if (!via) {
-                    // case exclusive restriction (only_right, only_straight, ...)
-                    // 1. in case we are going backward we should not consider only_restriction
-                    // as exclusive because we have many "in" roads and one "out"
-                    // 2. in case we are going forward we have one "in" and many "out"
-                    if (!reverseWay) {
-                        exclusiveRestriction = true;
-                        clearSegments(ctx->segmentsToVisitNotForbidden);
-                        ctx->segmentsToVisitPrescripted.push_back(segment);
-                    } else {
-                        ctx->segmentsToVisitNotForbidden.push_back(segment);
-                    }
-                }
-            }
-        } else break;
-    }
+				// Check if there is restriction only to the other than current road
+				if (rt == RESTRICTION_ONLY_RIGHT_TURN || rt == RESTRICTION_ONLY_LEFT_TURN ||
+					rt == RESTRICTION_ONLY_STRAIGHT_ON) {
+					// check if that restriction applies to considered junk
+					std::vector<SHARED_PTR<RouteSegment>> segments = inputNext;
+					bool isFound = false;
+					for (auto segment : segments) {
+						if (segment->getRoad()->id == restrictedTo) {
+							isFound = true;
+							break;
+						}
+					}
+					if (isFound) {
+						type = REVERSE_WAY_RESTRICTION_ONLY;  // special constant
+					}
+				}
+			}
+		}
+		if (type == REVERSE_WAY_RESTRICTION_ONLY) {
+			// next = next.next; continue;
+		} else if (type == -1 && exclusiveRestriction) {
+			// next = next.next; continue;
+		} else if (type == RESTRICTION_NO_LEFT_TURN || type == RESTRICTION_NO_RIGHT_TURN ||
+				   type == RESTRICTION_NO_STRAIGHT_ON || type == RESTRICTION_NO_U_TURN) {
+			// next = next.next; continue;
+			if (via) {
+				auto it = find(ctx->segmentsToVisitPrescripted.begin(), ctx->segmentsToVisitPrescripted.end(), segment);
+				if (it != ctx->segmentsToVisitPrescripted.end()) {
+					ctx->segmentsToVisitPrescripted.erase(it);
+				}
+			}
+		} else if (type == -1) {
+			// case no restriction
+			ctx->segmentsToVisitNotForbidden.push_back(segment);
+		} else {
+			if (!via) {
+				// case exclusive restriction (only_right, only_straight, ...)
+				// 1. in case we are going backward we should not consider only_restriction
+				// as exclusive because we have many "in" roads and one "out"
+				// 2. in case we are going forward we have one "in" and many "out"
+				if (!reverseWay) {
+					exclusiveRestriction = true;
+					clearSegments(ctx->segmentsToVisitNotForbidden);
+					ctx->segmentsToVisitPrescripted.push_back(segment);
+				} else {
+					ctx->segmentsToVisitNotForbidden.push_back(segment);
+				}
+			}
+		}
+	}
 
-    if (!via) {
-        ctx->segmentsToVisitPrescripted.insert(ctx->segmentsToVisitPrescripted.end(),
-                                               ctx->segmentsToVisitNotForbidden.begin(),
-                                               ctx->segmentsToVisitNotForbidden.end());
-    }
-    ctx->segmentsToVisitPrescripted.shrink_to_fit();
+	if (!via) {
+		ctx->segmentsToVisitPrescripted.insert(ctx->segmentsToVisitPrescripted.end(),
+											   ctx->segmentsToVisitNotForbidden.begin(),
+											   ctx->segmentsToVisitNotForbidden.end());
+	}
+	ctx->segmentsToVisitPrescripted.shrink_to_fit();
 }
 
-bool proccessRestrictions(RoutingContext* ctx, SHARED_PTR<RouteSegment>& segment, std::vector<SHARED_PTR<RouteSegment>>& inputNext,
-						  bool reverseWay) {
+bool proccessRestrictions(RoutingContext* ctx, SHARED_PTR<RouteSegment>& segment,
+						  std::vector<SHARED_PTR<RouteSegment>>& inputNext, bool reverseWay) {
 	if (!ctx->config->router->restrictionsAware()) {
 		return false;
 	}
 	SHARED_PTR<RouteDataObject> road = segment->getRoad();
 	SHARED_PTR<RouteSegment> parent = getParentDiffId(segment);
 
-	if (!reverseWay && road->restrictions.size() == 0 &&
-		(!parent || parent->getRoad()->restrictions.size() == 0)) {
+	if (!reverseWay && road->restrictions.size() == 0 && (!parent || parent->getRoad()->restrictions.size() == 0)) {
 		return false;
 	}
 	clearSegments(ctx->segmentsToVisitPrescripted);
@@ -688,116 +679,113 @@ bool proccessRestrictions(RoutingContext* ctx, SHARED_PTR<RouteSegment>& segment
 }
 
 SHARED_PTR<RouteSegment> processIntersections(RoutingContext* ctx, SEGMENTS_QUEUE& graphSegments,
-                                              VISITED_MAP& visitedSegments, SHARED_PTR<RouteSegment>& currentSegment,
-                                              bool reverseWaySearch, bool doNotAddIntersections) {
-    SHARED_PTR<RouteSegment> nextCurrentSegment;
-    int targetEndX = reverseWaySearch ? ctx->startX : ctx->targetX;
-    int targetEndY = reverseWaySearch ? ctx->startY : ctx->targetY;
-    const int x = currentSegment->getRoad()->pointsX[currentSegment->getSegmentEnd()];
-    const int y = currentSegment->getRoad()->pointsY[currentSegment->getSegmentEnd()];
-    float distanceToEnd = h(ctx, x, y, targetEndX, targetEndY);
-    // reassign @distanceToEnd to make it correct for visited segment
-    currentSegment->distanceToEnd = distanceToEnd;
-    auto connectedNextSegments = ctx->loadRouteSegment(x, y, reverseWaySearch);
-    bool directionAllowed = true;
-    bool singleRoad = true;
-    for (auto roadIter : connectedNextSegments) {
-        if (roadIter) {
-            if (currentSegment->getSegmentEnd() == roadIter->getSegmentStart() &&
-                roadIter->getRoad()->getId() == currentSegment->getRoad()->getId()) {
-                nextCurrentSegment = RouteSegment::initRouteSegment(roadIter, currentSegment->isPositive());
-                if (!nextCurrentSegment) {
-                    directionAllowed = false;
-                } else {
-                    if (nextCurrentSegment->isSegmentAttachedToStart()) {
-                        directionAllowed = processOneRoadIntersection(ctx, reverseWaySearch, graphSegments, visitedSegments,
-                                                                      currentSegment, nextCurrentSegment, true);
-                    } else {
-                        nextCurrentSegment->parentRoute = currentSegment;
-                        nextCurrentSegment->distanceFromStart = currentSegment->distanceFromStart;
-                        nextCurrentSegment->distanceToEnd = distanceToEnd;
-                        int nx = nextCurrentSegment->getRoad()->pointsX[nextCurrentSegment->getSegmentEnd()];
-                        int ny = nextCurrentSegment->getRoad()->pointsY[nextCurrentSegment->getSegmentEnd()];
-                        if (nx == x && ny == y) {
-                            // don't process other intersections (let process further segment)
-                            return nextCurrentSegment;
-                        }
-                    }
-                }
-            } else {
-                singleRoad = false;
-            }
-        } else break;
-    }
+											  VISITED_MAP& visitedSegments, SHARED_PTR<RouteSegment>& currentSegment,
+											  bool reverseWaySearch, bool doNotAddIntersections) {
+	SHARED_PTR<RouteSegment> nextCurrentSegment;
+	int targetEndX = reverseWaySearch ? ctx->startX : ctx->targetX;
+	int targetEndY = reverseWaySearch ? ctx->startY : ctx->targetY;
+	const int x = currentSegment->getRoad()->pointsX[currentSegment->getSegmentEnd()];
+	const int y = currentSegment->getRoad()->pointsY[currentSegment->getSegmentEnd()];
+	float distanceToEnd = h(ctx, x, y, targetEndX, targetEndY);
+	// reassign @distanceToEnd to make it correct for visited segment
+	currentSegment->distanceToEnd = distanceToEnd;
+	auto connectedNextSegments = ctx->loadRouteSegment(x, y, reverseWaySearch);
+	bool directionAllowed = true;
+	bool singleRoad = true;
+	for (auto roadIter : connectedNextSegments) {
+		if (currentSegment->getSegmentEnd() == roadIter->getSegmentStart() &&
+			roadIter->getRoad()->getId() == currentSegment->getRoad()->getId()) {
+			nextCurrentSegment = RouteSegment::initRouteSegment(roadIter, currentSegment->isPositive());
+			if (!nextCurrentSegment) {
+				directionAllowed = false;
+			} else {
+				if (nextCurrentSegment->isSegmentAttachedToStart()) {
+					directionAllowed = processOneRoadIntersection(ctx, reverseWaySearch, graphSegments, visitedSegments,
+																  currentSegment, nextCurrentSegment, true);
+				} else {
+					nextCurrentSegment->parentRoute = currentSegment;
+					nextCurrentSegment->distanceFromStart = currentSegment->distanceFromStart;
+					nextCurrentSegment->distanceToEnd = distanceToEnd;
+					int nx = nextCurrentSegment->getRoad()->pointsX[nextCurrentSegment->getSegmentEnd()];
+					int ny = nextCurrentSegment->getRoad()->pointsY[nextCurrentSegment->getSegmentEnd()];
+					if (nx == x && ny == y) {
+						// don't process other intersections (let process further segment)
+						return nextCurrentSegment;
+					}
+				}
+			}
+		} else {
+			singleRoad = false;
+		}
+	}
 
+	if (singleRoad) {
+		return nextCurrentSegment;
+	}
 
-    if (singleRoad) {
-        return nextCurrentSegment;
-    }
+	// find restrictions and iterator
+	auto nextIterator = ctx->segmentsToVisitPrescripted.end();
+	bool thereAreRestrictions = proccessRestrictions(ctx, currentSegment, connectedNextSegments, reverseWaySearch);
+	if (thereAreRestrictions) {
+		nextIterator = ctx->segmentsToVisitPrescripted.begin();
+		if (TRACE_ROUTING) {
+			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "  >> There are restrictions");
+		}
+	}
 
-    // find restrictions and iterator
-    auto nextIterator = ctx->segmentsToVisitPrescripted.end();
-    bool thereAreRestrictions = proccessRestrictions(ctx, currentSegment, connectedNextSegments, reverseWaySearch);
-    if (thereAreRestrictions) {
-        nextIterator = ctx->segmentsToVisitPrescripted.begin();
-        if (TRACE_ROUTING) {
-            OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "  >> There are restrictions");
-        }
-    }
+	// Calculate possible turns to put into priority queue
+	std::vector<SHARED_PTR<RouteSegment>> nextSegments = connectedNextSegments;
+	if (!nextSegments.empty()) {
+		bool hasNext = thereAreRestrictions ? nextIterator != ctx->segmentsToVisitPrescripted.end()
+											: nextSegments.front() != nullptr;
+		for (auto segment : nextSegments) {
+			if (segment != nextSegments.front() && !thereAreRestrictions) {
+				hasNext = segment != nullptr;
+			}
+			while (hasNext) {
+				if (thereAreRestrictions) {
+					segment = *nextIterator;
+				}
+				if (segment->getSegmentStart() == currentSegment->getSegmentEnd() &&
+					segment->getRoad()->getId() == currentSegment->getRoad()->getId()) {
+					// skip itself
+				} else if (!doNotAddIntersections) {
+					SHARED_PTR<RouteSegment> nextPos = RouteSegment::initRouteSegment(segment, true);
+					processOneRoadIntersection(ctx, reverseWaySearch, graphSegments, visitedSegments, currentSegment,
+											   nextPos);
+					SHARED_PTR<RouteSegment> nextNeg = RouteSegment::initRouteSegment(segment, false);
+					processOneRoadIntersection(ctx, reverseWaySearch, graphSegments, visitedSegments, currentSegment,
+											   nextNeg);
+				}
+				// iterate to next road
+				if (!thereAreRestrictions) {
+					break;
+				} else {
+					nextIterator++;
+					hasNext = nextIterator != ctx->segmentsToVisitPrescripted.end();
+				}
+			}
+		}
+	}
 
-    // Calculate possible turns to put into priority queue
-    std::vector<SHARED_PTR<RouteSegment>> nextSegments = connectedNextSegments;
-    if (!nextSegments.empty()) {
-        bool hasNext = thereAreRestrictions ? nextIterator != ctx->segmentsToVisitPrescripted.end() : nextSegments.front() != nullptr;
-       for (auto segment : nextSegments) {
-            if (segment) {
-                if (segment != nextSegments.front() && !thereAreRestrictions) {
-                    hasNext = segment != nullptr;
-                }
-                while (hasNext) {
-                    if (thereAreRestrictions) {
-                        segment = *nextIterator;
-                    }
-                    // TODO - (OK) double check not to add itself (doesn't look correct)
-                    if (segment->getSegmentStart() == currentSegment->getSegmentEnd() &&
-                        segment->getRoad()->getId() == currentSegment->getRoad()->getId()) {
-                        // skip itself
-                    } else if (!doNotAddIntersections) {
-                        SHARED_PTR<RouteSegment> nextPos = RouteSegment::initRouteSegment(segment, true);
-                        processOneRoadIntersection(ctx, reverseWaySearch, graphSegments, visitedSegments, currentSegment, nextPos);
-                        SHARED_PTR<RouteSegment> nextNeg = RouteSegment::initRouteSegment(segment, false);
-                        processOneRoadIntersection(ctx, reverseWaySearch, graphSegments, visitedSegments, currentSegment, nextNeg);
-                    }
-                    // iterate to next road
-                    if (!thereAreRestrictions) {
-                        break;
-                    } else {
-                        nextIterator++;
-                        hasNext = nextIterator != ctx->segmentsToVisitPrescripted.end();
-                    }
-                }
-            } else break;
-        }
-    }
-
-    if (nextCurrentSegment == nullptr && directionAllowed) {
-        if (ctx->calculationMode != RouteCalculationMode::BASE) {
-            // std::cout << "!!!!!!!!!!" << thereAreRestrictions << std::endl;
-            return nextCurrentSegment;
-        } else {
-            // TODO Issue #...: we know that bug in data (how we simplify base data and connect between regions), so we
-            // workaround it
-            int newEnd = currentSegment->getSegmentEnd() + (currentSegment->isPositive() ? +1 : -1);
-            if (newEnd >= 0 && newEnd < currentSegment->getRoad()->getPointsLength() - 1) {
-                nextCurrentSegment = make_shared<RouteSegment>(currentSegment->getRoad(),
-                                                               (int)currentSegment->getSegmentEnd(), (int)newEnd);
-                nextCurrentSegment->parentRoute = currentSegment;
-                nextCurrentSegment->distanceFromStart = currentSegment->distanceFromStart;
-                nextCurrentSegment->distanceToEnd = distanceToEnd;
-            }
-        }
-    }
-    return nextCurrentSegment;
+	if (nextCurrentSegment == nullptr && directionAllowed) {
+		if (ctx->calculationMode != RouteCalculationMode::BASE) {
+			// std::cout << "!!!!!!!!!!" << thereAreRestrictions << std::endl;
+			return nextCurrentSegment;
+		} else {
+			// TODO Issue #...: we know that bug in data (how we simplify base data and connect between regions), so we
+			// workaround it
+			int newEnd = currentSegment->getSegmentEnd() + (currentSegment->isPositive() ? +1 : -1);
+			if (newEnd >= 0 && newEnd < currentSegment->getRoad()->getPointsLength() - 1) {
+				nextCurrentSegment = make_shared<RouteSegment>(currentSegment->getRoad(),
+															   (int)currentSegment->getSegmentEnd(), (int)newEnd);
+				nextCurrentSegment->parentRoute = currentSegment;
+				nextCurrentSegment->distanceFromStart = currentSegment->distanceFromStart;
+				nextCurrentSegment->distanceToEnd = distanceToEnd;
+			}
+		}
+	}
+	return nextCurrentSegment;
 }
 
 bool sortRoutePoints(const SHARED_PTR<RouteSegmentPoint>& i, const SHARED_PTR<RouteSegmentPoint>& j) {
@@ -942,14 +930,14 @@ void attachConnectedRoads(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentRes
 		bool plus = it->getStartPointIndex() < it->getEndPointIndex();
 		int j = it->getStartPointIndex();
 		do {
-            std::vector<SHARED_PTR<RouteSegment>> segments = ctx->loadRouteSegment(it->object->pointsX[j], it->object->pointsY[j]);
-            vector<SHARED_PTR<RouteSegmentResult>> r;
-                for (auto segment : segments) {
-                    if (segment) {
-                        auto res = std::make_shared<RouteSegmentResult>(segment->road, segment->getSegmentStart(), segment->getSegmentStart());
-                        r.push_back(res);
-                    } else break;
-                }
+			std::vector<SHARED_PTR<RouteSegment>> segments =
+				ctx->loadRouteSegment(it->object->pointsX[j], it->object->pointsY[j]);
+			vector<SHARED_PTR<RouteSegmentResult>> r;
+			for (auto segment : segments) {
+				auto res = std::make_shared<RouteSegmentResult>(segment->road, segment->getSegmentStart(),
+																segment->getSegmentStart());
+				r.push_back(res);
+			}
 			it->attachedRoutes.push_back(r);
 			j = plus ? j + 1 : j - 1;
 

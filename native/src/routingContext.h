@@ -21,6 +21,7 @@ struct RoutingSubregionTile {
 	int access;
 	int loaded;
 	long size;
+	// JAVA: UNORDERED(map)<int64_t, SHARED_PTR> routes;
 	UNORDERED(map)<int64_t, std::vector<SHARED_PTR<RouteSegment>>> routes;
 	UNORDERED(set)<int64_t> excludedIds;
 
@@ -367,15 +368,12 @@ struct RoutingContext {
 						UNORDERED(map)<int64_t, std::vector<SHARED_PTR<RouteSegment>>>::iterator s = subregions[j]->routes.begin();
 						while (s != subregions[j]->routes.end()) {
                             auto segments = s->second;
-                                for (auto segment : segments) {
-                                    if (segment.get() != NULL) {
-                                        SHARED_PTR<RouteDataObject> ro = segment->road;
-                                        if (!isExcluded(ro->id, j, subregions) && excludeDuplications.insert(ro->id).second) {
-                                            dataObjects.push_back(ro);
-                                        }
-                                    } else
-                                        break;
-                                }
+							for (auto segment : segments) {
+								SHARED_PTR<RouteDataObject> ro = segment->road;
+								if (!isExcluded(ro->id, j, subregions) && excludeDuplications.insert(ro->id).second) {
+									dataObjects.push_back(ro);
+								}
+							}
 							s++;
 						}
 					}
@@ -417,29 +415,26 @@ struct RoutingContext {
 			if (subregions[j]->isLoaded()) {
                 std::vector<SHARED_PTR<RouteSegment>> segments = subregions[j]->routes[l];
                 subregions[j]->access++;
-                for (auto segment : segments) {
-                    if (segment) {
-                        SHARED_PTR<RouteDataObject> ro = segment->road;
-                        SHARED_PTR<RouteDataObject> toCmp =
-                            excludeDuplications[calcRouteId(ro, segment->getSegmentStart())];
-                        if (!isExcluded(ro->id, j, subregions) &&
-                            (!toCmp || toCmp->pointsX.size() < ro->pointsX.size())) {
-                            excludeDuplications[calcRouteId(ro, segment->getSegmentStart())] = ro;
-                            if (reverseWaySearch) {
-                                if (segment->reverseSearch.expired()) {
-                                    auto seg = std::make_shared<RouteSegment>(ro, segment->getSegmentStart());
-                                    seg->reverseSearch = segment;
-                                    segment->reverseSearch = seg;
-                                    segment = seg;
-                                } else {
-                                    segment = segment->reverseSearch.lock();
-                                }
-                            }
-                            segmentsResult.push_back(segment);
-                            original = segment;
-                        }
-                    } else break;
-                }
+				for (auto segment : segments) {
+					SHARED_PTR<RouteDataObject> ro = segment->road;
+					SHARED_PTR<RouteDataObject> toCmp =
+						excludeDuplications[calcRouteId(ro, segment->getSegmentStart())];
+					if (!isExcluded(ro->id, j, subregions) && (!toCmp || toCmp->pointsX.size() < ro->pointsX.size())) {
+						excludeDuplications[calcRouteId(ro, segment->getSegmentStart())] = ro;
+						if (reverseWaySearch) {
+							if (segment->reverseSearch.expired()) {
+								auto seg = std::make_shared<RouteSegment>(ro, segment->getSegmentStart());
+								seg->reverseSearch = segment;
+								segment->reverseSearch = seg;
+								segment = seg;
+							} else {
+								segment = segment->reverseSearch.lock();
+							}
+						}
+						segmentsResult.push_back(segment);
+						original = segment;
+					}
+				}
 			}
 		}
 		if (progress) {
