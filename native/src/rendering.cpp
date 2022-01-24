@@ -51,6 +51,119 @@ struct MapDataObjectPrimitive {
 	int priority;
 };
 
+struct LineClipping {
+	typedef int OutCode;
+	int INSIDE = 0; // 0000
+	int LEFT = 1;   // 0001
+	int RIGHT = 2;  // 0010
+	int BOTTOM = 4; // 0100
+	int TOP = 8;    // 1000
+	float xmin, ymin, xmax, ymax;
+	float x0, y0, x1, y1;
+
+	LineClipping(RenderingContext* rc): xmin(0), ymin(0) {
+		xmax = rc->getWidth();
+		ymax = rc->getHeight();
+	};
+
+	OutCode ComputeOutCode(float x, float y) {
+		OutCode code;
+		code = INSIDE;	// initialised as being inside of [[clip window]]
+		if (x < xmin)  // to the left of clip window
+			code |= LEFT;
+		else if (x > xmax)	// to the right of clip window
+			code |= RIGHT;
+		if (y < ymin)  // below the clip window
+			code |= BOTTOM;
+		else if (y > ymax)	// above the clip window
+			code |= TOP;
+		return code;
+	}
+
+	float xStart() {
+		return x0;
+	}
+
+	float yStart() {
+		return y0;
+	}
+
+	float xEnd() {
+		return x1;
+	}
+
+	float yEnd() {
+		return y1;
+	}
+
+	bool CohenSutherlandLineClip(float x0, float y0, float x1, float y1) {
+		this->x0 = x0;
+		this->y0 = y0;
+		this->x1 = x1;
+		this->y1 = y1;
+		OutCode outcode0 = ComputeOutCode(x0, y0);
+		OutCode outcode1 = ComputeOutCode(x1, y1);
+		bool accept = false;
+
+		while (true) {
+			if (!(outcode0 | outcode1)) {
+				// bitwise OR is 0: both points inside window; trivially accept and exit loop
+				accept = true;				
+				break;
+			} else if (outcode0 & outcode1) {
+				// bitwise AND is not 0: both points share an outside zone (LEFT, RIGHT, TOP,
+				// or BOTTOM), so both must be outside window; exit loop (accept is false)
+				break;
+			} else {
+				// failed both tests, so calculate the line segment to clip
+				// from an outside point to an intersection with clip edge
+				float x, y;
+
+				// At least one endpoint is outside the clip rectangle; pick it.
+				OutCode outcodeOut = outcode1 > outcode0 ? outcode1 : outcode0;
+
+				// Now find the intersection point;
+				// use formulas:
+				//   slope = (y1 - y0) / (x1 - x0)
+				//   x = x0 + (1 / slope) * (ym - y0), where ym is ymin or ymax
+				//   y = y0 + slope * (xm - x0), where xm is xmin or xmax
+				// No need to worry about divide-by-zero because, in each case, the
+				// outcode bit being tested guarantees the denominator is non-zero
+				if (outcodeOut & TOP) {	 // point is above the clip window
+					x = x0 + (x1 - x0) * (ymax - y0) / (y1 - y0);
+					y = ymax;
+				} else if (outcodeOut & BOTTOM) {  // point is below the clip window
+					x = x0 + (x1 - x0) * (ymin - y0) / (y1 - y0);
+					y = ymin;
+				} else if (outcodeOut & RIGHT) {  // point is to the right of clip window
+					y = y0 + (y1 - y0) * (xmax - x0) / (x1 - x0);
+					x = xmax;
+				} else if (outcodeOut & LEFT) {	 // point is to the left of clip window
+					y = y0 + (y1 - y0) * (xmin - x0) / (x1 - x0);
+					x = xmin;
+				}
+
+				// Now we move outside point to intersection point to clip
+				// and get ready for next pass.
+				if (outcodeOut == outcode0) {
+					x0 = x;
+					y0 = y;
+					this->x0 = x0;
+					this->y0 = y0;
+					outcode0 = ComputeOutCode(x0, y0);
+				} else {
+					x1 = x;
+					y1 = y;
+					this->x1 = x1;
+					this->y1 = y1;
+					outcode1 = ComputeOutCode(x1, y1);
+				}
+			}
+		}
+		return accept;
+	}
+};
+
 void calcPoint(std::pair<int, int> c, RenderingContext* rc) {
 	rc->pointCount++;
 
@@ -517,75 +630,36 @@ void drawPolyline(MapDataObject* mObj, RenderingRuleSearchRequest* req, SkCanvas
 	SkPoint middlePoint;
 	bool middleSet = false;
 	bool intersect = false;
-	uint prevCross = 15, pprevCross = 15;
 	float lineLen = 0;
 	int x, y, px, py;
 	bool startPoint = true;
-	for (uint i = 0; i <= length; i++) {
-		uint cross = 0;
-		if (i == length) {
-			cross = 15;
-		} else {
-			calcPoint(mObj->points.at(i), rc);
-			cross |= (rc->calcX < 0 ? 1 : 0);
-			cross |= (rc->calcX > rc->getWidth() ? 2 : 0);
-			cross |= (rc->calcY < 0 ? 4 : 0);
-			cross |= (rc->calcY > rc->getHeight() ? 8 : 0);
-		}
-		if (prevCross == 0 && cross == 0) {
-			middlePoint.set(px, py);
-			middleSet = true;
-		} else if (!middleSet && cross == 0) {
-			middlePoint.set(rc->calcX, rc->calcY);
-		}
-		// calculate if previous point is outside on same as side as point before and next point (skip it)
-		if ((pprevCross & prevCross & cross) == 0 && i > 0) {
-			// we could speed up rendering for far away points to calculate projection
-			if (prevCross != 0) {
-				int targetx = x, targety = y;
-				if ((pprevCross & prevCross) != 0) {
-					// point before is on the same side outside so we can move point along the line to next one
-					targetx = rc->calcX;
-					targety = rc->calcY;
-				} else if ((cross & prevCross) != 0) {
-					// point next is on the same side outside so we can move point along the line to prev one
-					targetx = px;
-					targety = py;
-				}
-				//// we need to check that average point is not inside rectangle
-				int nx = x, ny = y;
-				int crs = prevCross;
-				while (crs == prevCross && abs(targetx - nx) > 50 && abs(targety - ny) > 50) {
-					x = nx;
-					nx = (x + targetx) / 2;
-					y = ny;
-					ny = (y + targety) / 2;
-					crs = (nx < 0 ? 1 : 0) + (nx > rc->getWidth() ? 2 : 0) + (ny < 0 ? 4 : 0) +
-						  (ny > rc->getHeight() ? 8 : 0);
-				}
-			}
-			if (startPoint) {
-				path.moveTo(x, y);
-				startPoint = false;
-			} else {
-				lineLen += sqrt((x - px) * (x - px) + (y - py) * (y - py));
-				path.lineTo(x, y);
-			}
-		} else {
-			// all 3 points are on same side outside of visible area
-			startPoint = true;
-		}
-		if (!intersect && (prevCross & cross) == 0) {
-			intersect = true;
-		}
-
-		pprevCross = prevCross;
-		prevCross = cross;
-
+	LineClipping lineClipping(rc);
+	for (uint i = 0; i < length; i++) {
+		calcPoint(mObj->points.at(i), rc);
 		px = x;
 		py = y;
 		x = rc->calcX;
 		y = rc->calcY;
+
+		if (i > 0) {
+			if (lineClipping.CohenSutherlandLineClip(px, py, x, y)) {
+				if (startPoint) {
+					path.moveTo(lineClipping.xStart(), lineClipping.yStart());
+					startPoint = false;
+				} 
+				lineLen += sqrt((x - px) * (x - px) + (y - py) * (y - py));
+				path.lineTo(lineClipping.xEnd(), lineClipping.yEnd());
+				intersect = true;
+				
+				if (!middleSet) {
+					middlePoint.set(lineClipping.xStart(), lineClipping.yStart());
+					middleSet = true;
+				}
+			} else {
+				// line was clip by screen, so next part of path need to move to next position
+				startPoint = true;
+			}
+		}
 	}
 
 	if (!intersect) {
