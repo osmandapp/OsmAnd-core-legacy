@@ -52,6 +52,7 @@ struct MapDataObjectPrimitive {
 };
 
 struct LineClipping {
+	// https://en.wikipedia.org/wiki/Cohen%E2%80%93Sutherland_algorithm
 	typedef int OutCode;
 	int INSIDE = 0; // 0000
 	int LEFT = 1;   // 0001
@@ -61,9 +62,11 @@ struct LineClipping {
 	float xmin, ymin, xmax, ymax;
 	float x0, y0, x1, y1;
 
-	LineClipping(RenderingContext* rc): xmin(0), ymin(0) {
-		xmax = rc->getWidth();
-		ymax = rc->getHeight();
+	LineClipping(RenderingContext* rc) {
+		xmin = -(rc->getWidth() / 2);
+		ymin = -(rc->getHeight() / 2);
+		xmax = rc->getWidth() * 1.5;
+		ymax = rc->getHeight() * 1.5;
 	};
 
 	OutCode ComputeOutCode(float x, float y) {
