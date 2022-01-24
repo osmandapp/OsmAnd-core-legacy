@@ -178,7 +178,7 @@ void attachRoadSegments(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResul
         }
     } else {
         auto segments = ctx->loadRouteSegment(road->pointsX[pointInd], road->pointsY[pointInd]);
-		for (auto segment : segments) {
+		for (auto& segment : segments) {
 			attachSegments(ctx, segment, road, rr, previousRoadId, pointInd, prevL, nextL);
 		}
 	}

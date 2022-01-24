@@ -116,7 +116,7 @@ SHARED_PTR<RouteSegment> loadSameSegment(RoutingContext* ctx, SHARED_PTR<RouteSe
 	int y31 = segment->getRoad()->pointsY[ind];
 
 	auto segments = ctx->loadRouteSegment(x31, y31, reverseSearchWay);
-	for (auto seg : segments) {
+	for (auto& seg : segments) {
 		if (seg->getRoad()->getId() == segment->getRoad()->getId()) {
 			segment = seg;
 			break;
@@ -567,7 +567,7 @@ void processRestriction(RoutingContext* ctx, std::vector<SHARED_PTR<RouteSegment
 	std::vector<SHARED_PTR<RouteSegment>> segments = inputNext;
 	bool exclusiveRestriction = false;
 
-	for (auto segment : segments) {
+	for (auto& segment : segments) {
 		int type = -1;
 		if (!reverseWay) {
 			for (uint i = 0; i < road->restrictions.size(); i++) {
@@ -605,7 +605,7 @@ void processRestriction(RoutingContext* ctx, std::vector<SHARED_PTR<RouteSegment
 					// check if that restriction applies to considered junk
 					std::vector<SHARED_PTR<RouteSegment>> segments = inputNext;
 					bool isFound = false;
-					for (auto segment : segments) {
+					for (auto& segment : segments) {
 						if (segment->getRoad()->id == restrictedTo) {
 							isFound = true;
 							break;
@@ -692,7 +692,7 @@ SHARED_PTR<RouteSegment> processIntersections(RoutingContext* ctx, SEGMENTS_QUEU
 	auto connectedNextSegments = ctx->loadRouteSegment(x, y, reverseWaySearch);
 	bool directionAllowed = true;
 	bool singleRoad = true;
-	for (auto roadIter : connectedNextSegments) {
+	for (auto& roadIter : connectedNextSegments) {
 		if (currentSegment->getSegmentEnd() == roadIter->getSegmentStart() &&
 			roadIter->getRoad()->getId() == currentSegment->getRoad()->getId()) {
 			nextCurrentSegment = RouteSegment::initRouteSegment(roadIter, currentSegment->isPositive());
@@ -738,7 +738,7 @@ SHARED_PTR<RouteSegment> processIntersections(RoutingContext* ctx, SEGMENTS_QUEU
 	if (!nextSegments.empty()) {
 		bool hasNext = thereAreRestrictions ? nextIterator != ctx->segmentsToVisitPrescripted.end()
 											: nextSegments.front() != nullptr;
-		for (auto segment : nextSegments) {
+		for (auto& segment : nextSegments) {
 			if (segment != nextSegments.front() && !thereAreRestrictions) {
 				hasNext = segment != nullptr;
 			}
@@ -933,7 +933,7 @@ void attachConnectedRoads(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentRes
 			std::vector<SHARED_PTR<RouteSegment>> segments =
 				ctx->loadRouteSegment(it->object->pointsX[j], it->object->pointsY[j]);
 			vector<SHARED_PTR<RouteSegmentResult>> r;
-			for (auto segment : segments) {
+			for (auto& segment : segments) {
 				auto res = std::make_shared<RouteSegmentResult>(segment->road, segment->getSegmentStart(),
 																segment->getSegmentStart());
 				r.push_back(res);

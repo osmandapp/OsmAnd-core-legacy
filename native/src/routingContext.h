@@ -369,7 +369,7 @@ struct RoutingContext {
 							subregions[j]->routes.begin();
 						while (s != subregions[j]->routes.end()) {
 							auto segments = s->second;
-							for (auto segment : segments) {
+							for (auto& segment : segments) {
 								SHARED_PTR<RouteDataObject> ro = segment->road;
 								if (!isExcluded(ro->id, j, subregions) && excludeDuplications.insert(ro->id).second) {
 									dataObjects.push_back(ro);
@@ -418,7 +418,7 @@ struct RoutingContext {
 			if (subregions[j]->isLoaded()) {
 				std::vector<SHARED_PTR<RouteSegment>> segments = subregions[j]->routes[l];
 				subregions[j]->access++;
-				for (auto segment : segments) {
+				for (auto& segment : segments) {
 					SHARED_PTR<RouteDataObject> ro = segment->road;
 					SHARED_PTR<RouteDataObject> toCmp =
 						excludeDuplications[calcRouteId(ro, segment->getSegmentStart())];
