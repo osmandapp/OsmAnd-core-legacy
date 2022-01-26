@@ -3057,6 +3057,8 @@ bool closeBinaryMapFile(std::string inputName) {
 }
 
 bool initMapFilesFromCache(std::string inputName) {
+	OsmAnd::ElapsedTimer timer;
+	timer.Start();
 	GOOGLE_PROTOBUF_VERIFY_VERSION;
 #if defined(_WIN32)
 	int fileDescriptor = open(inputName.c_str(), O_RDONLY | O_BINARY);
@@ -3073,7 +3075,8 @@ bool initMapFilesFromCache(std::string inputName) {
 	cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAXIMUM >> 1);
 	OsmAnd::OBF::OsmAndStoredIndex* c = new OsmAnd::OBF::OsmAndStoredIndex();
 	if (c->MergeFromCodedStream(&cis)) {
-		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Native Cache file initialized %s", inputName.c_str());
+		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Native Cache file initialized: %s %d", inputName.c_str(),
+						  timer.GetElapsedMs());
 		cache = c;
 		return true;
 	}
@@ -3090,6 +3093,8 @@ bool hasEnding(std::string const& fullString, std::string const& ending) {
 
 BinaryMapFile* initBinaryMapFile(std::string inputName, bool useLive, bool routingOnly) {
 	GOOGLE_PROTOBUF_VERIFY_VERSION;
+	OsmAnd::ElapsedTimer timer;
+	timer.Start();
 	std::map<std::string, BinaryMapFile*>::iterator iterator;
 	closeBinaryMapFile(inputName);
 
@@ -3203,17 +3208,21 @@ BinaryMapFile* initBinaryMapFile(std::string inputName, bool useLive, bool routi
 			mapFile->routingIndexes.push_back(mi);
 			mapFile->indexes.push_back(mapFile->routingIndexes.back());
 		}
-		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "Native file initialized from cache %s", inputName.c_str());
+		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "Native file initialized from cache: %s %d ms",
+						  inputName.c_str(), timer.GetElapsedMs());
 	} else {
 		FileInputStream input(fileDescriptor);
 		input.SetCloseOnDelete(false);
 		CodedInputStream cis(&input);
 		cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAXIMUM >> 1);
-		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "File not initialized from cache : %s", inputName.c_str());
 		if (!initMapStructure(&cis, mapFile, useLive, routingOnly)) {
-			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "File not initialised : %s", inputName.c_str());
+			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "Native File not initialised : %s %d ms", 
+					inputName.c_str(), timer.GetElapsedMs());
 			delete mapFile;
 			return NULL;
+		} else {
+			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "Native File not initialized from cache: %s %d ms",
+					inputName.c_str(), timer.GetElapsedMs());
 		}
 	}
 
