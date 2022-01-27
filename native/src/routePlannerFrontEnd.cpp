@@ -230,6 +230,9 @@ void RoutePlannerFrontEnd::searchGpxRoute(SHARED_PTR<GpxRouteApproximation> &gct
 				if (routeFound) {
 					routeFound = findGpxRouteSegment(gctx, gpxPoints, start, next, prev != nullptr);
 					if (routeFound) {
+						routeFound = isRouteCloseToGpxPoints(gctx, gpxPoints, start, next);
+					}
+					if (routeFound) {
 						// route is found - cut the end of the route and move to next iteration
 						// start.stepBackRoute = new ArrayList<RouteSegmentResult>();
 						// boolean stepBack = true;
@@ -240,9 +243,6 @@ void RoutePlannerFrontEnd::searchGpxRoute(SHARED_PTR<GpxRouteApproximation> &gct
 											  "Consider to increase MAXIMUM_STEP_APPROXIMATION to: %f", routeDist * 2);
 							start->routeToTarget.clear();
 							routeFound = false;
-							break;
-						} else {
-							routeFound = isRouteCloseToGpxPoints(gctx, gpxPoints, start, next);
 						}
 					}
 				}
