@@ -349,6 +349,28 @@ void RoutePlannerFrontEnd::makeSegmentPointPrecise(SHARED_PTR<RouteSegmentResult
 	}
 }
 
+bool RoutePlannerFrontEnd::isRouteCloseToGpxPoints(SHARED_PTR<GpxRouteApproximation>& gctx, vector<SHARED_PTR<GpxPoint>>& gpxPoints,
+	                         SHARED_PTR<GpxPoint>& start, SHARED_PTR<GpxPoint>& next) {
+	bool routeIsClose = true;
+	for (SHARED_PTR<RouteSegmentResult> r : start->routeToTarget) {
+		int st = r->getStartPointIndex();
+		int end = r->getEndPointIndex();
+		while (st != end) {
+			LatLon point = r->getPoint(st);
+			bool pointIsClosed = false;
+			for (int k = start->ind; !pointIsClosed && k < next->ind; k++) {
+				pointIsClosed = pointCloseEnough(gctx, point, gpxPoints[k], gpxPoints[k + 1]);
+			}
+			if (!pointIsClosed) {
+				routeIsClose = false;
+				break;
+			}
+			st += (st < end) ? 1 : -1;
+		}
+	}
+	return routeIsClose;
+}
+
 bool RoutePlannerFrontEnd::stepBackAndFindPrevPointInRoute(SHARED_PTR<GpxRouteApproximation> &gctx, vector<SHARED_PTR<GpxPoint>>& gpxPoints,
 	                                 SHARED_PTR<GpxPoint>& start, SHARED_PTR<GpxPoint>& next) {
 	// step back to find to be sure
@@ -612,6 +634,17 @@ bool RoutePlannerFrontEnd::findGpxRouteSegment(SHARED_PTR<GpxRouteApproximation>
 		}
 	}
 	return routeIsCorrect;
+}
+
+bool RoutePlannerFrontEnd::pointCloseEnough(SHARED_PTR<GpxRouteApproximation>& gctx, LatLon point,
+                                            SHARED_PTR<GpxPoint>& gpxPoint, SHARED_PTR<GpxPoint>& gpxPointNext) {
+	LatLon gpxPointLL(gpxPoint->pnt ? gpxPoint->pnt->getPreciseLatLon().lat : gpxPoint->lat,
+					  gpxPoint->pnt ? gpxPoint->pnt->getPreciseLatLon().lon : gpxPoint->lon);
+	LatLon gpxPointNextLL(gpxPointNext->pnt ? gpxPointNext->pnt->getPreciseLatLon().lat : gpxPointNext->lat,
+						  gpxPointNext->pnt ? gpxPointNext->pnt->getPreciseLatLon().lon : gpxPointNext->lon);
+	std::pair<double, double> projection =
+		getProjection(point.lat, point.lon, gpxPointLL.lat, gpxPointLL.lon, gpxPointNextLL.lat, gpxPointNextLL.lon);
+	return getDistance(projection.first, projection.second, point.lat, point.lon) <= gctx->MINIMUM_POINT_APPROXIMATION;
 }
 
 bool RoutePlannerFrontEnd::pointCloseEnough(SHARED_PTR<GpxRouteApproximation>& gctx, SHARED_PTR<GpxPoint>& ipoint,

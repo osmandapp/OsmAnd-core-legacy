@@ -811,7 +811,6 @@ SHARED_PTR<TurnType> createKeepLeftRightTurnBasedOnTurnTypes(RoadSplitStructure&
         } else if (possibleTurns.size() == 3) {
             if ((!possiblyLeftTurn || !possiblyRightTurn) && TurnType::isSlightTurn(possibleTurns[1])) {
                 tp = possibleTurns[1];
-                rawLanes[1] |= 1;
                 t = TurnType::ptrValueOf(tp, leftSide);
             }
         }
@@ -828,9 +827,7 @@ SHARED_PTR<TurnType> createKeepLeftRightTurnBasedOnTurnTypes(RoadSplitStructure&
                (TurnType::isLeftTurn(sturn) && possiblyLeftTurn)) {
                 // we can't predict here whether it will be a left turn or straight on,
                 // it could be done during 2nd pass
-                if ((rawLanes[k] & 1) == 0) {
-                    TurnType::setSecondaryToPrimary(rawLanes, k);
-                }
+                TurnType::setSecondaryToPrimary(rawLanes, k);
                 active = true;
             } else if((TurnType::isRightTurn(tturn) && possiblyRightTurn) ||
                       (TurnType::isLeftTurn(tturn) && possiblyLeftTurn)) {
