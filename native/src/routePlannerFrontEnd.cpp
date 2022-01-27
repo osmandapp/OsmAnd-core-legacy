@@ -606,8 +606,9 @@ bool RoutePlannerFrontEnd::findGpxRouteSegment(SHARED_PTR<GpxRouteApproximation>
 		target->pnt = std::make_shared<RouteSegmentPoint>(target->pnt);
 		gctx->routeDistCalculations += (target->cumDist - start->cumDist);
 		gctx->routeCalculations++;
-		RoutingContext cp(gctx->ctx);
-		res = searchRouteInternalPrepare(&cp, start->pnt, target->pnt, nullptr);
+		RoutingContext* cp = new RoutingContext(gctx->ctx);
+		res = searchRouteInternalPrepare(cp, start->pnt, target->pnt, nullptr);
+		delete cp;
 		// BinaryRoutePlanner.printDebugMemoryInformation(gctx.ctx);
 		routeIsCorrect = !res.empty();
 		for (int k = start->ind + 1; routeIsCorrect && k < target->ind; k++) {

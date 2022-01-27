@@ -145,25 +145,6 @@ struct RoutingContext {
 		this->basemap = cp->basemap;
 		this->geocoding = cp->geocoding;
 		this->progress = std::make_shared<RouteCalculationProgress>();
-		// copy local data and clear caches
-		auto it = cp->subregionTiles.begin();
-		for(;it != cp->subregionTiles.end(); it++) {
-			auto tl = it->second;
-			if (tl->isLoaded()) {
-				subregionTiles[it->first] = tl;
-				auto itr = tl->routes.begin();
-				for(;itr != tl->routes.end(); itr++) {
-					auto s = itr->second;
-					while (s) {
-						s->parentRoute.reset();
-						s->parentSegmentEnd = 0;
-						s->distanceFromStart = 0;
-						s->distanceToEnd = 0;
-						s = s->next;
-					}
-				}
-			}
-		}
 	}
 	
 	RoutingContext(SHARED_PTR<RoutingConfiguration> config, RouteCalculationMode calcMode = RouteCalculationMode::NORMAL)
