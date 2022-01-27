@@ -241,6 +241,8 @@ void RoutePlannerFrontEnd::searchGpxRoute(SHARED_PTR<GpxRouteApproximation> &gct
 							start->routeToTarget.clear();
 							routeFound = false;
 							break;
+						} else {
+							routeFound = isRouteCloseToGpxPoints(gctx, gpxPoints, start, next);
 						}
 					}
 				}
@@ -604,7 +606,8 @@ bool RoutePlannerFrontEnd::findGpxRouteSegment(SHARED_PTR<GpxRouteApproximation>
 		target->pnt = std::make_shared<RouteSegmentPoint>(target->pnt);
 		gctx->routeDistCalculations += (target->cumDist - start->cumDist);
 		gctx->routeCalculations++;
-		res = searchRouteInternalPrepare(gctx->ctx, start->pnt, target->pnt, nullptr);
+		RoutingContext cp(gctx->ctx);
+		res = searchRouteInternalPrepare(&cp, start->pnt, target->pnt, nullptr);
 		// BinaryRoutePlanner.printDebugMemoryInformation(gctx.ctx);
 		routeIsCorrect = !res.empty();
 		for (int k = start->ind + 1; routeIsCorrect && k < target->ind; k++) {
