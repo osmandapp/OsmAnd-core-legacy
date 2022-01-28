@@ -34,7 +34,6 @@ static uint detailedZoomStartForRouteSection = 13;
 static uint zoomOnlyForBasemaps = 11;
 static uint zoomMaxDetailedForCoastlines = 16;
 std::vector<BinaryMapFile*> openFiles;
-std::vector<TransportIndex*> transportIndexesList;
 OsmAnd::OBF::OsmAndStoredIndex* cache = NULL;
 
 #ifdef MALLOC_H
@@ -1907,10 +1906,12 @@ void searchTransportIndex(SearchQuery* q, BinaryMapFile* file) {
 }
 
 bool getTransportIndex(int64_t filePointer, TransportIndex*& ind) {
-	for (TransportIndex* i : transportIndexesList) {
-		if (i->filePointer <= filePointer && (filePointer - i->filePointer) < i->length) {
-			ind = i;
-			return true;
+	for (BinaryMapFile* mapFile : openFiles) {
+		for (TransportIndex* i : mapFile->transportIndexes) {
+			if (i->filePointer <= filePointer && (filePointer - i->filePointer) < i->length) {
+				ind = i;
+				return true;
+			}
 		}
 	}
 	return false;
@@ -3210,8 +3211,6 @@ BinaryMapFile* initBinaryMapFile(std::string inputName, bool useLive, bool routi
 	}
 
 	openFiles.push_back(mapFile);
-	transportIndexesList.insert(transportIndexesList.end(), mapFile->transportIndexes.begin(),
-								mapFile->transportIndexes.end());
 	return mapFile;
 }
 
