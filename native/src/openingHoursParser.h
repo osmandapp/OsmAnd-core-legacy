@@ -177,7 +177,6 @@ struct OpeningHoursParser {
 
 		virtual bool isOpened24_7() const = 0;
 
-		virtual bool isFallback() const = 0;
 		virtual bool isFallbackRule() const = 0;
 
 		virtual std::string getTime(const tm& dateTime, bool checkAnotherDay, int limit, bool opening) const = 0;
