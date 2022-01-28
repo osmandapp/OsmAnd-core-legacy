@@ -177,7 +177,7 @@ struct OpeningHoursParser {
 
 		virtual bool isOpened24_7() const = 0;
 
-		virtual bool isFallbackRule() const = 0;
+		virtual bool isFallBackRule() const = 0;
 
 		virtual std::string getTime(const tm& dateTime, bool checkAnotherDay, int limit, bool opening) const = 0;
 
@@ -198,8 +198,7 @@ struct OpeningHoursParser {
 		int getNextDay(int currentDay) const;
 		int getCurrentTimeInMinutes(const tm& dateTime) const;
 		std::string toRuleString(bool useLocalization) const;
-		bool isFallbackRule() const;
-		bool isFallback() const;
+		
 		void addArray(const std::vector<bool>& array, const std::vector<std::string>& arrayNames,
 										  std::stringstream& b) const;
 
@@ -260,6 +259,8 @@ struct OpeningHoursParser {
 		BasicOpeningHourRule(int sequenceIndex);
 
 		virtual ~BasicOpeningHourRule();
+
+		bool isFallBackRule() const;
 
 		int getSequenceIndex() const;
 		bool fallback;
@@ -494,7 +495,7 @@ struct OpeningHoursParser {
 
 		bool isOpened24_7() const;
 
-		bool isFallback() const;
+		bool isFallBackRule() const;
 
 		std::string toRuleString() const;
 		std::string toLocalRuleString() const;
@@ -616,6 +617,8 @@ struct OpeningHoursParser {
 
 		bool isOpened24_7(int sequenceIndex) const;
 
+		bool isFallBackRule(int sequenceIndex) const;
+
 		std::string getNearToOpeningTime(const tm& dateTime, int sequenceIndex) const;
 		std::string getOpeningTime(const tm& dateTime, int sequenceIndex) const;
 		std::string getNearToClosingTime(const tm& dateTime, int sequenceIndex) const;
@@ -634,8 +637,6 @@ struct OpeningHoursParser {
 
 		void setOriginal(std::string original);
 		std::string getOriginal() const;
-
-		bool isFallBackRule(int sequenceIndex) const;
 	};
 
    private:

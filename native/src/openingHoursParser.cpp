@@ -58,7 +58,7 @@ std::vector<std::string> ohp_split_string_with_delimiter(const std::string& str,
 	std::vector<std::string> tokens;
 	std::string::size_type pos, lastPos = 0, length = str.length();
 
-	while (lastPos < length + 1) {
+	while (lastPos < length - delimiters.length() + 1) {
 		pos = str.find(delimiters, lastPos + delimiters.length());
 		if (pos == std::string::npos) pos = length;
 		if (pos != lastPos)
@@ -763,7 +763,7 @@ std::string OpeningHoursParser::BasicOpeningHourRule::getTime(const tm& dateTime
 
 std::string OpeningHoursParser::BasicOpeningHourRule::toRuleString() const { return toRuleString(false); }
 
-bool OpeningHoursParser::BasicOpeningHourRule::isFallbackRule() const { return isFallbackRule(); }
+bool OpeningHoursParser::BasicOpeningHourRule::isFallBackRule() const { return isFallBackRule(); }
 
 std::string OpeningHoursParser::BasicOpeningHourRule::toLocalRuleString() const { return toRuleString(true); }
 
@@ -989,9 +989,8 @@ bool OpeningHoursParser::UnparseableRule::isOpened24_7() const {
 	return false;
 }
 
-bool OpeningHoursParser::UnparseableRule::isFallback() const { 
-	return false; 
-}
+bool OpeningHoursParser::UnparseableRule::isFallBackRule() const { 
+	return false; }
 
 std::string OpeningHoursParser::UnparseableRule::toRuleString() const {
 	return _ruleString;
@@ -1193,6 +1192,14 @@ bool OpeningHoursParser::OpeningHours::isOpened24_7(int sequenceIndex) const {
 	return opened24_7;
 }
 
+bool OpeningHoursParser::OpeningHours::isFallBackRule(int sequenceIndex) const {
+	if (sequenceIndex != OpeningHours::ALL_SEQUENCES) {
+		const auto& rules = getRules(sequenceIndex);
+		return !rules.empty() && rules[0]->isFallBackRule();
+	}
+	return false;
+}
+
 std::string OpeningHoursParser::OpeningHours::getNearToOpeningTime(const tm& dateTime, int sequenceIndex) const {
 	return getTime(dateTime, LOW_TIME_LIMIT, true, sequenceIndex);
 }
@@ -1299,14 +1306,6 @@ std::string OpeningHoursParser::OpeningHours::getTimeAnotherDay(const tm& dateTi
 			atTime = r->getTime(dateTime, true, limit, opening);
 	}
 	return atTime;
-}
-
-bool OpeningHoursParser::OpeningHours::isFallBackRule(int sequenceIndex) const {
-	if (sequenceIndex != OpeningHours::ALL_SEQUENCES) {
-		const auto& rules = getRules(sequenceIndex);
-		return !rules.empty() && rules[0]->isFallbackRule();
-	}
-	return false;
 }
 
 std::string OpeningHoursParser::OpeningHours::getCurrentRuleTime(const tm& dateTime, int sequenceIndex) const {
