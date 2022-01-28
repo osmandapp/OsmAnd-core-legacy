@@ -402,7 +402,8 @@ bool OpeningHoursParser::BasicOpeningHourRule::containsPreviousDay(const tm& dat
 
 bool OpeningHoursParser::BasicOpeningHourRule::containsMonth(const tm& dateTime) const {
 	int i = dateTime.tm_mon;
-	return containsYear(dateTime) && _months[i];
+	//fix crash
+	return ( i>=0 && i<12 && containsYear(dateTime) && _months[i]);
 }
 
 bool OpeningHoursParser::BasicOpeningHourRule::containsYear(const tm& dateTime) const {
