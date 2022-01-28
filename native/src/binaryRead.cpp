@@ -1279,8 +1279,8 @@ void getIncompleteTransportRoutes(BinaryMapFile* file) {
 	if (!file->incompleteLoaded) {
 		for (auto& ti : file->transportIndexes) {
 			if (ti->incompleteRoutesLength > 0) {
-				lseek(file->routefd, 0, SEEK_SET);
-				FileInputStream stream(file->routefd);
+				lseek(file->getRouteFD(), 0, SEEK_SET);
+				FileInputStream stream(file->getRouteFD());
 				stream.SetCloseOnDelete(false);
 				CodedInputStream* input = new CodedInputStream(&stream);
 				input->SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
@@ -1646,8 +1646,8 @@ bool readTransportRouteStop(CodedInputStream* input, SHARED_PTR<TransportStop>& 
 
 bool readTransportRoute(BinaryMapFile* file, SHARED_PTR<TransportRoute>& transportRoute, int32_t filePointer,
 						UNORDERED(map) < int32_t, string > &stringTable, bool onlyDescription) {
-	lseek(file->routefd, 0, SEEK_SET);
-	FileInputStream stream(file->routefd);
+	lseek(file->getRouteFD(), 0, SEEK_SET);
+	FileInputStream stream(file->getRouteFD());
 	stream.SetCloseOnDelete(false);
 	CodedInputStream* input = new CodedInputStream(&stream);
 	input->SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
@@ -1889,8 +1889,8 @@ void searchTransportIndex(TransportIndex* index, SearchQuery* q, CodedInputStrea
 }
 
 void searchTransportIndex(SearchQuery* q, BinaryMapFile* file) {
-	lseek(file->routefd, 0, SEEK_SET);
-	FileInputStream input(file->routefd);
+	lseek(file->getRouteFD(), 0, SEEK_SET);
+	FileInputStream input(file->getRouteFD());
 	input.SetCloseOnDelete(false);
 	CodedInputStream cis(&input);
 	cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
@@ -1944,8 +1944,8 @@ void loadTransportRoutes(BinaryMapFile* file, vector<int32_t> filePointers, UNOR
 				finishInit.push_back(transportRoute);
 			}
 		}
-		lseek(file->routefd, 0, SEEK_SET);
-		FileInputStream input(file->routefd);
+		lseek(file->getRouteFD(), 0, SEEK_SET);
+		FileInputStream input(file->getRouteFD());
 		input.SetCloseOnDelete(false);
 		CodedInputStream cis(&input);
 		cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
@@ -2275,7 +2275,7 @@ void searchRouteSubregions(SearchQuery* q, std::vector<RouteSubregion>& tempResu
 				if (nt != NULL) {
 					delete nt;
 				}
-				checkAndInitRouteRegionRules(geocoding ? file->geocodingfd : file->routefd, (*routeIndex));
+				checkAndInitRouteRegionRules(geocoding ? file->getGeocodingFD() : file->getRouteFD(), (*routeIndex));
 			}
 		}
 	}
@@ -2284,8 +2284,8 @@ void searchRouteSubregions(SearchQuery* q, std::vector<RouteSubregion>& tempResu
 void readRouteMapObjects(SearchQuery* q, BinaryMapFile* file, vector<RouteSubregion>& found, RoutingIndex* routeIndex,
 						 std::vector<FoundMapDataObject>& tempResult, int& renderedState) {
 	sort(found.begin(), found.end(), sortRouteRegions);
-	lseek(file->fd, 0, SEEK_SET);
-	FileInputStream input(file->fd);
+	lseek(file->getFD(), 0, SEEK_SET);
+	FileInputStream input(file->getFD());
 	input.SetCloseOnDelete(false);
 	CodedInputStream cis(&input);
 	cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
@@ -2352,8 +2352,8 @@ void readMapObjects(SearchQuery* q, BinaryMapFile* file) {
 					// OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Search map %s", mapIndex->name.c_str());
 					// lazy initializing rules
 					if (mapIndex->decodingRules.size() == 0) {
-						lseek(file->fd, 0, SEEK_SET);
-						FileInputStream input(file->fd);
+						lseek(file->getFD(), 0, SEEK_SET);
+						FileInputStream input(file->getFD());
 						input.SetCloseOnDelete(false);
 						CodedInputStream cis(&input);
 						cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
@@ -2364,8 +2364,8 @@ void readMapObjects(SearchQuery* q, BinaryMapFile* file) {
 					}
 					// lazy initializing subtrees
 					if (mapLevel->bounds.size() == 0) {
-						lseek(file->fd, 0, SEEK_SET);
-						FileInputStream input(file->fd);
+						lseek(file->getFD(), 0, SEEK_SET);
+						FileInputStream input(file->getFD());
 						input.SetCloseOnDelete(false);
 						CodedInputStream cis(&input);
 						cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
@@ -2374,8 +2374,8 @@ void readMapObjects(SearchQuery* q, BinaryMapFile* file) {
 						readMapLevel(&cis, &(*mapLevel), true);
 						cis.PopLimit(oldLimit);
 					}
-					lseek(file->fd, 0, SEEK_SET);
-					FileInputStream input(file->fd);
+					lseek(file->getFD(), 0, SEEK_SET);
+					FileInputStream input(file->getFD());
 					input.SetCloseOnDelete(false);
 					CodedInputStream cis(&input);
 					cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
@@ -2690,8 +2690,8 @@ ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, 
 void initInputForRouteFile(CodedInputStream** inputStream, FileInputStream** fis, BinaryMapFile* file, uint32_t seek,
 						   bool geocoding) {
 	if (*inputStream == 0) {
-		lseek(geocoding ? file->geocodingfd : file->routefd, 0, SEEK_SET);	// seek 0 or seek (*routeIndex)->filePointer
-		*fis = new FileInputStream(geocoding ? file->geocodingfd : file->routefd);
+		lseek(geocoding ? file->getGeocodingFD() : file->getRouteFD(), 0, SEEK_SET);  // seek 0 or seek (*routeIndex)->filePointer
+		*fis = new FileInputStream(geocoding ? file->getGeocodingFD() : file->getRouteFD());
 		(*fis)->SetCloseOnDelete(false);
 		*inputStream = new CodedInputStream(*fis);
 		(*inputStream)->SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
@@ -3039,7 +3039,7 @@ void searchRouteDataForSubRegion(SearchQuery* q, std::vector<RouteDataObject*>& 
 			if (rs != NULL && (rs->name != (*routingIndex)->name || rs->filePointer != (*routingIndex)->filePointer)) {
 				continue;
 			}
-			searchRouteSubRegion(geocoding ? file->geocodingfd : file->routefd, list, (*routingIndex), sub);
+			searchRouteSubRegion(geocoding ? file->getGeocodingFD() : file->getRouteFD(), list, (*routingIndex), sub);
 			return;
 		}
 	}
@@ -3099,35 +3099,17 @@ BinaryMapFile* initBinaryMapFile(std::string inputName, bool useLive, bool routi
 	std::map<std::string, BinaryMapFile*>::iterator iterator;
 	closeBinaryMapFile(inputName);
 
-#if defined(_WIN32)
-	int fileDescriptor = open(inputName.c_str(), O_RDONLY | O_BINARY);
-	int routeDescriptor = open(inputName.c_str(), O_RDONLY | O_BINARY);
-	int geocodingDescriptor = open(inputName.c_str(), O_RDONLY | O_BINARY);
-#else
-	int fileDescriptor = open(inputName.c_str(), O_RDONLY);
-	int routeDescriptor = open(inputName.c_str(), O_RDONLY);
-	int geocodingDescriptor = open(inputName.c_str(), O_RDONLY);
-#endif
-	if (fileDescriptor < 0 || routeDescriptor < 0 || routeDescriptor == fileDescriptor) {
-		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "File could not be open to read from C : %s",
-						  inputName.c_str());
-		return NULL;
-	}
 	BinaryMapFile* mapFile = new BinaryMapFile();
-	mapFile->fd = fileDescriptor;
-
-	mapFile->routefd = routeDescriptor;
-	mapFile->geocodingfd = geocodingDescriptor;
 	mapFile->liveMap = inputName.find("live/") != string::npos;
 	mapFile->inputName = inputName;
 	mapFile->roadOnly = inputName.find(".road") != string::npos;
 	OsmAnd::OBF::FileIndex* fo = NULL;
 	if (cache != NULL) {
-		struct stat stat;
-		fstat(fileDescriptor, &stat);
+		struct stat stats;
+		stat(inputName.c_str(), &stats);
 		for (int i = 0; i < cache->fileindex_size(); i++) {
 			OsmAnd::OBF::FileIndex fi = cache->fileindex(i);
-			if (hasEnding(inputName, fi.filename()) && fi.size() == stat.st_size) {
+			if (hasEnding(inputName, fi.filename()) && fi.size() == stats.st_size) {
 				fo = cache->mutable_fileindex(i);
 				break;
 			}
@@ -3212,7 +3194,7 @@ BinaryMapFile* initBinaryMapFile(std::string inputName, bool useLive, bool routi
 		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "Native file initialized from cache: %s %d ms",
 						  inputName.c_str(), timer.GetElapsedMs());
 	} else {
-		FileInputStream input(fileDescriptor);
+		FileInputStream input(mapFile->getFD());
 		input.SetCloseOnDelete(false);
 		CodedInputStream cis(&input);
 		cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
