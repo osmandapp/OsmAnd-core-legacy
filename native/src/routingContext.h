@@ -108,6 +108,9 @@ struct RoutingContext {
 	MAP_SUBREGION_TILES subregionTiles;
 	UNORDERED(map)<int64_t, std::vector<SHARED_PTR<RoutingSubregionTile>>> indexedSubregions;
 
+	int alertFasterRoadToVisitedSegments;
+	int alertSlowerSegmentedWasVisitedEarlier;
+
 	RoutingContext(RoutingContext* cp) {
 		this->config = cp->config;
 		this->calculationMode = cp->calculationMode;
@@ -119,20 +122,16 @@ struct RoutingContext {
 		this->basemap = cp->basemap;
 		this->geocoding = cp->geocoding;
 		this->progress = std::make_shared<RouteCalculationProgress>();
+		this->alertFasterRoadToVisitedSegments = 0;
+		this->alertSlowerSegmentedWasVisitedEarlier = 0;
 	}
 
 	RoutingContext(SHARED_PTR<RoutingConfiguration> config,
 				   RouteCalculationMode calcMode = RouteCalculationMode::NORMAL)
-		: calculationMode(calcMode),
-		  config(config),
-		  progress(new RouteCalculationProgress()),
-		  leftSideNavigation(false),
-		  startTransportStop(false),
-		  targetTransportStop(false),
-		  publicTransport(false),
-		  geocoding(false),
-		  conditionalTime(0),
-		  precalcRoute(new PrecalculatedRouteDirection()) {
+		: calculationMode(calcMode), config(config), progress(new RouteCalculationProgress()),
+		  leftSideNavigation(false), startTransportStop(false), targetTransportStop(false), publicTransport(false),
+		  geocoding(false), conditionalTime(0), precalcRoute(new PrecalculatedRouteDirection()),
+		  alertFasterRoadToVisitedSegments(0), alertSlowerSegmentedWasVisitedEarlier(0) {
 		this->basemap = RouteCalculationMode::BASE == calcMode;
 	}
 

@@ -11,6 +11,7 @@
 //	static bool PRINT_TO_CONSOLE_ROUTE_INFORMATION_TO_TEST = true;
 
 static const bool TRACE_ROUTING = false;
+static const bool PRINT_ROUTING_ALERTS = false;
 
 // Check issue #8649
 static const double GPS_POSSIBLE_ERROR = 7;
@@ -536,11 +537,15 @@ void processRouteSegment(RoutingContext* ctx, bool reverseWaySearch, SEGMENTS_QU
 				break;
 			} else {
 				if (ctx->getHeuristicCoefficient() <= 1) {
-					OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug,
-									  "! ALERT slower segment was visited earlier %f > %f :",
-									  distFromStartPlusSegmentTime, existingSegment->distanceFromStart);
-					printRoad("CurrentSegment ", currentSegment);
-					printRoad("ExistingSegment ", existingSegment);
+					if (PRINT_ROUTING_ALERTS) {
+						OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug,
+										  "! ALERT slower segment was visited earlier %f > %f :",
+										  distFromStartPlusSegmentTime, existingSegment->distanceFromStart);
+						printRoad("CurrentSegment ", currentSegment);
+						printRoad("ExistingSegment ", existingSegment);
+					} else {
+						ctx->alertSlowerSegmentedWasVisitedEarlier++;
+					}
 				}
 			}
 		} else {
@@ -985,11 +990,15 @@ bool processOneRoadIntersection(RoutingContext* ctx, bool reverseWaySearch, SEGM
 					// next.getParentRoute() == null)
 					toAdd = true;
 					if (ctx->getHeuristicCoefficient() <= 1) {
-						OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug,
-										  "! ALERT new faster path to a visited segment: %f < %f",
-										  (distFromStart + routeSegmentTime), visIt->second.get()->distanceFromStart);
-						printRoad("next", next);
-						printRoad("visIt", visitedSeg.get());
+						if (PRINT_ROUTING_ALERTS) {
+							OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "! ALERT new faster path to a visited segment: %f < %f",
+											  (distFromStart + routeSegmentTime), visIt->second.get()->distanceFromStart);
+							printRoad("next", next);
+							printRoad("visIt", visitedSeg.get());
+						} else {
+							ctx->alertFasterRoadToVisitedSegments++;
+						}
+						
 					}
 					// ??? It's not clear whether this block is needed or not ???
 					// All Test cases work with and without it
