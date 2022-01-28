@@ -54,6 +54,23 @@ std::vector<std::string> ohp_split_string(const std::string& str, const std::str
 	return tokens;
 }
 
+std::vector<std::string> ohp_split_string_with_delimiter(const std::string& str, const std::string& delimiters) {
+	std::vector<std::string> tokens;
+	std::string::size_type pos, lastPos = 0, length = str.length();
+
+	while (lastPos < length + 1) {
+		pos = str.find(delimiters, lastPos + delimiters.length());
+		if (pos == std::string::npos) pos = length;
+		if (pos != lastPos)
+			tokens.push_back(str.substr(lastPos, pos - lastPos));
+		else
+			tokens.push_back("");
+
+		lastPos = pos;
+	}
+	return tokens;
+}
+
 const static char* ohp_trim_chars = " \t\n\r\f\v";
 
 std::string ohp_rtrim(const std::string& in, const char* t = ohp_trim_chars) {
@@ -359,6 +376,12 @@ std::vector<int> OpeningHoursParser::BasicOpeningHourRule::getEndTimes() const {
 	return _endTimes;
 }
 
+void OpeningHoursParser::BasicOpeningHourRule::setDays(std::vector<bool> days) {
+	if (_days.size() == days.size()) {
+		_days = days;
+	}
+}
+
 bool OpeningHoursParser::BasicOpeningHourRule::containsDay(const tm& dateTime) const {
 	int i = dateTime.tm_wday + 1;
 	int d = (i + 5) % 7;
@@ -518,8 +541,10 @@ void OpeningHoursParser::BasicOpeningHourRule::addArray(const std::vector<bool>&
 	if (!first) b << " ";
 }
 
-std::string OpeningHoursParser::BasicOpeningHourRule::toRuleString(const std::vector<std::string>& dayNames,
-																   const std::vector<std::string>& monthNames) const {
+std::string OpeningHoursParser::BasicOpeningHourRule::toRuleString(bool useLocalization) const {
+	std::vector<std::string> dayNames = useLocalization ? stringsHolder.localDaysStr : stringsHolder.daysStr;
+	std::vector<std::string> monthNames = useLocalization ? stringsHolder.localMothsStr : stringsHolder.monthsStr;
+	std::string offStr = useLocalization ? stringsHolder.additionalStrings["off"] : "off";
 	std::stringstream b;
 	bool allMonths = true;
 	for (int i = 0; i < _months.size(); i++) {
@@ -641,7 +666,7 @@ std::string OpeningHoursParser::BasicOpeningHourRule::toRuleString(const std::ve
 			b << "24/7 ";
 		}
 
-		if (_off) b << stringsHolder.additionalStrings["off"];
+		if (_off) b << stringsHolder.additionalStrings[offStr];
 	} else {
 		if (isOpened24_7()) {
 			b.str("");
@@ -661,7 +686,7 @@ std::string OpeningHoursParser::BasicOpeningHourRule::toRuleString(const std::ve
 				formatTime(enHour, enTime, b);
 			}
 		}
-		if (_off) b << " " << stringsHolder.additionalStrings["off"];
+		if (_off) b << " " << stringsHolder.additionalStrings[offStr];
 	}
 	if (!_comment.empty()) {
 		std::string str = b.str();
@@ -736,13 +761,11 @@ std::string OpeningHoursParser::BasicOpeningHourRule::getTime(const tm& dateTime
 	return res;
 }
 
-std::string OpeningHoursParser::BasicOpeningHourRule::toRuleString() const {
-	return toRuleString(stringsHolder.daysStr, stringsHolder.monthsStr);
-}
+std::string OpeningHoursParser::BasicOpeningHourRule::toRuleString() const { return toRuleString(false); }
 
-std::string OpeningHoursParser::BasicOpeningHourRule::toLocalRuleString() const {
-	return toRuleString(stringsHolder.localDaysStr, stringsHolder.localMothsStr);
-}
+bool OpeningHoursParser::BasicOpeningHourRule::isFallbackRule() const { return isFallbackRule(); }
+
+std::string OpeningHoursParser::BasicOpeningHourRule::toLocalRuleString() const { return toRuleString(true); }
 
 std::string OpeningHoursParser::BasicOpeningHourRule::toString() const {
 	return toRuleString();
@@ -882,7 +905,8 @@ bool OpeningHoursParser::BasicOpeningHourRule::hasOverlapTimes() const {
 }
 
 bool OpeningHoursParser::BasicOpeningHourRule::hasOverlapTimes(const tm& dateTime,
-															   const std::shared_ptr<OpeningHoursRule>& r) const {
+															   const std::shared_ptr<OpeningHoursRule>& r,
+															   bool strictOverlap) const {
 	if (_off) return true;
 
 	if (r != nullptr && r->contains(dateTime)) {
@@ -906,8 +930,8 @@ bool OpeningHoursParser::BasicOpeningHourRule::hasOverlapTimes(const tm& dateTim
 					else if (rStartTime >= rEndTime)
 						rEndTime = 24 * 60 + rEndTime;
 
-					if ((rStartTime >= startTime && rStartTime < endTime) ||
-						(startTime >= rStartTime && startTime < rEndTime)) {
+					if ((rStartTime >= startTime && (strictOverlap ? rStartTime <= endTime : rStartTime < endTime)) ||
+						(startTime >= rStartTime && (strictOverlap ? startTime <= rEndTime : startTime < rEndTime))) {
 						return true;
 					}
 				}
@@ -936,7 +960,8 @@ bool OpeningHoursParser::UnparseableRule::hasOverlapTimes() const {
 }
 
 bool OpeningHoursParser::UnparseableRule::hasOverlapTimes(const tm& dateTime,
-														  const std::shared_ptr<OpeningHoursRule>& r) const {
+														  const std::shared_ptr<OpeningHoursRule>& r,
+														  bool strictOverlap) const {
 	return false;
 }
 
@@ -962,6 +987,10 @@ int OpeningHoursParser::UnparseableRule::getSequenceIndex() const {
 
 bool OpeningHoursParser::UnparseableRule::isOpened24_7() const {
 	return false;
+}
+
+bool OpeningHoursParser::UnparseableRule::isFallback() const { 
+	return false; 
 }
 
 std::string OpeningHoursParser::UnparseableRule::toRuleString() const {
@@ -996,10 +1025,15 @@ OpeningHoursParser::OpeningHours::Info::~Info() {
 
 std::string OpeningHoursParser::OpeningHours::Info::getInfo() {
 	if (opened24_7) {
-		if (!ruleString.empty())
-			return stringsHolder.additionalStrings["is_open"] + " " + ruleString;
-		else
-			return stringsHolder.additionalStrings["is_open_24_7"];
+		if (!fallback) {
+			if (!ruleString.empty()) {
+				return stringsHolder.additionalStrings["is_open"] + " " + ruleString;
+			} else {
+				return stringsHolder.additionalStrings["is_open_24_7"];
+			}
+		} else {
+			return !ruleString.empty() ? ruleString : "";
+		}
 	} else if (!nearToOpeningTime.empty()) {
 		return stringsHolder.additionalStrings["will_open_at"] + " " + nearToOpeningTime;
 	} else if (!openingTime.empty()) {
@@ -1012,10 +1046,8 @@ std::string OpeningHoursParser::OpeningHours::Info::getInfo() {
 		return stringsHolder.additionalStrings["will_open_tomorrow_at"] + " " + openingTomorrow;
 	} else if (!openingDay.empty()) {
 		return stringsHolder.additionalStrings["will_open_on"] + " " + openingDay + ".";
-	} else if (!ruleString.empty()) {
-		return ruleString;
 	} else {
-		return "";
+		return !ruleString.empty() ? ruleString : "";
 	}
 }
 
@@ -1061,6 +1093,7 @@ std::shared_ptr<OpeningHoursParser::OpeningHours::Info> OpeningHoursParser::Open
 	const tm& dateTime, int sequenceIndex) const {
 	auto info = std::make_shared<Info>();
 	bool opened = isOpenedForTimeV2(dateTime, sequenceIndex);
+	info->fallback = isFallBackRule(sequenceIndex);
 	info->opened = opened;
 	info->ruleString = getCurrentRuleTime(dateTime, sequenceIndex);
 	if (opened) {
@@ -1128,7 +1161,7 @@ bool OpeningHoursParser::OpeningHours::isOpenedForTimeV2(const tm& dateTime, int
 		bool checkNext = false;
 		const auto rule = rules[i];
 		if (rule->contains(dateTime)) {
-			if (i > 0) checkNext = !rule->hasOverlapTimes(dateTime, rules[i - 1]);
+			if (i > 0) checkNext = !rule->hasOverlapTimes(dateTime, rules[i - 1], false);
 
 			bool open = rule->isOpenedForTime(dateTime);
 			if (open || (!overlap && !checkNext)) {
@@ -1245,7 +1278,7 @@ std::string OpeningHoursParser::OpeningHours::getTimeDay(const tm& dateTime, int
 	std::shared_ptr<OpeningHoursRule> prevRule = nullptr;
 	for (const auto r : rules) {
 		if (r->containsDay(dateTime) && r->containsMonth(dateTime)) {
-			if (atTime.length() > 0 && prevRule != nullptr && !r->hasOverlapTimes(dateTime, prevRule))
+			if (atTime.length() > 0 && prevRule != nullptr && !r->hasOverlapTimes(dateTime, prevRule, true))
 				return atTime;
 			else
 				atTime = r->getTime(dateTime, false, limit, opening);
@@ -1268,6 +1301,14 @@ std::string OpeningHoursParser::OpeningHours::getTimeAnotherDay(const tm& dateTi
 	return atTime;
 }
 
+bool OpeningHoursParser::OpeningHours::isFallBackRule(int sequenceIndex) const {
+	if (sequenceIndex != OpeningHours::ALL_SEQUENCES) {
+		const auto& rules = getRules(sequenceIndex);
+		return !rules.empty() && rules[0]->isFallbackRule();
+	}
+	return false;
+}
+
 std::string OpeningHoursParser::OpeningHours::getCurrentRuleTime(const tm& dateTime, int sequenceIndex) const {
 	// make exception for overlapping times i.e.
 	// (1) Mo 14:00-16:00; Tu off
@@ -1288,7 +1329,7 @@ std::string OpeningHoursParser::OpeningHours::getCurrentRuleTime(const tm& dateT
 		bool checkNext = false;
 		const auto rule = rules[i];
 		if (rule->contains(dateTime)) {
-			if (i > 0) checkNext = !rule->hasOverlapTimes(dateTime, rules[i - 1]);
+			if (i > 0) checkNext = !rule->hasOverlapTimes(dateTime, rules[i - 1], false);
 
 			bool open = rule->isOpenedForTime(dateTime);
 			if (open || (!overlap && !checkNext))
@@ -1382,7 +1423,7 @@ void OpeningHoursParser::findInArray(std::shared_ptr<Token>& t, const std::vecto
 
 std::vector<std::vector<std::string>> OpeningHoursParser::splitSequences(const std::string& format) {
 	std::vector<std::vector<std::string>> res;
-	const auto& sequences = ohp_split_string(format, "||");
+	const auto& sequences = ohp_split_string_with_delimiter(format, "||");
 	for (auto seq : sequences) {
 		seq = ohp_trim(seq);
 		if (seq.length() == 0) continue;
@@ -1430,12 +1471,16 @@ void OpeningHoursParser::parseRuleV2(const std::string& rl, int sequenceIndex,
 	std::string endOfDay = "24:00";
 	replaceString(r, "(", " ");	 // avoid "(mo-su 17:00-20:00"
 	replaceString(r, ")", " ");
+	auto basic = std::make_shared<BasicOpeningHourRule>(sequenceIndex);
+	if (r.rfind("|| ", 0) == 0) {
+		replaceString(r, "|| ", "");
+		basic->fallback = true;
+	}
 	replaceStringAll(r, "sunset", sunset);
 	replaceStringAll(r, "sunrise", sunrise);
 	replaceStringAll(r, "+", "-" + endOfDay);
 	std::string localRuleString = r;
 
-	auto basic = std::make_shared<BasicOpeningHourRule>(sequenceIndex);
 	auto& days = basic->getDays();
 	auto& months = basic->getMonths();
 	if ("24/7" == localRuleString) {
@@ -1760,7 +1805,8 @@ void OpeningHoursParser::buildRule(std::shared_ptr<BasicOpeningHourRule>& basic,
 		auto& days = basic->getDays();
 		std::fill(days.begin(), days.end(), true);
 		basic->setHasDays(true);
-	} else if (presentTokens.find(TokenType::TOKEN_DAY_WEEK) != presentTokens.end()) {
+	} else if (presentTokens.find(TokenType::TOKEN_DAY_WEEK) != presentTokens.end() ||
+			   presentTokens.find(TokenType::TOKEN_HOLIDAY) != presentTokens.end()) {
 		basic->setHasDays(true);
 	}
 	rules.insert(rules.begin(), basic);

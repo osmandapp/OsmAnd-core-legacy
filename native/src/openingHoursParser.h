@@ -162,9 +162,10 @@ struct OpeningHoursParser {
 		 *
 		 * @param cal the date to check
 		 * @param r the rule to check
+		 * @param strictOverlap detect overlap even if r rule time end at rule time start (2:00-5:00, 5:00-7:00)
 		 * @return true if the this rule times overlap with r times
 		 */
-		virtual bool hasOverlapTimes(const tm& dateTime, const std::shared_ptr<OpeningHoursRule>& r) const = 0;
+		virtual bool hasOverlapTimes(const tm& dateTime, const std::shared_ptr<OpeningHoursRule>& r, bool strictOverlap) const = 0;
 
 		virtual int getSequenceIndex() const = 0;
 
@@ -175,6 +176,9 @@ struct OpeningHoursParser {
 		virtual bool contains(const tm& dateTime) const = 0;
 
 		virtual bool isOpened24_7() const = 0;
+
+		virtual bool isFallback() const = 0;
+		virtual bool isFallbackRule() const = 0;
 
 		virtual std::string getTime(const tm& dateTime, bool checkAnotherDay, int limit, bool opening) const = 0;
 
@@ -194,10 +198,11 @@ struct OpeningHoursParser {
 		int getPreviousDay(int currentDay) const;
 		int getNextDay(int currentDay) const;
 		int getCurrentTimeInMinutes(const tm& dateTime) const;
-		std::string toRuleString(const std::vector<std::string>& dayNames,
-								 const std::vector<std::string>& monthNames) const;
+		std::string toRuleString(bool useLocalization) const;
+		bool isFallbackRule() const;
+		bool isFallback() const;
 		void addArray(const std::vector<bool>& array, const std::vector<std::string>& arrayNames,
-					  std::stringstream& b) const;
+										  std::stringstream& b) const;
 
 	   private:
 		/**
@@ -258,6 +263,7 @@ struct OpeningHoursParser {
 		virtual ~BasicOpeningHourRule();
 
 		int getSequenceIndex() const;
+		bool fallback;
 
 		/**
 		 * return an array representing the days of the rule
@@ -384,6 +390,8 @@ struct OpeningHoursParser {
 		 */
 		std::vector<int> getEndTimes() const;
 
+		void setDays(std::vector<bool> days);
+
 		/**
 		 * Check if the weekday of time "date" is part of this rule
 		 *
@@ -394,7 +402,8 @@ struct OpeningHoursParser {
 
 		bool hasOverlapTimes() const;
 
-		bool hasOverlapTimes(const tm& dateTime, const std::shared_ptr<OpeningHoursRule>& r) const;
+		bool hasOverlapTimes(const tm& dateTime, const std::shared_ptr<OpeningHoursRule>& r,
+							 bool strictOverlap) const;
 
 		/**
 		 * Check if the next weekday of time "date" is part of this rule
@@ -476,7 +485,7 @@ struct OpeningHoursParser {
 		bool isOpenedForTime(const tm& dateTime, bool checkPrevious) const;
 		bool containsPreviousDay(const tm& dateTime) const;
 		bool hasOverlapTimes() const;
-		bool hasOverlapTimes(const tm& dateTime, const std::shared_ptr<OpeningHoursRule>& r) const;
+		bool hasOverlapTimes(const tm& dateTime, const std::shared_ptr<OpeningHoursRule>& r, bool strictOverlap) const;
 		bool containsDay(const tm& dateTime) const;
 		bool containsNextDay(const tm& dateTime) const;
 		bool containsMonth(const tm& dateTime) const;
@@ -485,6 +494,8 @@ struct OpeningHoursParser {
 		int getSequenceIndex() const;
 
 		bool isOpened24_7() const;
+
+		bool isFallback() const;
 
 		std::string toRuleString() const;
 		std::string toLocalRuleString() const;
@@ -508,6 +519,7 @@ struct OpeningHoursParser {
 		struct Info {
 			bool opened;
 			bool opened24_7;
+			bool fallback;
 			std::string openingTime;
 			std::string nearToOpeningTime;
 			std::string closingTime;
@@ -623,6 +635,8 @@ struct OpeningHoursParser {
 
 		void setOriginal(std::string original);
 		std::string getOriginal() const;
+
+		bool isFallBackRule(int sequenceIndex) const;
 	};
 
    private:

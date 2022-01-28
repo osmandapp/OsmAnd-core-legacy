@@ -215,8 +215,11 @@ bool checkIfGraphIsEmpty(RoutingContext* ctx, bool allowDirection, bool reverseW
 				}
 
 				if (!graphSegments.empty()) {
-					OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "Reiterate point with new start/destination ");
-					printRoad("Reiterate point ", next);
+					if (TRACE_ROUTING) {
+						OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug,
+										  "Reiterate point with new start/destination ");
+						printRoad("Reiterate point ", next);
+					}
 					break;
 				}
 			}
@@ -535,7 +538,7 @@ void processRouteSegment(RoutingContext* ctx, bool reverseWaySearch, SEGMENTS_QU
 				}
 				break;
 			} else {
-				if (ctx->getHeuristicCoefficient() <= 1) {
+				if (ctx->getHeuristicCoefficient() <= 1 && TRACE_ROUTING) {
 					OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug,
 									  "! ALERT slower segment was visited earlier %f > %f :",
 									  distFromStartPlusSegmentTime, existingSegment->distanceFromStart);
@@ -984,7 +987,7 @@ bool processOneRoadIntersection(RoutingContext* ctx, bool reverseWaySearch, SEGM
 					// so we need to add segment back to the queue & reassign the parent (same as for
 					// next.getParentRoute() == null)
 					toAdd = true;
-					if (ctx->getHeuristicCoefficient() <= 1) {
+					if (ctx->getHeuristicCoefficient() <= 1 && TRACE_ROUTING) {
 						OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug,
 										  "! ALERT new faster path to a visited segment: %f < %f",
 										  (distFromStart + routeSegmentTime), visIt->second.get()->distanceFromStart);
@@ -1057,7 +1060,7 @@ vector<SHARED_PTR<RouteSegmentResult>> searchRouteInternal(RoutingContext* ctx, 
 		findRouteSegment(ctx->startX, ctx->startY, ctx, ctx->publicTransport && ctx->startTransportStop,
 						 ctx->startRoadId, ctx->startSegmentInd);
 	if (start.get() == NULL) {
-		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "Start point was not found [Native]");
+		if (TRACE_ROUTING) OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "Start point was not found [Native]");
 		if (ctx->progress.get()) {
 			ctx->progress->setSegmentNotFound(0);
 		}
@@ -1073,7 +1076,7 @@ vector<SHARED_PTR<RouteSegmentResult>> searchRouteInternal(RoutingContext* ctx, 
 		if (ctx->progress.get()) {
 			ctx->progress->setSegmentNotFound(1);
 		}
-		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "End point was not found [Native]");
+		if (TRACE_ROUTING) OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "End point was not found [Native]");
 		return vector<SHARED_PTR<RouteSegmentResult>>();
 	} else {
 		// OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "End point was found %lld [Native]", end->road->id / 64);
