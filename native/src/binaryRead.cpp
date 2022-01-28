@@ -27,6 +27,7 @@ using google::protobuf::io::FileInputStream;
 
 // using namespace google::protobuf::internal;
 #define INT_MAXIMUM 0x7fffffff
+#define INT_MAX_THRESHOLD 0x77ffffff
 
 static uint zoomForBaseRouteRendering = 13;
 static uint detailedZoomStartForRouteSection = 13;
@@ -1282,7 +1283,7 @@ void getIncompleteTransportRoutes(BinaryMapFile* file) {
 				FileInputStream stream(file->routefd);
 				stream.SetCloseOnDelete(false);
 				CodedInputStream* input = new CodedInputStream(&stream);
-				input->SetTotalBytesLimit(INT_MAX, INT_MAX >> 1);
+				input->SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 
 				input->Seek(ti->incompleteRoutesOffset);
 				int oldLimit = input->PushLimit(ti->incompleteRoutesLength);
@@ -1649,7 +1650,7 @@ bool readTransportRoute(BinaryMapFile* file, SHARED_PTR<TransportRoute>& transpo
 	FileInputStream stream(file->routefd);
 	stream.SetCloseOnDelete(false);
 	CodedInputStream* input = new CodedInputStream(&stream);
-	input->SetTotalBytesLimit(INT_MAX, INT_MAX >> 1);
+	input->SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 	input->Seek(filePointer);
 
 	uint32_t routeLength;
@@ -1892,7 +1893,7 @@ void searchTransportIndex(SearchQuery* q, BinaryMapFile* file) {
 	FileInputStream input(file->routefd);
 	input.SetCloseOnDelete(false);
 	CodedInputStream cis(&input);
-	cis.SetTotalBytesLimit(INT_MAX, INT_MAX >> 1);
+	cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 	std::vector<TransportIndex*>::iterator transportIndex = file->transportIndexes.begin();
 	for (; transportIndex != file->transportIndexes.end(); transportIndex++) {
 		searchTransportIndex(*transportIndex, q, &cis);
@@ -1947,7 +1948,7 @@ void loadTransportRoutes(BinaryMapFile* file, vector<int32_t> filePointers, UNOR
 		FileInputStream input(file->routefd);
 		input.SetCloseOnDelete(false);
 		CodedInputStream cis(&input);
-		cis.SetTotalBytesLimit(INT_MAX, INT_MAX >> 1);
+		cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 		initializeStringTable(&cis, ind, stringTable);
 		UNORDERED(map)<int32_t, string> indexedStringTable = ind->stringTable->stringTable;
 		for (SHARED_PTR<TransportRoute>& transportRoute : finishInit) {
@@ -2241,7 +2242,7 @@ void checkAndInitRouteRegionRules(int fileInd, RoutingIndex* routingIndex) {
 		FileInputStream input(fileInd);
 		input.SetCloseOnDelete(false);
 		CodedInputStream cis(&input);
-		cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAXIMUM >> 1);
+		cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 
 		cis.Seek(routingIndex->filePointer);
 		uint32_t old = cis.PushLimit(routingIndex->length);
@@ -2287,7 +2288,7 @@ void readRouteMapObjects(SearchQuery* q, BinaryMapFile* file, vector<RouteSubreg
 	FileInputStream input(file->fd);
 	input.SetCloseOnDelete(false);
 	CodedInputStream cis(&input);
-	cis.SetTotalBytesLimit(INT_MAX, INT_MAX >> 2);
+	cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 	for (std::vector<RouteSubregion>::iterator sub = found.begin(); sub != found.end(); sub++) {
 		std::vector<RouteDataObject*> list;
 		cis.Seek(sub->filePointer + sub->mapDataBlock);
@@ -2355,7 +2356,7 @@ void readMapObjects(SearchQuery* q, BinaryMapFile* file) {
 						FileInputStream input(file->fd);
 						input.SetCloseOnDelete(false);
 						CodedInputStream cis(&input);
-						cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAXIMUM >> 1);
+						cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 						cis.Seek(mapIndex->filePointer);
 						int oldLimit = cis.PushLimit(mapIndex->length);
 						readMapIndex(&cis, &(*mapIndex), true);
@@ -2367,7 +2368,7 @@ void readMapObjects(SearchQuery* q, BinaryMapFile* file) {
 						FileInputStream input(file->fd);
 						input.SetCloseOnDelete(false);
 						CodedInputStream cis(&input);
-						cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAXIMUM >> 1);
+						cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 						cis.Seek(mapLevel->filePointer);
 						int oldLimit = cis.PushLimit(mapLevel->length);
 						readMapLevel(&cis, &(*mapLevel), true);
@@ -2377,7 +2378,7 @@ void readMapObjects(SearchQuery* q, BinaryMapFile* file) {
 					FileInputStream input(file->fd);
 					input.SetCloseOnDelete(false);
 					CodedInputStream cis(&input);
-					cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAXIMUM >> 1);
+					cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 					searchMapData(&cis, &(*mapLevel), &(*mapIndex), q);
 				}
 			}
@@ -2693,7 +2694,7 @@ void initInputForRouteFile(CodedInputStream** inputStream, FileInputStream** fis
 		*fis = new FileInputStream(geocoding ? file->geocodingfd : file->routefd);
 		(*fis)->SetCloseOnDelete(false);
 		*inputStream = new CodedInputStream(*fis);
-		(*inputStream)->SetTotalBytesLimit(INT_MAXIMUM, INT_MAXIMUM >> 1);
+		(*inputStream)->SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 		(*inputStream)->PushLimit(INT_MAXIMUM);
 		// inputStream -> Seek((*routeIndex)->filePointer);
 		(*inputStream)->Seek(seek);
@@ -3014,7 +3015,7 @@ void searchRouteSubRegion(int fileInd, std::vector<RouteDataObject*>& list, Rout
 	FileInputStream input(fileInd);
 	input.SetCloseOnDelete(false);
 	CodedInputStream cis(&input);
-	cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAXIMUM >> 1);
+	cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 
 	cis.Seek(sub->filePointer + sub->mapDataBlock);
 	uint32_t length;
@@ -3072,7 +3073,7 @@ bool initMapFilesFromCache(std::string inputName) {
 	}
 	FileInputStream input(fileDescriptor);
 	CodedInputStream cis(&input);
-	cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAXIMUM >> 1);
+	cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 	OsmAnd::OBF::OsmAndStoredIndex* c = new OsmAnd::OBF::OsmAndStoredIndex();
 	if (c->MergeFromCodedStream(&cis)) {
 		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Native Cache file initialized: %s %d", inputName.c_str(),
@@ -3214,7 +3215,7 @@ BinaryMapFile* initBinaryMapFile(std::string inputName, bool useLive, bool routi
 		FileInputStream input(fileDescriptor);
 		input.SetCloseOnDelete(false);
 		CodedInputStream cis(&input);
-		cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAXIMUM >> 1);
+		cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 		if (!initMapStructure(&cis, mapFile, useLive, routingOnly)) {
 			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "Native File not initialised : %s %d ms", 
 					inputName.c_str(), timer.GetElapsedMs());
