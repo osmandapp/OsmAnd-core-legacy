@@ -142,6 +142,7 @@ struct RoutingContext {
 		this->targetTransportStop = cp->targetTransportStop;
 		this->publicTransport = cp->publicTransport;
 		this->conditionalTime = cp->conditionalTime;
+		this->conditionalTimeStr = cp->conditionalTimeStr;
 		this->basemap = cp->basemap;
 		this->geocoding = cp->geocoding;
 		this->progress = std::make_shared<RouteCalculationProgress>();
