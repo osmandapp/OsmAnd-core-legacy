@@ -810,9 +810,11 @@ struct BinaryMapFile {
 #else
 		int fileDescriptor = open(inputName.c_str(), O_RDONLY);
 #endif
-		if (fd < 0) {
-			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "File could not be open to read from C : %s",
+		if (fileDescriptor < 0) {
+			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, " Native File could not be open to read: %s",
 							  inputName.c_str());
+		} else {
+			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Native open file: %s", inputName.c_str());
 		}
 		return fileDescriptor;
 	}
