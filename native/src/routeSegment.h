@@ -3,7 +3,12 @@
 #include "CommonCollections.h"
 #include "commonOsmAndCore.h"
 #include "routeSegmentResult.h"
+
+#ifdef _IOS_BUILD
+#include <OsmAndCore/Logging.h>
+#else
 #include "Logging.h"
+#endif
 
 struct RouteSegment {
     // Route segment represents part (segment) of the road. 

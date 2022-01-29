@@ -18,7 +18,6 @@
 #include <string>
 
 #include "CommonCollections.h"
-#include "Logging.h"
 #include "commonOsmAndCore.h"
 #include "multipolygons.h"
 #include "routeTypeRule.h"
@@ -31,6 +30,9 @@
 
 #ifdef _IOS_BUILD
 #include <OsmAndCore/ICU.h>
+#include <OsmAndCore/Logging.h>
+#else
+#include "Logging.h"
 #endif
 
 static const uint MAP_VERSION = 2;

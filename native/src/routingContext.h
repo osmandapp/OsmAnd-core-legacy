@@ -4,7 +4,6 @@
 #include <ctime>
 
 #include "CommonCollections.h"
-#include "Logging.h"
 #include "binaryRead.h"
 #include "commonOsmAndCore.h"
 #include "precalculatedRouteDirection.h"
@@ -12,6 +11,12 @@
 #include "routeSegment.h"
 #include "routeSegmentResult.h"
 #include "routingConfiguration.h"
+
+#ifdef _IOS_BUILD
+#include <OsmAndCore/Logging.h>
+#else
+#include "Logging.h"
+#endif
 
 enum class RouteCalculationMode { BASE, NORMAL, COMPLEX };
 
@@ -119,6 +124,7 @@ struct RoutingContext {
 		this->targetTransportStop = cp->targetTransportStop;
 		this->publicTransport = cp->publicTransport;
 		this->conditionalTime = cp->conditionalTime;
+		this->conditionalTimeStr = cp->conditionalTimeStr;
 		this->basemap = cp->basemap;
 		this->geocoding = cp->geocoding;
 		this->progress = std::make_shared<RouteCalculationProgress>();
