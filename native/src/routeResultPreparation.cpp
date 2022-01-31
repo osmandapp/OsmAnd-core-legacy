@@ -177,15 +177,11 @@ void attachRoadSegments(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResul
             attachSegments(ctx, rs, road, rr, previousRoadId, pointInd, prevL, nextL);
         }
     } else {
-        auto rt = ctx->loadRouteSegment(road->pointsX[pointInd], road->pointsY[pointInd]);
-        if (rt) {
-            auto rs = rt->next;
-            while (rs) {
-                attachSegments(ctx, rs, road, rr, previousRoadId, pointInd, prevL, nextL);
-                rs = rs->next;
-            }
-        }
-    }
+        auto segments = ctx->loadRouteSegment(road->pointsX[pointInd], road->pointsY[pointInd]);
+		for (auto& segment : segments) {
+			attachSegments(ctx, segment, road, rr, previousRoadId, pointInd, prevL, nextL);
+		}
+	}
 }
 
 void splitRoadsAndAttachRoadSegments(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResult> >& result) {
@@ -815,7 +811,6 @@ SHARED_PTR<TurnType> createKeepLeftRightTurnBasedOnTurnTypes(RoadSplitStructure&
         } else if (possibleTurns.size() == 3) {
             if ((!possiblyLeftTurn || !possiblyRightTurn) && TurnType::isSlightTurn(possibleTurns[1])) {
                 tp = possibleTurns[1];
-                rawLanes[1] |= 1;
                 t = TurnType::ptrValueOf(tp, leftSide);
             }
         }
@@ -832,9 +827,7 @@ SHARED_PTR<TurnType> createKeepLeftRightTurnBasedOnTurnTypes(RoadSplitStructure&
                (TurnType::isLeftTurn(sturn) && possiblyLeftTurn)) {
                 // we can't predict here whether it will be a left turn or straight on,
                 // it could be done during 2nd pass
-                if ((rawLanes[k] & 1) == 0) {
-                    TurnType::setSecondaryToPrimary(rawLanes, k);
-                }
+                TurnType::setSecondaryToPrimary(rawLanes, k);
                 active = true;
             } else if((TurnType::isRightTurn(tturn) && possiblyRightTurn) ||
                       (TurnType::isLeftTurn(tturn) && possiblyLeftTurn)) {

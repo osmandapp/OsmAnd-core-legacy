@@ -30,6 +30,9 @@
 
 #ifdef _IOS_BUILD
 #include <OsmAndCore/ICU.h>
+#include <OsmAndCore/Logging.h>
+#else
+#include "Logging.h"
 #endif
 
 static const uint MAP_VERSION = 2;
@@ -789,18 +792,55 @@ struct BinaryMapFile {
 	uint32_t version;
 	uint64_t dateCreated;
 	std::vector<MapIndex> mapIndexes;
+	// TODO refactor to shared ptr or plain objects to avoid memory leaks
 	std::vector<RoutingIndex*> routingIndexes;
 	std::vector<TransportIndex*> transportIndexes;
 	std::vector<BinaryPartIndex*> indexes;
 	UNORDERED(map)<uint64_t, shared_ptr<IncompleteTransportRoute>> incompleteTransportRoutes;
 	bool incompleteLoaded = false;
-	int fd;
-	int routefd;
-	int geocodingfd;
+	int fd = -1;
+	int routefd = -1;
+	int geocodingfd = -1;
 	bool basemap;
 	bool external;
 	bool roadOnly;
 	bool liveMap;
+
+	int openFile() {
+#if defined(_WIN32)
+		int fileDescriptor = open(inputName.c_str(), O_RDONLY | O_BINARY);		
+#else
+		int fileDescriptor = open(inputName.c_str(), O_RDONLY);
+#endif
+		if (fileDescriptor < 0) {
+			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, " Native File could not be open to read: %s",
+							  inputName.c_str());
+		} else {
+			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Native open file: %s", inputName.c_str());
+		}
+		return fileDescriptor;
+	}
+
+	int getFD() {
+		if (fd <= 0) {
+			fd = openFile();
+		}
+		return fd;
+	}
+
+	int getRouteFD() {
+		if (routefd <= 0) {
+			routefd = openFile();
+		}
+		return routefd;
+	}
+
+	int getGeocodingFD() {
+		if (geocodingfd <= 0) {
+			geocodingfd = openFile();
+		}
+		return geocodingfd;
+	}
 
 	bool isBasemap() {
 		return basemap;
@@ -818,8 +858,15 @@ struct BinaryMapFile {
 	}
 
 	~BinaryMapFile() {
-		close(fd);
-		close(routefd);
+		if (fd >= 0) {
+			close(fd);
+		}
+		if (routefd >= 0) {
+			close(routefd);
+		}
+		if (geocodingfd >= 0) {
+			close(geocodingfd);
+		}
 	}
 };
 

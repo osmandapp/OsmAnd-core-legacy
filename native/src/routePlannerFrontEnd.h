@@ -93,8 +93,12 @@ private:
 						 RoutingIndex* reg, bool shouldOwnRegion);
 	void cleanupResultAndAddTurns(SHARED_PTR<GpxRouteApproximation>& gctx);
 	void simplifyDouglasPeucker(vector<LatLon>& l, double eps, int start, int end, std::vector<bool>& include);
+	bool isRouteCloseToGpxPoints(SHARED_PTR<GpxRouteApproximation>& gctx, vector<SHARED_PTR<GpxPoint>>& gpxPoints,
+	                         SHARED_PTR<GpxPoint>& start, SHARED_PTR<GpxPoint>& next);
+	bool pointCloseEnough(SHARED_PTR<GpxRouteApproximation>& gctx, LatLon point,
+	                      SHARED_PTR<GpxPoint>& gpxPoint, SHARED_PTR<GpxPoint>& gpxPointNext);
 	bool pointCloseEnough(SHARED_PTR<GpxRouteApproximation>& gctx, SHARED_PTR<GpxPoint>& ipoint,
-						  vector<SHARED_PTR<RouteSegmentResult>>& res);
+	                      vector<SHARED_PTR<RouteSegmentResult>>& res);
 	void makeSegmentPointPrecise(SHARED_PTR<RouteSegmentResult>& routeSegmentResult, double lat, double lon, bool st);
 };
 
