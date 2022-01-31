@@ -2,7 +2,7 @@
 #define _OPENINGHOURSPARSER_H
 
 //  OsmAnd-java/src/net/osmand/util/OpeningHoursParser.java
-//  git revision d29e839ed9e22be60ddf66df8a9df554787809a7
+//  git revision 577a5bf03975880f8214a71a7b86d21e590d66ef
 
 #include <ctime>
 #include <memory>
@@ -26,7 +26,8 @@ struct StringsHolder {
 	StringsHolder();
 	~StringsHolder();
 
-	void setAdditionalString(const std::string& key, const std::string& value);
+    void initLocalStrings();
+    void setAdditionalString(const std::string& key, const std::string& value);
 };
 
 struct OpeningHoursParser {
@@ -175,6 +176,8 @@ struct OpeningHoursParser {
 
 		virtual int getSequenceIndex() const = 0;
 
+        virtual bool isFallbackRule() const = 0;
+
 		/**
 		 * @param date
 		 * @return true if rule applies for current time
@@ -201,8 +204,7 @@ struct OpeningHoursParser {
 		int getPreviousDay(int currentDay) const;
 		int getNextDay(int currentDay) const;
 		int getCurrentTimeInMinutes(const tm& dateTime) const;
-		std::string toRuleString(const std::vector<std::string>& dayNames,
-								 const std::vector<std::string>& monthNames) const;
+		std::string toRuleString(bool useLocalization) const;
 		void addArray(const std::vector<bool>& array, const std::vector<std::string>& arrayNames,
 					  std::stringstream& b) const;
 
@@ -227,6 +229,8 @@ struct OpeningHoursParser {
 		std::vector<int> _lastYearMonths;
 		int _fullYears;
 		int _year;
+
+        bool _fallback;
 
 		/**
 		 * represents the list on which day it is open.
@@ -266,6 +270,8 @@ struct OpeningHoursParser {
 
 		int getSequenceIndex() const;
 
+        bool isFallbackRule() const;
+
 		/**
 		 * return an array representing the days of the rule
 		 *
@@ -286,6 +292,7 @@ struct OpeningHoursParser {
 		void setFullYears(int value);
 		int getYear() const;
 		void setYear(int year);
+		void setFallback(bool fallback);
 
 		/**
 		 * represents the list on which day it is open.
@@ -391,6 +398,8 @@ struct OpeningHoursParser {
 		 */
 		std::vector<int> getEndTimes() const;
 
+        void setDays(std::vector<bool> days);
+
 		/**
 		 * Check if the weekday of time "date" is part of this rule
 		 *
@@ -490,6 +499,7 @@ struct OpeningHoursParser {
 		bool containsYear(const tm& dateTime) const;
 
 		int getSequenceIndex() const;
+		bool isFallbackRule() const;
 
 		bool isOpened24_7() const;
 
@@ -515,6 +525,7 @@ struct OpeningHoursParser {
 		struct Info {
 			bool opened;
 			bool opened24_7;
+            bool fallback;
 			std::string openingTime;
 			std::string nearToOpeningTime;
 			std::string closingTime;
@@ -624,6 +635,7 @@ struct OpeningHoursParser {
 		std::string getTimeAnotherDay(const tm& dateTime, int limit, bool opening, int sequenceIndex) const;
 
 		std::string getCurrentRuleTime(const tm& dateTime, int sequenceIndex) const;
+		bool isFallBackRule(int sequenceIndex) const;
 
 		std::string toString() const;
 		std::string toLocalString() const;
