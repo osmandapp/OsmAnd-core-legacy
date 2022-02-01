@@ -222,6 +222,7 @@ void RoutePlannerFrontEnd::searchGpxRoute(SHARED_PTR<GpxRouteApproximation> &gct
 		double routeDist = gctx->MAXIMUM_STEP_APPROXIMATION;
 		SHARED_PTR<GpxPoint> next = findNextGpxPointWithin(gpxPoints, start, routeDist);
 		bool routeFound = false;
+		bool stepBack = false;
 		if (next && initRoutingPoint(start, gctx, gctx->MINIMUM_POINT_APPROXIMATION)) {
 			gctx->ctx->progress->totalEstimatedDistance = 0;
 			gctx->ctx->progress->iteration = (int)(next->cumDist / gctx->MAXIMUM_STEP_APPROXIMATION);
@@ -236,7 +237,7 @@ void RoutePlannerFrontEnd::searchGpxRoute(SHARED_PTR<GpxRouteApproximation> &gct
 						// route is found - cut the end of the route and move to next iteration
 						// start.stepBackRoute = new ArrayList<RouteSegmentResult>();
 						// boolean stepBack = true;
-						bool stepBack = stepBackAndFindPrevPointInRoute(gctx, gpxPoints, start, next);
+						stepBack = stepBackAndFindPrevPointInRoute(gctx, gpxPoints, start, next);
 						if (!stepBack) {
 							// not supported case (workaround increase MAXIMUM_STEP_APPROXIMATION)
 							OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
@@ -264,7 +265,7 @@ void RoutePlannerFrontEnd::searchGpxRoute(SHARED_PTR<GpxRouteApproximation> &gct
 		if (!routeFound) {
 			// route is not found, move start point by
 			next = findNextGpxPointWithin(gpxPoints, start, gctx->MINIMUM_STEP_APPROXIMATION);
-			if (prev) {
+			if (prev && stepBack) {
 				prev->routeToTarget.insert(prev->routeToTarget.end(), prev->stepBackRoute.begin(),
 										   prev->stepBackRoute.end());
 				makeSegmentPointPrecise(prev->routeToTarget[prev->routeToTarget.size() - 1], start->lat, start->lon,
@@ -441,8 +442,8 @@ void RoutePlannerFrontEnd::calculateGpxRoute(SHARED_PTR<GpxRouteApproximation>& 
 			if (gctx->distFromLastPoint(startPoint.lat, startPoint.lon) > 1) {
 				gctx->routeGapDistance += gctx->distFromLastPoint(startPoint.lat, startPoint.lon);
 				OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
-								  "????? gap of route point = %f, gap of actual gpxPoint = %f, lat = %f lon = %f ",
-								  gctx->distFromLastPoint(startPoint.lat, startPoint.lon),
+								  "????? gap of route point = %f lat = %f lon = %f, gap of actual gpxPoint = %f, lat = %f lon = %f ",
+								  gctx->distFromLastPoint(startPoint.lat, startPoint.lon), startPoint.lat, startPoint.lon,
 								  gctx->distFromLastPoint(pnt->lat, pnt->lon), pnt->lat, pnt->lon);
 			}
 			gctx->finalPoints.push_back(pnt);
