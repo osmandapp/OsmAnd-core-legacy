@@ -10,11 +10,6 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <OsmAndCore/QtExtensions.h>
-#include <QDateTime>
-
-//struct SimpleDateFormat;
-//struct Locale;
 
 struct StringsHolder {
 	std::vector<std::string> daysStr;
