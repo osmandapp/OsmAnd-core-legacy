@@ -7,8 +7,6 @@
 
 #include "Logging.h"
 
-#include "qlocale.h"
-
 static const int LOW_TIME_LIMIT = 120;
 static const int WITHOUT_TIME_LIMIT = -1;
 static const int CURRENT_DAY_TIME_LIMIT = -2;
@@ -137,19 +135,65 @@ void OpeningHoursParser::formatTime(int minutes, std::stringstream& b, bool appe
 }
 
 void OpeningHoursParser::formatTime(int hours, int minutes, std::stringstream& b, bool appendAmPm) {
-	if (twelveHourFormatting) {
-        QTime time(hours, minutes);
-		b << time.toString("hh:mm A").toStdString();
-	} else {
-		if (hours < 10) {
-			b << "0";
-		}
-		b << hours << ":";
-		if (minutes < 10) {
-			b << "0";
-		}
-		b << minutes;
-	}
+    std::string hoursMinutes = OpeningHoursParser::getHoursMinutes(hours, minutes);
+        if (twelveHourFormatting) {
+            b << OpeningHoursParser::convert12(hoursMinutes, appendAmPm);
+        } else {
+            b << hoursMinutes;
+        }
+}
+
+std::string OpeningHoursParser::convert12(std::string str, bool appendAmPm) {
+    std::stringstream b;
+
+    int h1 = (int)str[0] - '0';
+    int h2 = (int)str[1] - '0';
+
+    int hh = h1 * 10 + h2;
+
+    std::string meridiem;
+    if (hh < 12) {
+        meridiem = "AM";
+    }
+    else {
+        meridiem = "PM";
+    }
+
+    hh %= 12;
+
+    if (hh == 0) {
+        b << "12";
+
+        for (int i = 2; i < 5; ++i) {
+            char ssss = str[i];
+            b << ssss;
+        }
+    }
+    else {
+        b << hh;
+        for (int i = 2; i < 5; ++i) {
+            char ssss = str[i];
+            b << ssss;
+        }
+    }
+
+    if (appendAmPm) {
+        b << " " << meridiem;
+    }
+    return b.str();
+}
+
+std::string OpeningHoursParser::getHoursMinutes(int hours, int minutes) {
+    std::string str;
+    if (hours < 10) {
+        str.append("0");
+    }
+    str.append(std::to_string(hours)).append(":");
+    if (minutes < 10) {
+        str.append("0");
+    }
+    str.append(std::to_string(minutes));
+    return str;
 }
 
 StringsHolder::StringsHolder() {
