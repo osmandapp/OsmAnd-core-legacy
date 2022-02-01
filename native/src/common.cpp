@@ -63,8 +63,18 @@ double convert31YToMeters(int y1, int y2, int x) {
 	uint mod1 = y1 % precisionDiv;
 	uint div2 = y2 / precisionDiv;
 	uint mod2 = y2 % precisionDiv;
-	double h1 = coefficientsY[div1] + mod1 / ((double)precisionDiv) * (coefficientsY[div1 + 1] - coefficientsY[div1]);
-	double h2 = coefficientsY[div2] + mod2 / ((double)precisionDiv) * (coefficientsY[div2 + 1] - coefficientsY[div2]);
+	double h1;
+		if(div1 + 1 >= sizeof(coefficientsY)/sizeof(*coefficientsY)) {
+			h1 = coefficientsY[div1] + mod1 / ((double)precisionDiv) * (coefficientsY[div1] - coefficientsY[div1 - 1]);
+		} else {
+			h1 = coefficientsY[div1] + mod1 / ((double)precisionDiv) * (coefficientsY[div1 + 1] - coefficientsY[div1]);
+		}
+		double h2 ;
+		if(div2 + 1 >= sizeof(coefficientsY)/sizeof(*coefficientsY)) {
+			h2 = coefficientsY[div2] + mod2 / ((double)precisionDiv) * (coefficientsY[div2] - coefficientsY[div2 - 1]);
+		} else {
+			h2 = coefficientsY[div2] + mod2 / ((double)precisionDiv) * (coefficientsY[div2 + 1] - coefficientsY[div2]);
+		}
 	double res = h1 - h2;
 	// OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "ind %f != %f", res,  measuredDist31(x, y1, x, y2));
 	return res;
@@ -124,7 +134,7 @@ std::pair<double, double> getProjection(double lat, double lon, double fromLat, 
 }
 
 std::pair<int, int> getProjectionPoint(int px, int py, int xA, int yA, int xB, int yB) {
-	double mDist = squareRootDist31(xA, yA, xB, yB);
+	double mDist = measuredDist31(xA, yA, xB, yB);
 	int prx = xA;
 	int pry = yA;
 	double projection = calculateProjection31TileMetric(xA, yA, xB, yB, px, py);
@@ -252,7 +262,7 @@ double getTileNumberY(float zoom, double latitude) {
 }
 
 double getDistance(double lat1, double lon1, double lat2, double lon2) {
-	double R = 6371;  // km
+	double R = 6372.8;  // km
 	double dLat = toRadians(lat2 - lat1);
 	double dLon = toRadians(lon2 - lon1);
 	double a =

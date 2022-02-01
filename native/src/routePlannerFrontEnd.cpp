@@ -297,7 +297,8 @@ void RoutePlannerFrontEnd::makeSegmentPointPrecise(SHARED_PTR<RouteSegmentResult
 	int py = get31TileNumberY(lat);
 	int pind = st ? routeSegmentResult->getStartPointIndex() : routeSegmentResult->getEndPointIndex();
 
-	SHARED_PTR<RouteDataObject> r = routeSegmentResult->object;
+	SHARED_PTR<RouteDataObject> r = std::make_shared<RouteDataObject>(routeSegmentResult->object);
+	routeSegmentResult->object = r;
 	std::pair<int, int> before(-1, -1);
 	std::pair<int, int> after(-1, -1);
 
