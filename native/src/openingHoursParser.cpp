@@ -165,15 +165,13 @@ std::string OpeningHoursParser::convert12(std::string str, bool appendAmPm) {
         b << "12";
 
         for (int i = 2; i < 5; ++i) {
-            char ssss = str[i];
-            b << ssss;
+            b << str[i];
         }
     }
     else {
         b << hh;
         for (int i = 2; i < 5; ++i) {
-            char ssss = str[i];
-            b << ssss;
+            b << str[i];
         }
     }
 
