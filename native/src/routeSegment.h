@@ -158,7 +158,12 @@ inline SHARED_PTR<RouteSegment> RouteSegment::getParentRoute() {
 };
 
 struct RouteSegmentPoint : RouteSegment {
-	RouteSegmentPoint(SHARED_PTR<RouteDataObject>& road, int segmentStart) : RouteSegment(road, segmentStart) {}
+	
+    RouteSegmentPoint(SHARED_PTR<RouteDataObject>& road, int segmentStart, double distSquare) : RouteSegment(road, segmentStart), dist(distSquare) {
+		this->preciseX = road->pointsX[segmentStart];
+		this->preciseY = road->pointsY[segmentStart];
+	}
+
 	RouteSegmentPoint(SHARED_PTR<RouteSegmentPoint>& pnt) : RouteSegment(pnt->road, pnt->segmentStart),
 		/*distSquare(pnt->distSquare),*/ preciseX(pnt->preciseX), preciseY(pnt->preciseY) {}
 	double dist;
