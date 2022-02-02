@@ -788,10 +788,9 @@ SHARED_PTR<RouteSegmentPoint> findRouteSegment(int px, int py, RoutingContext* c
 	for (; it != dataObjects.end(); it++) {
 		SHARED_PTR<RouteDataObject> r = *it;
 		if (r->id == roadId && roadId > 0 && segmentInd < r->pointsX.size()) {
-			SHARED_PTR<RouteSegmentPoint> road = std::make_shared<RouteSegmentPoint>(r, segmentInd);
+			SHARED_PTR<RouteSegmentPoint> road = std::make_shared<RouteSegmentPoint>(r, segmentInd, 0);
 			road->preciseX = px;
 			road->preciseY = py;
-			road->dist = 0;
 			list.push_back(road);
 			break;
 		}
@@ -809,11 +808,10 @@ SHARED_PTR<RouteSegmentPoint> findRouteSegment(int px, int py, RoutingContext* c
 				int prx = p.first;
 				int pry = p.second;
 				double currentsDist = squareDist31TileMetric(prx, pry, px, py);
-				if (road.get() == NULL || currentsDist < road->dist) {
-					road = std::make_shared<RouteSegmentPoint>(r, j);
+				if (!road || currentsDist < road->dist) {
+					road = std::make_shared<RouteSegmentPoint>(r, j, currentsDist);
 					road->preciseX = prx;
 					road->preciseY = pry;
-					road->dist = currentsDist;
 				}
 			}
 			if (road.get() != NULL) {
