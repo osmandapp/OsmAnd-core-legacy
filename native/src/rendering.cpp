@@ -1151,7 +1151,7 @@ void filterLinesByDensity(RenderingContext* rc, std::vector<MapDataObjectPrimiti
 					if (p.first < roadsLimit || p.second <= orderByDensity) {
 						accept = true;
 						p.first++;
-						p.second = o;
+						p.second = order;
 						densityMap[tl] = p;
 					}
 				}
@@ -1208,7 +1208,6 @@ void sortObjectsByProperOrder(std::vector<FoundMapDataObject>& mapDataObjects, R
 				if (req->searchRule(RenderingRulesStorage::ORDER_RULES)) {
 					int objectType = req->getIntPropertyValue(req->props()->R_OBJECT_TYPE);
 					int order = req->getIntPropertyValue(req->props()->R_ORDER);
-					int priority = req->getIntPropertyValue(req->props()->R_DENSITY_PRIORITY);
 					bool addTextForSmallAreas = req->getBoolPropertyValue(req->props()->R_IGNORE_POLYGON_AS_POINT_AREA);
 					bool addPoint = req->getBoolPropertyValue(req->props()->R_ADD_POINT);
 					if (order >= 0) {
