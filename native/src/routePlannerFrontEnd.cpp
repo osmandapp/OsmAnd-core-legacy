@@ -264,7 +264,7 @@ void RoutePlannerFrontEnd::searchGpxRoute(SHARED_PTR<GpxRouteApproximation> &gct
 		if (!routeFound) {
 			// route is not found, move start point by
 			next = findNextGpxPointWithin(gpxPoints, start, gctx->MINIMUM_STEP_APPROXIMATION);
-			if (prev) {
+			if (prev && stepBack) {
 				prev->routeToTarget.insert(prev->routeToTarget.end(), prev->stepBackRoute.begin(),
 										   prev->stepBackRoute.end());
 				makeSegmentPointPrecise(prev->routeToTarget[prev->routeToTarget.size() - 1], start->lat, start->lon,
@@ -443,8 +443,8 @@ void RoutePlannerFrontEnd::calculateGpxRoute(SHARED_PTR<GpxRouteApproximation>& 
 			if (gctx->distFromLastPoint(startPoint.lat, startPoint.lon) > 1) {
 				gctx->routeGapDistance += gctx->distFromLastPoint(startPoint.lat, startPoint.lon);
 				OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
-								  "????? gap of route point = %f, gap of actual gpxPoint = %f, lat = %f lon = %f ",
-								  gctx->distFromLastPoint(startPoint.lat, startPoint.lon),
+								  "????? gap of route point = %f lat = %f lon = %f, gap of actual gpxPoint = %f, lat = %f lon = %f ",
+								  gctx->distFromLastPoint(startPoint.lat, startPoint.lon), startPoint.lat, startPoint.lon,
 								  gctx->distFromLastPoint(pnt->lat, pnt->lon), pnt->lat, pnt->lon);
 			}
 			gctx->finalPoints.push_back(pnt);
