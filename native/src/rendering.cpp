@@ -48,7 +48,7 @@ struct MapDataObjectPrimitive {
 	int objectType;
 	double area;
 	bool pointAdded;
-	int priority;
+	int orderByDensity;
 };
 
 struct LineClipping {
@@ -1133,7 +1133,8 @@ void filterLinesByDensity(RenderingContext* rc, std::vector<MapDataObjectPrimiti
 	UNORDERED(map)<int64_t, pair<int, int>> densityMap;
 	for (int i = linesArray.size() - 1; i >= 0; i--) {
 		bool accept = true;
-		int o = linesArray[i].order;
+		int order = linesArray[i].order;
+		int orderByDensity = linesArray[i].orderByDensity;
 		MapDataObject* line = linesArray[i].obj;
 		tag_value& ts = line->types[linesArray[i].typeInd];
 		if (ts.first == "highway") {
@@ -1147,10 +1148,10 @@ void filterLinesByDensity(RenderingContext* rc, std::vector<MapDataObjectPrimiti
 				if (prev != tl) {
 					prev = tl;
 					pair<int, int>& p = densityMap[tl];
-					if (p.first < roadsLimit /* && p.second > o */) {
+					if (p.first < roadsLimit || p.second <= orderByDensity) {
 						accept = true;
 						p.first++;
-						p.second = o;
+						p.second = order;
 						densityMap[tl] = p;
 					}
 				}
@@ -1175,12 +1176,6 @@ bool sortByOrder(const MapDataObjectPrimitive& i, const MapDataObjectPrimitive& 
 		return i.typeInd < j.typeInd;
 	}
 	return (i.order < j.order);
-}
-bool sortByDensityPriority(const MapDataObjectPrimitive& i, const MapDataObjectPrimitive& j) {
-	if (i.priority == j.priority) {
-		return getSquareSegmentLength(i.obj) < getSquareSegmentLength(j.obj);
-	}
-	return (i.priority < j.priority);
 }
 bool sortPolygonsOrder(const MapDataObjectPrimitive& i, const MapDataObjectPrimitive& j) {
 	if (i.order == j.order) return i.typeInd < j.typeInd;
@@ -1213,7 +1208,6 @@ void sortObjectsByProperOrder(std::vector<FoundMapDataObject>& mapDataObjects, R
 				if (req->searchRule(RenderingRulesStorage::ORDER_RULES)) {
 					int objectType = req->getIntPropertyValue(req->props()->R_OBJECT_TYPE);
 					int order = req->getIntPropertyValue(req->props()->R_ORDER);
-					int priority = req->getIntPropertyValue(req->props()->R_DENSITY_PRIORITY);
 					bool addTextForSmallAreas = req->getBoolPropertyValue(req->props()->R_IGNORE_POLYGON_AS_POINT_AREA);
 					bool addPoint = req->getBoolPropertyValue(req->props()->R_ADD_POINT);
 					if (order >= 0) {
@@ -1225,7 +1219,7 @@ void sortObjectsByProperOrder(std::vector<FoundMapDataObject>& mapDataObjects, R
 						mapObj.pointAdded = false;
 						mapObj.typeInd = j;
 						mapObj.obj = mobj;
-						mapObj.priority = priority;
+						mapObj.orderByDensity = req->getIntPropertyValue(req->props()->R_ORDER_BY_DENSITY);
 						// polygon
 						if (objectType == 3) {
 							mapObj.pointAdded = addPoint;
@@ -1267,10 +1261,8 @@ void sortObjectsByProperOrder(std::vector<FoundMapDataObject>& mapDataObjects, R
 		}
 		sort(polygonsArray.begin(), polygonsArray.end(), sortByOrder);
 		sort(pointsArray.begin(), pointsArray.end(), sortByOrder);
-		//sort(linesArray.begin(), linesArray.end(), sortByDensityPriority);
 		sort(linesArray.begin(), linesArray.end(), sortByOrder);
 		filterLinesByDensity(rc, linesResArray, linesArray);
-		//sort(linesResArray.begin(), linesResArray.end(), sortByOrder);
 	}
 }
 
