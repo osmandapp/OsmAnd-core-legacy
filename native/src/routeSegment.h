@@ -18,18 +18,20 @@ struct RouteSegment {
     uint16_t segmentStart;
     uint16_t segmentEnd;
     SHARED_PTR<RouteDataObject> road;
-	// Segments only allowed for Navigation connected to the same end point
 
+	// Segments only allowed for Navigation connected to the same end point
 	// Removed due to leaks. It was replaced for std::vector<SHARED_PTR<RouteSegment>> segmentsResult in loadRouteSegment from routingContext
 	// SHARED_PTR<RouteSegment> next;
 
 	// # Represents cheap-storage of LinkedList connected segments
 	// All the road segments from map data connected to the same end point
-
 	// Removed due to leaks. It was replaced for std::vector<SHARED_PTR<RouteSegment>> segmentsResult in routes from routingContext
 	// SHARED_PTR<RouteSegment> nextLoaded;
 
+	// # Caches of similar segments to speed up routing calculation
+	// Segment of opposite direction i.e. for [4 -> 5], opposite [5 -> 4]
 	weak_ptr<RouteSegment> oppositeDirection;
+
     // Same Road/ same Segment but used for opposite A* search (important to have different cause #parentRoute is different)
 	// Note: if we use 1-direction A* then this is field is not needed
     weak_ptr<RouteSegment> reverseSearch;
@@ -40,9 +42,7 @@ struct RouteSegment {
     SHARED_PTR<RouteSegment> parentRoute;
     
     // final route segment
-    int8_t reverseWaySearch;
-    // # Caches of similar segments to speed up routing calculation 
-	// Segment of opposite direction i.e. for [4 -> 5], opposite [5 -> 4]
+    int8_t reverseWaySearch; 
     SHARED_PTR<RouteSegment> opposite;
     
     // # A* routing - Distance measured in time (seconds)
@@ -51,9 +51,11 @@ struct RouteSegment {
 	// VISITED: time from Start [End for reverse A*] to @segEnd of @this, 
 	//          including turn time from previous segment (@parentRoute) and obstacle / distance time between @segStart-@segEnd on @this 
     float distanceFromStart;
+
     // NON-VISITED: Approximated (h(x)) time from @segStart of @this route segment to End [Start for reverse A*] 
 	// VISITED: Approximated (h(x)) time from @segEnd of @this route segment to End [Start for reverse A*]
     float distanceToEnd;
+    
     bool isFinalSegment;
     
     inline bool isReverseWaySearch() {
