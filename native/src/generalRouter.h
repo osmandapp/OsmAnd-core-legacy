@@ -91,8 +91,8 @@ static GeneralRouterProfile parseGeneralRouterProfile(string profile, GeneralRou
 		return GeneralRouterProfile::BICYCLE;
 	} else if ("public_transport" == to_lowercase(profile)) {
 		return GeneralRouterProfile::PUBLIC_TRANSPORT;
-    } else if ("horsebackriding" == to_lowercase(profile)) {
-        return GeneralRouterProfile::HORSEBACKRIDING;
+	} else if ("horsebackriding" == to_lowercase(profile)) {
+		return GeneralRouterProfile::HORSEBACKRIDING;
 	} else {
 		return def;
 	}
