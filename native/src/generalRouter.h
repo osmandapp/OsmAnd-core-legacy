@@ -80,7 +80,7 @@ static RouteDataObjectAttribute parseRouteDataObjectAttribute(string attr, Route
 	}
 }
 
-enum class GeneralRouterProfile { CAR, PEDESTRIAN, BICYCLE, BOAT, PUBLIC_TRANSPORT };
+enum class GeneralRouterProfile { CAR, PEDESTRIAN, BICYCLE, BOAT, PUBLIC_TRANSPORT, HORSEBACKRIDING };
 
 static GeneralRouterProfile parseGeneralRouterProfile(string profile, GeneralRouterProfile def) {
 	if ("car" == to_lowercase(profile)) {
@@ -91,6 +91,8 @@ static GeneralRouterProfile parseGeneralRouterProfile(string profile, GeneralRou
 		return GeneralRouterProfile::BICYCLE;
 	} else if ("public_transport" == to_lowercase(profile)) {
 		return GeneralRouterProfile::PUBLIC_TRANSPORT;
+    } else if ("horsebackriding" == to_lowercase(profile)) {
+        return GeneralRouterProfile::HORSEBACKRIDING;
 	} else {
 		return def;
 	}
