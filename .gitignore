@@ -5,6 +5,7 @@ externals/.stamp
 # Ignore binary files
 /binaries
 *.vscode
+.idea
 # Ignore baked files
 /baked
 
