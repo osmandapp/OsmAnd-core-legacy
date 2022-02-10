@@ -796,11 +796,13 @@ SHARED_PTR<TurnType> createKeepLeftRightTurnBasedOnTurnTypes(RoadSplitStructure&
         if (tp != t->getValue() && tp != 0) {
             t = TurnType::ptrValueOf(tp, leftSide);
         } else {
-            if (rs.keepRight) {
-                t = getTurnByCurrentTurns(rs.leftLanesInfo, rawLanes, TurnType::KR, leftSide);
-            } else if (rs.keepLeft) {
-                t = getTurnByCurrentTurns(rs.rightLanesInfo, rawLanes, TurnType::KL, leftSide);
-            }
+			// use keepRight and keepLeft turns when attached road doesn't have lanes
+			// or prev segment has more then 1 turn to the active lane
+			if (rs.keepRight) {
+				t = getTurnByCurrentTurns(rs.leftLanesInfo, currentSegm, rawLanes, TurnType::KR, leftSide);
+			} else if (rs.keepLeft) {
+				t = getTurnByCurrentTurns(rs.rightLanesInfo, currentSegm, rawLanes, TurnType::KL, leftSide);
+			}
         }
     } else {
         // case for go straight and identify correct turn:lane to go straight
@@ -853,32 +855,47 @@ SHARED_PTR<TurnType> createKeepLeftRightTurnBasedOnTurnTypes(RoadSplitStructure&
     return t;
 }
 
-SHARED_PTR<TurnType> getTurnByCurrentTurns(std::vector<std::vector<int>> lanesInfo, vector<int>& rawLanes, int keepTurnType, bool leftSide) {
-    set<int> followTurns;
-    if (!lanesInfo.empty()) {
-        for (std::vector<int> li : lanesInfo) {
-            if (!li.empty()) {
-                for (int i : li) {
-                    TurnType::collectTurnTypes(i, followTurns);
-                }
-            }
-        }
-    }
-    set<int> currentTurns;
-    for (auto const& ln : rawLanes) {
-        TurnType::collectTurnTypes(ln, currentTurns);
-    }
-    //currentTurns.removeAll(followTurns);
-    for (int i: followTurns) {
-        auto it = find(currentTurns.begin(), currentTurns.end(), i);
-        if (it != currentTurns.end()) {
-            currentTurns.erase(it);
-        }
-    }
-    if (currentTurns.size() == 1) {
-        return TurnType::ptrValueOf(*currentTurns.begin(), leftSide);
-    }
-    return TurnType::ptrValueOf(keepTurnType, leftSide);
+SHARED_PTR<TurnType> getTurnByCurrentTurns(std::vector<std::vector<int>> otherSideLanesInfo,
+										   SHARED_PTR<RouteSegmentResult>& currentSegm, vector<int>& rawLanes,
+										   int keepTurnType, bool leftSide) {
+	set<int> otherSideTurns;
+	if (!otherSideLanesInfo.empty()) {
+		for (std::vector<int> li : otherSideLanesInfo) {
+			if (!li.empty()) {
+				for (int i : li) {
+					TurnType::collectTurnTypes(i, otherSideTurns);
+				}
+			}
+		}
+	}
+	set<int> currentTurns;
+	for (auto const& ln : rawLanes) {
+		TurnType::collectTurnTypes(ln, currentTurns);
+	}
+
+	// Here we detect single case when turn lane continues on 1 road / single sign and all other lane turns continue on
+	// the other side roads
+	if (containsAll(currentTurns, otherSideTurns)) {
+		// currentTurns.removeAll(otherSideTurns);
+		for (int i : otherSideTurns) {
+			auto it = find(currentTurns.begin(), currentTurns.end(), i);
+			if (it != currentTurns.end()) {
+				currentTurns.erase(it);
+			}
+		}
+		if (currentTurns.size() == 1) {
+			return TurnType::ptrValueOf(*currentTurns.begin(), leftSide);
+		}
+	}
+
+	return TurnType::ptrValueOf(keepTurnType, leftSide);
+}
+
+bool containsAll(set<int> a, set<int> b) {
+	auto notFound = a.end();
+	for (auto element : b)
+		if (a.find(element) == notFound) return false;
+	return true;
 }
 
 SHARED_PTR<TurnType> attachKeepLeftInfoAndLanes(bool leftSide, SHARED_PTR<RouteSegmentResult>& prevSegm, SHARED_PTR<RouteSegmentResult>& currentSegm) {

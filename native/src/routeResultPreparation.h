@@ -23,7 +23,9 @@ vector<SHARED_PTR<RouteSegmentResult> > prepareResult(RoutingContext* ctx, vecto
 vector<int> parseTurnLanes(const SHARED_PTR<RouteDataObject>& ro, double dirToNorthEastPi);
 vector<int> parseLanes(const SHARED_PTR<RouteDataObject>& ro, double dirToNorthEastPi);
 void prepareTurnResults(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResult> >& result);
-SHARED_PTR<TurnType> getTurnByCurrentTurns(std::vector<std::vector<int>> lanesInfo, vector<int>& rawLanes, int keepTurnType, bool leftSide);
+SHARED_PTR<TurnType> getTurnByCurrentTurns(std::vector<std::vector<int>> lanesInfo,
+										   SHARED_PTR<RouteSegmentResult>& currentSegm, vector<int>& rawLanes,
+										   int keepTurnType, bool leftSide);
 void checkTotalRoutingTime(vector<SHARED_PTR<RouteSegmentResult> > result, float cmp);
-
+bool containsAll(set<int> a, set<int> b);
 #endif /*_OSMAND_ROUTE_RESULT_PREPARATION_H*/
