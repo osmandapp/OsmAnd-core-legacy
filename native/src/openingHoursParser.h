@@ -21,8 +21,8 @@ struct StringsHolder {
 	StringsHolder();
 	~StringsHolder();
 
-    void initLocalStrings();
-    void setAdditionalString(const std::string& key, const std::string& value);
+	void initLocalStrings();
+	void setAdditionalString(const std::string& key, const std::string& value);
 };
 
 struct OpeningHoursParser {
@@ -171,7 +171,7 @@ struct OpeningHoursParser {
 
 		virtual int getSequenceIndex() const = 0;
 
-        virtual bool isFallbackRule() const = 0;
+		virtual bool isFallbackRule() const = 0;
 
 		/**
 		 * @param date
@@ -225,7 +225,7 @@ struct OpeningHoursParser {
 		int _fullYears;
 		int _year;
 
-        bool _fallback;
+		bool _fallback;
 
 		/**
 		 * represents the list on which day it is open.
@@ -265,7 +265,7 @@ struct OpeningHoursParser {
 
 		int getSequenceIndex() const;
 
-        bool isFallbackRule() const;
+		bool isFallbackRule() const;
 
 		/**
 		 * return an array representing the days of the rule
@@ -393,7 +393,7 @@ struct OpeningHoursParser {
 		 */
 		std::vector<int> getEndTimes() const;
 
-        void setDays(std::vector<bool> days);
+		void setDays(std::vector<bool> days);
 
 		/**
 		 * Check if the weekday of time "date" is part of this rule
@@ -520,7 +520,7 @@ struct OpeningHoursParser {
 		struct Info {
 			bool opened;
 			bool opened24_7;
-            bool fallback;
+			bool fallback;
 			std::string openingTime;
 			std::string nearToOpeningTime;
 			std::string closingTime;
@@ -676,7 +676,7 @@ struct OpeningHoursParser {
 
 	static void setAdditionalString(const std::string& key, const std::string& value);
 
-    static void setTwelveHourFormattingEnabled(bool enabled);
+	static void setTwelveHourFormattingEnabled(bool enabled);
 
 	static void parseRuleV2(const std::string& rl, int sequenceIndex,
 							std::vector<std::shared_ptr<OpeningHoursRule>>& rules);
