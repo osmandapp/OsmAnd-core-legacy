@@ -587,29 +587,33 @@ vector<int> parseLanes(const SHARED_PTR<RouteDataObject>& ro, double dirToNorthE
     return vector<int>();
 }
 
-RoadSplitStructure calculateRoadSplitStructure(SHARED_PTR<RouteSegmentResult>& prevSegm, SHARED_PTR<RouteSegmentResult>& currentSegm, vector<SHARED_PTR<RouteSegmentResult> >& attachedRoutes, string turnLanesPrevSegm) {
-    RoadSplitStructure rs;
-    int speakPriority = max(highwaySpeakPriority(prevSegm->object->getHighway()), highwaySpeakPriority(currentSegm->object->getHighway()));
-    for (auto attached : attachedRoutes) {
-        bool restricted = false;
-        for(int k = 0; k < prevSegm->object->getRestrictionLength(); k++) {
-            if(prevSegm->object->getRestrictionId(k) == attached->object->getId() &&
-               prevSegm->object->getRestrictionType(k) <= RESTRICTION_NO_STRAIGHT_ON) {
-                restricted = true;
-                break;
-            }
-        }
-        if (restricted) {
-            continue;
-        }
-        double ex = degreesDiff(attached->getBearingBegin(), currentSegm->getBearingBegin());
-        double mpi = abs(degreesDiff(prevSegm->getBearingEnd(), attached->getBearingBegin()));
-        int rsSpeakPriority = highwaySpeakPriority(attached->object->getHighway());
-        int lanes = countLanesMinOne(attached);
-        const auto& turnLanesAttachedRoad = parseTurnLanes(attached->object, attached->getBearingBegin() * M_PI / 180);
-        bool smallStraightVariation = mpi < TURN_DEGREE_MIN;
-        bool smallTargetVariation = abs(ex) < TURN_DEGREE_MIN;
-        bool attachedOnTheRight = ex >= 0;
+RoadSplitStructure calculateRoadSplitStructure(SHARED_PTR<RouteSegmentResult>& prevSegm,
+											   SHARED_PTR<RouteSegmentResult>& currentSegm,
+											   vector<SHARED_PTR<RouteSegmentResult>>& attachedRoutes,
+											   string turnLanesPrevSegm) {
+	RoadSplitStructure rs;
+	int speakPriority = max(highwaySpeakPriority(prevSegm->object->getHighway()),
+							highwaySpeakPriority(currentSegm->object->getHighway()));
+	for (auto attached : attachedRoutes) {
+		bool restricted = false;
+		for (int k = 0; k < prevSegm->object->getRestrictionLength(); k++) {
+			if (prevSegm->object->getRestrictionId(k) == attached->object->getId() &&
+				prevSegm->object->getRestrictionType(k) <= RESTRICTION_NO_STRAIGHT_ON) {
+				restricted = true;
+				break;
+			}
+		}
+		if (restricted) {
+			continue;
+		}
+		double ex = degreesDiff(attached->getBearingBegin(), currentSegm->getBearingBegin());
+		double mpi = abs(degreesDiff(prevSegm->getBearingEnd(), attached->getBearingBegin()));
+		int rsSpeakPriority = highwaySpeakPriority(attached->object->getHighway());
+		int lanes = countLanesMinOne(attached);
+		const auto& turnLanesAttachedRoad = parseTurnLanes(attached->object, attached->getBearingBegin() * M_PI / 180);
+		bool smallStraightVariation = mpi < TURN_DEGREE_MIN;
+		bool smallTargetVariation = abs(ex) < TURN_DEGREE_MIN;
+		bool attachedOnTheRight = ex >= 0;
 		bool verySharpTurn = abs(ex) > 150;
 		bool prevSegmHasTU = hasTU(turnLanesPrevSegm, attachedOnTheRight);
 
@@ -621,32 +625,33 @@ RoadSplitStructure calculateRoadSplitStructure(SHARED_PTR<RouteSegmentResult>& p
 			}
 		}
 
-		if (!turnLanesPrevSegm.empty() || rsSpeakPriority != MAX_SPEAK_PRIORITY || speakPriority == MAX_SPEAK_PRIORITY) {
-            if (smallTargetVariation || smallStraightVariation) {
-                if (attachedOnTheRight) {
-                    rs.keepLeft = true;
-                    rs.rightLanes += lanes;
-                    if (!turnLanesAttachedRoad.empty()) {
-                        rs.rightLanesInfo.push_back(turnLanesAttachedRoad);
-                    }
-                } else {
-                    rs.keepRight = true;
-                    rs.leftLanes += lanes;
-                    if (!turnLanesAttachedRoad.empty()) {
-                        rs.leftLanesInfo.push_back(turnLanesAttachedRoad);
-                    }
-                }
-                rs.speak = rs.speak || rsSpeakPriority <= speakPriority;
-            } else {
-                if (attachedOnTheRight) {
-                    rs.addRoadsOnRight++;
-                } else {
-                    rs.addRoadsOnLeft++;
-                }
-            }
-        }
-    }
-    return rs;
+		if (!turnLanesPrevSegm.empty() || rsSpeakPriority != MAX_SPEAK_PRIORITY ||
+			speakPriority == MAX_SPEAK_PRIORITY) {
+			if (smallTargetVariation || smallStraightVariation) {
+				if (attachedOnTheRight) {
+					rs.keepLeft = true;
+					rs.rightLanes += lanes;
+					if (!turnLanesAttachedRoad.empty()) {
+						rs.rightLanesInfo.push_back(turnLanesAttachedRoad);
+					}
+				} else {
+					rs.keepRight = true;
+					rs.leftLanes += lanes;
+					if (!turnLanesAttachedRoad.empty()) {
+						rs.leftLanesInfo.push_back(turnLanesAttachedRoad);
+					}
+				}
+				rs.speak = rs.speak || rsSpeakPriority <= speakPriority;
+			} else {
+				if (attachedOnTheRight) {
+					rs.addRoadsOnRight++;
+				} else {
+					rs.addRoadsOnLeft++;
+				}
+			}
+		}
+	}
+	return rs;
 }
 
 bool hasTU(string turnLanesPrevSegm, bool attachedOnTheRight) {
