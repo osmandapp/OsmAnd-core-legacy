@@ -10,7 +10,7 @@
 
 SHARED_PTR<RoutingContext> RoutePlannerFrontEnd::buildRoutingContext(
 	SHARED_PTR<RoutingConfiguration> config, RouteCalculationMode rm /*= RouteCalculationMode::NORMAL*/) {
-	return SHARED_PTR<RoutingContext>(new RoutingContext(config, rm));
+	return std::make_shared<RoutingContext>(config, rm);
 }
 
 SHARED_PTR<RouteSegment> RoutePlannerFrontEnd::getRecalculationEnd(RoutingContext* ctx) {

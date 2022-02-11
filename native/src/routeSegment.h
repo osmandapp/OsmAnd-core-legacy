@@ -116,7 +116,7 @@ struct RouteSegment {
         , oppositeDirection()
         , parentRoute()
         , reverseWaySearch(0)
-        , opposite()
+        , opposite(nullptr)
         , distanceFromStart(0)
         , distanceToEnd(0)
         , isFinalSegment(false) {
@@ -129,7 +129,7 @@ struct RouteSegment {
         , oppositeDirection()
         , parentRoute()
         , reverseWaySearch(0)
-        , opposite()
+        , opposite(nullptr)
         , distanceFromStart(0)
         , distanceToEnd(0)
         , isFinalSegment(false) {
@@ -142,7 +142,7 @@ struct RouteSegment {
         , oppositeDirection()
         , parentRoute()
         , reverseWaySearch(0)
-        , opposite()
+        , opposite(nullptr)
         , distanceFromStart(0)
         , distanceToEnd(0)
         , isFinalSegment(false) {
