@@ -610,12 +610,18 @@ RoadSplitStructure calculateRoadSplitStructure(SHARED_PTR<RouteSegmentResult>& p
         bool smallStraightVariation = mpi < TURN_DEGREE_MIN;
         bool smallTargetVariation = abs(ex) < TURN_DEGREE_MIN;
         bool attachedOnTheRight = ex >= 0;
-        if (attachedOnTheRight) {
-            rs.roadsOnRight++;
-        } else {
-            rs.roadsOnLeft++;
-        }
-        if (!turnLanesPrevSegm.empty() || rsSpeakPriority != MAX_SPEAK_PRIORITY || speakPriority == MAX_SPEAK_PRIORITY) {
+		bool verySharpTurn = abs(ex) > 150;
+		bool prevSegmHasTU = hasTU(turnLanesPrevSegm, attachedOnTheRight);
+
+		if (!verySharpTurn && !prevSegmHasTU) {
+			if (attachedOnTheRight) {
+				rs.roadsOnRight++;
+			} else {
+				rs.roadsOnLeft++;
+			}
+		}
+
+		if (!turnLanesPrevSegm.empty() || rsSpeakPriority != MAX_SPEAK_PRIORITY || speakPriority == MAX_SPEAK_PRIORITY) {
             if (smallTargetVariation || smallStraightVariation) {
                 if (attachedOnTheRight) {
                     rs.keepLeft = true;
@@ -641,6 +647,31 @@ RoadSplitStructure calculateRoadSplitStructure(SHARED_PTR<RouteSegmentResult>& p
         }
     }
     return rs;
+}
+
+bool hasTU(string turnLanesPrevSegm, bool attachedOnTheRight) {
+	if (!turnLanesPrevSegm.empty()) {
+		vector<int> turns = calculateRawTurnLanes(turnLanesPrevSegm, TurnType::C);
+		int lane = attachedOnTheRight ? turns[turns.size() - 1] : turns[0];
+		vector<int> turnList;
+		turnList.push_back(TurnType::getPrimaryTurn(lane));
+		turnList.push_back(TurnType::getSecondaryTurn(lane));
+		turnList.push_back(TurnType::getTertiaryTurn(lane));
+		if (attachedOnTheRight) {
+			reverse(turnList.begin(), turnList.end());
+		}
+		return foundTUturn(turnList);
+	}
+	return false;
+}
+
+bool foundTUturn(vector<int> turnList) {
+	for (int t : turnList) {
+		if (t != 0) {
+			return t == TurnType::TU;
+		}
+	}
+	return false;
 }
 
 int findActiveIndex(vector<int>& rawLanes, vector<string>& splitLaneOptions, int lanes, bool left,

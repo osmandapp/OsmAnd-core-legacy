@@ -28,4 +28,6 @@ SHARED_PTR<TurnType> getTurnByCurrentTurns(std::vector<std::vector<int>> lanesIn
 										   int keepTurnType, bool leftSide);
 void checkTotalRoutingTime(vector<SHARED_PTR<RouteSegmentResult> > result, float cmp);
 bool containsAll(set<int> a, set<int> b);
+bool hasTU(string turnLanesPrevSegm, bool attachedOnTheRight);
+bool foundTUturn(vector<int> turnList);
 #endif /*_OSMAND_ROUTE_RESULT_PREPARATION_H*/
