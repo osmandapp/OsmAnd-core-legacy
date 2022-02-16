@@ -341,13 +341,16 @@ struct RoutingContext {
 		if (progress && progress.get()) {
 			progress->timeToLoadHeaders.Pause();
 		}
-		loadHeaderObjects(tileId);
-	}
-
-	void loadTileData(int x31, int y31, int zoomAround, vector<SHARED_PTR<RouteDataObject>>& dataObjects) {
 		if (progress && progress.get()) {
 			progress->timeToLoad.Start();
 		}
+		loadHeaderObjects(tileId);
+		if (progress && progress.get()) {
+			progress->timeToLoad.Pause();
+		}
+	}
+
+	void loadTileData(int x31, int y31, int zoomAround, vector<SHARED_PTR<RouteDataObject>>& dataObjects) {
 		int t = config->zoomToLoad - zoomAround;
 		int coordinatesShift = (1 << (31 - config->zoomToLoad));
 		if (t <= 0) {
@@ -366,7 +369,9 @@ struct RoutingContext {
 				loadHeaders(xloc, yloc);
 				const auto itSubregions = indexedSubregions.find(tileId);
 				if (itSubregions == indexedSubregions.end()) continue;
-
+				if (progress && progress.get()) {
+					progress->timeToLoad.Start();
+				}
 				auto& subregions = itSubregions->second;
 				for (uint j = 0; j < subregions.size(); j++) {
 					if (subregions[j]->isLoaded()) {
@@ -384,11 +389,12 @@ struct RoutingContext {
 						}
 					}
 				}
+				if (progress) {
+					progress->timeToLoad.Pause();
+				}
 			}
 		}
-		if (progress) {
-			progress->timeToLoad.Pause();
-		}
+		
 	}
 
 	std::vector<SHARED_PTR<RouteSegment>> loadRouteSegment(int x31, int y31) {
@@ -399,9 +405,7 @@ struct RoutingContext {
 	// sub)
 	std::vector<SHARED_PTR<RouteSegment>> loadRouteSegment(int x31, int y31, bool reverseWaySearch) {
 		std::vector<SHARED_PTR<RouteSegment>> segmentsResult;
-		if (progress && progress.get()) {
-			progress->timeToLoad.Start();
-		}
+
 		int z = config->zoomToLoad;
 		int64_t xloc = x31 >> (31 - z);
 		int64_t yloc = y31 >> (31 - z);
@@ -410,12 +414,8 @@ struct RoutingContext {
 		loadHeaders(xloc, yloc);
 		const auto itSubregions = indexedSubregions.find(tileId);
 		if (itSubregions == indexedSubregions.end()) {
-			if (progress && progress.get()) {
-				progress->timeToLoad.Start();
-			}
 			return segmentsResult;
 		}
-
 		auto& subregions = itSubregions->second;
 		UNORDERED(map)<int64_t, SHARED_PTR<RouteDataObject>> excludeDuplications;
 		SHARED_PTR<RouteSegment> original;
@@ -445,9 +445,7 @@ struct RoutingContext {
 				}
 			}
 		}
-		if (progress) {
-			progress->timeToLoad.Start();
-		}
+		
 		std::reverse(segmentsResult.begin(), segmentsResult.end());
 		return segmentsResult;
 	}
