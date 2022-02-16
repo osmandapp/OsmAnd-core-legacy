@@ -8,7 +8,7 @@
 #include "turnType.h"
 
 // this should be bigger (50-80m) but tests need to be fixed first
-#define DIST_BEARING_DETECT 5
+#define DIST_BEARING_DETECT 15
 
 #define DIST_BEARING_DETECT_UNMATCHED 50
 

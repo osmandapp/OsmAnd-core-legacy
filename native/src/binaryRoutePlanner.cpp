@@ -150,6 +150,12 @@ void initQueuesWithStartEnd(RoutingContext* ctx, SHARED_PTR<RouteSegment> start,
 	SHARED_PTR<RouteSegment> startNeg = initRouteSegment(ctx, start, false, false);
 	SHARED_PTR<RouteSegment> endPos = initRouteSegment(ctx, end, true, true);
 	SHARED_PTR<RouteSegment> endNeg = initRouteSegment(ctx, end, false, true);
+	if (TRACE_ROUTING) {
+		printRoad("START+", startPos);
+		printRoad("START-", startNeg);
+		printRoad("END+", endPos);
+		printRoad("END-", endNeg);
+	}
 	startPos->parentRoute = createNull();
 	startNeg->parentRoute = createNull();
 	endPos->parentRoute = createNull();
