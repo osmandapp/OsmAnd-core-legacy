@@ -667,8 +667,6 @@ struct OpeningHoursParser {
 	static void formatTime(int hours, int minutes, std::stringstream& b, bool appendAmPm);
 
 	static void testAmPm();
-	static std::string getHoursMinutes(int hours, int minutes);
-	static std::string convert12(std::string str, bool appendAmPm);
 
    public:
 	OpeningHoursParser(const std::string& openingHours);
