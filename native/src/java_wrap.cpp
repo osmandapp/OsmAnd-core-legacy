@@ -458,6 +458,10 @@ jfieldID jfield_RouteCalculationProgress_timeToLoadHeaders = NULL;
 jfieldID jfield_RouteCalculationProgress_timeToFindInitialSegments = NULL;
 jfieldID jfield_RouteCalculationProgress_timeToCalculate = NULL;
 jfieldID jfield_RouteCalculationProgress_loadedTiles = NULL;
+jfieldID jfield_RouteCalculationProgress_unloadedTiles = NULL;
+jfieldID jfield_RouteCalculationProgress_loadedPrevUnloadedTiles = NULL;
+jfieldID jfield_RouteCalculationProgress_distinctLoadedTiles = NULL;
+
 
 jclass jclass_RenderedObject = NULL;
 jmethodID jmethod_RenderedObject_putTag = NULL;
@@ -843,7 +847,12 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jfield_RouteCalculationProgress_timeToCalculate =
 		getFid(env, jclass_RouteCalculationProgress, "timeToCalculate", "J");
 	jfield_RouteCalculationProgress_loadedTiles = getFid(env, jclass_RouteCalculationProgress, "loadedTiles", "I");
-
+	jfield_RouteCalculationProgress_unloadedTiles = getFid(env, jclass_RouteCalculationProgress, "unloadedTiles", "I");
+	jfield_RouteCalculationProgress_loadedPrevUnloadedTiles =
+	getFid(env, jclass_RouteCalculationProgress, "loadedPrevUnloadedTiles", "I");
+	jfield_RouteCalculationProgress_distinctLoadedTiles = 
+		getFid(env, jclass_RouteCalculationProgress, "distinctLoadedTiles", "I");
+	
 	jclass_TransportRoutingConfiguration = findGlobalClass(env, "net/osmand/router/TransportRoutingConfiguration");
 	jfield_TransportRoutingConfiguration_ZOOM_TO_LOAD_TILES =
 		getFid(env, jclass_TransportRoutingConfiguration, "ZOOM_TO_LOAD_TILES", "I");
@@ -1682,6 +1691,12 @@ extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_nativeRo
 	if (c->progress && c->progress.get()) {
 		addIntField(ienv, progress, jfield_RouteCalculationProgress_visitedSegments, c->progress->visitedSegments);
 		addIntField(ienv, progress, jfield_RouteCalculationProgress_loadedTiles, c->progress->loadedTiles);
+		addIntField(ienv, progress, jfield_RouteCalculationProgress_unloadedTiles, c->progress->unloadedTiles);
+		addIntField(ienv, progress, jfield_RouteCalculationProgress_loadedPrevUnloadedTiles,
+					c->progress->loadedPrevUnloadedTiles);
+		addIntField(ienv, progress, jfield_RouteCalculationProgress_distinctLoadedTiles,
+					c->progress->distinctLoadedTiles);
+		
 		addIntField(ienv, progress, jfield_RouteCalculationProgress_directQueueSize, c->progress->directQueueSize);
 		addIntField(ienv, progress, jfield_RouteCalculationProgress_oppositeQueueSize, c->progress->oppositeQueueSize);
 		addIntField(ienv, progress, jfield_RouteCalculationProgress_directSegmentQueueSize, c->progress->directSegmentQueueSize);

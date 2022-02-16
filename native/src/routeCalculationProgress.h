@@ -20,25 +20,30 @@ public:
 	
 	float routingCalculatedTime;
 	int visitedSegments;
-	int loadedTiles;
-
 	int visitedDirectSegments;
 	int visitedOppositeSegments;
 	int directQueueSize;
 	int oppositeQueueSize;
 
+	int loadedTiles;
+	int unloadedTiles;
+	int loadedPrevUnloadedTiles;
+	int distinctLoadedTiles;
+
+	
 	int totalIterations;
 	int iteration;
 
 	bool cancelled;
 	
 public:
-	RouteCalculationProgress() : segmentNotFound(-1), distanceFromBegin(0),
-		directSegmentQueueSize(0), distanceFromEnd(0),  reverseSegmentQueueSize(0), totalEstimatedDistance(0),
-		routingCalculatedTime(0), visitedSegments(0), loadedTiles(0), 
-		visitedDirectSegments(0), visitedOppositeSegments(0), directQueueSize(0),  oppositeQueueSize(0), 
-		totalIterations(1), iteration(-1), cancelled(false) {
-	}
+ RouteCalculationProgress()
+	 : segmentNotFound(-1), distanceFromBegin(0), directSegmentQueueSize(0), distanceFromEnd(0),
+	   reverseSegmentQueueSize(0), totalEstimatedDistance(0), routingCalculatedTime(0), visitedSegments(0),
+	   visitedDirectSegments(0), visitedOppositeSegments(0), directQueueSize(0), oppositeQueueSize(0), loadedTiles(0),
+	   unloadedTiles(0), loadedPrevUnloadedTiles(0), distinctLoadedTiles(0), totalIterations(1), iteration(-1),
+	   cancelled(false) {
+ }
 
 	virtual bool isCancelled(){
 		return cancelled;

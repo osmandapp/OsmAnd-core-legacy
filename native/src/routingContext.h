@@ -148,6 +148,9 @@ struct RoutingContext {
 			if (tl->isLoaded()) {
 				if (except == NULL || except->searchSubregionTile(tl->subregion) < 0) {
 					tl->unload();
+					if (progress) {
+						progress->unloadedTiles++;
+					}
 				}
 			}
 		}
@@ -225,6 +228,9 @@ struct RoutingContext {
 			sz -= unload->getSize();
 			unload->unload();
 			unloadedTiles++;
+			if (progress) {
+				progress->unloadedTiles++;
+			}
 		}
 		for (i = 0; i < list.size(); i++) {
 			list[i]->access /= 3;
@@ -260,6 +266,7 @@ struct RoutingContext {
 			UNORDERED(set)<int64_t> excludedIds;
 			for (uint j = 0; j < subregions.size() && !isInterrupted(); j++) {
 				if (!subregions[j]->isLoaded()) {
+
 					std::vector<SHARED_PTR<DirectionPoint>> points;
 					if (config->directionPoints.count() > 0) {
 						// retrieve direction points for attach to routing
@@ -282,7 +289,15 @@ struct RoutingContext {
 					}
 
 					if (progress) {
+						if (subregions[j]->getUnloadCount() > 1) {
+							// skip
+						} else if (subregions[j]->getUnloadCount() == 1) {
+							progress->loadedPrevUnloadedTiles++;
+						} else {
+							progress->distinctLoadedTiles++;
+						}
 						progress->loadedTiles++;
+						
 					}
 					subregions[j]->setLoaded();
 					SearchQuery q;
