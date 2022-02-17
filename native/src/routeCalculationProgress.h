@@ -35,6 +35,9 @@ public:
 	int iteration;
 
 	bool cancelled;
+    
+    long timeNanoToCalcDeviation;
+    int maxLoadedTiles;
 	
 public:
  RouteCalculationProgress()
@@ -42,7 +45,82 @@ public:
 	   reverseSegmentQueueSize(0), totalEstimatedDistance(0), routingCalculatedTime(0), visitedSegments(0),
 	   visitedDirectSegments(0), visitedOppositeSegments(0), directQueueSize(0), oppositeQueueSize(0), loadedTiles(0),
 	   unloadedTiles(0), loadedPrevUnloadedTiles(0), distinctLoadedTiles(0), totalIterations(1), iteration(-1),
-	   cancelled(false) {
+	   cancelled(false), timeNanoToCalcDeviation(0), maxLoadedTiles(0) {
+ }
+
+virtual SHARED_PTR<RouteCalculationProgress> capture(SHARED_PTR<RouteCalculationProgress> cp) {
+    SHARED_PTR<RouteCalculationProgress> p;
+	 p->timeNanoToCalcDeviation = cp->timeNanoToCalcDeviation;
+	 p->timeToCalculate = cp->timeToCalculate;
+	 p->timeToLoadHeaders = cp->timeToLoadHeaders;
+	 p->timeToFindInitialSegments = cp->timeToFindInitialSegments;
+	 p->timeToLoad = cp->timeToLoad;
+
+	 p->visitedSegments = cp->visitedSegments;
+	 p->directQueueSize = cp->directQueueSize;
+	 p->reverseSegmentQueueSize = cp->reverseSegmentQueueSize;
+	 p->visitedDirectSegments = cp->visitedDirectSegments;
+	 p->visitedOppositeSegments = cp->visitedOppositeSegments;
+
+	 p->loadedTiles = cp->loadedTiles;
+	 p->distinctLoadedTiles = cp->distinctLoadedTiles;
+	 p->maxLoadedTiles = cp->maxLoadedTiles;
+	 p->loadedPrevUnloadedTiles = cp->loadedPrevUnloadedTiles;
+	// cp.maxLoadedTiles = 0;
+	 return p;
+ }
+
+ virtual UNORDERED(map) < string, UNORDERED(map) < string, string >> getInfo(SHARED_PTR<RouteCalculationProgress> firstPhase) {
+	 UNORDERED(map) < string, UNORDERED(map) < string, string >> map;
+	 UNORDERED(map)<string, string> tiles;
+	 if (!firstPhase) {
+		 firstPhase = std::make_shared<RouteCalculationProgress>();
+	 }
+     tiles.insert({"loadedTiles", std::to_string(this->loadedTiles - firstPhase->loadedTiles)});
+	 tiles.insert({"loadedTilesDistinct", std::to_string(this->distinctLoadedTiles - firstPhase->distinctLoadedTiles)});
+	 tiles.insert({"loadedTilesPrevUnloaded", std::to_string(this->loadedPrevUnloadedTiles - firstPhase->loadedPrevUnloadedTiles)});
+	 tiles.insert({"loadedTilesMax", std::to_string(max(this->maxLoadedTiles, this->distinctLoadedTiles))});
+	 map.insert({"tiles", tiles});
+
+	 UNORDERED(map)<string, string> segms;
+     segms.insert({"visited", std::to_string(this->visitedSegments - firstPhase->visitedSegments)});
+     segms.insert({"queueDirectSize", std::to_string(this->directQueueSize - firstPhase->directQueueSize)});
+     segms.insert({"queueOppositeSize",
+         std::to_string(this->reverseSegmentQueueSize - firstPhase->reverseSegmentQueueSize)});
+     segms.insert({"visitedDirectPoints",
+         std::to_string(this->visitedDirectSegments - firstPhase->visitedDirectSegments)});
+     segms.insert({"visitedOppositePoints",
+         std::to_string(this->visitedOppositeSegments - -firstPhase->visitedOppositeSegments)});
+	 map.insert({"segments", segms});
+
+	 UNORDERED(map)<string, string> time;
+	 float timeToCalc = (float)(((this->timeToCalculate).GetElapsedMs() - (firstPhase->timeToCalculate).GetElapsedMs()));
+     time.insert({"timeToCalculate", std::to_string(timeToCalc)});
+	 float timeToLoad = (float)(((this->timeToLoad).GetElapsedMs() - (firstPhase->timeToLoad).GetElapsedMs()) / 1.0e9);
+     time.insert({"timeToLoad", std::to_string(timeToLoad)});
+	 float timeToLoadHeaders = (float)(((this->timeToLoadHeaders).GetElapsedMs() - (firstPhase->timeToLoadHeaders).GetElapsedMs()) / 1.0e9);
+     time.insert({"timeToLoadHeaders", std::to_string(timeToLoadHeaders)});
+	 float timeToFindInitialSegments =
+		 (float)(((this->timeToFindInitialSegments).GetElapsedMs() - (firstPhase->timeToFindInitialSegments).GetElapsedMs()) / 1.0e9);
+     time.insert({"timeToFindInitialSegments", std::to_string(timeToFindInitialSegments)});
+	 float timeExtra = (float)((this->timeNanoToCalcDeviation - firstPhase->timeNanoToCalcDeviation) / 1.0e9);
+     time.insert({"timeExtra", std::to_string(timeExtra)});
+	 map.insert({"time", time});
+
+	 UNORDERED(map)<string, string> metrics;
+	 if (timeToLoad + timeToLoadHeaders > 0) {
+         metrics.insert({"tilesPerSec", std::to_string((this->loadedTiles - firstPhase->loadedTiles) /
+                                                       (timeToLoad + timeToLoadHeaders))});
+	 }
+	 float pureTime = timeToCalc - (timeToLoad + timeToLoadHeaders + timeToFindInitialSegments);
+	 if (pureTime > 0) {
+         metrics.insert({"segmentsPerSec",
+             std::to_string((this->visitedSegments - firstPhase->visitedSegments) / pureTime)});
+	 } else {
+         metrics.insert({"segmentsPerSec", std::to_string((float)0)});
+	 }
+	 map.insert({"metrics", metrics});
+	 return map;
  }
 
 	virtual bool isCancelled(){

@@ -81,6 +81,7 @@ struct RoutingContext {
 	RouteCalculationMode calculationMode;
 	SHARED_PTR<RoutingConfiguration> config;
 	SHARED_PTR<RouteCalculationProgress> progress;
+    SHARED_PTR<RouteCalculationProgress> calculationProgressFirstPhase;
 	bool leftSideNavigation;
 
 	int gcCollectIterations;
@@ -128,13 +129,14 @@ struct RoutingContext {
 		this->basemap = cp->basemap;
 		this->geocoding = cp->geocoding;
 		this->progress = std::make_shared<RouteCalculationProgress>();
+        this->calculationProgressFirstPhase = std::make_shared<RouteCalculationProgress>();
 		this->alertFasterRoadToVisitedSegments = 0;
 		this->alertSlowerSegmentedWasVisitedEarlier = 0;
 	}
 
 	RoutingContext(SHARED_PTR<RoutingConfiguration> config,
 				   RouteCalculationMode calcMode = RouteCalculationMode::NORMAL)
-		: calculationMode(calcMode), config(config), progress(new RouteCalculationProgress()),
+		: calculationMode(calcMode), config(config), progress(new RouteCalculationProgress()), calculationProgressFirstPhase(new RouteCalculationProgress()),
 		  leftSideNavigation(false), startTransportStop(false), targetTransportStop(false), publicTransport(false),
 		  geocoding(false), conditionalTime(0), precalcRoute(new PrecalculatedRouteDirection()),
 		  alertFasterRoadToVisitedSegments(0), alertSlowerSegmentedWasVisitedEarlier(0) {
