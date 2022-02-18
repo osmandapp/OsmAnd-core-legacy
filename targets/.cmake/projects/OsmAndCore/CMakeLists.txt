@@ -100,6 +100,7 @@ add_library(osmand SHARED
 	"${ROOT}/src/turnType.cpp"
 	"${ROOT}/src/proto/osmand_index.pb.cc"
 	"${ROOT}/src/java_wrap.cpp"
+	"${ROOT}/src/routeCalculationProgress.cpp"
 	${pd_sources}
 )
 
