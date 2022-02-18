@@ -136,18 +136,10 @@ struct RoutingContext {
 
 	RoutingContext(SHARED_PTR<RoutingConfiguration> config,
 				   RouteCalculationMode calcMode = RouteCalculationMode::NORMAL)
-		: calculationMode(calcMode),
-		  config(config),
-		  progress(new RouteCalculationProgress()),
-		  calculationProgressFirstPhase(new RouteCalculationProgress()),
-		  leftSideNavigation(false),
-		  startTransportStop(false),
-		  targetTransportStop(false),
-		  publicTransport(false),
-		  geocoding(false),
-		  conditionalTime(0),
-		  precalcRoute(new PrecalculatedRouteDirection()),
-		  alertFasterRoadToVisitedSegments(0),
+		: calculationMode(calcMode), config(config), progress(new RouteCalculationProgress()),
+		  calculationProgressFirstPhase(new RouteCalculationProgress()), leftSideNavigation(false),
+		  startTransportStop(false), targetTransportStop(false), publicTransport(false), geocoding(false),
+		  conditionalTime(0), precalcRoute(new PrecalculatedRouteDirection()), alertFasterRoadToVisitedSegments(0),
 		  alertSlowerSegmentedWasVisitedEarlier(0) {
 		this->basemap = RouteCalculationMode::BASE == calcMode;
 	}
