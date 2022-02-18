@@ -69,7 +69,8 @@ LOCAL_SRC_FILES := \
 	$(OSMAND_CORE_RELATIVE)/src/routeSegmentResult.cpp \
 	$(OSMAND_CORE_RELATIVE)/src/turnType.cpp \
 	$(OSMAND_CORE_RELATIVE)/src/proto/osmand_index.pb.cc \
-	$(OSMAND_CORE_RELATIVE)/src/java_wrap.cpp
+	$(OSMAND_CORE_RELATIVE)/src/java_wrap.cpp \
+	$(OSMAND_CORE_RELATIVE)/src/routeCalculationProgress.cpp
 	
 ifdef OSMAND_PROFILE_NATIVE_OPERATIONS
 	LOCAL_CFLAGS += \

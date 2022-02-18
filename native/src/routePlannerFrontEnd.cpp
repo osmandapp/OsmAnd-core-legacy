@@ -283,12 +283,12 @@ void RoutePlannerFrontEnd::searchGpxRoute(SHARED_PTR<GpxRouteApproximation> &gct
 	if (gctx->ctx->progress) {
 		gctx->ctx->progress->timeToCalculate.Pause();
 	}
-	// BinaryRoutePlanner.printDebugMemoryInformation(gctx.ctx);
 	calculateGpxRoute(gctx, gpxPoints);
-//	if (!gctx->result.empty() && !gctx->ctx->progress->isCancelled()) {
-		// new RouteResultPreparation().printResults(gctx.ctx, gpxPoints[0]->loc, gpxPoints[gpxPoints.size() - 1]->loc,
-		// gctx.result); System.out.println(gctx);
-//	}
+	if (!gctx->result.empty() && !gctx->ctx->progress->isCancelled()) {
+//		RouteResultPreparation.printResults(gctx->ctx, gpxPoints[0]->lat, gpxPoints[0]->lon,
+//											 gctx->result);
+//        OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, gctx.toString();
+	}
 	if (acceptor)
 		acceptor(gctx->ctx->progress->cancelled ? nullptr : gctx);
 }
@@ -788,6 +788,7 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 			searchRoute(nctx, startX, startY, endX, endY, intermediatesX, intermediatesY);
 		routeDirection =
 			PrecalculatedRouteDirection::build(ls, ctx->config->DEVIATION_RADIUS, ctx->config->router->maxSpeed);
+		ctx->calculationProgressFirstPhase =  ctx->progress->capture(ctx->progress);
 	}
 
 	if (intermediatesEmpty) {
@@ -829,9 +830,9 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 	auto res = searchRoute(ctx.get(), points, routeDirection);
 	// make start and end more precise
 	makeStartEndPointsPrecise(res, startX, startY, endX, endY, intermediatesX, intermediatesY);
-	if (!res.empty()) {
-		printResults(ctx.get(), startX, startY, endX, endY, res);
-	}
+
+	printResults(ctx.get(), startX, startY, endX, endY, res);
+
 	return res;
 }
 

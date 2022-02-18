@@ -81,6 +81,7 @@ struct RoutingContext {
 	RouteCalculationMode calculationMode;
 	SHARED_PTR<RoutingConfiguration> config;
 	SHARED_PTR<RouteCalculationProgress> progress;
+	SHARED_PTR<RouteCalculationProgress> calculationProgressFirstPhase;
 	bool leftSideNavigation;
 
 	int gcCollectIterations;
@@ -128,6 +129,7 @@ struct RoutingContext {
 		this->basemap = cp->basemap;
 		this->geocoding = cp->geocoding;
 		this->progress = std::make_shared<RouteCalculationProgress>();
+		this->calculationProgressFirstPhase = std::make_shared<RouteCalculationProgress>();
 		this->alertFasterRoadToVisitedSegments = 0;
 		this->alertSlowerSegmentedWasVisitedEarlier = 0;
 	}
@@ -135,9 +137,10 @@ struct RoutingContext {
 	RoutingContext(SHARED_PTR<RoutingConfiguration> config,
 				   RouteCalculationMode calcMode = RouteCalculationMode::NORMAL)
 		: calculationMode(calcMode), config(config), progress(new RouteCalculationProgress()),
-		  leftSideNavigation(false), startTransportStop(false), targetTransportStop(false), publicTransport(false),
-		  geocoding(false), conditionalTime(0), precalcRoute(new PrecalculatedRouteDirection()),
-		  alertFasterRoadToVisitedSegments(0), alertSlowerSegmentedWasVisitedEarlier(0) {
+		  calculationProgressFirstPhase(new RouteCalculationProgress()), leftSideNavigation(false),
+		  startTransportStop(false), targetTransportStop(false), publicTransport(false), geocoding(false),
+		  conditionalTime(0), precalcRoute(new PrecalculatedRouteDirection()), alertFasterRoadToVisitedSegments(0),
+		  alertSlowerSegmentedWasVisitedEarlier(0) {
 		this->basemap = RouteCalculationMode::BASE == calcMode;
 	}
 
@@ -266,7 +269,6 @@ struct RoutingContext {
 			UNORDERED(set)<int64_t> excludedIds;
 			for (uint j = 0; j < subregions.size() && !isInterrupted(); j++) {
 				if (!subregions[j]->isLoaded()) {
-
 					std::vector<SHARED_PTR<DirectionPoint>> points;
 					if (config->directionPoints.count() > 0) {
 						// retrieve direction points for attach to routing
@@ -297,7 +299,6 @@ struct RoutingContext {
 							progress->distinctLoadedTiles++;
 						}
 						progress->loadedTiles++;
-						
 					}
 					subregions[j]->setLoaded();
 					SearchQuery q;
@@ -409,7 +410,6 @@ struct RoutingContext {
 				}
 			}
 		}
-		
 	}
 
 	std::vector<SHARED_PTR<RouteSegment>> loadRouteSegment(int x31, int y31) {
@@ -460,7 +460,7 @@ struct RoutingContext {
 				}
 			}
 		}
-		
+
 		std::reverse(segmentsResult.begin(), segmentsResult.end());
 		return segmentsResult;
 	}
