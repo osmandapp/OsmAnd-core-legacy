@@ -1447,11 +1447,11 @@ vector<SHARED_PTR<RouteSegmentResult> > convertFinalSegmentToResults(RoutingCont
     return result;
 }
 
-void checkTotalRoutingTime(vector<SHARED_PTR<RouteSegmentResult> > result, float cmp) {
-    float totalRoutingTime = 0;
-    for (auto r : result) {
-        totalRoutingTime += r->routingTime;
-    }
+void checkTotalRoutingTime(vector<SHARED_PTR<RouteSegmentResult>> result, float cmp) {
+	float totalRoutingTime = 0;
+	for (auto r : result) {
+		totalRoutingTime += r->routingTime;
+	}
 	if (abs(totalRoutingTime - cmp) > 1) {
 		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "Total sum routing time ! totalRoutingTime=%f  == cmp=%f",
 						  totalRoutingTime, cmp);
@@ -1480,7 +1480,7 @@ void printAdditionalPointInfo(SHARED_PTR<RouteSegmentResult>& res) {
                 }
             }
             bld.append("/>");
-            //OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "\t%s", bld.c_str());
+            OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "\t%s", bld.c_str());
         }
         if (plus) {
             k++;
@@ -1490,18 +1490,19 @@ void printAdditionalPointInfo(SHARED_PTR<RouteSegmentResult>& res) {
     }
 }
 
-const static bool PRINT_TO_CONSOLE_ROUTE_INFORMATION_TO_TEST = true;
+const static bool PRINT_TO_CONSOLE_ROUTE_INFORMATION_TO_TEST = false;
 
-void printResults(RoutingContext* ctx, int startX, int startY, int endX, int endY, vector<SHARED_PTR<RouteSegmentResult> >& result) {
+void printResults(RoutingContext* ctx, int startX, int startY, int endX, int endY,
+				  vector<SHARED_PTR<RouteSegmentResult>>& result) {
 	UNORDERED(map) < string, UNORDERED(map) < string, string >> info;
 	UNORDERED(map)<string, string> route;
-    route.insert({"routing_time", std::to_string(ctx->progress->routingCalculatedTime)});
-    route.insert({"vehicle", ctx->config->routerName});
-    route.insert({"base",  std::to_string(ctx->calculationMode == RouteCalculationMode::BASE)});
-    route.insert({"start_lat", std::to_string(get31LatitudeY(startY))});
-    route.insert({"start_lon", std::to_string(get31LongitudeX(startX))});
-    route.insert({"target_lat", std::to_string(get31LatitudeY(endY))});
-    route.insert({"target_lon", std::to_string(get31LongitudeX(endX))});
+	route.insert({"routing_time", std::to_string(ctx->progress->routingCalculatedTime)});
+	route.insert({"vehicle", ctx->config->routerName});
+	route.insert({"base", std::to_string(ctx->calculationMode == RouteCalculationMode::BASE)});
+	route.insert({"start_lat", std::to_string(get31LatitudeY(startY))});
+	route.insert({"start_lon", std::to_string(get31LongitudeX(startX))});
+	route.insert({"target_lat", std::to_string(get31LatitudeY(endY))});
+	route.insert({"target_lon", std::to_string(get31LongitudeX(endX))});
 	if (!result.empty()) {
 		float completeTime = 0;
 		float completeDistance = 0;
@@ -1509,20 +1510,24 @@ void printResults(RoutingContext* ctx, int startX, int startY, int endX, int end
 			completeTime += r->segmentTime;
 			completeDistance += r->distance;
 		}
-        route.insert({"complete_distance", std::to_string(completeDistance)});
-        route.insert({"complete_time", std::to_string(completeTime)});
+		route.insert({"complete_distance", std::to_string(completeDistance)});
+		route.insert({"complete_time", std::to_string(completeTime)});
 	}
-    info.insert({"route", route});
-    route.insert({"native", std::to_string(true)});
+	info.insert({"route", route});
+	route.insert({"native", std::to_string(true)});
 
 	if (ctx->progress && (ctx->progress->timeToCalculate).GetElapsedMs() > 0) {
 		UNORDERED(map) < string, UNORDERED(map) < string,
 			string >> info2 = ctx->progress->getInfo(ctx->calculationProgressFirstPhase);
-        info.insert(info2.begin(), info2.end());
+		info.insert(info2.begin(), info2.end());
 	}
 
-    string alerts;
-    alerts.append("Alerts during routing: ").append(std::to_string(ctx->alertFasterRoadToVisitedSegments)).append("fastRoads,").append( std::to_string(ctx->alertSlowerSegmentedWasVisitedEarlier)).append(" slowSegmentsEearlier");
+	string alerts;
+	alerts.append("Alerts during routing: ")
+		.append(std::to_string(ctx->alertFasterRoadToVisitedSegments))
+		.append("fastRoads,")
+		.append(std::to_string(ctx->alertSlowerSegmentedWasVisitedEarlier))
+		.append(" slowSegmentsEearlier");
 	if (ctx->alertFasterRoadToVisitedSegments + ctx->alertSlowerSegmentedWasVisitedEarlier == 0) {
 		alerts = "No alerts";
 	}
@@ -1533,177 +1538,174 @@ void printResults(RoutingContext* ctx, int startX, int startY, int endX, int end
 		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "<test %s>", extraInfo.c_str());
 		printRouteInfoSegments(result);
 		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "</test>");
-        // duplicate base info
-        if (ctx->calculationProgressFirstPhase) {
-            OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "<<<1st Phase>>>>");
-            vector<string> baseRouteInfo;
-            buildRouteMessagesFromInfo(ctx->calculationProgressFirstPhase->getInfo(NULL), baseRouteInfo);
-            if (!baseRouteInfo.empty()) {
-                for (string msg : baseRouteInfo) {
-                    OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "%s", msg.c_str());
-                }
-            }
-            OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "<<2nd Phase>>>>");
-        }
+		// duplicate base info
+		if (ctx->calculationProgressFirstPhase) {
+			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "<<<1st Phase>>>>");
+			vector<string> baseRouteInfo;
+			buildRouteMessagesFromInfo(ctx->calculationProgressFirstPhase->getInfo(nullptr), baseRouteInfo);
+			if (!baseRouteInfo.empty()) {
+				for (string msg : baseRouteInfo) {
+					OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "%s", msg.c_str());
+				}
+			}
+			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "<<2nd Phase>>>>");
+		}
 	}
-    for (string msg : routeInfo) {
-        OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, msg.c_str());
-    }
+	for (string msg : routeInfo) {
+		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, msg.c_str());
+	}
 }
 
-	string buildRouteMessagesFromInfo(UNORDERED(map) < string, UNORDERED(map) < string, string >> info,
-									  vector<string>& routeMessages) {
-		string extraInfo;
+string buildRouteMessagesFromInfo(UNORDERED(map) < string, UNORDERED(map) < string, string >> info,
+								  vector<string>& routeMessages) {
+	string extraInfo;
 
-		auto it = info.begin();
-		while (it != info.end()) {
-			string key = it->first;
-			UNORDERED(map)<string, string> mp = it->second;
-			string msg = "Route <" + key + ">";
-			int i = 0;
-			auto it2 = mp.begin();
-			while (it2 != mp.end()) {
-				string mkey = it2->first;
-				msg.append((i++ == 0) ? ": " : ", ");
-				string valueString = it2->second;
-				msg.append(mkey).append("=").append(valueString);
-				extraInfo.append(" ").append(key + "_" + mkey).append("=\"").append(valueString).append("\"");
-                it2++;
-			}
-			routeMessages.push_back(msg);
-            it++;
+	auto it = info.begin();
+	while (it != info.end()) {
+		string key = it->first;
+		UNORDERED(map)<string, string> mp = it->second;
+		string msg = "Route <" + key + ">";
+		int i = 0;
+		auto it2 = mp.begin();
+		while (it2 != mp.end()) {
+			string mkey = it2->first;
+			msg.append((i++ == 0) ? ": " : ", ");
+			string valueString = it2->second;
+			msg.append(mkey).append("=").append(valueString);
+			extraInfo.append(" ").append(key + "_" + mkey).append("=\"").append(valueString).append("\"");
+			it2++;
 		}
-		return extraInfo;
+		routeMessages.push_back(msg);
+		it++;
 	}
+	return extraInfo;
+}
 
-	void printRouteInfoSegments(vector<SHARED_PTR<RouteSegmentResult>>& result) {
-		string xmlStr;
-		xmlStr.append("\n<trk>\n");
-		xmlStr.append("<trkseg>\n");
+void printRouteInfoSegments(vector<SHARED_PTR<RouteSegmentResult>>& result) {
+	string xmlStr;
+	xmlStr.append("\n<trk>\n");
+	xmlStr.append("<trkseg>\n");
 
-		double lastHeight = -180;
-		for (auto& res : result) {
-			string trkSeg;
-			string name = res->object->getName();
-			string lang = "";
-			string ref = res->object->getRef(lang, false, res->isForwardDirection());
-			if (!ref.empty()) {
-				name += " (" + ref + ") ";
-			}
-			string additional;
-			additional.append("time = \"").append(std::to_string((int)(res->segmentTime) * 100 / 100.0f)).append("\" ");
-			if (res->routingTime > 0) {
-				additional.append("rtime = \"")
-					.append(std::to_string((int)(res->segmentTime) * 100 / 100.0f))
-					.append("\" ");
-			}
-			additional.append("name = \"").append(name).append("\" ");
-			//				float ms = res->getSegmentSpeed();
-			float ms = res->object->getMaximumSpeed(res->isForwardDirection());
-			if (ms > 0) {
-				additional.append("maxspeed = \"").append(std::to_string(ms * 3.6f)).append("\" ");
-			}
-			additional.append("distance = \"")
+	double lastHeight = -180;
+	for (auto& res : result) {
+		string trkSeg;
+		string name = res->object->getName();
+		string lang = "";
+		string ref = res->object->getRef(lang, false, res->isForwardDirection());
+		if (!ref.empty()) {
+			name += " (" + ref + ") ";
+		}
+		string additional;
+		additional.append("time = \"").append(std::to_string((int)(res->segmentTime) * 100 / 100.0f)).append("\" ");
+		if (res->routingTime > 0) {
+			additional.append("rtime = \"")
 				.append(std::to_string((int)(res->segmentTime) * 100 / 100.0f))
 				.append("\" ");
-			additional.append(res->object->getHighway()).append(" ");
-			if (res->turnType) {
-				additional.append("turn = \"").append(res->turnType->toString()).append("\" ");
-				additional.append("turn_angle = \"")
-					.append(std::to_string(res->turnType->getTurnAngle()))
-					.append("\" ");
-				if (!res->turnType->getLanes().empty()) {
-					additional.append("lanes = \"");
-					additional.append("[");
-					string lanes;
-					for (auto l : res->turnType->getLanes()) {
-						if (!lanes.empty()) {
-							lanes.append(", ");
-						}
-						lanes.append(std::to_string(l));
-					}
-					additional.append(lanes).append("]").append("\" ");
-					;
-				}
-			}
-			additional.append("start_bearing = \"").append(std::to_string(res->getBearingBegin())).append("\" ");
-			additional.append("end_bearing = \"").append(std::to_string(res->getBearingEnd())).append("\" ");
-			additional.append("height = \"");
-			additional.append("[");
-			string hs;
-			const auto& heights = res->getHeightValues();
-			for (auto h : heights) {
-				if (!hs.empty()) {
-					hs.append(", ");
-				}
-				hs.append(std::to_string(h));
-			}
-			additional.append(hs).append("]").append("\" ");
-			additional.append("description = \"").append(res->description).append("\" ");
-
-			// OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "\t<segment id=\"%d\" oid=\"%lld\" start=\"%d\"
-			// end=\"%d\" %s/>", (res->object->getId() >> SHIFT_ID), res->object->getId(),
-			// res->getStartPointIndex(), res->getEndPointIndex(), additional.c_str());
-			int inc = res->getStartPointIndex() < res->getEndPointIndex() ? 1 : -1;
-			int indexnext = res->getStartPointIndex();
-			int prevX = 0;
-			int prevY = 0;
-			for (int index = res->getStartPointIndex(); index != res->getEndPointIndex();) {
-				index = indexnext;
-				indexnext += inc;
-
-				int x = res->object->pointsX[index];
-				int y = res->object->pointsY[index];
-				double lat = get31LatitudeY(y);
-				double lon = get31LongitudeX(x);
-
-				trkSeg.append("<trkpt");
-				trkSeg.append(" lat=\"").append(std::to_string(lat)).append("\"");
-				trkSeg.append(" lon=\"").append(std::to_string(lon)).append("\"");
-				trkSeg.append(">\n");
-				auto& vls = res->object->heightDistanceArray;
-				double dist = prevX == 0 ? 0 : measuredDist31(x, y, prevX, prevY);
-				if (index * 2 + 1 < vls.size()) {
-					auto h = vls[2 * index + 1];
-					trkSeg.append("<ele>");
-					trkSeg.append(std::to_string(h));
-					trkSeg.append("</ele>\n");
-					if (lastHeight != -180 && dist > 0) {
-						trkSeg.append("<cmt>");
-						trkSeg.append(std::to_string((float)((h - lastHeight) / dist * 100)))
-							.append("%% degree ")
-							.append(std::to_string((float)atan(((h - lastHeight) / dist)) / M_PI * 180))
-							.append(" asc ")
-							.append(std::to_string((float)(h - lastHeight)))
-							.append(" dist ")
-							.append(std::to_string((float)dist));
-						trkSeg.append("</cmt>\n");
-						trkSeg.append("<slope>");
-						trkSeg.append(std::to_string((h - lastHeight) / dist * 100));
-						trkSeg.append("</slope>\n");
-					}
-					trkSeg.append("<desc>");
-					trkSeg.append(std::to_string(res->object->getId() >> SHIFT_ID))
-						.append(" ")
-						.append(std::to_string(index));
-					trkSeg.append("</desc>\n");
-					lastHeight = h;
-				} else if (lastHeight != -180) {
-					//								serializer.startTag("","ele");
-					//								serializer.text(lastHeight +"");
-					//								serializer.endTag("","ele");
-				}
-				trkSeg.append("</trkpt>\n");
-				prevX = x;
-				prevY = y;
-			}
-			xmlStr.append(trkSeg);
-			printAdditionalPointInfo(res);
 		}
-		xmlStr.append("</trkseg>\n");
-		xmlStr.append("</trk>\n");
-		// OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, xmlStr.c_str());
+		additional.append("name = \"").append(name).append("\" ");
+		//				float ms = res->getSegmentSpeed();
+		float ms = res->object->getMaximumSpeed(res->isForwardDirection());
+		if (ms > 0) {
+			additional.append("maxspeed = \"").append(std::to_string(ms * 3.6f)).append("\" ");
+		}
+		additional.append("distance = \"").append(std::to_string((int)(res->segmentTime) * 100 / 100.0f)).append("\" ");
+		additional.append(res->object->getHighway()).append(" ");
+		if (res->turnType) {
+			additional.append("turn = \"").append(res->turnType->toString()).append("\" ");
+			additional.append("turn_angle = \"").append(std::to_string(res->turnType->getTurnAngle())).append("\" ");
+			if (!res->turnType->getLanes().empty()) {
+				additional.append("lanes = \"");
+				additional.append("[");
+				string lanes;
+				for (auto l : res->turnType->getLanes()) {
+					if (!lanes.empty()) {
+						lanes.append(", ");
+					}
+					lanes.append(std::to_string(l));
+				}
+				additional.append(lanes).append("]").append("\" ");
+				;
+			}
+		}
+		additional.append("start_bearing = \"").append(std::to_string(res->getBearingBegin())).append("\" ");
+		additional.append("end_bearing = \"").append(std::to_string(res->getBearingEnd())).append("\" ");
+		additional.append("height = \"");
+		additional.append("[");
+		string hs;
+		const auto& heights = res->getHeightValues();
+		for (auto h : heights) {
+			if (!hs.empty()) {
+				hs.append(", ");
+			}
+			hs.append(std::to_string(h));
+		}
+		additional.append(hs).append("]").append("\" ");
+		additional.append("description = \"").append(res->description).append("\" ");
+
+		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug,
+						  "\t<segment id=\"%d\" oid=\"%lld\" start=\"%d\" end=\"%d\" %s/>",
+						  (res->object->getId() >> SHIFT_ID), res->object->getId(), res->getStartPointIndex(),
+						  res->getEndPointIndex(), additional.c_str());
+		int inc = res->getStartPointIndex() < res->getEndPointIndex() ? 1 : -1;
+		int indexnext = res->getStartPointIndex();
+		int prevX = 0;
+		int prevY = 0;
+		for (int index = res->getStartPointIndex(); index != res->getEndPointIndex();) {
+			index = indexnext;
+			indexnext += inc;
+
+			int x = res->object->pointsX[index];
+			int y = res->object->pointsY[index];
+			double lat = get31LatitudeY(y);
+			double lon = get31LongitudeX(x);
+
+			trkSeg.append("<trkpt");
+			trkSeg.append(" lat=\"").append(std::to_string(lat)).append("\"");
+			trkSeg.append(" lon=\"").append(std::to_string(lon)).append("\"");
+			trkSeg.append(">\n");
+			auto& vls = res->object->heightDistanceArray;
+			double dist = prevX == 0 ? 0 : measuredDist31(x, y, prevX, prevY);
+			if (index * 2 + 1 < vls.size()) {
+				auto h = vls[2 * index + 1];
+				trkSeg.append("<ele>");
+				trkSeg.append(std::to_string(h));
+				trkSeg.append("</ele>\n");
+				if (lastHeight != -180 && dist > 0) {
+					trkSeg.append("<cmt>");
+					trkSeg.append(std::to_string((float)((h - lastHeight) / dist * 100)))
+						.append("%% degree ")
+						.append(std::to_string((float)atan(((h - lastHeight) / dist)) / M_PI * 180))
+						.append(" asc ")
+						.append(std::to_string((float)(h - lastHeight)))
+						.append(" dist ")
+						.append(std::to_string((float)dist));
+					trkSeg.append("</cmt>\n");
+					trkSeg.append("<slope>");
+					trkSeg.append(std::to_string((h - lastHeight) / dist * 100));
+					trkSeg.append("</slope>\n");
+				}
+				trkSeg.append("<desc>");
+				trkSeg.append(std::to_string(res->object->getId() >> SHIFT_ID))
+					.append(" ")
+					.append(std::to_string(index));
+				trkSeg.append("</desc>\n");
+				lastHeight = h;
+			} else if (lastHeight != -180) {
+				//								serializer.startTag("","ele");
+				//								serializer.text(lastHeight +"");
+				//								serializer.endTag("","ele");
+			}
+			trkSeg.append("</trkpt>\n");
+			prevX = x;
+			prevY = y;
+		}
+		xmlStr.append(trkSeg);
+		printAdditionalPointInfo(res);
 	}
+	xmlStr.append("</trkseg>\n");
+	xmlStr.append("</trk>\n");
+	// OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, xmlStr.c_str());
+}
 
 bool segmentLineBelongsToPolygon(CombineAreaRoutePoint& p, CombineAreaRoutePoint& n,
         vector<CombineAreaRoutePoint>& originalWay) {
