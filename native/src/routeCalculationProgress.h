@@ -110,20 +110,20 @@ class RouteCalculationProgress {
 
 		UNORDERED(map)<string, string> time;
 		float timeToCalc =
-			(float)(((this->timeToCalculate).GetElapsedMs() - (firstPhase->timeToCalculate).GetElapsedMs()));
+			(float)(((this->timeToCalculate).GetElapsedMs() - (firstPhase->timeToCalculate).GetElapsedMs())/ 1.0e3);
 		time.insert({"timeToCalculate", std::to_string(timeToCalc)});
 		float timeToLoad =
-			(float)(((this->timeToLoad).GetElapsedMs() - (firstPhase->timeToLoad).GetElapsedMs()) / 1.0e6);
+			(float)(((this->timeToLoad).GetElapsedMs() - (firstPhase->timeToLoad).GetElapsedMs()) / 1.0e3);
 		time.insert({"timeToLoad", std::to_string(timeToLoad)});
 		float timeToLoadHeaders =
 			(float)(((this->timeToLoadHeaders).GetElapsedMs() - (firstPhase->timeToLoadHeaders).GetElapsedMs()) /
-					1.0e6);
+					1.0e3);
 		time.insert({"timeToLoadHeaders", std::to_string(timeToLoadHeaders)});
 		float timeToFindInitialSegments = (float)(((this->timeToFindInitialSegments).GetElapsedMs() -
 												   (firstPhase->timeToFindInitialSegments).GetElapsedMs()) /
-												  1.0e6);
+												  1.0e3);
 		time.insert({"timeToFindInitialSegments", std::to_string(timeToFindInitialSegments)});
-		float timeExtra = (float)(((this->timeExtra).GetElapsedMs() - (firstPhase->timeExtra).GetElapsedMs()) / 1.0e6);
+		float timeExtra = (float)(((this->timeExtra).GetElapsedMs() - (firstPhase->timeExtra).GetElapsedMs()) / 1.0e3);
 		time.insert({"timeExtra", std::to_string(timeExtra)});
 		map.insert({"time", time});
 
