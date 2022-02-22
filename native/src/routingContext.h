@@ -2,7 +2,6 @@
 #define _OSMAND_ROUTING_CONTEXT_H
 #include <algorithm>
 #include <ctime>
-#include <iostream>
 
 #include "CommonCollections.h"
 #include "binaryRead.h"
