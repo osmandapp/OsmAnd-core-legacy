@@ -2,6 +2,7 @@
 #define _OSMAND_ROUTING_CONTEXT_H
 #include <algorithm>
 #include <ctime>
+#include <iostream>
 
 #include "CommonCollections.h"
 #include "binaryRead.h"
@@ -205,42 +206,6 @@ struct RoutingContext {
 		return sz;
 	}
 
-	void unloadUnusedTiles(long memoryLimit) {
-		long sz = getSize();
-		float critical = 0.9f * memoryLimit * 1024 * 1024;
-		if (sz < critical) {
-			return;
-		}
-		float occupiedBefore = sz / (1024. * 1024.);
-		float desirableSize = memoryLimit * 0.7f * 1024 * 1024;
-		vector<SHARED_PTR<RoutingSubregionTile>> list;
-		MAP_SUBREGION_TILES::iterator it = subregionTiles.begin();
-		int loaded = 0;
-		int unloadedTiles = 0;
-		for (; it != subregionTiles.end(); it++) {
-			if (it->second->isLoaded()) {
-				list.push_back(it->second);
-				loaded++;
-			}
-		}
-		sort(list.begin(), list.end(), compareRoutingSubregionTile);
-		uint i = 0;
-		while (sz >= desirableSize && i < list.size()) {
-			SHARED_PTR<RoutingSubregionTile> unload = list[i];
-			i++;
-			sz -= unload->getSize();
-			unload->unload();
-			unloadedTiles++;
-			if (progress) {
-				progress->unloadedTiles++;
-			}
-		}
-		for (i = 0; i < list.size(); i++) {
-			list[i]->access /= 3;
-		}
-		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Run GC (before %f Mb after %f Mb) unload %d of %d tiles",
-						  occupiedBefore, getSize() / (1024.0 * 1024.0), unloadedTiles, loaded);
-	}
 
 	void loadHeaderObjects(int64_t tileId) {
 		const auto itSubregions = indexedSubregions.find(tileId);
@@ -248,16 +213,6 @@ struct RoutingContext {
 			return;
 		}
 		auto& subregions = itSubregions->second;
-		bool gc = false;
-		for (uint j = 0; j < subregions.size(); j++) {
-			if (!subregions[j]->isLoaded()) {
-				gc = true;
-				break;
-			}
-		}
-		if (gc) {
-			unloadUnusedTiles(config->memoryLimitation);
-		}
 		bool load = false;
 		for (uint j = 0; j < subregions.size(); j++) {
 			if (!subregions[j]->isLoaded()) {
@@ -314,7 +269,9 @@ struct RoutingContext {
 							}
 							if (acceptLine(o)) {
 								if (excludedIds.find(o->getId()) == excludedIds.end()) {
-									connectPoint(subregions[j], o, points);
+									if (!points.empty()) {
+										connectPoint(subregions[j], o, points);
+									}
 									subregions[j]->add(o);
 								}
 							}
