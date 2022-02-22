@@ -22,7 +22,7 @@ void deleteObjects(std::vector<FoundMapDataObject>& v) {
 }
 
 double getPowZoom(float zoom) {
-	if (zoom >= 0 && zoom - floor(zoom) < 0.05f) {
+	if (zoom >= 0 && zoom - floor(zoom) < 0.001f) {
 		return 1 << ((int)zoom);
 	} else {
 		return pow(2, zoom);
@@ -64,13 +64,13 @@ double convert31YToMeters(int y1, int y2, int x) {
 	uint div2 = y2 / precisionDiv;
 	uint mod2 = y2 % precisionDiv;
 	double h1;
-		if(div1 + 1 >= sizeof(coefficientsY)/sizeof(*coefficientsY)) {
+		if(div1 + 1 >= sizeof(coefficientsY)) {
 			h1 = coefficientsY[div1] + mod1 / ((double)precisionDiv) * (coefficientsY[div1] - coefficientsY[div1 - 1]);
 		} else {
 			h1 = coefficientsY[div1] + mod1 / ((double)precisionDiv) * (coefficientsY[div1 + 1] - coefficientsY[div1]);
 		}
 		double h2 ;
-		if(div2 + 1 >= sizeof(coefficientsY)/sizeof(*coefficientsY)) {
+		if(div2 + 1 >= sizeof(coefficientsY)) {
 			h2 = coefficientsY[div2] + mod2 / ((double)precisionDiv) * (coefficientsY[div2] - coefficientsY[div2 - 1]);
 		} else {
 			h2 = coefficientsY[div2] + mod2 / ((double)precisionDiv) * (coefficientsY[div2 + 1] - coefficientsY[div2]);
@@ -88,10 +88,10 @@ double convert31XToMeters(int x1, int x2, int y) {
 		}
 		initializeXArray = true;
 	}
-	int ind = y / precisionDiv;
+	int ind = y >> (31 - precisionPower);
 	if (coefficientsX[ind] == 0) {
 		double md = measuredDist31(x1, y, x2, y);
-		if (md < 10 || x1 == x2) {
+		if (md < 10) {
 			return md;
 		}
 		coefficientsX[ind] = md / dabs((double)x1 - (double)x2);
@@ -134,10 +134,10 @@ std::pair<double, double> getProjection(double lat, double lon, double fromLat, 
 }
 
 std::pair<int, int> getProjectionPoint(int px, int py, int xA, int yA, int xB, int yB) {
-	double mDist = measuredDist31(xA, yA, xB, yB);
-	int prx = xA;
-	int pry = yA;
 	double projection = calculateProjection31TileMetric(xA, yA, xB, yB, px, py);
+	double mDist = measuredDist31(xB, yB, xA, yA);
+	int prx = xB;
+	int pry = yB;
 	if (projection < 0) {
 		prx = xA;
 		pry = yA;
@@ -267,8 +267,10 @@ double getDistance(double lat1, double lon1, double lat2, double lon2) {
 	double dLon = toRadians(lon2 - lon1);
 	double a =
 		sin(dLat / 2) * sin(dLat / 2) + cos(toRadians(lat1)) * cos(toRadians(lat2)) * sin(dLon / 2) * sin(dLon / 2);
-	double c = 2 * atan2(sqrt(a), sqrt(1 - a));
-	return R * c * 1000;
+	//double c = 2 * atan2(sqrt(a), sqrt(1 - a));
+	//return R * c * 1000;
+	// simplyfy haversine:
+	return (2 * R * 1000 * asin(sqrt(a)));
 }
 
 double strtod_li(string s) {
