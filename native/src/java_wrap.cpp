@@ -1327,18 +1327,18 @@ class RouteCalculationProgressWrapper : public RouteCalculationProgress {
 			ienv->SetIntField(j, jfield_RouteCalculationProgress_segmentNotFound, s);
 		}
 	}
-	virtual void updateStatus(float distanceFromBegin, int directSegmentQueueSize, float distanceFromEnd,
-							  int reverseSegmentQueueSize) {
-		RouteCalculationProgress::updateStatus(distanceFromBegin, directSegmentQueueSize, distanceFromEnd,
-											   reverseSegmentQueueSize);
-		if (j != NULL) {
-			ienv->SetFloatField(j, jfield_RouteCalculationProgress_distanceFromBegin, this->distanceFromBegin);
-			ienv->SetFloatField(j, jfield_RouteCalculationProgress_distanceFromEnd, this->distanceFromEnd);
-			ienv->SetIntField(j, jfield_RouteCalculationProgress_directSegmentQueueSize, this->directSegmentQueueSize);
-			ienv->SetIntField(j, jfield_RouteCalculationProgress_reverseSegmentQueueSize,
-							  this->reverseSegmentQueueSize);
-		}
-	}
+	// virtual void updateStatus(float distanceFromBegin, int directSegmentQueueSize, float distanceFromEnd,
+	// 						  int reverseSegmentQueueSize) {
+	// 	RouteCalculationProgress::updateStatus(distanceFromBegin, directSegmentQueueSize, distanceFromEnd,
+	// 										   reverseSegmentQueueSize);
+	// 	if (j != NULL) {
+	// 		ienv->SetFloatField(j, jfield_RouteCalculationProgress_distanceFromBegin, this->distanceFromBegin);
+	// 		ienv->SetFloatField(j, jfield_RouteCalculationProgress_distanceFromEnd, this->distanceFromEnd);
+	// 		ienv->SetIntField(j, jfield_RouteCalculationProgress_directSegmentQueueSize, this->directSegmentQueueSize);
+	// 		ienv->SetIntField(j, jfield_RouteCalculationProgress_reverseSegmentQueueSize,
+	// 						  this->reverseSegmentQueueSize);
+	// 	}
+	// }
 };
 
 void parsePrecalculatedRoute(JNIEnv* ienv, RoutingContext* ctx, jobject precalculatedRoute) {
@@ -1703,8 +1703,6 @@ extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_nativeRo
 		addIntField(ienv, progress, jfield_RouteCalculationProgress_reverseSegmentQueueSize, c->progress->reverseSegmentQueueSize);
 		addIntField(ienv, progress, jfield_RouteCalculationProgress_visitedDirectSegments, c->progress->visitedDirectSegments);
 		addIntField(ienv, progress, jfield_RouteCalculationProgress_visitedOppositeSegments, c->progress->visitedOppositeSegments);
-		addIntField(ienv, progress, jfield_RouteCalculationProgress_directQueueSize, c->progress->directQueueSize);
-		addIntField(ienv, progress, jfield_RouteCalculationProgress_oppositeQueueSize, c->progress->oppositeQueueSize);
 
 		addLongField(ienv, progress, jfield_RouteCalculationProgress_timeToLoad, c->progress->timeToLoad.GetElapsedMicros() * 1000);
 		// timeToCalculate set by wrapper
