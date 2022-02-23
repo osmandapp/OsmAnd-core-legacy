@@ -232,8 +232,14 @@ void RoutePlannerFrontEnd::searchGpxRoute(SHARED_PTR<GpxRouteApproximation> &gct
 					routeFound = findGpxRouteSegment(gctx, gpxPoints, start, next, prev != nullptr);
 					if (routeFound) {
 						routeFound = isRouteCloseToGpxPoints(gctx, gpxPoints, start, next);
+						if (!routeFound) {
+							start->routeToTarget.clear();
+						}
 					}
-					if (routeFound) {
+					if (routeFound && next->ind == gpxPoints.size() - 1) {
+						// last point - last route found
+						makeSegmentPointPrecise(start->routeToTarget[start->routeToTarget.size() - 1], next->lat, next->lon, false);
+					} else if (routeFound) {
 						// route is found - cut the end of the route and move to next iteration
 						// start.stepBackRoute = new ArrayList<RouteSegmentResult>();
 						// boolean stepBack = true;
@@ -262,7 +268,7 @@ void RoutePlannerFrontEnd::searchGpxRoute(SHARED_PTR<GpxRouteApproximation> &gct
 			}
 		}
 		// route is not found skip segment and keep it as straight line on display
-		if (!routeFound) {
+		if (!routeFound && next) {
 			// route is not found, move start point by
 			next = findNextGpxPointWithin(gpxPoints, start, gctx->MINIMUM_STEP_APPROXIMATION);
 			if (prev) {
