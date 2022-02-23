@@ -313,8 +313,10 @@ struct RoutingContext {
 								o->processConditionalTags(conditionalTimeStr);
 							}
 							if (acceptLine(o)) {
-								if (excludedIds.find(o->getId()) == excludedIds.end()) {
-									connectPoint(subregions[j], o, points);
+								if (excludedIds.find(o->getId()) == excludedIds.end()) {									
+									if (!points.empty()) {
+										connectPoint(subregions[j], o, points);
+									}
 									subregions[j]->add(o);
 								}
 							}
