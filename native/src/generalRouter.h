@@ -33,6 +33,8 @@ typedef boost::dynamic_bitset<> dynbitset;
 
 struct GeneralRouterConstants {
 	static const double CAR_SHORTEST_DEFAULT_SPEED;
+	static const double BICYCLE_SHORTEST_DEFAULT_SPEED;
+
 	static const char* USE_SHORTEST_WAY;
 	static const char* USE_HEIGHT_OBSTACLES;
 	static const char* ALLOW_PRIVATE;
