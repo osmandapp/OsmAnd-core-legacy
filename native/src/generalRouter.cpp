@@ -14,6 +14,7 @@ const int RouteAttributeExpression::GREAT_EXPRESSION = 2;
 const int RouteAttributeExpression::EQUAL_EXPRESSION = 3;
 
 const double GeneralRouterConstants::CAR_SHORTEST_DEFAULT_SPEED = 55 / 3.6f;
+const double GeneralRouterConstants::BICYCLE_SHORTEST_DEFAULT_SPEED = 15 / 3.6f;
 const char* GeneralRouterConstants::USE_SHORTEST_WAY = "short_way";
 const char* GeneralRouterConstants::USE_HEIGHT_OBSTACLES = "height_obstacles";
 const char* GeneralRouterConstants::ALLOW_PRIVATE = "allow_private";
@@ -74,7 +75,11 @@ GeneralRouter::GeneralRouter(const GeneralRouter& parent, const MAP_STR_STR& par
 	this->maxSpeed = parseFloat(params, GeneralRouterConstants::MAX_SPEED, this->maxSpeed);
 	this->maxVehicleSpeed = this->maxSpeed;
 	if (shortestRoute) {
-		this->maxSpeed = min(GeneralRouterConstants::CAR_SHORTEST_DEFAULT_SPEED, this->maxSpeed);
+		if (this->profile == GeneralRouterProfile::BICYCLE) {
+			this->maxSpeed = min(GeneralRouterConstants::BICYCLE_SHORTEST_DEFAULT_SPEED, this->maxSpeed);
+		} else {
+			this->maxSpeed = min(GeneralRouterConstants::CAR_SHORTEST_DEFAULT_SPEED, this->maxSpeed);
+		}
 	}
 }
 
