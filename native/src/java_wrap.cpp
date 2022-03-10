@@ -503,6 +503,10 @@ jclass jclass_RoutingConfiguration = NULL;
 
 jfieldID jfield_RoutingConfiguration_nativeMemoryLimitation = NULL;
 jfieldID jfield_RoutingConfiguration_heuristicCoefficient = NULL;
+jfieldID jfield_RoutingConfiguration_minPointApproximation = NULL;
+jfieldID jfield_RoutingConfiguration_minStepApproximation = NULL;
+jfieldID jfield_RoutingConfiguration_maxStepApproximation = NULL;
+jfieldID jfield_RoutingConfiguration_smoothenPointsNoRoute = NULL;
 jfieldID jfield_RoutingConfiguration_ZOOM_TO_LOAD_TILES = NULL;
 jfieldID jfield_RoutingConfiguration_planRoadDirection = NULL;
 jfieldID jfield_RoutingConfiguration_routeCalculationTime = NULL;
@@ -896,6 +900,14 @@ void loadJniRenderingContext(JNIEnv* env) {
 		getFid(env, jclass_RoutingConfiguration, "nativeMemoryLimitation", "J");
 	jfield_RoutingConfiguration_heuristicCoefficient =
 		getFid(env, jclass_RoutingConfiguration, "heuristicCoefficient", "F");
+	jfield_RoutingConfiguration_minPointApproximation =
+		getFid(env, jclass_RoutingConfiguration, "minPointApproximation", "F");
+	jfield_RoutingConfiguration_minStepApproximation =
+		getFid(env, jclass_RoutingConfiguration, "minStepApproximation", "F");
+	jfield_RoutingConfiguration_maxStepApproximation =
+		getFid(env, jclass_RoutingConfiguration, "maxStepApproximation", "F");
+	jfield_RoutingConfiguration_smoothenPointsNoRoute =
+		getFid(env, jclass_RoutingConfiguration, "smoothenPointsNoRoute", "F");
 	jfield_RoutingConfiguration_ZOOM_TO_LOAD_TILES =
 		getFid(env, jclass_RoutingConfiguration, "ZOOM_TO_LOAD_TILES", "I");
 	jfield_RoutingConfiguration_planRoadDirection = getFid(env, jclass_RoutingConfiguration, "planRoadDirection", "I");
@@ -1458,6 +1470,10 @@ void parseRouteConfiguration(JNIEnv* ienv, SHARED_PTR<RoutingConfiguration> rCon
 		rConfig->memoryLimitation = nativeMemoryLimitation / 1024 / 1024;
 	}
 	rConfig->heurCoefficient = ienv->GetFloatField(jRouteConfig, jfield_RoutingConfiguration_heuristicCoefficient);
+	rConfig->minPointApproximation = ienv->GetFloatField(jRouteConfig, jfield_RoutingConfiguration_minPointApproximation);
+	rConfig->minStepApproximation = ienv->GetFloatField(jRouteConfig, jfield_RoutingConfiguration_minStepApproximation);
+	rConfig->maxStepApproximation = ienv->GetFloatField(jRouteConfig, jfield_RoutingConfiguration_maxStepApproximation);
+	rConfig->smoothenPointsNoRoute = ienv->GetFloatField(jRouteConfig, jfield_RoutingConfiguration_smoothenPointsNoRoute);
 	rConfig->zoomToLoad = ienv->GetIntField(jRouteConfig, jfield_RoutingConfiguration_ZOOM_TO_LOAD_TILES);
 	rConfig->routeCalculationTime =
 		ienv->GetLongField(jRouteConfig, jfield_RoutingConfiguration_routeCalculationTime) / 1000;

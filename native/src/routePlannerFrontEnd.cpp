@@ -214,19 +214,19 @@ void RoutePlannerFrontEnd::searchGpxRoute(SHARED_PTR<GpxRouteApproximation> &gct
 	SHARED_PTR<GpxPoint> prev;
 	if (gpxPoints.size() > 0) {
 		gctx->ctx->progress->totalIterations =
-			(int)(gpxPoints[gpxPoints.size() - 1]->cumDist / gctx->MAXIMUM_STEP_APPROXIMATION + 1);
+			(int)(gpxPoints[gpxPoints.size() - 1]->cumDist / gctx->ctx->config->maxStepApproximation + 1);
 		start = gpxPoints[0];
 	}
 	while (start && !gctx->ctx->progress->isCancelled()) {
-		double routeDist = gctx->MAXIMUM_STEP_APPROXIMATION;
+		double routeDist = gctx->ctx->config->maxStepApproximation;
 		SHARED_PTR<GpxPoint> next = findNextGpxPointWithin(gpxPoints, start, routeDist);
 		bool routeFound = false;
 		bool stepBack = false;
-		if (next && initRoutingPoint(start, gctx, gctx->MINIMUM_POINT_APPROXIMATION)) {
+		if (next && initRoutingPoint(start, gctx, gctx->ctx->config->minPointApproximation)) {
 			gctx->ctx->progress->totalEstimatedDistance = 0;
-			gctx->ctx->progress->iteration = (int)(next->cumDist / gctx->MAXIMUM_STEP_APPROXIMATION);
-			while (routeDist >= gctx->MINIMUM_STEP_APPROXIMATION && !routeFound) {
-				routeFound = initRoutingPoint(next, gctx, gctx->MINIMUM_POINT_APPROXIMATION);
+			gctx->ctx->progress->iteration = (int)(next->cumDist / gctx->ctx->config->maxStepApproximation);
+			while (routeDist >= gctx->ctx->config->minStepApproximation && !routeFound) {
+				routeFound = initRoutingPoint(next, gctx, gctx->ctx->config->minPointApproximation);
 				if (routeFound) {
 					routeFound = findGpxRouteSegment(gctx, gpxPoints, start, next, prev != nullptr);
 					if (routeFound) {
@@ -244,9 +244,9 @@ void RoutePlannerFrontEnd::searchGpxRoute(SHARED_PTR<GpxRouteApproximation> &gct
 						// boolean stepBack = true;
 						stepBack = stepBackAndFindPrevPointInRoute(gctx, gpxPoints, start, next);
 						if (!stepBack) {
-							// not supported case (workaround increase MAXIMUM_STEP_APPROXIMATION)
+							// not supported case (workaround increase maxStepApproximation)
 							OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
-											  "Consider to increase MAXIMUM_STEP_APPROXIMATION to: %f", routeDist * 2);
+											  "Consider to increase maxStepApproximation to: %f", routeDist * 2);
 							start->routeToTarget.clear();
 							routeFound = false;
 						}
@@ -255,9 +255,9 @@ void RoutePlannerFrontEnd::searchGpxRoute(SHARED_PTR<GpxRouteApproximation> &gct
 				if (!routeFound) {
 					// route is not found move next point closer to start point (distance / 2)
 					routeDist = routeDist / 2;
-					if (routeDist < gctx->MINIMUM_STEP_APPROXIMATION &&
-						routeDist > gctx->MINIMUM_STEP_APPROXIMATION / 2 + 1) {
-						routeDist = gctx->MINIMUM_STEP_APPROXIMATION;
+					if (routeDist < gctx->ctx->config->minStepApproximation &&
+						routeDist > gctx->ctx->config->minStepApproximation / 2 + 1) {
+						routeDist = gctx->ctx->config->minStepApproximation;
 					}
 					next = findNextGpxPointWithin(gpxPoints, start, routeDist);
 					if (next) {
@@ -269,7 +269,7 @@ void RoutePlannerFrontEnd::searchGpxRoute(SHARED_PTR<GpxRouteApproximation> &gct
 		// route is not found skip segment and keep it as straight line on display
 		if (!routeFound && next) {
 			// route is not found, move start point by
-			next = findNextGpxPointWithin(gpxPoints, start, gctx->MINIMUM_STEP_APPROXIMATION);
+			next = findNextGpxPointWithin(gpxPoints, start, gctx->ctx->config->minStepApproximation);
 			if (prev) {
 				prev->routeToTarget.insert(prev->routeToTarget.end(), prev->stepBackRoute.begin(),
 										   prev->stepBackRoute.end());
@@ -384,10 +384,10 @@ bool RoutePlannerFrontEnd::isRouteCloseToGpxPoints(SHARED_PTR<GpxRouteApproximat
 bool RoutePlannerFrontEnd::stepBackAndFindPrevPointInRoute(SHARED_PTR<GpxRouteApproximation> &gctx, vector<SHARED_PTR<GpxPoint>>& gpxPoints,
 	                                 SHARED_PTR<GpxPoint>& start, SHARED_PTR<GpxPoint>& next) {
 	// step back to find to be sure
-	// 1) route point is behind GpxPoint - MINIMUM_POINT_APPROXIMATION (end route point could slightly ahead)
+	// 1) route point is behind GpxPoint - minPointApproximation (end route point could slightly ahead)
 	// 2) we don't miss correct turn i.e. points could be attached to muliple routes
 	// 3) to make sure that we perfectly connect to RoadDataObject points
-	double STEP_BACK_DIST = max(gctx->MINIMUM_POINT_APPROXIMATION, gctx->MINIMUM_STEP_APPROXIMATION);
+	double STEP_BACK_DIST = max(gctx->ctx->config->minPointApproximation, gctx->ctx->config->minStepApproximation);
 	double d = 0;
 	int64_t segmendInd = start->routeToTarget.size() - 1;
 	bool search = true;
@@ -483,9 +483,9 @@ void RoutePlannerFrontEnd::addStraightLine(SHARED_PTR<GpxRouteApproximation>& gc
 	                 RoutingIndex* reg, bool shouldOwnRoutingIndex) {
 	SHARED_PTR<RouteDataObject> rdo = std::make_shared<RouteDataObject>(reg);
 	rdo->ownsRegion = shouldOwnRoutingIndex;
-	if (gctx->SMOOTHEN_POINTS_NO_ROUTE > 0) {
+	if (gctx->ctx->config->smoothenPointsNoRoute > 0) {
 		std::vector<bool> include(lastStraightLine.size(), true);
-		simplifyDouglasPeucker(lastStraightLine, gctx->SMOOTHEN_POINTS_NO_ROUTE, 0, (int) lastStraightLine.size() - 1, include);
+		simplifyDouglasPeucker(lastStraightLine, gctx->ctx->config->smoothenPointsNoRoute, 0, (int) lastStraightLine.size() - 1, include);
 		vector<LatLon> simplifiedLine;
 		for (int i = 0; i < include.size(); i++) {
 			if (include[i]) {
@@ -664,14 +664,14 @@ bool RoutePlannerFrontEnd::pointCloseEnough(SHARED_PTR<GpxRouteApproximation>& g
 						  gpxPointNext->pnt ? gpxPointNext->pnt->getPreciseLatLon().lon : gpxPointNext->lon);
 	std::pair<double, double> projection =
 		getProjection(point.lat, point.lon, gpxPointLL.lat, gpxPointLL.lon, gpxPointNextLL.lat, gpxPointNextLL.lon);
-	return getDistance(projection.first, projection.second, point.lat, point.lon) <= gctx->MINIMUM_POINT_APPROXIMATION;
+	return getDistance(projection.first, projection.second, point.lat, point.lon) <= gctx->ctx->config->minPointApproximation;
 }
 
 bool RoutePlannerFrontEnd::pointCloseEnough(SHARED_PTR<GpxRouteApproximation>& gctx, SHARED_PTR<GpxPoint>& ipoint,
 					  vector<SHARED_PTR<RouteSegmentResult>>& res) {
 	int px = get31TileNumberX(ipoint->lon);
 	int py = get31TileNumberY(ipoint->lat);
-	double SQR = gctx->MINIMUM_POINT_APPROXIMATION;
+	double SQR = gctx->ctx->config->minPointApproximation;
 	SQR *= SQR;
 	for (SHARED_PTR<RouteSegmentResult>& sr : res) {
 		int start = sr->getStartPointIndex();
