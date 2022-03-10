@@ -11,14 +11,6 @@ struct RouteSegment;
 struct RoutingConfiguration;
 
 struct GpxRouteApproximation {
-	// ! MAIN parameter to approximate (35m good for custom recorded tracks)
-	double MINIMUM_POINT_APPROXIMATION = 50; // 35 m good for small deviations
-	// This parameter could speed up or slow down evaluation (better to make bigger for long routes and smaller for short)
-	double MAXIMUM_STEP_APPROXIMATION = 3000;
-	// don't search subsegments shorter than specified distance (also used to step back for car turns)
-	double MINIMUM_STEP_APPROXIMATION = 100;
-	// Parameter to smoother the track itself (could be 0 if it's not recorded track)
-	double SMOOTHEN_POINTS_NO_ROUTE = 5;
 	
 	RoutingContext* ctx;
 	int routeCalculations = 0;

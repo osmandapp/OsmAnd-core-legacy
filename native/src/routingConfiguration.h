@@ -64,14 +64,26 @@ struct RoutingConfiguration {
 
     SHARED_PTR<GeneralRouter> router;
 
-	long memoryLimitation;
-	float initialDirection;
+    long memoryLimitation;
+    float initialDirection;
 
-	int zoomToLoad;
-	float heurCoefficient;
-	int planRoadDirection;
-	string routerName;
-	
+    int zoomToLoad;
+    float heurCoefficient;
+    int planRoadDirection;
+    string routerName;
+
+    // ! MAIN parameter to approximate (35m good for custom recorded tracks)
+    float minPointApproximation = 50;
+
+    // don't search subsegments shorter than specified distance (also used to step back for car turns)
+    float minStepApproximation = 100;
+
+    // This parameter could speed up or slow down evaluation (better to make bigger for long routes and smaller for short)
+    float maxStepApproximation = 3000;
+
+    // Parameter to smoother the track itself (could be 0 if it's not recorded track)
+    float smoothenPointsNoRoute = 5;
+
     // 1.5 Recalculate distance help
     float recalculateDistance;
     time_t routeCalculationTime = 0;
@@ -87,14 +99,18 @@ struct RoutingConfiguration {
     }
 
     void initParams() {
-		planRoadDirection = (int) parseFloat(getAttribute(router, "planRoadDirection"), 0);
-		heurCoefficient = parseFloat(getAttribute(router, "heuristicCoefficient"), 1);
+        planRoadDirection = (int) parseFloat(getAttribute(router, "planRoadDirection"), 0);
         recalculateDistance = parseFloat(getAttribute(router, "recalculateDistanceHelp"), 20000);
-		// don't use file limitations?
-		memoryLimitation = (int)parseFloat(getAttribute(router, "nativeMemoryLimitInMB"), memoryLimitation);
-		zoomToLoad = (int)parseFloat(getAttribute(router, "zoomToLoadTiles"), 16);
-		//routerName = parseString(getAttribute(router, "name"), "default");
-	}
+        heurCoefficient = parseFloat(getAttribute(router, "heuristicCoefficient"), 1);
+        minPointApproximation = parseFloat(getAttribute(router, "minPointApproximation"), 50);
+        minStepApproximation = parseFloat(getAttribute(router, "minStepApproximation"), 100);
+        maxStepApproximation = parseFloat(getAttribute(router, "maxStepApproximation"), 3000);
+        smoothenPointsNoRoute = parseFloat(getAttribute(router, "smoothenPointsNoRoute"), 5);
+        // don't use file limitations?
+        memoryLimitation = (int)parseFloat(getAttribute(router, "nativeMemoryLimitInMB"), memoryLimitation);
+        zoomToLoad = (int)parseFloat(getAttribute(router, "zoomToLoadTiles"), 16);
+        //routerName = parseString(getAttribute(router, "name"), "default");
+    }
 };
 
 class RoutingConfigurationBuilder {
