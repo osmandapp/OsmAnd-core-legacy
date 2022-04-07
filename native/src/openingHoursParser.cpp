@@ -202,6 +202,14 @@ void StringsHolder::setAdditionalString(const std::string& key, const std::strin
 	additionalStrings[key] = value;
 }
 
+void StringsHolder::setLocalizedDaysOfWeek(const std::vector<std::string>& value) {
+    localDaysStr = value;
+}
+
+void StringsHolder::setLocalizedMounths(const std::vector<std::string>& value) {
+    localMothsStr = value;
+}
+
 OpeningHoursParser::BasicOpeningHourRule::BasicOpeningHourRule() : _sequenceIndex(0) {
 	init();
 }
@@ -1942,6 +1950,14 @@ bool OpeningHoursParser::parseTime(const std::string& time, tm& dateTime) {
 
 void OpeningHoursParser::setAdditionalString(const std::string& key, const std::string& value) {
 	stringsHolder.setAdditionalString(key, value);
+}
+
+void OpeningHoursParser::setLocalizedDaysOfWeek(const std::vector<std::string>& value) {
+    stringsHolder.setLocalizedDaysOfWeek(value);
+}
+
+void OpeningHoursParser::setLocalizedMounths(const std::vector<std::string>& value) {
+    stringsHolder.setLocalizedMounths(value);
 }
 
 void OpeningHoursParser::setTwelveHourFormattingEnabled(bool enabled) {

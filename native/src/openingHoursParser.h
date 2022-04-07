@@ -23,6 +23,8 @@ struct StringsHolder {
 
 	void initLocalStrings();
 	void setAdditionalString(const std::string& key, const std::string& value);
+    void setLocalizedDaysOfWeek(const std::vector<std::string>& value);
+    void setLocalizedMounths(const std::vector<std::string>& value);
 };
 
 struct OpeningHoursParser {
@@ -673,6 +675,8 @@ struct OpeningHoursParser {
 	~OpeningHoursParser();
 
 	static void setAdditionalString(const std::string& key, const std::string& value);
+    static void setLocalizedDaysOfWeek(const std::vector<std::string>& value);
+    static void setLocalizedMounths(const std::vector<std::string>& value);
 
 	static void setTwelveHourFormattingEnabled(bool enabled);
 
