@@ -677,7 +677,9 @@ struct OpeningHoursParser {
 	static void setAdditionalString(const std::string& key, const std::string& value);
     static void setLocalizedDaysOfWeek(const std::vector<std::string>& value);
     static void setLocalizedMounths(const std::vector<std::string>& value);
+    static void setExternalTimeFormatterCallback(std::function<std::string (int hours, int minutes, bool appendAmPM)> callback);
 
+    static void setAmpmOnLeft(bool value);
 	static void setTwelveHourFormattingEnabled(bool enabled);
 
 	static void parseRuleV2(const std::string& rl, int sequenceIndex,

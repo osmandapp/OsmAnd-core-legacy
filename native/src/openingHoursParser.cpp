@@ -14,6 +14,9 @@ static const int CURRENT_DAY_TIME_LIMIT = -2;
 static StringsHolder stringsHolder;
 
 static bool twelveHourFormatting;
+static bool isAmpmOnLeft;
+
+static std::function<std::string (int, int, bool)> externalTimeFormatterCallback;
 
 inline std::tm ohp_localtime(const std::time_t& time) {
 	std::tm tm_snapshot;
@@ -114,9 +117,9 @@ void OpeningHoursParser::formatTimeRange(int startMinute, int endMinute, std::st
 	int endHour = (endMinute / 60) % 24;
 	bool sameDayPart = std::max(startHour, endHour) < 12 || std::min(startHour, endHour) >= 12;
 	if (twelveHourFormatting && sameDayPart) {
-		formatTime(startMinute, b, false);
+		formatTime(startMinute, b, isAmpmOnLeft);
 		b << "–";
-		formatTime(endMinute, b, true);
+		formatTime(endMinute, b, !isAmpmOnLeft);
 	} else {
 		formatTime(startMinute, b);
 		b << "–";
@@ -135,23 +138,29 @@ void OpeningHoursParser::formatTime(int minutes, std::stringstream& b, bool appe
 }
 
 void OpeningHoursParser::formatTime(int hours, int minutes, std::stringstream& b, bool appendAmPm) {
-	if (twelveHourFormatting) {
-		tm time;
-		time.tm_min = minutes;
-		time.tm_hour = hours;
-        char mbstr[100];
-		std::strftime(mbstr, sizeof(mbstr), appendAmPm ? "%I:%M %p" : "%I:%M", &time);
-        b << mbstr;
-    } else {
-        if (hours < 10) {
-            b << "0";
+    
+    if (externalTimeFormatterCallback != nullptr) {
+        b << externalTimeFormatterCallback(hours, minutes, appendAmPm);
+    }
+    else {
+        if (twelveHourFormatting) {
+            tm time;
+            time.tm_min = minutes;
+            time.tm_hour = hours;
+            char mbstr[100];
+            std::strftime(mbstr, sizeof(mbstr), appendAmPm ? "%I:%M %p" : "%I:%M", &time);
+            b << mbstr;
+        } else {
+            if (hours < 10) {
+                b << "0";
+            }
+            b << hours << ":";
+            if (minutes < 10) {
+                b << "0";
+            }
+            b << minutes;
         }
-        b << hours << ":";
-        if (minutes < 10) {
-            b << "0";
-        }
-        b << minutes;
-	}
+    }
 }
 
 StringsHolder::StringsHolder() {
@@ -174,26 +183,8 @@ StringsHolder::~StringsHolder() {
 void StringsHolder::initLocalStrings() {
 	daysStr = std::vector<std::string>{"Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"};
 	monthsStr = std::vector<std::string>{"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
-
-	tm time;
-	std::vector<std::string> localDaysStr_;
-	for (int i = 0; i < 7; i++) {
-		char mbstr[100];
-		time.tm_wday = i;
-		std::strftime(mbstr, sizeof(mbstr), "%a", &time);
-
-		localDaysStr_.push_back(std::string(mbstr));
-	}
-
-	localDaysStr = getTwoLettersStringArray(localDaysStr_);
-
-	for (int i = 0; i < 12; i++) {
-		char mbstr[100];
-		time.tm_mon = i;
-		std::strftime(mbstr, sizeof(mbstr), "%b", &time);
-
-		localMothsStr.push_back(std::string(mbstr));
-	}
+    localDaysStr = daysStr;
+    localMothsStr = monthsStr;
 }
 /**
  * Set additional localized strings like "off", etc.
@@ -1962,6 +1953,14 @@ void OpeningHoursParser::setLocalizedMounths(const std::vector<std::string>& val
 
 void OpeningHoursParser::setTwelveHourFormattingEnabled(bool enabled) {
 	twelveHourFormatting = enabled;
+}
+
+void OpeningHoursParser::setAmpmOnLeft(bool value) {
+    isAmpmOnLeft = value;
+}
+
+void OpeningHoursParser::setExternalTimeFormatterCallback(std::function<std::string (int hours, int minutes, bool appendAmPM)> callback) {
+    externalTimeFormatterCallback = callback;
 }
 
 /**
