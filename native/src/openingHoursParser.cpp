@@ -882,7 +882,7 @@ bool OpeningHoursParser::BasicOpeningHourRule::hasOverlapTimes() const {
 }
 
 bool OpeningHoursParser::BasicOpeningHourRule::hasOverlapTimes(const tm& dateTime,
-															   const std::shared_ptr<OpeningHoursRule>& r) const {
+	const std::shared_ptr<OpeningHoursRule>& r, bool strictOverlap) const {
 	if (_off) return true;
 
 	if (r != nullptr && r->contains(dateTime)) {
@@ -906,8 +906,8 @@ bool OpeningHoursParser::BasicOpeningHourRule::hasOverlapTimes(const tm& dateTim
 					else if (rStartTime >= rEndTime)
 						rEndTime = 24 * 60 + rEndTime;
 
-					if ((rStartTime >= startTime && rStartTime < endTime) ||
-						(startTime >= rStartTime && startTime < rEndTime)) {
+					if ((rStartTime >= startTime && (strictOverlap ? rStartTime <= endTime : rStartTime < endTime)) ||
+						(startTime >= rStartTime && (strictOverlap ? startTime <= rEndTime : startTime < rEndTime))) {
 						return true;
 					}
 				}
@@ -936,7 +936,7 @@ bool OpeningHoursParser::UnparseableRule::hasOverlapTimes() const {
 }
 
 bool OpeningHoursParser::UnparseableRule::hasOverlapTimes(const tm& dateTime,
-														  const std::shared_ptr<OpeningHoursRule>& r) const {
+	const std::shared_ptr<OpeningHoursRule>& r, bool strictOverlap) const {
 	return false;
 }
 
@@ -1128,7 +1128,7 @@ bool OpeningHoursParser::OpeningHours::isOpenedForTimeV2(const tm& dateTime, int
 		bool checkNext = false;
 		const auto rule = rules[i];
 		if (rule->contains(dateTime)) {
-			if (i > 0) checkNext = !rule->hasOverlapTimes(dateTime, rules[i - 1]);
+			if (i > 0) checkNext = !rule->hasOverlapTimes(dateTime, rules[i - 1], false);
 
 			bool open = rule->isOpenedForTime(dateTime);
 			if (open || (!overlap && !checkNext)) {
@@ -1245,7 +1245,7 @@ std::string OpeningHoursParser::OpeningHours::getTimeDay(const tm& dateTime, int
 	std::shared_ptr<OpeningHoursRule> prevRule = nullptr;
 	for (const auto r : rules) {
 		if (r->containsDay(dateTime) && r->containsMonth(dateTime)) {
-			if (atTime.length() > 0 && prevRule != nullptr && !r->hasOverlapTimes(dateTime, prevRule))
+			if (atTime.length() > 0 && prevRule != nullptr && !r->hasOverlapTimes(dateTime, prevRule, true))
 				return atTime;
 			else
 				atTime = r->getTime(dateTime, false, limit, opening);
@@ -1288,7 +1288,7 @@ std::string OpeningHoursParser::OpeningHours::getCurrentRuleTime(const tm& dateT
 		bool checkNext = false;
 		const auto rule = rules[i];
 		if (rule->contains(dateTime)) {
-			if (i > 0) checkNext = !rule->hasOverlapTimes(dateTime, rules[i - 1]);
+			if (i > 0) checkNext = !rule->hasOverlapTimes(dateTime, rules[i - 1], false);
 
 			bool open = rule->isOpenedForTime(dateTime);
 			if (open || (!overlap && !checkNext))
@@ -1760,7 +1760,8 @@ void OpeningHoursParser::buildRule(std::shared_ptr<BasicOpeningHourRule>& basic,
 		auto& days = basic->getDays();
 		std::fill(days.begin(), days.end(), true);
 		basic->setHasDays(true);
-	} else if (presentTokens.find(TokenType::TOKEN_DAY_WEEK) != presentTokens.end()) {
+	} else if (presentTokens.find(TokenType::TOKEN_DAY_WEEK) != presentTokens.end() &&
+		presentTokens.find(TokenType::TOKEN_HOLIDAY) != presentTokens.end()) {
 		basic->setHasDays(true);
 	}
 	rules.insert(rules.begin(), basic);
@@ -2022,8 +2023,16 @@ std::vector<std::shared_ptr<OpeningHoursParser::OpeningHours::Info>> OpeningHour
 void OpeningHoursParser::runTest() {
 	// 0. not properly supported
 	// hours = parseOpenedHours("Mo-Su (sunrise-00:30)-(sunset+00:30)");
-
-	auto hours = parseOpenedHours(
+	auto hours = parseOpenedHours("PH,Mo-Su 09:00-22:00");
+	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
+	testOpened("13.10.2021 11:54", hours, true);
+	hours = parseOpenedHours("Mo 09:00-12:00; We,Sa 13:30-17:00, Apr 01-Oct 31 We,Sa 17:00-18:30; PH off");
+	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
+	testInfo("03.10.2020 14:00", hours, "Open till 18:30");
+	hours = parseOpenedHours("Mo-We 07:00-21:00, Th-Fr 07:00-21:30, PH,Sa-Su 08:00-21:00");
+	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
+	testOpened("29.08.2021 10:09", hours, true);
+	hours = parseOpenedHours(
 		"Mo-Fr 08:00-12:30, Mo-We 12:30-16:30 \"Sur rendez-vous\", Fr 12:30-15:30 \"Sur rendez-vous\"");
 	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
 	testInfo("13.10.2019 18:00", hours, "Will open tomorrow at 08:00");
