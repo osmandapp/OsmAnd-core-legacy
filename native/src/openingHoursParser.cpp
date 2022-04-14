@@ -2606,7 +2606,7 @@ void OpeningHoursParser::testAmPm() {
 	testInfo("15.01.2018 16:00", hours, "Will close at 6:00 PM");
 	testInfo("15.01.2018 18:10", hours, "Will open tomorrow at 9:00 AM");
 
-//	// Don't write AM or PM twice for range
+    // Don't write AM or PM twice for range
 	std::string string = "Mo-Fr 04:30-10:00, 07:30-23:00; Sa, Su, PH 13:30-23:00";
 	hours = parseOpenedHours(string);
 	testParsedAndAssembledCorrectly("Mo-Fr 4:30-10:00 AM, 7:30 AM-11:00 PM; Sa, Su, PH 1:30-11:00 PM", hours);
@@ -2622,7 +2622,7 @@ void OpeningHoursParser::testAmPm() {
     testParsedAndAssembledCorrectly("Mo-Fr 上午4:30-10:00, 上午7:30-下午11:00; Sa, Su, PH 下午1:30-11:00", hours);
     
     // Arabic
-    // or arabic text NSDateFormatter show whitespace 0xA0 (ascii code 160) instead of 0x20 (ascii code 32)
+    // For arabic text NSDateFormatter show whitespace 0xA0 (ascii code 160) instead of 0x20 (ascii code 32)
     OpeningHoursParser::setTwelveHourFormattingEnabled(true, "ar");
     string = "Mo-Fr 04:30-10:00, 07:30-23:00; Sa, Su, PH 13:30-23:00";
     hours = parseOpenedHours(string);
