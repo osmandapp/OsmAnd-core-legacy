@@ -667,6 +667,7 @@ struct OpeningHoursParser {
 	static void formatTime(int minutes, std::stringstream& b);
 	static void formatTime(int minutes, std::stringstream& b, bool appendAmPM);
 	static void formatTime(int hours, int minutes, std::stringstream& b, bool appendAmPm);
+    static void updateLocale(std::string locale);
 
 	static void testAmPm();
 
@@ -678,9 +679,10 @@ struct OpeningHoursParser {
     static void setLocalizedDaysOfWeek(const std::vector<std::string>& value);
     static void setLocalizedMounths(const std::vector<std::string>& value);
     static void setExternalTimeFormatterCallback(std::function<std::string (int hours, int minutes, bool appendAmPM)> callback);
+    static void setExternallocalisationUpdatingCallback(std::function<std::vector<std::vector<std::string>> (std::string locale)> callback);
 
     static void setAmpmOnLeft(bool value);
-	static void setTwelveHourFormattingEnabled(bool enabled);
+	static void setTwelveHourFormattingEnabled(bool enabled, std::string locale);
 
 	static void parseRuleV2(const std::string& rl, int sequenceIndex,
 							std::vector<std::shared_ptr<OpeningHoursRule>>& rules);
