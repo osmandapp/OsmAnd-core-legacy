@@ -24,7 +24,7 @@ struct StringsHolder {
 	void initLocalStrings();
 	void setAdditionalString(const std::string& key, const std::string& value);
     void setLocalizedDaysOfWeek(const std::vector<std::string>& value);
-    void setLocalizedMounths(const std::vector<std::string>& value);
+    void setLocalizedMonths(const std::vector<std::string>& value);
 };
 
 struct OpeningHoursParser {
@@ -669,8 +669,6 @@ struct OpeningHoursParser {
 	static void formatTime(int hours, int minutes, std::stringstream& b, bool appendAmPm);
     static void updateLocale(std::string locale);
 
-	static void testAmPm();
-
    public:
 	OpeningHoursParser(const std::string& openingHours);
 	~OpeningHoursParser();
@@ -679,10 +677,9 @@ struct OpeningHoursParser {
     static void setLocalizedDaysOfWeek(const std::vector<std::string>& value);
     static void setLocalizedMonths(const std::vector<std::string>& value);
     static void setExternalTimeFormatterCallback(std::function<std::string (int hours, int minutes, bool appendAmPM)> callback);
-    static void setExternallocalisationUpdatingCallback(std::function<std::vector<std::vector<std::string>> (std::string locale)> callback);
 
     static void setAmpmOnLeft(bool value);
-	static void setTwelveHourFormattingEnabled(bool enabled, std::string locale);
+	static void setTwelveHourFormattingEnabled(bool enabled);
 
 	static void parseRuleV2(const std::string& rl, int sequenceIndex,
 							std::vector<std::shared_ptr<OpeningHoursRule>>& rules);
@@ -694,6 +691,9 @@ struct OpeningHoursParser {
 	static std::vector<std::shared_ptr<OpeningHours::Info>> getInfo(const std::string& format);
 
 	static void runTest();
+    static void runTestAmPmEnglish();
+    static void runTestAmPmChinese();
+    static void runTestAmPmArabic();
 };
 
 #endif	// _OPENINGHOURSPARSER_H

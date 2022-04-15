@@ -16,7 +16,6 @@ static StringsHolder stringsHolder;
 static bool twelveHourFormatting;
 static bool isAmPmOnLeft;
 static std::function<std::string (int, int, bool)> externalTimeFormatterCallback;
-static std::function<std::vector<std::vector<std::string>> (std::string)> externallocalisationUpdatingCallback;
 
 inline std::tm ohp_localtime(const std::time_t& time) {
 	std::tm tm_snapshot;
@@ -1951,31 +1950,16 @@ void OpeningHoursParser::setLocalizedMonths(const std::vector<std::string>& valu
     stringsHolder.setLocalizedMonths(value);
 }
 
-void OpeningHoursParser::setTwelveHourFormattingEnabled(bool enabled, std::string locale) {
+void OpeningHoursParser::setTwelveHourFormattingEnabled(bool enabled) {
 	twelveHourFormatting = enabled;
-    updateLocale(locale);
 }
 
 void OpeningHoursParser::setAmpmOnLeft(bool value) {
     isAmPmOnLeft = value;
 }
 
-void OpeningHoursParser::updateLocale(std::string locale) {
-    if (externallocalisationUpdatingCallback != nullptr) {
-        std::vector<std::vector<std::string>> updatedSettings = externallocalisationUpdatingCallback(locale);
-        
-        stringsHolder.setLocalizedDaysOfWeek(updatedSettings[0]);
-        stringsHolder.setLocalizedMonths(updatedSettings[1]);
-        isAmPmOnLeft = updatedSettings[2][0] == "true";
-    }
-}
-
 void OpeningHoursParser::setExternalTimeFormatterCallback(std::function<std::string (int hours, int minutes, bool appendAmPM)> callback) {
     externalTimeFormatterCallback = callback;
-}
-
-void OpeningHoursParser::setExternallocalisationUpdatingCallback(std::function<std::vector<std::vector<std::string>> (std::string locale)> callback) {
-    externallocalisationUpdatingCallback = callback;
 }
 
 /**
@@ -2126,7 +2110,7 @@ void OpeningHoursParser::runTest() {
 	// 0. not properly supported
 	// hours = parseOpenedHours("Mo-Su (sunrise-00:30)-(sunset+00:30)");
 
-	OpeningHoursParser::setTwelveHourFormattingEnabled(false, "en");
+	OpeningHoursParser::setTwelveHourFormattingEnabled(false);
 	auto hours = parseOpenedHours("Mo 09:00-12:00; We,Sa 13:30-17:00, Apr 01-Oct 31 We,Sa 17:00-18:30; PH off");
 	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
 	testInfo("03.10.2020 14:00", hours, "Open till 18:30");
@@ -2566,14 +2550,11 @@ void OpeningHoursParser::runTest() {
 	testParsedAndAssembledCorrectly("Mo-Fr 10:00-21:00; Sa 12:00-23:00; PH - Wird auf der Homepage bekannt gegeben.",
 									hours);
 
-	OpeningHoursParser::testAmPm();
-
 	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "OpeningHoursParser test done");
 }
 
-void OpeningHoursParser::testAmPm() {
-	OpeningHoursParser::setTwelveHourFormattingEnabled(true, "en");
-
+void OpeningHoursParser::runTestAmPmEnglish() {
+	OpeningHoursParser::setTwelveHourFormattingEnabled(true);
 	auto hours = parseOpenedHours("Mo-Fr: 9:00-13:00, 14:00-18:00");
 	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
 	testInfo("15.01.2018 08:00", hours, "Will open at 9:00 AM");
@@ -2593,16 +2574,22 @@ void OpeningHoursParser::testAmPm() {
 	hours = parseOpenedHours(string);
 	testParsedAndAssembledCorrectly("Mo-Fr 12:00 AM-12:00 PM, 12:00 PM-12:00 AM", hours);
     
-    // Chinese
-    OpeningHoursParser::setTwelveHourFormattingEnabled(true, "zh");
-    string = "Mo-Fr 04:30-10:00, 07:30-23:00; Sa, Su, PH 13:30-23:00";
-    hours = parseOpenedHours(string);
+    OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "OpeningHoursParser test AmPm English done");
+}
+
+void OpeningHoursParser::runTestAmPmChinese() {
+    OpeningHoursParser::setTwelveHourFormattingEnabled(true);
+    std::string string = "Mo-Fr 04:30-10:00, 07:30-23:00; Sa, Su, PH 13:30-23:00";
+    auto hours = parseOpenedHours(string);
     testParsedAndAssembledCorrectly("Mo-Fr 上午4:30-10:00, 上午7:30-下午11:00; Sa, Su, PH 下午1:30-11:00", hours);
-    
-    // Arabic
+    OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "OpeningHoursParser test AmPm Chinese done");
+}
+
+void OpeningHoursParser::runTestAmPmArabic() {
     // For arabic text NSDateFormatter show whitespace 0xA0 (ascii code 160) instead of 0x20 (ascii code 32)
-    OpeningHoursParser::setTwelveHourFormattingEnabled(true, "ar");
-    string = "Mo-Fr 04:30-10:00, 07:30-23:00; Sa, Su, PH 13:30-23:00";
-    hours = parseOpenedHours(string);
+    OpeningHoursParser::setTwelveHourFormattingEnabled(true);
+    std::string string = "Mo-Fr 04:30-10:00, 07:30-23:00; Sa, Su, PH 13:30-23:00";
+    auto hours = parseOpenedHours(string);
     testParsedAndAssembledCorrectly("Mo-Fr ٤:٣٠-١٠:٠٠ ص, ٧:٣٠ ص-١١:٠٠ م; Sa, Su, PH ١:٣٠-١١:٠٠ م", hours);
+    OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "OpeningHoursParser test AmPm Arabic done");
 }
