@@ -2578,7 +2578,6 @@ void OpeningHoursParser::runTestAmPmEnglish() {
 }
 
 void OpeningHoursParser::runTestAmPmChinese() {
-    std::string string = "Mo-Fr 04:30-10:00, 07:30-23:00; Sa, Su, PH 13:30-23:00";
 	OpeningHoursParser::setTwelveHourFormattingEnabled(true);
 	std::string string = "Mo-Fr 04:30-10:00, 07:30-23:00; Sa, Su, PH 13:30-23:00";
 	auto hours = parseOpenedHours(string);
