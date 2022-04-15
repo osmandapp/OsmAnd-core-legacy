@@ -2,7 +2,7 @@
 #define _OPENINGHOURSPARSER_H
 
 //  OsmAnd-java/src/net/osmand/util/OpeningHoursParser.java
-//  git revision d29e839ed9e22be60ddf66df8a9df554787809a7
+//  git revision 577a5bf03975880f8214a71a7b86d21e590d66ef
 
 #include <ctime>
 #include <memory>
@@ -21,11 +21,15 @@ struct StringsHolder {
 	StringsHolder();
 	~StringsHolder();
 
+	void initLocalStrings();
 	void setAdditionalString(const std::string& key, const std::string& value);
+	void setLocalizedDaysOfWeek(const std::vector<std::string>& value);
+	void setLocalizedMonths(const std::vector<std::string>& value);
 };
 
 struct OpeningHoursParser {
    private:
+
 	enum class TokenType : int {
 		TOKEN_UNKNOWN = 0,
 		TOKEN_COLON,
@@ -95,6 +99,7 @@ struct OpeningHoursParser {
 	 * - a collection of days/dates
 	 * - a time range
 	 */
+
 	struct OpeningHoursRule {
 		/**
 		 * Check if, for this rule, the feature is opened for time "date"
@@ -164,9 +169,11 @@ struct OpeningHoursParser {
 		 * @param r the rule to check
 		 * @return true if the this rule times overlap with r times
 		 */
-		virtual bool hasOverlapTimes(const tm& dateTime, const std::shared_ptr<OpeningHoursRule>& r) const = 0;
+		virtual bool hasOverlapTimes(const tm& dateTime, const std::shared_ptr<OpeningHoursRule>& r, bool strictOverlap) const = 0;
 
 		virtual int getSequenceIndex() const = 0;
+
+		virtual bool isFallbackRule() const = 0;
 
 		/**
 		 * @param date
@@ -194,8 +201,7 @@ struct OpeningHoursParser {
 		int getPreviousDay(int currentDay) const;
 		int getNextDay(int currentDay) const;
 		int getCurrentTimeInMinutes(const tm& dateTime) const;
-		std::string toRuleString(const std::vector<std::string>& dayNames,
-								 const std::vector<std::string>& monthNames) const;
+		std::string toRuleString(bool useLocalization) const;
 		void addArray(const std::vector<bool>& array, const std::vector<std::string>& arrayNames,
 					  std::stringstream& b) const;
 
@@ -220,6 +226,8 @@ struct OpeningHoursParser {
 		std::vector<int> _lastYearMonths;
 		int _fullYears;
 		int _year;
+
+		bool _fallback;
 
 		/**
 		 * represents the list on which day it is open.
@@ -259,6 +267,8 @@ struct OpeningHoursParser {
 
 		int getSequenceIndex() const;
 
+		bool isFallbackRule() const;
+
 		/**
 		 * return an array representing the days of the rule
 		 *
@@ -279,6 +289,7 @@ struct OpeningHoursParser {
 		void setFullYears(int value);
 		int getYear() const;
 		void setYear(int year);
+		void setFallback(bool fallback);
 
 		/**
 		 * represents the list on which day it is open.
@@ -384,6 +395,8 @@ struct OpeningHoursParser {
 		 */
 		std::vector<int> getEndTimes() const;
 
+		void setDays(std::vector<bool> days);
+
 		/**
 		 * Check if the weekday of time "date" is part of this rule
 		 *
@@ -394,7 +407,7 @@ struct OpeningHoursParser {
 
 		bool hasOverlapTimes() const;
 
-		bool hasOverlapTimes(const tm& dateTime, const std::shared_ptr<OpeningHoursRule>& r) const;
+		bool hasOverlapTimes(const tm& dateTime, const std::shared_ptr<OpeningHoursRule>& r, bool strictOverlap) const;
 
 		/**
 		 * Check if the next weekday of time "date" is part of this rule
@@ -476,13 +489,14 @@ struct OpeningHoursParser {
 		bool isOpenedForTime(const tm& dateTime, bool checkPrevious) const;
 		bool containsPreviousDay(const tm& dateTime) const;
 		bool hasOverlapTimes() const;
-		bool hasOverlapTimes(const tm& dateTime, const std::shared_ptr<OpeningHoursRule>& r) const;
+		bool hasOverlapTimes(const tm& dateTime, const std::shared_ptr<OpeningHoursRule>& r, bool strictOverlap) const;
 		bool containsDay(const tm& dateTime) const;
 		bool containsNextDay(const tm& dateTime) const;
 		bool containsMonth(const tm& dateTime) const;
 		bool containsYear(const tm& dateTime) const;
 
 		int getSequenceIndex() const;
+		bool isFallbackRule() const;
 
 		bool isOpened24_7() const;
 
@@ -508,6 +522,7 @@ struct OpeningHoursParser {
 		struct Info {
 			bool opened;
 			bool opened24_7;
+			bool fallback;
 			std::string openingTime;
 			std::string nearToOpeningTime;
 			std::string closingTime;
@@ -617,6 +632,7 @@ struct OpeningHoursParser {
 		std::string getTimeAnotherDay(const tm& dateTime, int limit, bool opening, int sequenceIndex) const;
 
 		std::string getCurrentRuleTime(const tm& dateTime, int sequenceIndex) const;
+		bool isFallBackRule(int sequenceIndex) const;
 
 		std::string toString() const;
 		std::string toLocalString() const;
@@ -647,11 +663,22 @@ struct OpeningHoursParser {
 	static void fillRuleArray(std::vector<bool>* array,
 							  const std::shared_ptr<std::vector<std::shared_ptr<Token>>>& pair);
 
+	static void formatTimeRange(int startMinute, int endMinute, std::stringstream& b);
+	static void formatTime(int minutes, std::stringstream& b);
+	static void formatTime(int minutes, std::stringstream& b, bool appendAmPM);
+	static void formatTime(int hours, int minutes, std::stringstream& b, bool appendAmPm);
+
    public:
 	OpeningHoursParser(const std::string& openingHours);
 	~OpeningHoursParser();
 
 	static void setAdditionalString(const std::string& key, const std::string& value);
+	static void setLocalizedDaysOfWeek(const std::vector<std::string>& value);
+	static void setLocalizedMonths(const std::vector<std::string>& value);
+	static void setExternalTimeFormatterCallback(std::function<std::string (int hours, int minutes, bool appendAmPM)> callback);
+
+	static void setAmpmOnLeft(bool value);
+	static void setTwelveHourFormattingEnabled(bool enabled);
 
 	static void parseRuleV2(const std::string& rl, int sequenceIndex,
 							std::vector<std::shared_ptr<OpeningHoursRule>>& rules);
@@ -663,6 +690,9 @@ struct OpeningHoursParser {
 	static std::vector<std::shared_ptr<OpeningHours::Info>> getInfo(const std::string& format);
 
 	static void runTest();
+	static void runTestAmPmEnglish();
+	static void runTestAmPmChinese();
+	static void runTestAmPmArabic();
 };
 
 #endif	// _OPENINGHOURSPARSER_H
