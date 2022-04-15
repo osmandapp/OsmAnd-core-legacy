@@ -14,7 +14,7 @@ static const int CURRENT_DAY_TIME_LIMIT = -2;
 static StringsHolder stringsHolder;
 
 static bool twelveHourFormatting;
-static bool isAmpmOnLeft;
+static bool isAmPmOnLeft;
 static std::function<std::string (int, int, bool)> externalTimeFormatterCallback;
 static std::function<std::vector<std::vector<std::string>> (std::string)> externallocalisationUpdatingCallback;
 
@@ -117,9 +117,9 @@ void OpeningHoursParser::formatTimeRange(int startMinute, int endMinute, std::st
 	int endHour = (endMinute / 60) % 24;
 	bool sameDayPart = std::max(startHour, endHour) < 12 || std::min(startHour, endHour) >= 12;
 	if (twelveHourFormatting && sameDayPart) {
-		formatTime(startMinute, b, isAmpmOnLeft);
+		formatTime(startMinute, b, isAmPmOnLeft);
 		b << "-";
-		formatTime(endMinute, b, !isAmpmOnLeft);
+		formatTime(endMinute, b, !isAmPmOnLeft);
 	} else {
 		formatTime(startMinute, b);
 		b << "-";
@@ -197,7 +197,7 @@ void StringsHolder::setLocalizedDaysOfWeek(const std::vector<std::string>& value
     localDaysStr = value;
 }
 
-void StringsHolder::setLocalizedMounths(const std::vector<std::string>& value) {
+void StringsHolder::setLocalizedMonths(const std::vector<std::string>& value) {
     localMothsStr = value;
 }
 
@@ -1923,9 +1923,6 @@ bool OpeningHoursParser::parseTime(const std::string& time, tm& dateTime) {
 		auto year = time.substr(6, 4);
 		auto hour = time.substr(11, 2);
 		auto min = time.substr(14, 2);
-        
-        auto a = atoi(year.c_str());
-        auto b = atoi(year.c_str()) - 1900;
 
 		dateTime.tm_mday = atoi(day.c_str());
 		dateTime.tm_mon = atoi(month.c_str()) - 1;
@@ -1933,8 +1930,6 @@ bool OpeningHoursParser::parseTime(const std::string& time, tm& dateTime) {
 		dateTime.tm_hour = atoi(hour.c_str());
 		dateTime.tm_min = atoi(min.c_str());
 		dateTime.tm_sec = 0;
-        
-        dateTime.tm_hour;
 
 		std::mktime(&dateTime);
 
@@ -1948,14 +1943,12 @@ void OpeningHoursParser::setAdditionalString(const std::string& key, const std::
 	stringsHolder.setAdditionalString(key, value);
 }
 
-//TODO: Delete?
 void OpeningHoursParser::setLocalizedDaysOfWeek(const std::vector<std::string>& value) {
     stringsHolder.setLocalizedDaysOfWeek(value);
 }
 
-//TODO: Delete?
-void OpeningHoursParser::setLocalizedMounths(const std::vector<std::string>& value) {
-    stringsHolder.setLocalizedMounths(value);
+void OpeningHoursParser::setLocalizedMonths(const std::vector<std::string>& value) {
+    stringsHolder.setLocalizedMonths(value);
 }
 
 void OpeningHoursParser::setTwelveHourFormattingEnabled(bool enabled, std::string locale) {
@@ -1964,7 +1957,7 @@ void OpeningHoursParser::setTwelveHourFormattingEnabled(bool enabled, std::strin
 }
 
 void OpeningHoursParser::setAmpmOnLeft(bool value) {
-    isAmpmOnLeft = value;
+    isAmPmOnLeft = value;
 }
 
 void OpeningHoursParser::updateLocale(std::string locale) {
@@ -1972,8 +1965,8 @@ void OpeningHoursParser::updateLocale(std::string locale) {
         std::vector<std::vector<std::string>> updatedSettings = externallocalisationUpdatingCallback(locale);
         
         stringsHolder.setLocalizedDaysOfWeek(updatedSettings[0]);
-        stringsHolder.setLocalizedMounths(updatedSettings[1]);
-        isAmpmOnLeft = updatedSettings[2][0] == "true";
+        stringsHolder.setLocalizedMonths(updatedSettings[1]);
+        isAmPmOnLeft = updatedSettings[2][0] == "true";
     }
 }
 
@@ -2080,26 +2073,11 @@ void OpeningHoursParser::testInfo(const std::string& time, const std::shared_ptr
 void OpeningHoursParser::testParsedAndAssembledCorrectly(const std::string& timeString,
 														 const std::shared_ptr<OpeningHours>& hours) {
 	auto assembledString = hours->toString();
-    
 	bool isCorrect = ohp_to_lowercase(assembledString) == ohp_to_lowercase(timeString);
 	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%sok: Expected: \"%s\" got: \"%s\"",
 					  (!isCorrect ? "NOT " : ""), timeString.c_str(), assembledString.c_str());
 	if (!isCorrect) {
 		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "BUG!!!");
-        
-        OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-        
-        for (int i = 0; i < timeString.length(); i++)
-        {
-            if (timeString[i] != assembledString[i])
-            {
-                auto a = assembledString[i];
-                auto b = timeString[i];
-                OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "!!! %d  %s  %s", i, timeString[i], assembledString[i]);
-            }
-        }
-        
-        
 		throw;
 	}
 }
