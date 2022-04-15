@@ -137,29 +137,29 @@ void OpeningHoursParser::formatTime(int minutes, std::stringstream& b, bool appe
 }
 
 void OpeningHoursParser::formatTime(int hours, int minutes, std::stringstream& b, bool appendAmPm) {
-    
-    if (externalTimeFormatterCallback != nullptr && twelveHourFormatting) {
-        b << externalTimeFormatterCallback(hours, minutes, appendAmPm);
-    }
-    else {
-        if (twelveHourFormatting) {
-            tm time;
-            time.tm_min = minutes;
-            time.tm_hour = hours;
-            char mbstr[100];
-            std::strftime(mbstr, sizeof(mbstr), appendAmPm ? "%I:%M %p" : "%I:%M", &time);
-            b << mbstr;
-        } else {
-            if (hours < 10) {
-                b << "0";
-            }
-            b << hours << ":";
-            if (minutes < 10) {
-                b << "0";
-            }
-            b << minutes;
-        }
-    }
+	
+	if (externalTimeFormatterCallback != nullptr && twelveHourFormatting) {
+		b << externalTimeFormatterCallback(hours, minutes, appendAmPm);
+	}
+	else {
+		if (twelveHourFormatting) {
+			tm time;
+			time.tm_min = minutes;
+			time.tm_hour = hours;
+			char mbstr[100];
+			std::strftime(mbstr, sizeof(mbstr), appendAmPm ? "%I:%M %p" : "%I:%M", &time);
+			b << mbstr;
+		} else {
+			if (hours < 10) {
+				b << "0";
+			}
+			b << hours << ":";
+			if (minutes < 10) {
+				b << "0";
+			}
+			b << minutes;
+		}
+	}
 }
 
 StringsHolder::StringsHolder() {
@@ -182,8 +182,8 @@ StringsHolder::~StringsHolder() {
 void StringsHolder::initLocalStrings() {
 	daysStr = std::vector<std::string>{"Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"};
 	monthsStr = std::vector<std::string>{"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
-    localDaysStr = daysStr;
-    localMothsStr = monthsStr;
+	localDaysStr = daysStr;
+	localMothsStr = monthsStr;
 }
 /**
  * Set additional localized strings like "off", etc.
@@ -193,11 +193,11 @@ void StringsHolder::setAdditionalString(const std::string& key, const std::strin
 }
 
 void StringsHolder::setLocalizedDaysOfWeek(const std::vector<std::string>& value) {
-    localDaysStr = value;
+	localDaysStr = value;
 }
 
 void StringsHolder::setLocalizedMonths(const std::vector<std::string>& value) {
-    localMothsStr = value;
+	localMothsStr = value;
 }
 
 OpeningHoursParser::BasicOpeningHourRule::BasicOpeningHourRule() : _sequenceIndex(0) {
@@ -1943,11 +1943,11 @@ void OpeningHoursParser::setAdditionalString(const std::string& key, const std::
 }
 
 void OpeningHoursParser::setLocalizedDaysOfWeek(const std::vector<std::string>& value) {
-    stringsHolder.setLocalizedDaysOfWeek(value);
+	stringsHolder.setLocalizedDaysOfWeek(value);
 }
 
 void OpeningHoursParser::setLocalizedMonths(const std::vector<std::string>& value) {
-    stringsHolder.setLocalizedMonths(value);
+	stringsHolder.setLocalizedMonths(value);
 }
 
 void OpeningHoursParser::setTwelveHourFormattingEnabled(bool enabled) {
@@ -1955,11 +1955,11 @@ void OpeningHoursParser::setTwelveHourFormattingEnabled(bool enabled) {
 }
 
 void OpeningHoursParser::setAmpmOnLeft(bool value) {
-    isAmPmOnLeft = value;
+	isAmPmOnLeft = value;
 }
 
 void OpeningHoursParser::setExternalTimeFormatterCallback(std::function<std::string (int hours, int minutes, bool appendAmPM)> callback) {
-    externalTimeFormatterCallback = callback;
+	externalTimeFormatterCallback = callback;
 }
 
 /**
@@ -2565,7 +2565,7 @@ void OpeningHoursParser::runTestAmPmEnglish() {
 	testInfo("15.01.2018 16:00", hours, "Will close at 6:00 PM");
 	testInfo("15.01.2018 18:10", hours, "Will open tomorrow at 9:00 AM");
 
-    // Don't write AM or PM twice for range
+	// Don't write AM or PM twice for range
 	std::string string = "Mo-Fr 04:30-10:00, 07:30-23:00; Sa, Su, PH 13:30-23:00";
 	hours = parseOpenedHours(string);
 	testParsedAndAssembledCorrectly("Mo-Fr 4:30-10:00 AM, 7:30 AM-11:00 PM; Sa, Su, PH 1:30-11:00 PM", hours);
@@ -2573,23 +2573,24 @@ void OpeningHoursParser::runTestAmPmEnglish() {
 	string = "Mo-Fr 00:00-12:00, 12:00-24:00;";
 	hours = parseOpenedHours(string);
 	testParsedAndAssembledCorrectly("Mo-Fr 12:00 AM-12:00 PM, 12:00 PM-12:00 AM", hours);
-    
-    OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "OpeningHoursParser test AmPm English done");
+	
+	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "OpeningHoursParser test AmPm English done");
 }
 
 void OpeningHoursParser::runTestAmPmChinese() {
-    OpeningHoursParser::setTwelveHourFormattingEnabled(true);
     std::string string = "Mo-Fr 04:30-10:00, 07:30-23:00; Sa, Su, PH 13:30-23:00";
-    auto hours = parseOpenedHours(string);
-    testParsedAndAssembledCorrectly("Mo-Fr 上午4:30-10:00, 上午7:30-下午11:00; Sa, Su, PH 下午1:30-11:00", hours);
-    OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "OpeningHoursParser test AmPm Chinese done");
+	OpeningHoursParser::setTwelveHourFormattingEnabled(true);
+	std::string string = "Mo-Fr 04:30-10:00, 07:30-23:00; Sa, Su, PH 13:30-23:00";
+	auto hours = parseOpenedHours(string);
+	testParsedAndAssembledCorrectly("Mo-Fr 上午4:30-10:00, 上午7:30-下午11:00; Sa, Su, PH 下午1:30-11:00", hours);
+	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "OpeningHoursParser test AmPm Chinese done");
 }
 
 void OpeningHoursParser::runTestAmPmArabic() {
-    // For arabic text NSDateFormatter show whitespace 0xA0 (ascii code 160) instead of 0x20 (ascii code 32)
-    OpeningHoursParser::setTwelveHourFormattingEnabled(true);
-    std::string string = "Mo-Fr 04:30-10:00, 07:30-23:00; Sa, Su, PH 13:30-23:00";
-    auto hours = parseOpenedHours(string);
-    testParsedAndAssembledCorrectly("Mo-Fr ٤:٣٠-١٠:٠٠ ص, ٧:٣٠ ص-١١:٠٠ م; Sa, Su, PH ١:٣٠-١١:٠٠ م", hours);
-    OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "OpeningHoursParser test AmPm Arabic done");
+	// For arabic text NSDateFormatter show whitespace 0xA0 (ascii code 160) instead of 0x20 (ascii code 32)
+	OpeningHoursParser::setTwelveHourFormattingEnabled(true);
+	std::string string = "Mo-Fr 04:30-10:00, 07:30-23:00; Sa, Su, PH 13:30-23:00";
+	auto hours = parseOpenedHours(string);
+	testParsedAndAssembledCorrectly("Mo-Fr ٤:٣٠-١٠:٠٠ ص, ٧:٣٠ ص-١١:٠٠ م; Sa, Su, PH ١:٣٠-١١:٠٠ م", hours);
+	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "OpeningHoursParser test AmPm Arabic done");
 }
