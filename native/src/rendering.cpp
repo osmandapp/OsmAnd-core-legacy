@@ -1240,6 +1240,8 @@ void sortObjectsByProperOrder(std::vector<FoundMapDataObject>& mapDataObjects, R
 												 rc->getZoom() > POINT_DRAW_ZOOM_FILTER)) {
 									pointsArray.push_back(pointObj);
 								}
+							} else if (addTextForSmallAreas) {
+								pointsArray.push_back(pointObj);
 							}
 						} else if (objectType == 1) {
 							pointsArray.push_back(mapObj);
