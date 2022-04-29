@@ -31,8 +31,8 @@ void printRoad(const char* prefix, RouteSegment* segment) {
 	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "%s Road id=%lld ind=%d->%d ds=%f es=%f pend=%d parent=%lld",
 					  prefix, segment->getRoad()->id / 64, segment->getSegmentStart(), segment->getSegmentEnd(),
 					  segment->distanceFromStart, segment->distanceToEnd,
-					  segment->parentRoute != nullptr ? segment->getParentRoute()->segmentEnd : 0,
-					  segment->parentRoute != nullptr && segment->getParentRoute()->road != nullptr
+					  segment->parentRoute != nullptr ? segment->parentRoute->segmentEnd : 0,
+					  segment->getParentRoute() != nullptr && segment->getParentRoute()->road != nullptr
 						  ? segment->getParentRoute()->getRoad()->id / 64
 						  : 0);
 }
@@ -128,18 +128,19 @@ SHARED_PTR<RouteSegment> loadSameSegment(RoutingContext* ctx, SHARED_PTR<RouteSe
 
 SHARED_PTR<RouteSegment> initRouteSegment(RoutingContext* ctx, SHARED_PTR<RouteSegment>& segment,
 										  bool positiveDirection, bool reverseSearchWay) {
-	if (segment->getSegmentStart() == 0 && !positiveDirection && segment->getRoad()->getPointsLength() > 0) {
-		segment = loadSameSegment(ctx, segment, 1, reverseSearchWay);
+    SHARED_PTR<RouteSegment> segmentCopy = RouteSegment::initRouteSegment(segment, positiveDirection);
+	if (segmentCopy->getSegmentStart() == 0 && !positiveDirection && segmentCopy->getRoad()->getPointsLength() > 0) {
+        segmentCopy = loadSameSegment(ctx, segmentCopy, 1, reverseSearchWay);
 		// } else if(segment->getSegmentStart() == segment->getRoad()->getPointsLength() -1 && positiveDirection &&
 		// segment->getSegmentStart() > 0) { assymetric cause we calculate initial point differently (segmentStart means
 		// that point is between ]segmentStart-1, segmentStart]
-	} else if (segment->getSegmentStart() > 0 && positiveDirection) {
-		segment = loadSameSegment(ctx, segment, segment->getSegmentStart() - 1, reverseSearchWay);
+	} else if (segmentCopy->getSegmentStart() > 0 && positiveDirection) {
+        segmentCopy = loadSameSegment(ctx, segmentCopy, segmentCopy->getSegmentStart() - 1, reverseSearchWay);
 	}
-	if (!segment) {
-		return segment;
+	if (!segmentCopy) {
+		return segmentCopy;
 	}
-	return RouteSegment::initRouteSegment(segment, positiveDirection);
+	return RouteSegment::initRouteSegment(segmentCopy, positiveDirection);
 }
 
 SHARED_PTR<RouteSegment> createNull() { return std::make_shared<RouteSegment>(nullptr, 0, 1); }
@@ -156,10 +157,10 @@ void initQueuesWithStartEnd(RoutingContext* ctx, SHARED_PTR<RouteSegment> start,
 		printRoad("END+", endPos);
 		printRoad("END-", endNeg);
 	}
-	startPos->parentRoute = createNull();
-	startNeg->parentRoute = createNull();
-	endPos->parentRoute = createNull();
-	endNeg->parentRoute = createNull();
+    if (startPos) startPos->parentRoute = createNull();
+    if (startNeg) startNeg->parentRoute = createNull();
+    if (endPos) endPos->parentRoute = createNull();
+    if (endNeg) endNeg->parentRoute = createNull();
 
 	// for start : f(start) = g(start) + h(start) = 0 + h(start) = h(start)
 	if (ctx->config->initialDirection > -180 && ctx->config->initialDirection < 180) {
