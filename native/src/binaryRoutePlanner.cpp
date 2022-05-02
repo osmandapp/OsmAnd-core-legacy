@@ -28,12 +28,13 @@ inline int roadPriorityComparator(float o1DistanceFromStart, float o1DistanceToE
 }
 
 void printRoad(const char* prefix, RouteSegment* segment) {
+	const auto& parentRoute = segment->getParentRoute();
 	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "%s Road id=%lld ind=%d->%d ds=%f es=%f pend=%d parent=%lld",
 					  prefix, segment->getRoad()->id / 64, segment->getSegmentStart(), segment->getSegmentEnd(),
 					  segment->distanceFromStart, segment->distanceToEnd,
-					  segment->parentRoute != nullptr ? segment->getParentRoute()->segmentEnd : 0,
-					  segment->parentRoute != nullptr && segment->getParentRoute()->road != nullptr
-						  ? segment->getParentRoute()->getRoad()->id / 64
+					  parentRoute != nullptr ? parentRoute->segmentEnd : 0,
+					  parentRoute != nullptr && parentRoute->road != nullptr
+						  ? parentRoute->getRoad()->id / 64
 						  : 0);
 }
 
@@ -156,10 +157,10 @@ void initQueuesWithStartEnd(RoutingContext* ctx, SHARED_PTR<RouteSegment> start,
 		printRoad("END+", endPos);
 		printRoad("END-", endNeg);
 	}
-	startPos->parentRoute = createNull();
-	startNeg->parentRoute = createNull();
-	endPos->parentRoute = createNull();
-	endNeg->parentRoute = createNull();
+	if (startPos) startPos->parentRoute = createNull();
+	if (startNeg) startNeg->parentRoute = createNull();
+	if (endPos) endPos->parentRoute = createNull();
+	if (endNeg) endNeg->parentRoute = createNull();
 
 	// for start : f(start) = g(start) + h(start) = 0 + h(start) = h(start)
 	if (ctx->config->initialDirection > -180 && ctx->config->initialDirection < 180) {
