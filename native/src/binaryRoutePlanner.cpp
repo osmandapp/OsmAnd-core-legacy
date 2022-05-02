@@ -157,10 +157,10 @@ void initQueuesWithStartEnd(RoutingContext* ctx, SHARED_PTR<RouteSegment> start,
 		printRoad("END+", endPos);
 		printRoad("END-", endNeg);
 	}
-    if (startPos) startPos->parentRoute = createNull();
-    if (startNeg) startNeg->parentRoute = createNull();
-    if (endPos) endPos->parentRoute = createNull();
-    if (endNeg) endNeg->parentRoute = createNull();
+	if (startPos) startPos->parentRoute = createNull();
+	if (startNeg) startNeg->parentRoute = createNull();
+	if (endPos) endPos->parentRoute = createNull();
+	if (endNeg) endNeg->parentRoute = createNull();
 
 	// for start : f(start) = g(start) + h(start) = 0 + h(start) = h(start)
 	if (ctx->config->initialDirection > -180 && ctx->config->initialDirection < 180) {
