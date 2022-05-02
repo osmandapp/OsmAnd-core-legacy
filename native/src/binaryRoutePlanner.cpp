@@ -128,19 +128,18 @@ SHARED_PTR<RouteSegment> loadSameSegment(RoutingContext* ctx, SHARED_PTR<RouteSe
 
 SHARED_PTR<RouteSegment> initRouteSegment(RoutingContext* ctx, SHARED_PTR<RouteSegment>& segment,
 										  bool positiveDirection, bool reverseSearchWay) {
-    SHARED_PTR<RouteSegment> segmentCopy = RouteSegment::initRouteSegment(segment, positiveDirection);
-	if (segmentCopy->getSegmentStart() == 0 && !positiveDirection && segmentCopy->getRoad()->getPointsLength() > 0) {
-        segmentCopy = loadSameSegment(ctx, segmentCopy, 1, reverseSearchWay);
+	if (segment->getSegmentStart() == 0 && !positiveDirection && segment->getRoad()->getPointsLength() > 0) {
+		segment = loadSameSegment(ctx, segment, 1, reverseSearchWay);
 		// } else if(segment->getSegmentStart() == segment->getRoad()->getPointsLength() -1 && positiveDirection &&
 		// segment->getSegmentStart() > 0) { assymetric cause we calculate initial point differently (segmentStart means
 		// that point is between ]segmentStart-1, segmentStart]
-	} else if (segmentCopy->getSegmentStart() > 0 && positiveDirection) {
-        segmentCopy = loadSameSegment(ctx, segmentCopy, segmentCopy->getSegmentStart() - 1, reverseSearchWay);
+	} else if (segment->getSegmentStart() > 0 && positiveDirection) {
+		segment = loadSameSegment(ctx, segment, segment->getSegmentStart() - 1, reverseSearchWay);
 	}
-	if (!segmentCopy) {
-		return segmentCopy;
+	if (!segment) {
+		return segment;
 	}
-	return RouteSegment::initRouteSegment(segmentCopy, positiveDirection);
+	return RouteSegment::initRouteSegment(segment, positiveDirection);
 }
 
 SHARED_PTR<RouteSegment> createNull() { return std::make_shared<RouteSegment>(nullptr, 0, 1); }
