@@ -28,12 +28,12 @@ inline int roadPriorityComparator(float o1DistanceFromStart, float o1DistanceToE
 }
 
 void printRoad(const char* prefix, RouteSegment* segment) {
-    const auto& parentRoute = segment->getParentRoute();
+	const auto& parentRoute = segment->getParentRoute();
 	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "%s Road id=%lld ind=%d->%d ds=%f es=%f pend=%d parent=%lld",
 					  prefix, segment->getRoad()->id / 64, segment->getSegmentStart(), segment->getSegmentEnd(),
 					  segment->distanceFromStart, segment->distanceToEnd,
-                      parentRoute != nullptr ? parentRoute->segmentEnd : 0,
-                      parentRoute != nullptr && parentRoute->road != nullptr
+					  parentRoute != nullptr ? parentRoute->segmentEnd : 0,
+					  parentRoute != nullptr && parentRoute->road != nullptr
 						  ? parentRoute->getRoad()->id / 64
 						  : 0);
 }
