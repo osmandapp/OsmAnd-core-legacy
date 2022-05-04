@@ -76,6 +76,33 @@ struct RouteSegmentResult {
 		attachedRoutesFrontEnd.resize(min(oldLength, capacity));
 	}
 
+	inline bool isTrafficLight(int i) {
+		std::vector<uint32_t> pointTypes;
+		
+		bool a = object == nullptr;
+		bool b = object->pointTypes.empty();
+		bool c = object->pointTypes.size() > i;
+		
+		if (object != nullptr && !object->pointTypes.empty() && object->pointTypes.size() > i) {
+			auto aa = object;
+			auto ab = object->pointTypes;
+			auto ac = object->pointTypes[i];
+			object->pointTypes;
+			pointTypes = object->pointTypes[i];
+		}
+		
+		if (!pointTypes.empty()) {
+			for (uint32_t pointType : pointTypes) {
+				std::string value = object->region->routeEncodingRules[pointType].getValue();
+				bool hasPrefix = value.rfind("traffic_signals", 0) == 0;
+				if (hasPrefix == true) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	
 	inline int getStartPointIndex() const {
 		return startPointIndex;
 	}
