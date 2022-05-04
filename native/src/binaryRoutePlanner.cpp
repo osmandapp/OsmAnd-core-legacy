@@ -267,14 +267,13 @@ SHARED_PTR<RouteSegment> searchRouteInternal(RoutingContext* ctx, SHARED_PTR<Rou
 
 	initQueuesWithStartEnd(ctx, start, end, graphDirectSegments, graphReverseSegments);
 
-	// Extract & analyze segment with min(f(x)) from queue while final segment is not found
-	bool forwardSearch = true;
-
-	SEGMENTS_QUEUE* graphSegments = &graphDirectSegments;
 	bool onlyBackward = ctx->getPlanRoadDirection() < 0;
 	bool onlyForward = ctx->getPlanRoadDirection() > 0;
 
 	SHARED_PTR<RouteSegment> finalSegment;
+	// Extract & analyze segment with min(f(x)) from queue while final segment is not found
+	SEGMENTS_QUEUE* graphSegments = onlyForward ? &graphReverseSegments : &graphDirectSegments;
+	bool forwardSearch = !onlyForward;
 	while (graphSegments->size() > 0) {
 		SHARED_PTR<RouteSegment> segment = graphSegments->top();
 		graphSegments->pop();
