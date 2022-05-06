@@ -360,10 +360,12 @@ bool RouteDataObject::roundabout() {
 }
 
 bool RouteDataObject::isTrafficLight(int i) {
-	std::vector<uint32_t> pointTypes = getPointTypes(i);
-	if (!pointTypes.empty()) {
-		for (uint32_t pointType : pointTypes) {
-			std::string value = region->routeEncodingRules[pointType].getValue();
+	const auto ptSz = pointTypes.size();
+	for (int i = 0; i < ptSz; i++) {
+		const auto& point = pointTypes[i];
+		const auto pSz = point.size();
+		for (int j = 0; j < pSz; j++) {
+			std::string value = region->routeEncodingRules[point[j]].getValue();
 			bool hasPrefix = value.rfind("traffic_signals", 0) == 0;
 			if (hasPrefix == true) {
 				return true;
