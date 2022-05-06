@@ -360,12 +360,9 @@ bool RouteDataObject::roundabout() {
 }
 
 bool RouteDataObject::hasTrafficLightAt(int i) {
-	const auto ptSz = pointTypes.size();
-	for (int i = 0; i < ptSz; i++) {
-		const auto pSz = pointTypes[i].size();
-		for (int j = 0; j < pSz; j++) {
-			bool hasPrefix = region->routeEncodingRules[pointTypes[i][j]].getValue().rfind("traffic_signals", 0) == 0;
-			if (hasPrefix == true) {
+	if (i < pointTypes.size()) {
+		for (int j = 0; j < pointTypes[i].size(); j++) {
+			if (region->routeEncodingRules[pointTypes[i][j]].getValue().rfind("traffic_signals", 0) == 0) {
 				return true;
 			}
 		}
