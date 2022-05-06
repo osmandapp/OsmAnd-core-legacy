@@ -69,8 +69,6 @@ struct RouteSegmentResult {
 	LatLon getStartPoint();
 	LatLon getEndPoint();
 	LatLon getPoint(int i);
-	
-	bool isTrafficLight(int i);
 
 	inline void updateCapacity() {
 		int capacity = abs(endPointIndex - startPointIndex) + 1;

@@ -393,21 +393,4 @@ LatLon RouteSegmentResult::getEndPoint() { return convertPoint(object, endPointI
 
 LatLon RouteSegmentResult::getPoint(int i) { return convertPoint(object, i); }
 
-bool RouteSegmentResult::isTrafficLight(int i) {
-    std::vector<uint32_t> pointTypes;
-    if (object->pointTypes.size() > i) {
-        pointTypes = object->pointTypes[i];
-    }
-    if (!pointTypes.empty()) {
-        for (uint32_t pointType : pointTypes) {
-            std::string value = object->region->routeEncodingRules[pointType].getValue();
-            bool hasPrefix = value.rfind("traffic_signals", 0) == 0;
-            if (hasPrefix == true) {
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
 #endif /*_OSMAND_ROUTE_SEGMENT_RESULT_CPP*/

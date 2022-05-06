@@ -359,6 +359,20 @@ bool RouteDataObject::roundabout() {
 	return false;
 }
 
+bool RouteDataObject::isTrafficLight(int i) {
+	std::vector<uint32_t> pointTypes = getPointTypes(i);
+	if (!pointTypes.empty()) {
+		for (uint32_t pointType : pointTypes) {
+			std::string value = region->routeEncodingRules[pointType].getValue();
+			bool hasPrefix = value.rfind("traffic_signals", 0) == 0;
+			if (hasPrefix == true) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 void searchRouteSubRegion(int fileInd, std::vector<RouteDataObject*>& list, RoutingIndex* routingIndex,
 						  RouteSubregion* sub);
 void searchRouteRegion(CodedInputStream** input, FileInputStream** fis, BinaryMapFile* file, SearchQuery* q,
