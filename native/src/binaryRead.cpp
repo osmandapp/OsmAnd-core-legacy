@@ -362,11 +362,9 @@ bool RouteDataObject::roundabout() {
 bool RouteDataObject::hasTrafficLightAt(int i) {
 	const auto ptSz = pointTypes.size();
 	for (int i = 0; i < ptSz; i++) {
-		const auto& point = pointTypes[i];
-		const auto pSz = point.size();
+		const auto pSz = pointTypes[i].size();
 		for (int j = 0; j < pSz; j++) {
-			std::string value = region->routeEncodingRules[point[j]].getValue();
-			bool hasPrefix = value.rfind("traffic_signals", 0) == 0;
+			bool hasPrefix = region->routeEncodingRules[pointTypes[i][j]].getValue().rfind("traffic_signals", 0) == 0;
 			if (hasPrefix == true) {
 				return true;
 			}
