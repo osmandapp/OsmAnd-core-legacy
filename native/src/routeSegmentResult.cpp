@@ -395,7 +395,7 @@ LatLon RouteSegmentResult::getPoint(int i) { return convertPoint(object, i); }
 
 bool RouteSegmentResult::isTrafficLight(int i) {
     std::vector<uint32_t> pointTypes;
-    if (object != nullptr && !object->pointTypes.empty() && object->pointTypes.size() > i) {
+    if (object->pointTypes.size() > i) {
         pointTypes = object->pointTypes[i];
     }
     if (!pointTypes.empty()) {
