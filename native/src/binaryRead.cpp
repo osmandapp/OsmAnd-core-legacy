@@ -359,7 +359,7 @@ bool RouteDataObject::roundabout() {
 	return false;
 }
 
-bool RouteDataObject::isTrafficLight(int i) {
+bool RouteDataObject::hasTrafficLightAt(int i) {
 	const auto ptSz = pointTypes.size();
 	for (int i = 0; i < ptSz; i++) {
 		const auto& point = pointTypes[i];

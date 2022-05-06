@@ -500,7 +500,7 @@ struct RouteDataObject {
 
 	bool roundabout();
 	
-	bool isTrafficLight(int i);
+	bool hasTrafficLightAt(int i);
 
 	double simplifyDistance(int x, int y, int px, int py) {
 		return abs(px - x) * 0.011 + abs(py - y) * 0.01863;
