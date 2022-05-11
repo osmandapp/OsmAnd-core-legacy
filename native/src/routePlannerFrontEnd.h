@@ -56,10 +56,10 @@ public:
     }
 
     SHARED_PTR<RoutingContext> buildRoutingContext(SHARED_PTR<RoutingConfiguration> config, RouteCalculationMode rm = RouteCalculationMode::NORMAL);
-    
-    SHARED_PTR<RouteSegment> getRecalculationEnd(RoutingContext* ctx);
 
-    vector<SHARED_PTR<RouteSegmentResult> > searchRoute(SHARED_PTR<RoutingContext> ctx,
+	SHARED_PTR<RouteSegmentPoint> getRecalculationEnd(RoutingContext* ctx);
+
+	vector<SHARED_PTR<RouteSegmentResult> > searchRoute(SHARED_PTR<RoutingContext> ctx,
                                            int startX, int startY,
                                            int endX, int endY,
                                            vector<int>& intermediatesX, vector<int>& intermediatesY,

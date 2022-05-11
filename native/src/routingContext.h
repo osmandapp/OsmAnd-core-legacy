@@ -482,17 +482,17 @@ struct RoutingContext {
 
 	int getPlanRoadDirection() { return config->planRoadDirection; }
 
-	void initTargetPoint(SHARED_PTR<RouteSegment>& end) {
-		targetX = end->road->pointsX[end->segmentStart];
-		targetY = end->road->pointsY[end->segmentStart];
+	void initTargetPoint(SHARED_PTR<RouteSegmentPoint>& end) {
+		targetX = end->preciseX;
+		targetY = end->preciseY;
 		targetRoadId = end->road->id;
 		targetSegmentInd = end->segmentStart;
 	}
 
-	void initStartAndTargetPoints(SHARED_PTR<RouteSegment> start, SHARED_PTR<RouteSegment> end) {
+	void initStartAndTargetPoints(SHARED_PTR<RouteSegmentPoint> start, SHARED_PTR<RouteSegmentPoint> end) {
 		initTargetPoint(end);
-		startX = start->road->pointsX[start->segmentStart];
-		startY = start->road->pointsY[start->segmentStart];
+		startX = start->preciseX;
+		startY = start->preciseY;
 		startRoadId = start->road->id;
 		startSegmentInd = start->segmentStart;
 	}
