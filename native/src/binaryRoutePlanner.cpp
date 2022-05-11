@@ -137,10 +137,37 @@ SHARED_PTR<RouteSegment> initRouteSegment(RoutingContext* ctx, SHARED_PTR<RouteS
 	} else if (segment->getSegmentStart() > 0 && positiveDirection) {
 		segment = loadSameSegment(ctx, segment, segment->getSegmentStart() - 1, reverseSearchWay);
 	}
-	if (!segment) {
-		return segment;
+	SHARED_PTR<RouteSegment> initSegment = nullptr;
+	if (segment) {
+		initSegment = RouteSegment::initRouteSegment(segment, positiveDirection);
 	}
-	return RouteSegment::initRouteSegment(segment, positiveDirection);
+	if (initSegment) {
+		initSegment->parentRoute = createNull();
+		// compensate first segment difference
+		initSegment->distanceFromStart += initDistFromStart(ctx, initSegment, reverseSearchWay);
+	}
+	return initSegment;
+}
+
+double initDistFromStart(RoutingContext* ctx, SHARED_PTR<RouteSegment> initSegment, bool reverseSearchWay) {
+	int x = initSegment->road->pointsX[initSegment->getSegmentStart()];
+	int y = initSegment->road->pointsY[initSegment->getSegmentStart()];
+	int prevx = initSegment->road->pointsX[initSegment->getSegmentEnd()];
+	int prevy = initSegment->road->pointsY[initSegment->getSegmentEnd()];
+	float priority = ctx->config->router->defineSpeedPriority(initSegment->road);
+	float speed = ctx->config->router->defineRoutingSpeed(initSegment->road) * priority;
+	if (speed == 0) {
+		speed = ctx->config->router->getDefaultSpeed() * priority;
+	}
+	// speed can not exceed max default speed according to A*
+	if (speed > ctx->config->router->getMaxSpeed()) {
+		speed = ctx->config->router->getMaxSpeed();
+	}
+	double fullDist = squareRootDist31(prevx, prevy, x, y);
+	double distFromStart = squareRootDist31(x, y, !reverseSearchWay ? ctx->startX : ctx->targetX,
+											!reverseSearchWay ? ctx->startY : ctx->targetY);
+
+	return (distFromStart - fullDist) / speed;
 }
 
 SHARED_PTR<RouteSegment> createNull() { return std::make_shared<RouteSegment>(nullptr, 0, 1); }
@@ -157,10 +184,6 @@ void initQueuesWithStartEnd(RoutingContext* ctx, SHARED_PTR<RouteSegment> start,
 		printRoad("END+", endPos);
 		printRoad("END-", endNeg);
 	}
-	if (startPos) startPos->parentRoute = createNull();
-	if (startNeg) startNeg->parentRoute = createNull();
-	if (endPos) endPos->parentRoute = createNull();
-	if (endNeg) endNeg->parentRoute = createNull();
 
 	// for start : f(start) = g(start) + h(start) = 0 + h(start) = h(start)
 	if (ctx->config->initialDirection > -180 && ctx->config->initialDirection < 180) {
