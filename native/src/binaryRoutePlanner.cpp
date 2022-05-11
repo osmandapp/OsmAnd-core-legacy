@@ -150,10 +150,10 @@ SHARED_PTR<RouteSegment> initRouteSegment(RoutingContext* ctx, SHARED_PTR<RouteS
 }
 
 double initDistFromStart(RoutingContext* ctx, SHARED_PTR<RouteSegment> initSegment, bool reverseSearchWay) {
-	int x = initSegment->road->pointsX[initSegment->getSegmentStart()];
-	int y = initSegment->road->pointsY[initSegment->getSegmentStart()];
-	int prevx = initSegment->road->pointsX[initSegment->getSegmentEnd()];
-	int prevy = initSegment->road->pointsY[initSegment->getSegmentEnd()];
+	int prevX = initSegment->road->pointsX[initSegment->getSegmentStart()];
+	int prevY = initSegment->road->pointsY[initSegment->getSegmentStart()];
+	int x = initSegment->road->pointsX[initSegment->getSegmentEnd()];
+	int y = initSegment->road->pointsY[initSegment->getSegmentEnd()];
 	float priority = ctx->config->router->defineSpeedPriority(initSegment->road);
 	float speed = ctx->config->router->defineRoutingSpeed(initSegment->road) * priority;
 	if (speed == 0) {
@@ -163,7 +163,7 @@ double initDistFromStart(RoutingContext* ctx, SHARED_PTR<RouteSegment> initSegme
 	if (speed > ctx->config->router->getMaxSpeed()) {
 		speed = ctx->config->router->getMaxSpeed();
 	}
-	double fullDist = squareRootDist31(prevx, prevy, x, y);
+	double fullDist = squareRootDist31(prevX, prevY, x, y);
 	double distFromStart = squareRootDist31(x, y, !reverseSearchWay ? ctx->startX : ctx->targetX,
 											!reverseSearchWay ? ctx->startY : ctx->targetY);
 
