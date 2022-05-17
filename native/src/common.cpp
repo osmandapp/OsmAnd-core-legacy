@@ -210,7 +210,11 @@ int get31TileNumberX(double longitude) {
 	longitude = checkLongitude(longitude);
 	int64_t l = 1;
 	l <<= 31;
-	return (int)((longitude + 180) / 360 * l);
+    
+    double tileNumberX = ((longitude + 180) / 360 * l);
+    if (tileNumberX > INT_MAX)
+        tileNumberX = INT_MAX;
+    	return (int)tileNumberX;
 }
 
 int get31TileNumberY(double latitude) {
