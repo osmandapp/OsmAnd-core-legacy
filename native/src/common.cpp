@@ -14,6 +14,8 @@
 #include <time.h>
 #endif
 
+#include <limits.h>
+
 void deleteObjects(std::vector<FoundMapDataObject>& v) {
 	for (size_t i = 0; i < v.size(); i++) {
 		delete v[i].obj;
@@ -210,7 +212,11 @@ int get31TileNumberX(double longitude) {
 	longitude = checkLongitude(longitude);
 	int64_t l = 1;
 	l <<= 31;
-	return (int)((longitude + 180) / 360 * l);
+    
+    double tileNumberX = ((longitude + 180) / 360 * l);
+    if (tileNumberX > INT_MAX)
+        tileNumberX = INT_MAX;
+    	return (int)tileNumberX;
 }
 
 int get31TileNumberY(double latitude) {

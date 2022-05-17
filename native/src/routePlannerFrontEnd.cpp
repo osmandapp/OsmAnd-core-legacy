@@ -13,8 +13,8 @@ SHARED_PTR<RoutingContext> RoutePlannerFrontEnd::buildRoutingContext(
 	return std::make_shared<RoutingContext>(config, rm);
 }
 
-SHARED_PTR<RouteSegment> RoutePlannerFrontEnd::getRecalculationEnd(RoutingContext* ctx) {
-	SHARED_PTR<RouteSegment> recalculationEnd;
+SHARED_PTR<RouteSegmentPoint> RoutePlannerFrontEnd::getRecalculationEnd(RoutingContext* ctx) {
+	SHARED_PTR<RouteSegmentPoint> recalculationEnd;
 	bool runRecalculation = ctx->previouslyCalculatedRoute.size() > 0 && ctx->config->recalculateDistance != 0;
 	if (runRecalculation) {
 		vector<SHARED_PTR<RouteSegmentResult>> rlist;
@@ -35,7 +35,7 @@ SHARED_PTR<RouteSegment> RoutePlannerFrontEnd::getRecalculationEnd(RoutingContex
 				if (previous) {
 					previous->parentRoute = segment;
 				} else {
-					recalculationEnd = segment;
+					recalculationEnd = std::make_shared<RouteSegmentPoint>(segment->road, segment->segmentStart, 0);
 				}
 				previous = segment;
 			}
@@ -802,7 +802,7 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 		ctx->startY = startY;
 		ctx->targetX = endX;
 		ctx->targetY = endY;
-		SHARED_PTR<RouteSegment> recalculationEnd = getRecalculationEnd(ctx.get());
+		SHARED_PTR<RouteSegmentPoint> recalculationEnd = getRecalculationEnd(ctx.get());
 		if (recalculationEnd) {
 			ctx->initTargetPoint(recalculationEnd);
 		}

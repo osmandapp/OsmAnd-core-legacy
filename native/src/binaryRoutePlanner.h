@@ -32,5 +32,6 @@ vector<SHARED_PTR<RouteSegmentResult> > searchRouteInternal(RoutingContext* ctx,
 bool checkMovementAllowed(RoutingContext* ctx, bool reverseWaySearch, SHARED_PTR<RouteSegment>& segment);
 bool containsKey(VISITED_MAP& visited, int64_t routePointId);
 SHARED_PTR<RouteSegment> createNull();
+double initDistFromStart(RoutingContext* ctx, SHARED_PTR<RouteSegment> initSegment, bool reverseSearchWay);
 
 #endif /*_OSMAND_BINARY_ROUTE_PLANNER_H*/
