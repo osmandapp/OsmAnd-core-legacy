@@ -22,10 +22,6 @@ const double M_PI_2 = M_PI / 2.0;
 
 static const int SHIFT_COORDINATES = 5;
 static const int LABEL_ZOOM_ENCODE = 26;
-static const double MIN_LATITUDE = -85.0511;
-static const double MAX_LATITUDE = 85.0511;
-static const double MIN_LONGITUDE = -180.0;
-static const double MAX_LONGITUDE = 180.0;
 // Better don't do this
 using namespace std;
 
