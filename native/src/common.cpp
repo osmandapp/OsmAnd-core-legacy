@@ -14,6 +14,8 @@
 #include <time.h>
 #endif
 
+#include <limits.h>
+
 void deleteObjects(std::vector<FoundMapDataObject>& v) {
 	for (size_t i = 0; i < v.size(); i++) {
 		delete v[i].obj;
