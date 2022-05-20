@@ -6,6 +6,7 @@
 
 SHARED_PTR<RouteCalculationProgress> RouteCalculationProgress::capture(SHARED_PTR<RouteCalculationProgress>& cp) {
 	SHARED_PTR<RouteCalculationProgress> p = std::make_shared<RouteCalculationProgress>();
+	p->routingCalculatedTime = cp->routingCalculatedTime;
 	p->timeToCalculate = cp->timeToCalculate;
 	p->timeToLoadHeaders = cp->timeToLoadHeaders;
 	p->timeToFindInitialSegments = cp->timeToFindInitialSegments;
@@ -18,6 +19,7 @@ SHARED_PTR<RouteCalculationProgress> RouteCalculationProgress::capture(SHARED_PT
 	p->visitedOppositeSegments = cp->visitedOppositeSegments;
 
 	p->loadedTiles = cp->loadedTiles;
+    p->unloadedTiles = cp->unloadedTiles;
 	p->distinctLoadedTiles = cp->distinctLoadedTiles;
 	p->maxLoadedTiles = cp->maxLoadedTiles;
 	p->loadedPrevUnloadedTiles = cp->loadedPrevUnloadedTiles;
@@ -34,6 +36,7 @@ UNORDERED(map) < string, UNORDERED(map) < string, string >>
 		firstPhase = std::make_shared<RouteCalculationProgress>();
 	}
 	tiles.insert({"loadedTiles", std::to_string(this->loadedTiles - firstPhase->loadedTiles)});
+    tiles.insert({"unloadedTiles", std::to_string(this->unloadedTiles - firstPhase->unloadedTiles)});
 	tiles.insert({"loadedTilesDistinct", std::to_string(this->distinctLoadedTiles - firstPhase->distinctLoadedTiles)});
 	tiles.insert({"loadedTilesPrevUnloaded",
 				  std::to_string(this->loadedPrevUnloadedTiles - firstPhase->loadedPrevUnloadedTiles)});
