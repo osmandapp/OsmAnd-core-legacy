@@ -1496,7 +1496,7 @@ void printResults(RoutingContext* ctx, int startX, int startY, int endX, int end
 				  vector<SHARED_PTR<RouteSegmentResult>>& result) {
 	UNORDERED(map) < string, UNORDERED(map) < string, string >> info;
 	UNORDERED(map)<string, string> route;
-	route.insert({"routing_time", std::to_string(ctx->progress->routingCalculatedTime)});
+	route.insert({"routing_time", std::to_string(ctx->progress->routingCalculatedTime - ctx->calculationProgressFirstPhase->routingCalculatedTime)});
 	route.insert({"vehicle", ctx->config->routerName});
 	route.insert({"base", std::to_string(ctx->calculationMode == RouteCalculationMode::BASE)});
 	route.insert({"start_lat", std::to_string(get31LatitudeY(startY))});
