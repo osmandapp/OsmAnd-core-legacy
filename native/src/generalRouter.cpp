@@ -163,20 +163,11 @@ double parseValue(string value, string type) {
 	return vl;
 }
 
-bool equalsToAny(const std::string& o, const std::vector<std::string>& objects) {
-	for (const auto& arg : objects) {
-		if (arg == o) {
-			return true;
-		}
-	}
-	return false;
-}
-
 UNORDERED_map<std::string, RoutingParameter> GeneralRouter::getParameters(const std::string &derivedProfile) {
 	UNORDERED_map<std::string, RoutingParameter> params;
 	for (auto it = parameters.begin(); it != parameters.end(); ++it) {
 		const auto profiles = it->second.profiles;
-		if (!profiles.empty() || equalsToAny(derivedProfile, profiles)) {
+		if (profiles.empty() || find(profiles.begin(), profiles.end(), derivedProfile) != profiles.end()) {
 			params[it->first] = it->second;
 		}
 	}
