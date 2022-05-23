@@ -73,9 +73,9 @@ class RoutingRulesHandler {
 		string id = attrValue(attrsMap, "id");
 		string type = attrValue(attrsMap, "type");
 		string profilesList = attrValue(attrsMap, "profiles");
-        vector<string> profiles;
-        if (!profilesList.empty())
-            profiles = split_string(profilesList, ",");
+		vector<string> profiles;
+		if (!profilesList.empty())
+			profiles = split_string(profilesList, ",");
 		bool defaultValue = parseBool(attrValue(attrsMap, "default"), false);
 		if ("boolean" == to_lowercase(type)) {
 			currentRouter->registerBooleanParameter(id, group, name, description, profiles, defaultValue);
