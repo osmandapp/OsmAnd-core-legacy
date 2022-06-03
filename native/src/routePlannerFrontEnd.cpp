@@ -764,14 +764,13 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 	vector<int> targetsX(endX);
 	vector<int> targetsY(endY);
 	bool intermediatesEmpty = intermediatesX.empty();
-	if(!intermediatesEmpty){
-		targetsX.insert(targetsX.end(),intermediatesX.begin(),intermediatesX.end());
-		targetsY.insert(targetsY.end(),intermediatesY.begin(),intermediatesY.end());
+	if (!intermediatesEmpty) {
+		targetsX.insert(targetsX.end(), intermediatesX.begin(), intermediatesX.end());
+		targetsY.insert(targetsY.end(), intermediatesY.begin(), intermediatesY.end());
 	}
 	if (needRequestPrivateAccessRouting(ctx, targetsX, targetsY)) {
 		ctx->progress->requestPrivateAccessRouting = true;
 	}
-	 
 	double maxDistance = measuredDist31(startX, startY, endX, endY);
 	if (!intermediatesEmpty) {
 		int x31 = startX;
