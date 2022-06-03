@@ -64,6 +64,7 @@ public:
                                            int endX, int endY,
                                            vector<int>& intermediatesX, vector<int>& intermediatesY,
                                            SHARED_PTR<PrecalculatedRouteDirection> routeDirection = nullptr);
+    bool needRequestPrivateAccessRouting(SHARED_PTR<RoutingContext> ctx, vector<int>& targetsX, vector<int>& targetsY);
     
     static SHARED_PTR<RouteSegmentResult> generateStraightLineSegment(float averageSpeed, vector<pair<double, double>> points);
 	

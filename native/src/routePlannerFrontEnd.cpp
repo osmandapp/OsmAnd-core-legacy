@@ -761,17 +761,17 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 	if (!ctx->progress) {
 		ctx->progress = std::make_shared<RouteCalculationProgress>();
 	}
+	vector<int> targetsX(endX);
+	vector<int> targetsY(endY);
 	bool intermediatesEmpty = intermediatesX.empty();
-	/* TODO missing functionality for private access recalculation
-	List<LatLon> targets = new ArrayList<>();
-	targets.add(end);
-	if (!intermediatesEmpty) {
-		targets.addAll(intermediates);
+	if(!intermediatesEmpty){
+		targetsX.insert(targetsX.end(),intermediatesX.begin(),intermediatesX.end());
+		targetsY.insert(targetsY.end(),intermediatesY.begin(),intermediatesY.end());
 	}
-	if (needRequestPrivateAccessRouting(ctx, targets)) {
-		ctx.calculationProgress.requestPrivateAccessRouting = true;
+	if (needRequestPrivateAccessRouting(ctx, targetsX, targetsY)) {
+		ctx->progress->requestPrivateAccessRouting = true;
 	}
-	 */
+	 
 	double maxDistance = measuredDist31(startX, startY, endX, endY);
 	if (!intermediatesEmpty) {
 		int x31 = startX;
@@ -839,6 +839,33 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 
 	printResults(ctx.get(), startX, startY, endX, endY, res);
 
+	return res;
+}
+
+bool RoutePlannerFrontEnd::needRequestPrivateAccessRouting(SHARED_PTR<RoutingContext> ctx, vector<int>& targetsX,
+														   vector<int>& targetsY) {
+	bool res = false;
+	SHARED_PTR<GeneralRouter> router = ctx->config->router;
+	if (router && !router->allowPrivate) {
+		ctx->unloadAllData();
+		UNORDERED(map)<string, string> mp({{GeneralRouterConstants::ALLOW_PRIVATE, "true"}});
+		auto generalRouter = GeneralRouter(router->getProfile(), mp);
+		ctx->config->router = generalRouter.build();
+		for (int i = 0; i < targetsX.size(); i++) {
+			int x31 = targetsX[i];
+			int y31 = targetsY[i];
+			SHARED_PTR<RouteSegmentPoint> rp = findRouteSegment(x31, y31, ctx.get());
+			if (rp && rp->road) {
+				if (rp->road->hasPrivateAccess()) {
+					res = true;
+					break;
+				}
+			}
+		}
+		ctx->unloadAllData();
+		ctx->progress->requestPrivateAccessRouting = res;
+		ctx->config->router = router;
+	}
 	return res;
 }
 

@@ -496,6 +496,8 @@ struct RouteDataObject {
 
 	string getHighway();
 
+	bool hasPrivateAccess();
+
 	bool platform();
 
 	bool roundabout();

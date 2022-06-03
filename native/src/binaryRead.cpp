@@ -333,6 +333,19 @@ string RouteDataObject::getHighway() {
 	return "";
 }
 
+bool RouteDataObject::hasPrivateAccess() {
+	int sz = types.size();
+	for (int i = 0; i < sz; i++) {
+		auto& r = region->quickGetEncodingRule(types[i]);
+		if (r.getTag() == "motorcar" || r.getTag() == "motor_vehicle" || r.getTag() == "vehicle" || r.getTag() == "access") {
+			if (r.getValue() == "private") {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 bool RouteDataObject::platform() {
 	auto sz = types.size();
 	for (int i = 0; i < sz; i++) {
