@@ -879,7 +879,7 @@ SHARED_PTR<RouteSegmentPoint> findRouteSegment(int px, int py, RoutingContext* c
 			}
 			if (road) {
 				if (!transportStop) {
-					float prio = max(ctx->config->router->defineSpeedPriority(road->road), 0.3);
+					float prio = ctx->config->router->defineDestinationPriority(road->road);
 					if (prio > 0) {
 						road->dist = (road->dist + GPS_POSSIBLE_ERROR * GPS_POSSIBLE_ERROR) / (prio * prio);
 						list.push_back(road);
