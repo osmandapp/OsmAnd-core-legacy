@@ -1636,10 +1636,12 @@ extern "C" JNIEXPORT jboolean JNICALL Java_net_osmand_NativeLibrary_nativeNeedRe
 	jobject progress = ienv->GetObjectField(jCtx, jfield_RoutingContext_calculationProgress);
 	RoutingContext* c = getRoutingContext(ienv, jCtx, -360, false, progress);
 	SHARED_PTR<RoutePlannerFrontEnd> rpfe = shared_ptr<RoutePlannerFrontEnd>(new RoutePlannerFrontEnd());
-	return rpfe->needRequestPrivateAccessRouting(std::make_shared<RoutingContext>(c), coordinatesX, coordinatesY);
+	bool res = rpfe->needRequestPrivateAccessRouting(std::make_shared<RoutingContext>(c), coordinatesX, coordinatesY);
+	ienv->DeleteLocalRef(progress);
+	return res;
 }
 
-extern "C" JNIEXPORT jobject JNICALL Java_net_osmand_NativeLibrary_natro(JNIEnv* ienv, jobject obj,
+extern "C" JNIEXPORT jobject JNICALL Java_net_osmand_NativeLibrary_nativeSearchGpxRoute(JNIEnv* ienv, jobject obj,
 																						jobject jCtx,
 																						jobjectArray jGpxPoints,
 																						jobjectArray regions) {
