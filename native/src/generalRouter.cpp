@@ -504,6 +504,10 @@ double GeneralRouter::defineSpeedPriority(SHARED_PTR<RouteDataObject>& road) {
 	return evaluateCache(RouteDataObjectAttribute::ROAD_PRIORITIES, road, 1.);
 }
 
+double GeneralRouter::defineDestinationPriority(SHARED_PTR<RouteDataObject>& road) {
+	return evaluateCache(RouteDataObjectAttribute::DESTINATION_PRIORITIES, road, 1.);
+}
+
 double GeneralRouter::getDefaultSpeed() {
 	return defaultSpeed;
 }

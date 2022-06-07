@@ -47,16 +47,17 @@ struct GeneralRouterConstants {
 enum class RouteDataObjectAttribute : unsigned int {
 	ROAD_SPEED = 0,				  //"speed"
 	ROAD_PRIORITIES = 1,		  // "priority"
-	ACCESS = 2,					  // "access"
-	OBSTACLES = 3,				  // "obstacle_time"
-	ROUTING_OBSTACLES = 4,		  // "obstacle"
-	ONEWAY = 5,					  // "oneway"
-	PENALTY_TRANSITION = 6,		  // "penalty_transition"
-	OBSTACLE_SRTM_ALT_SPEED = 7,  // "obstacle_srtm_alt_speed"
-	AREA = 8,					  // "area"
+	DESTINATION_PRIORITIES = 2,	  // "destination_priority"
+	ACCESS = 3,					  // "access"
+	OBSTACLES = 4,				  // "obstacle_time"
+	ROUTING_OBSTACLES = 5,		  // "obstacle"
+	ONEWAY = 6,					  // "oneway"
+	PENALTY_TRANSITION = 7,		  // "penalty_transition"
+	OBSTACLE_SRTM_ALT_SPEED = 8,  // "obstacle_srtm_alt_speed"
+	AREA = 9,					  // "area"
 
 	UNDEFINED = 100000,
-	COUNT = 9
+	COUNT = 10
 };
 
 static RouteDataObjectAttribute parseRouteDataObjectAttribute(string attr, RouteDataObjectAttribute def) {
@@ -64,6 +65,8 @@ static RouteDataObjectAttribute parseRouteDataObjectAttribute(string attr, Route
 		return RouteDataObjectAttribute::ROAD_SPEED;
 	} else if ("priority" == to_lowercase(attr)) {
 		return RouteDataObjectAttribute::ROAD_PRIORITIES;
+	} else if ("destination_priority" == to_lowercase(attr)) {
+		return RouteDataObjectAttribute::DESTINATION_PRIORITIES;
 	} else if ("access" == to_lowercase(attr)) {
 		return RouteDataObjectAttribute::ACCESS;
 	} else if ("obstacle_time" == to_lowercase(attr)) {
@@ -486,6 +489,11 @@ class GeneralRouter {
 	 * define priority to multiply the speed for g(x) A*
 	 */
 	double defineSpeedPriority(SHARED_PTR<RouteDataObject>& road);
+
+	/**
+	 * define destination priority
+	 */
+	double defineDestinationPriority(SHARED_PTR<RouteDataObject>& road);
 
 	/**
 	 * Used for A* routing to calculate g(x)
