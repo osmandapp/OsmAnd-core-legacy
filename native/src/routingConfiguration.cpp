@@ -72,18 +72,23 @@ class RoutingRulesHandler {
 		string name = attrValue(attrsMap, "name");
 		string id = attrValue(attrsMap, "id");
 		string type = attrValue(attrsMap, "type");
+		string profilesList = attrValue(attrsMap, "profiles");
+		vector<string> profiles;
+		if (!profilesList.empty())
+			profiles = split_string(profilesList, ",");
 		bool defaultValue = parseBool(attrValue(attrsMap, "default"), false);
 		if ("boolean" == to_lowercase(type)) {
-			currentRouter->registerBooleanParameter(id, group, name, description, defaultValue);
+			currentRouter->registerBooleanParameter(id, group, name, description, profiles, defaultValue);
 		} else if ("numeric" == to_lowercase(type)) {
 			string values = attrValue(attrsMap, "values");
 			string valueDescriptions = attrValue(attrsMap, "valueDescriptions");
+			vector<string> vlsDesc = split_string(valueDescriptions, ",");
 			vector<string> strValues = split_string(values, ",");
 			vector<double> vls;
 			for (int i = 0; i < strValues.size(); i++) {
 				vls.push_back(parseFloat(strValues[i], false));
 			}
-			currentRouter->registerNumericParameter(id, name, description, vls, split_string(valueDescriptions, ","));
+			currentRouter->registerNumericParameter(id, name, description, vls, profiles, vlsDesc);
 		}
 	}
 

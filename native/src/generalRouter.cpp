@@ -18,6 +18,7 @@ const double GeneralRouterConstants::BICYCLE_SHORTEST_DEFAULT_SPEED = 15 / 3.6f;
 const char* GeneralRouterConstants::USE_SHORTEST_WAY = "short_way";
 const char* GeneralRouterConstants::USE_HEIGHT_OBSTACLES = "height_obstacles";
 const char* GeneralRouterConstants::ALLOW_PRIVATE = "allow_private";
+const char* GeneralRouterConstants::ALLOW_PRIVATE_FOR_TRUCK = "allow_private_for_truck";
 const char* GeneralRouterConstants::DEFAULT_SPEED = "default_speed";
 const char* GeneralRouterConstants::MIN_SPEED = "min_speed";
 const char* GeneralRouterConstants::MAX_SPEED = "max_speed";
@@ -160,6 +161,17 @@ double parseValue(string value, string type) {
 		return DOUBLE_MISSING;
 	}
 	return vl;
+}
+
+UNORDERED_map<std::string, RoutingParameter> GeneralRouter::getParameters(const std::string &derivedProfile) {
+	UNORDERED_map<std::string, RoutingParameter> params;
+	for (auto it = parameters.begin(); it != parameters.end(); ++it) {
+		const auto profiles = it->second.profiles;
+		if (profiles.empty() || find(profiles.begin(), profiles.end(), derivedProfile) != profiles.end()) {
+			params[it->first] = it->second;
+		}
+	}
+	return params;
 }
 
 void GeneralRouter::addAttribute(string k, string v) {

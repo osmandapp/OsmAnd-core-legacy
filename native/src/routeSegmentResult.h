@@ -75,7 +75,7 @@ struct RouteSegmentResult {
 		int oldLength = attachedRoutesFrontEnd.size();
 		attachedRoutesFrontEnd.resize(min(oldLength, capacity));
 	}
-
+		
 	inline int getStartPointIndex() const {
 		return startPointIndex;
 	}

@@ -38,6 +38,7 @@ struct GeneralRouterConstants {
 	static const char* USE_SHORTEST_WAY;
 	static const char* USE_HEIGHT_OBSTACLES;
 	static const char* ALLOW_PRIVATE;
+	static const char* ALLOW_PRIVATE_FOR_TRUCK;
 	static const char* DEFAULT_SPEED;
 	static const char* MIN_SPEED;
 	static const char* MAX_SPEED;
@@ -110,6 +111,7 @@ struct RoutingParameter {
 	RoutingParameterType type;
 	vector<double> possibleValues;	// Object TODO;
 	vector<string> possibleValueDescriptions;
+	vector<string> profiles;
 	bool defaultBoolean;
 };
 
@@ -382,24 +384,26 @@ class GeneralRouter {
 		return parametersList;
 	}
 
-	void registerBooleanParameter(string id, string group, string name, string description, bool defaultValue) {
+	void registerBooleanParameter(string id, string group, string name, string description, vector<string> profiles, bool defaultValue) {
 		RoutingParameter rp{};
 		rp.group = group;
 		rp.name = name;
 		rp.description = description;
 		rp.id = id;
+		rp.profiles = profiles;
 		rp.type = RoutingParameterType::BOOLEAN;
 		rp.defaultBoolean = defaultValue;
 		parameters[rp.id] = rp;
 		parametersList.push_back(rp);
 	}
 
-	void registerNumericParameter(string id, string name, string description, vector<double> vls,
+	void registerNumericParameter(string id, string name, string description, vector<double> vls, vector<string> profiles,
 								  vector<string> vlsDescriptions) {
 		RoutingParameter rp{};
 		rp.name = name;
 		rp.description = description;
 		rp.id = id;
+		rp.profiles = profiles;
 		rp.possibleValues = vls;
 		rp.possibleValueDescriptions = vlsDescriptions;
 		rp.type = RoutingParameterType::NUMERIC;
@@ -418,7 +422,9 @@ class GeneralRouter {
 		objectAttributes.push_back(c);
 		return objectAttributes.back();
 	}
-
+	
+	UNORDERED_map<string, RoutingParameter> getParameters(const string &derivedProfile);
+	
 	void addAttribute(string k, string v);
 
 	bool containsAttribute(string attribute);

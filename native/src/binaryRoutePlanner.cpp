@@ -28,12 +28,13 @@ inline int roadPriorityComparator(float o1DistanceFromStart, float o1DistanceToE
 }
 
 void printRoad(const char* prefix, RouteSegment* segment) {
+	const auto& parentRoute = segment->getParentRoute();
 	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "%s Road id=%lld ind=%d->%d ds=%f es=%f pend=%d parent=%lld",
 					  prefix, segment->getRoad()->id / 64, segment->getSegmentStart(), segment->getSegmentEnd(),
 					  segment->distanceFromStart, segment->distanceToEnd,
-					  segment->parentRoute != nullptr ? segment->getParentRoute()->segmentEnd : 0,
-					  segment->parentRoute != nullptr && segment->getParentRoute()->road != nullptr
-						  ? segment->getParentRoute()->getRoad()->id / 64
+					  parentRoute != nullptr ? parentRoute->segmentEnd : 0,
+					  parentRoute != nullptr && parentRoute->road != nullptr
+						  ? parentRoute->getRoad()->id / 64
 						  : 0);
 }
 
@@ -136,10 +137,37 @@ SHARED_PTR<RouteSegment> initRouteSegment(RoutingContext* ctx, SHARED_PTR<RouteS
 	} else if (segment->getSegmentStart() > 0 && positiveDirection) {
 		segment = loadSameSegment(ctx, segment, segment->getSegmentStart() - 1, reverseSearchWay);
 	}
-	if (!segment) {
-		return segment;
+	SHARED_PTR<RouteSegment> initSegment = nullptr;
+	if (segment) {
+		initSegment = RouteSegment::initRouteSegment(segment, positiveDirection);
 	}
-	return RouteSegment::initRouteSegment(segment, positiveDirection);
+	if (initSegment) {
+		initSegment->parentRoute = createNull();
+		// compensate first segment difference
+		initSegment->distanceFromStart += initDistFromStart(ctx, initSegment, reverseSearchWay);
+	}
+	return initSegment;
+}
+
+double initDistFromStart(RoutingContext* ctx, SHARED_PTR<RouteSegment> initSegment, bool reverseSearchWay) {
+	int prevX = initSegment->road->pointsX[initSegment->getSegmentStart()];
+	int prevY = initSegment->road->pointsY[initSegment->getSegmentStart()];
+	int x = initSegment->road->pointsX[initSegment->getSegmentEnd()];
+	int y = initSegment->road->pointsY[initSegment->getSegmentEnd()];
+	float priority = ctx->config->router->defineSpeedPriority(initSegment->road);
+	float speed = ctx->config->router->defineRoutingSpeed(initSegment->road) * priority;
+	if (speed == 0) {
+		speed = ctx->config->router->getDefaultSpeed() * priority;
+	}
+	// speed can not exceed max default speed according to A*
+	if (speed > ctx->config->router->getMaxSpeed()) {
+		speed = ctx->config->router->getMaxSpeed();
+	}
+	double fullDist = squareRootDist31(prevX, prevY, x, y);
+	double distFromStart = squareRootDist31(x, y, !reverseSearchWay ? ctx->startX : ctx->targetX,
+											!reverseSearchWay ? ctx->startY : ctx->targetY);
+
+	return (distFromStart - fullDist) / speed;
 }
 
 SHARED_PTR<RouteSegment> createNull() { return std::make_shared<RouteSegment>(nullptr, 0, 1); }
@@ -156,10 +184,6 @@ void initQueuesWithStartEnd(RoutingContext* ctx, SHARED_PTR<RouteSegment> start,
 		printRoad("END+", endPos);
 		printRoad("END-", endNeg);
 	}
-	startPos->parentRoute = createNull();
-	startNeg->parentRoute = createNull();
-	endPos->parentRoute = createNull();
-	endNeg->parentRoute = createNull();
 
 	// for start : f(start) = g(start) + h(start) = 0 + h(start) = h(start)
 	if (ctx->config->initialDirection > -180 && ctx->config->initialDirection < 180) {
@@ -266,14 +290,13 @@ SHARED_PTR<RouteSegment> searchRouteInternal(RoutingContext* ctx, SHARED_PTR<Rou
 
 	initQueuesWithStartEnd(ctx, start, end, graphDirectSegments, graphReverseSegments);
 
-	// Extract & analyze segment with min(f(x)) from queue while final segment is not found
-	bool forwardSearch = true;
-
-	SEGMENTS_QUEUE* graphSegments = &graphDirectSegments;
 	bool onlyBackward = ctx->getPlanRoadDirection() < 0;
 	bool onlyForward = ctx->getPlanRoadDirection() > 0;
 
 	SHARED_PTR<RouteSegment> finalSegment;
+	// Extract & analyze segment with min(f(x)) from queue while final segment is not found
+	SEGMENTS_QUEUE* graphSegments = onlyForward ? &graphReverseSegments : &graphDirectSegments;
+	bool forwardSearch = !onlyForward;
 	while (graphSegments->size() > 0) {
 		SHARED_PTR<RouteSegment> segment = graphSegments->top();
 		graphSegments->pop();

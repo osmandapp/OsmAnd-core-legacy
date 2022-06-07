@@ -894,8 +894,7 @@ void drawPolygon(MapDataObject* mObj, RenderingRuleSearchRequest* req, SkCanvas*
 }
 
 void drawPoint(MapDataObject* mObj, RenderingRuleSearchRequest* req, SkCanvas* cv, SkPaint* paint, RenderingContext* rc,
-			   std::pair<std::string, std::string> pair, uint ord) {
-	bool renderTxt = ord == 0;
+			   std::pair<std::string, std::string> pair, uint typeInd) {
 	std::string tag = pair.first;
 	std::string value = pair.second;
 
@@ -906,8 +905,6 @@ void drawPoint(MapDataObject* mObj, RenderingRuleSearchRequest* req, SkCanvas* c
 	std::string shieldId = prepareIconValue(*mObj, req->getStringPropertyValue(req->props()->R_SHIELD));
 
 	SkBitmap* bmp = getCachedBitmap(rc, resId);
-
-	if (bmp == NULL && !renderTxt) return;
 	SkBitmap* shield = getCachedBitmap(rc, shieldId);
 
 	size_t length = mObj->points.size();
@@ -950,12 +947,11 @@ void drawPoint(MapDataObject* mObj, RenderingRuleSearchRequest* req, SkCanvas* c
 		ico->order = req->getIntPropertyValue(req->props()->R_ICON_ORDER, 100);
 		ico->intersectionSizeFactor = req->getFloatPropertyValue(req->props()->R_INTERSECTION_SIZE_FACTOR, 1);
 		ico->intersectionMargin = getDensityValue(rc, req, req->props()->R_INTERSECTION_MARGIN);
-		ico->secondOrder = ((mObj->id % 10000) << 8) + ord;
+		ico->secondOrder = ((mObj->id % 10000) << 8) + typeInd;
 		if (ico->order >= 0) rc->iconsToDraw.push_back(ico);
 	}
-	if (renderTxt) {
-		renderText(mObj, req, rc, pair.first, pair.second, px, py, 0, NULL, ico);
-	}
+	
+	renderText(mObj, req, rc, pair.first, pair.second, px, py, 0, NULL, ico);
 }
 
 void drawObject(RenderingContext* rc, SkCanvas* cv, RenderingRuleSearchRequest* req, SkPaint* paint,
@@ -1240,6 +1236,8 @@ void sortObjectsByProperOrder(std::vector<FoundMapDataObject>& mapDataObjects, R
 												 rc->getZoom() > POINT_DRAW_ZOOM_FILTER)) {
 									pointsArray.push_back(pointObj);
 								}
+							} else if (addTextForSmallAreas) {
+								pointsArray.push_back(pointObj);
 							}
 						} else if (objectType == 1) {
 							pointsArray.push_back(mapObj);
