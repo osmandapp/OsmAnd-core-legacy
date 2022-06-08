@@ -761,8 +761,8 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 	if (!ctx->progress) {
 		ctx->progress = std::make_shared<RouteCalculationProgress>();
 	}
-	vector<int> targetsX(endX);
-	vector<int> targetsY(endY);
+    vector<int> targetsX = {endX};
+    vector<int> targetsY = {endY};
 	bool intermediatesEmpty = intermediatesX.empty();
 	if (!intermediatesEmpty) {
 		targetsX.insert(targetsX.end(), intermediatesX.begin(), intermediatesX.end());
