@@ -314,7 +314,7 @@ struct RoutingContext {
 							}
 							if (acceptLine(o)) {
 								if (excludedIds.find(o->getId()) == excludedIds.end()) {
-									if (!config->router->checkAllowPrivateNeeded) {
+									if (!points.empty() && !config->router->checkAllowPrivateNeeded) {
 										connectPoint(subregions[j], o, points);
 									}
 									subregions[j]->add(o);
