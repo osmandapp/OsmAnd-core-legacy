@@ -313,8 +313,9 @@ struct RoutingContext {
 								o->processConditionalTags(conditionalTimeStr);
 							}
 							if (acceptLine(o)) {
-								if (excludedIds.find(o->getId()) == excludedIds.end()) {									
-									if (!points.empty()) {
+								if (excludedIds.find(o->getId()) == excludedIds.end()) {
+									if (!config->router->checkAllowPrivateNeeded) {
+										OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "==== connectPoint");
 										connectPoint(subregions[j], o, points);
 									}
 									subregions[j]->add(o);

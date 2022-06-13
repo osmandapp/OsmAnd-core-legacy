@@ -847,8 +847,9 @@ bool RoutePlannerFrontEnd::needRequestPrivateAccessRouting(SHARED_PTR<RoutingCon
 	SHARED_PTR<GeneralRouter> router = ctx->config->router;
 	if (router && !router->allowPrivate) {
 		ctx->unloadAllData();
-		UNORDERED(map)<string, string> mp({{GeneralRouterConstants::ALLOW_PRIVATE, "true"}});
-		auto generalRouter = GeneralRouter(router->getProfile(), mp);
+		UNORDERED(map)<string, string> params({{GeneralRouterConstants::ALLOW_PRIVATE, "true"}, 
+		                                       {GeneralRouterConstants::CHECK_ALLOW_PRIVATE_NEEDED, "true"}});
+		auto generalRouter = GeneralRouter(router->getProfile(), params);
 		ctx->config->router = generalRouter.build();
 		for (int i = 0; i < targetsX.size(); i++) {
 			int x31 = targetsX[i];
