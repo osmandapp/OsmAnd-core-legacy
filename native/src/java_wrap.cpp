@@ -1626,6 +1626,21 @@ RoutingContext* getRoutingContext(JNIEnv* ienv, jobject jCtx, jfloat initDirecti
 	return c;
 }
 
+extern "C" JNIEXPORT jboolean JNICALL Java_net_osmand_NativeLibrary_nativeNeedRequestPrivateAccessRouting(
+	JNIEnv* ienv, jobject obj, jobject jCtx, jintArray jcoordinatesX, jintArray jcoordinatesY) {
+	jsize size = ienv->GetArrayLength(jcoordinatesX);
+	std::vector<int> coordinatesX(size);
+	std::vector<int> coordinatesY(size);
+	ienv->GetIntArrayRegion(jcoordinatesX, jsize{0}, size, &coordinatesX[0]);
+	ienv->GetIntArrayRegion(jcoordinatesY, jsize{0}, size, &coordinatesY[0]);
+	jobject progress = ienv->GetObjectField(jCtx, jfield_RoutingContext_calculationProgress);
+	RoutingContext* c = getRoutingContext(ienv, jCtx, -360, false, progress);
+	SHARED_PTR<RoutePlannerFrontEnd> rpfe = shared_ptr<RoutePlannerFrontEnd>(new RoutePlannerFrontEnd());
+	bool res = rpfe->needRequestPrivateAccessRouting(std::make_shared<RoutingContext>(c), coordinatesX, coordinatesY);
+	ienv->DeleteLocalRef(progress);
+	return res;
+}
+
 extern "C" JNIEXPORT jobject JNICALL Java_net_osmand_NativeLibrary_nativeSearchGpxRoute(JNIEnv* ienv, jobject obj,
 																						jobject jCtx,
 																						jobjectArray jGpxPoints,

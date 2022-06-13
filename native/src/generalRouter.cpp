@@ -18,6 +18,7 @@ const double GeneralRouterConstants::BICYCLE_SHORTEST_DEFAULT_SPEED = 15 / 3.6f;
 const char* GeneralRouterConstants::USE_SHORTEST_WAY = "short_way";
 const char* GeneralRouterConstants::USE_HEIGHT_OBSTACLES = "height_obstacles";
 const char* GeneralRouterConstants::ALLOW_PRIVATE = "allow_private";
+const char* GeneralRouterConstants::CHECK_ALLOW_PRIVATE_NEEDED = "check_allow_private_needed";
 const char* GeneralRouterConstants::ALLOW_PRIVATE_FOR_TRUCK = "allow_private_for_truck";
 const char* GeneralRouterConstants::DEFAULT_SPEED = "default_speed";
 const char* GeneralRouterConstants::MIN_SPEED = "min_speed";
@@ -27,14 +28,14 @@ static const bool USE_CACHE = true;
 
 GeneralRouter::GeneralRouter()
 	: profile(GeneralRouterProfile::CAR), _restrictionsAware(true), heightObstacles(false), minSpeed(0.28),
-	  defaultSpeed(1.0), maxSpeed(10.0), shortestRoute(false), allowPrivate(false) {
+	  defaultSpeed(1.0), maxSpeed(10.0), shortestRoute(false), allowPrivate(false), checkAllowPrivateNeeded(false) {
 	cacheEval.resize((std::size_t)RouteDataObjectAttribute::COUNT);
 }
 
 GeneralRouter::GeneralRouter(const GeneralRouterProfile profile, const MAP_STR_STR& attributes)
 	: profile(GeneralRouterProfile::CAR), _restrictionsAware(true), heightObstacles(false), sharpTurn(.0),
 	  roundaboutTurn(.0), slightTurn(.0), minSpeed(0.28), defaultSpeed(1.0), maxSpeed(10.0), shortestRoute(false),
-	  allowPrivate(false) {
+	  allowPrivate(false), checkAllowPrivateNeeded(false) {
 	this->profile = profile;
 	cacheEval.resize((std::size_t)RouteDataObjectAttribute::COUNT);
 	MAP_STR_STR::const_iterator it = attributes.begin();
@@ -49,7 +50,7 @@ GeneralRouter::GeneralRouter(const GeneralRouterProfile profile, const MAP_STR_S
 GeneralRouter::GeneralRouter(const GeneralRouter& parent, const MAP_STR_STR& params)
 	: profile(GeneralRouterProfile::CAR), _restrictionsAware(true), heightObstacles(false), sharpTurn(.0),
 	  roundaboutTurn(.0), slightTurn(.0), minSpeed(0.28), defaultSpeed(1.0), maxSpeed(10.0), shortestRoute(false),
-	  allowPrivate(false) {
+	  allowPrivate(false), checkAllowPrivateNeeded(false) {
 	this->profile = parent.profile;
 	cacheEval.resize((std::size_t)RouteDataObjectAttribute::COUNT);
 	MAP_STR_STR::const_iterator it = parent.attributes.begin();
@@ -69,6 +70,7 @@ GeneralRouter::GeneralRouter(const GeneralRouter& parent, const MAP_STR_STR& par
 	}
 
 	this->allowPrivate = parseBool(params, GeneralRouterConstants::ALLOW_PRIVATE, false);
+	this->checkAllowPrivateNeeded = parseBool(params, GeneralRouterConstants::CHECK_ALLOW_PRIVATE_NEEDED, false);
 	this->shortestRoute = parseBool(params, GeneralRouterConstants::USE_SHORTEST_WAY, false);
 	this->heightObstacles = parseBool(params, GeneralRouterConstants::USE_HEIGHT_OBSTACLES, false);
 	this->defaultSpeed = parseFloat(params, GeneralRouterConstants::DEFAULT_SPEED, this->defaultSpeed);

@@ -38,6 +38,7 @@ struct GeneralRouterConstants {
 	static const char* USE_SHORTEST_WAY;
 	static const char* USE_HEIGHT_OBSTACLES;
 	static const char* ALLOW_PRIVATE;
+	static const char* CHECK_ALLOW_PRIVATE_NEEDED;
 	static const char* ALLOW_PRIVATE_FOR_TRUCK;
 	static const char* DEFAULT_SPEED;
 	static const char* MIN_SPEED;
@@ -358,6 +359,7 @@ class GeneralRouter {
 	UNORDERED(set)<int64_t> impassableRoadIds;
 	bool shortestRoute;
 	bool allowPrivate;
+	bool checkAllowPrivateNeeded;
 	string profileName;
 	string fileName;
 
