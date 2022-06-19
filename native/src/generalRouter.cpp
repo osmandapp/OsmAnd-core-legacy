@@ -610,9 +610,14 @@ dynbitset RouteAttributeContext::convert(RoutingIndex* reg, std::vector<uint32_t
 		MAP_INT_INT::iterator nid = map.find(types[k]);
 		int vl;
 		if (nid == map.end()) {
-			auto& r = reg->routeEncodingRules[types[k]];
-			vl = router->registerTagValueAttribute(tag_value(r.getTag(), r.getValue()));
-			map[types[k]] = vl;
+			auto i = types[k];
+			if (reg->routeEncodingRules.size() > i) {
+				auto& r = reg->routeEncodingRules[i];
+				vl = router->registerTagValueAttribute(tag_value(r.getTag(), r.getValue()));
+				map[types[k]] = vl;
+			} else {
+				continue;
+			}
 		} else {
 			vl = nid->second;
 		}

@@ -281,7 +281,8 @@ struct RouteDataObject {
 			const auto& point = pointTypes[i];
 			const auto pSz = point.size();
 			for (int j = 0; j < pSz; j++) {
-				if (region->routeEncodingRules[point[j]].getValue() == "motorway_junction") {
+				auto k = point[j];
+				if (region->routeEncodingRules.size() > k && region->routeEncodingRules[k].getValue() == "motorway_junction") {
 					return true;
 				}
 			}
