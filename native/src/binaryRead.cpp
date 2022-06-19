@@ -211,9 +211,12 @@ int RouteDataObject::getOneway() {
 string RouteDataObject::getValue(const string& tag) {
 	auto sz = types.size();
 	for (uint32_t i = 0; i < sz; i++) {
-		auto& r = region->routeEncodingRules[types[i]];
-		if (r.getTag() == tag) {
-			return r.getValue();
+		auto k = types[i];
+		if (region->routeEncodingRules.size() > k) {
+			auto& r = region->routeEncodingRules[k];
+			if (r.getTag() == tag) {
+				return r.getValue();
+			}
 		}
 	}
 	for (auto it = names.begin(); it != names.end(); ++it) {
@@ -233,9 +236,12 @@ string RouteDataObject::getValue(uint32_t pnt, const string& tag) {
 		auto tps = pointTypes[pnt];
 		auto sz = tps.size();
 		for (uint32_t i = 0; i < sz; i++) {
-			auto& r = region->routeEncodingRules[tps[i]];
-			if (r.getTag() == tag) {
-				return r.getValue();
+			auto k = tps[i];
+			if (region->routeEncodingRules.size() > k) {
+				auto& r = region->routeEncodingRules[k];
+				if (r.getTag() == tag) {
+					return r.getValue();
+				}
 			}
 		}
 	}
@@ -243,9 +249,12 @@ string RouteDataObject::getValue(uint32_t pnt, const string& tag) {
 		auto tps = pointNameTypes[pnt];
 		auto sz = tps.size();
 		for (uint32_t i = 0; i < sz; i++) {
-			auto& r = region->routeEncodingRules[tps[i]];
-			if (r.getTag() == tag) {
-				return pointNames[pnt][i];
+			auto k = tps[i];
+			if (region->routeEncodingRules.size() > k) {
+				auto& r = region->routeEncodingRules[k];
+				if (r.getTag() == tag) {
+					return pointNames[pnt][i];
+				}
 			}
 		}
 	}
@@ -325,9 +334,12 @@ std::vector<double> RouteDataObject::calculateHeightArray() {
 string RouteDataObject::getHighway() {
 	auto sz = types.size();
 	for (int i = 0; i < sz; i++) {
-		auto& r = region->routeEncodingRules[types[i]];
-		if (r.getTag() == "highway") {
-			return r.getValue();
+		auto k = types[i];
+		if (region->routeEncodingRules.size() > k) {
+			auto& r = region->routeEncodingRules[k];
+			if (r.getTag() == "highway") {
+				return r.getValue();
+			}
 		}
 	}
 	return "";
@@ -336,11 +348,14 @@ string RouteDataObject::getHighway() {
 bool RouteDataObject::platform() {
 	auto sz = types.size();
 	for (int i = 0; i < sz; i++) {
-		auto& r = region->routeEncodingRules[types[i]];
-		if (r.getTag() == "railway" && r.getValue() == "platform") {
-			return true;
-		} else if (r.getTag() == "public_transport" && r.getValue() == "platform") {
-			return true;
+		auto k = types[i];
+		if (region->routeEncodingRules.size() > k) {
+			auto& r = region->routeEncodingRules[k];
+			if (r.getTag() == "railway" && r.getValue() == "platform") {
+				return true;
+			} else if (r.getTag() == "public_transport" && r.getValue() == "platform") {
+				return true;
+			}
 		}
 	}
 	return false;
@@ -349,11 +364,14 @@ bool RouteDataObject::platform() {
 bool RouteDataObject::roundabout() {
 	auto sz = types.size();
 	for (int i = 0; i < sz; i++) {
-		auto& r = region->routeEncodingRules[types[i]];
-		if (r.getTag() == "roundabout" || r.getValue() == "roundabout") {
-			return true;
-		} else if (r.getTag() == "oneway" && r.getValue() != "no" && loop()) {
-			return true;
+		auto k = types[i];
+		if (region->routeEncodingRules.size() > k) {
+			auto& r = region->routeEncodingRules[k];
+			if (r.getTag() == "roundabout" || r.getValue() == "roundabout") {
+				return true;
+			} else if (r.getTag() == "oneway" && r.getValue() != "no" && loop()) {
+				return true;
+			}
 		}
 	}
 	return false;
@@ -362,7 +380,8 @@ bool RouteDataObject::roundabout() {
 bool RouteDataObject::hasTrafficLightAt(int i) {
 	if (i < pointTypes.size()) {
 		for (int j = 0; j < pointTypes[i].size(); j++) {
-			if (region->routeEncodingRules[pointTypes[i][j]].getValue().rfind("traffic_signals", 0) == 0) {
+			auto k = pointTypes[i][j];
+			if (region->routeEncodingRules.size() > k && region->routeEncodingRules[k].getValue().rfind("traffic_signals", 0) == 0) {
 				return true;
 			}
 		}
@@ -2227,12 +2246,18 @@ void convertRouteDataObjecToMapObjects(SearchQuery* q, std::vector<RouteDataObje
 			obj->id = r->id;
 			UNORDERED(map)<int, std::string>::iterator nameIterator = r->names.begin();
 			for (; nameIterator != r->names.end(); nameIterator++) {
-				std::string ruleId = r->region->routeEncodingRules[nameIterator->first].getTag();
-				obj->objectNames[ruleId] = nameIterator->second;
+				auto k = nameIterator->first;
+				if (r->region->routeEncodingRules.size() > k) {
+					std::string ruleId = r->region->routeEncodingRules[k].getTag();
+					obj->objectNames[ruleId] = nameIterator->second;
+				}
 			}
 
 			for (auto nIterator = r->namesIds.begin(); nIterator != r->namesIds.end(); nIterator++) {
-				obj->namesOrder.push_back(r->region->routeEncodingRules[nIterator->first].getTag());
+				auto k = nIterator->first;
+				if (r->region->routeEncodingRules.size() > k) {
+					obj->namesOrder.push_back(r->region->routeEncodingRules[k].getTag());
+				}
 			}
 
 			obj->area = false;
