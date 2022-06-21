@@ -133,23 +133,19 @@ public:
         MAP_STR_STR varParams = params;
         string derivedProfile;
         if (routers.find(router) == routers.end()) {
-            for (auto r : routers)
-            {
+            for (auto r : routers) {
                 string derivedProfiles = r.second->getAttribute("derivedProfiles");
-                if (!derivedProfiles.empty() && derivedProfiles.find(router) != std::string::npos)
-                {
+                if (!derivedProfiles.empty() && derivedProfiles.find(router) != std::string::npos) {
                     derivedProfile = router;
                     router = r.first;
                     break;
                 }
             }
-            if (derivedProfile.empty())
-            {
+            if (derivedProfile.empty()) {
                 router = defaultRouter;
             }
         }
-        if (!derivedProfile.empty())
-        {
+        if (!derivedProfile.empty()) {
             varParams["profile_" + derivedProfile] = "true";
         }
  
