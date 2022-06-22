@@ -2368,7 +2368,7 @@ void readRouteDataAsMapObjects(SearchQuery* q, BinaryMapFile* file, std::vector<
 			if (nt != NULL) {
 				delete nt;
 			}
-			checkAndInitRouteRegionRules(file->fd, (*routeIndex));
+			checkAndInitRouteRegionRules(file->getFD(), (*routeIndex));
 			readRouteMapObjects(q, file, found, (*routeIndex), tempResult, renderedState);
 		}
 	}
