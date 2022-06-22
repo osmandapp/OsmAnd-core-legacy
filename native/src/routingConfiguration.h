@@ -125,12 +125,11 @@ public:
     RoutingConfigurationBuilder() : defaultRouter("") {
     }
     
-    SHARED_PTR<RoutingConfiguration> build(string router, int memoryLimitMB, const MAP_STR_STR& params = MAP_STR_STR()) {
+    SHARED_PTR<RoutingConfiguration> build(string router, int memoryLimitMB, MAP_STR_STR& params) {
         return build(router, -360, memoryLimitMB, params);
     }
     
-    SHARED_PTR<RoutingConfiguration> build(string router, float direction, long memoryLimitMB, const MAP_STR_STR& params = MAP_STR_STR()) {
-        MAP_STR_STR varParams = params;
+    SHARED_PTR<RoutingConfiguration> build(string router, float direction, long memoryLimitMB, MAP_STR_STR& params) {
         string derivedProfile;
         if (routers.find(router) == routers.end()) {
             for (auto r : routers) {
@@ -146,12 +145,12 @@ public:
             }
         }
         if (!derivedProfile.empty()) {
-            varParams["profile_" + derivedProfile] = "true";
+            params["profile_" + derivedProfile] = "true";
         }
  
         SHARED_PTR<RoutingConfiguration> i = std::make_shared<RoutingConfiguration>();
         if (routers.find(router) != routers.end()) {
-            i->router = routers[router]->build(varParams);
+            i->router = routers[router]->build(params);
             i->routerName = router;
         }
         attributes["routerName"] = router;
