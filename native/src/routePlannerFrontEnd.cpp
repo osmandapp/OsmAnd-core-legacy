@@ -26,18 +26,20 @@ SHARED_PTR<RouteSegmentPoint> RoutePlannerFrontEnd::getRecalculationEnd(RoutingC
 				rlist.push_back(rr);
 			}
 		}
-		runRecalculation = rlist.size() > 0;
+		
 		if (rlist.size() > 0) {
 			SHARED_PTR<RouteSegment> previous;
-			for (int i = 0; i <= rlist.size() - 1; i++) {
+			for (int i = 0; i < rlist.size(); i++) {
 				auto rr = rlist[i];
-				SHARED_PTR<RouteSegment> segment = std::make_shared<RouteSegment>(rr->object, rr->getStartPointIndex(), rr->getEndPointIndex());
 				if (previous) {
+					SHARED_PTR<RouteSegment> segment =
+						std::make_shared<RouteSegment>(rr->object, rr->getStartPointIndex(), rr->getEndPointIndex());
 					previous->parentRoute = segment;
+					previous = segment;
 				} else {
-					recalculationEnd = std::make_shared<RouteSegmentPoint>(segment->road, segment->segmentStart, 0);
+					recalculationEnd = std::make_shared<RouteSegmentPoint>(rr->object, rr->getStartPointIndex(), 0);
+					previous = recalculationEnd;
 				}
-				previous = segment;
 			}
 		}
 	}
@@ -162,7 +164,8 @@ vector<SHARED_PTR<RouteSegmentResult>> runRouting(RoutingContext* ctx, SHARED_PT
 
 		while (current->getParentRoute() != nullptr) {
 			SHARED_PTR<RouteSegment> pr = current->getParentRoute();
-			auto segmentResult = std::make_shared<RouteSegmentResult>(pr->road, pr->getSegmentEnd(), pr->getSegmentStart());
+			auto segmentResult =
+				std::make_shared<RouteSegmentResult>(pr->road, pr->getSegmentStart(), pr->getSegmentEnd());
 			result.push_back(segmentResult);
 			current = pr;
 		}
