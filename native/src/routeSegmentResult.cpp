@@ -393,4 +393,76 @@ LatLon RouteSegmentResult::getEndPoint() { return convertPoint(object, endPointI
 
 LatLon RouteSegmentResult::getPoint(int i) { return convertPoint(object, i); }
 
+string RouteSegmentResult::getDestinationName(string lang, bool transliterate, vector<SHARED_PTR<RouteSegmentResult>> list, int routeInd) {
+    string dnRef = object->getDestinationRef(isForwardDirection());
+    string destinationName = object->getDestinationName(lang, transliterate, isForwardDirection());
+    if (destinationName.size() == 0) {
+        // try to get destination name from following segments
+        float distanceFromTurn = distance;
+        for (int n = routeInd + 1; n + 1 < list.size(); n++) {
+            SHARED_PTR<RouteSegmentResult> s1 = list[n];
+            string s1DnRef = s1->object->getDestinationName(lang, transliterate, isForwardDirection());
+            bool dnRefIsEqual = s1DnRef.size() > 0 && dnRef.size() > 0 && s1DnRef == dnRef;
+            bool isMotorwayLink = s1->object->getHighway() == "motorway_link";
+            if (distanceFromTurn < DIST_TO_SEEK_DEST && (isMotorwayLink || dnRefIsEqual) && destinationName.size() == 0) {
+                destinationName = s1->object->getDestinationName(lang, transliterate, s1->isForwardDirection());
+            }
+            distanceFromTurn += s1->distance;
+            if (distanceFromTurn > DIST_TO_SEEK_DEST || destinationName.size() > 0) {
+                break;
+            }
+        }
+    }
+    if (dnRef.size() > 0 && destinationName.size() > 0) {
+        destinationName = dnRef + ", " + destinationName;
+    } else {
+        destinationName = dnRef;
+    }
+    return destinationName;
+}
+
+string RouteSegmentResult::getStreetName(string lang, bool transliterate, vector<SHARED_PTR<RouteSegmentResult>> list, int routeInd) {
+    string streetName = object->getName(lang, transliterate);
+    if (streetName.size() > 0) {
+        // try to get street name from following segments
+        float distanceFromTurn = distance;
+        bool hasNewTurn = false;
+        for (int n = routeInd + 1; n + 1 < list.size(); n++) {
+            SHARED_PTR<RouteSegmentResult> s1 = list[n];
+            if (s1->turnType != nullptr) {
+                hasNewTurn = true;
+            }
+            if (!hasNewTurn && distanceFromTurn < DIST_TO_SEEK_STREET_NAME && streetName.size() == 0) {
+                streetName = s1->object->getName(lang, transliterate);
+            }
+            distanceFromTurn += s1->distance;
+            if (distanceFromTurn > DIST_TO_SEEK_STREET_NAME || streetName.size() > 0) {
+                break;
+            }
+        }
+    }
+    return streetName;
+}
+
+string RouteSegmentResult::getRef(string lang, bool transliterate) {
+    return object->getRef(lang, transliterate, isForwardDirection());
+}
+
+SHARED_PTR<RouteDataObject> RouteSegmentResult::getObjectWithShield(vector<SHARED_PTR<RouteSegmentResult>> list, uint routeInd) {
+    SHARED_PTR<RouteDataObject> rdo;
+    bool isNextShieldFound = object->hasNameTagStartsWith("road_ref");
+    for (uint ind = routeInd; ind < list.size() && !isNextShieldFound; ind++) {
+        if (list[ind]->turnType != nullptr) {
+            isNextShieldFound = true;
+        } else {
+            SHARED_PTR<RouteDataObject> obj = list[ind]->object;
+            if (obj->hasNameTagStartsWith("road_ref")) {
+                rdo = obj;
+                isNextShieldFound = true;
+            }
+        }
+    }
+    return rdo;
+}
+
 #endif /*_OSMAND_ROUTE_SEGMENT_RESULT_CPP*/
