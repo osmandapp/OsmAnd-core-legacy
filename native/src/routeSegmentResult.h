@@ -12,6 +12,9 @@
 
 #define DIST_BEARING_DETECT_UNMATCHED 50
 
+#define DIST_TO_SEEK_STREET_NAME 150
+#define DIST_TO_SEEK_DEST 1000
+
 struct RouteDataResources;
 
 struct RouteSegmentResult {
@@ -69,6 +72,11 @@ struct RouteSegmentResult {
 	LatLon getStartPoint();
 	LatLon getEndPoint();
 	LatLon getPoint(int i);
+	
+	string getDestinationName(string lang, bool transliterate, vector<SHARED_PTR<RouteSegmentResult>> &list, int routeInd);
+	string getStreetName(string lang, bool transliterate, vector<SHARED_PTR<RouteSegmentResult>> &list, int routeInd);
+	string getRef(string lang, bool transliterate);
+	SHARED_PTR<RouteDataObject> getObjectWithShield(vector<SHARED_PTR<RouteSegmentResult>> &list, uint routeInd);
 
 	inline void updateCapacity() {
 		int capacity = abs(endPointIndex - startPointIndex) + 1;
@@ -161,6 +169,7 @@ struct RouteSegmentResult {
 		}
 		return res;
 	}
+	
 };
 
 #endif /*_OSMAND_ROUTE_SEGMENT_RESULT_H*/
