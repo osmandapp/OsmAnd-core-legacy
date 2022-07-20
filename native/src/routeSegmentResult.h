@@ -73,10 +73,10 @@ struct RouteSegmentResult {
 	LatLon getEndPoint();
 	LatLon getPoint(int i);
 	
-	string getDestinationName(string lang, bool transliterate, vector<SHARED_PTR<RouteSegmentResult>> list, int routeInd);
-	string getStreetName(string lang, bool transliterate, vector<SHARED_PTR<RouteSegmentResult>> list, int routeInd);
+	string getDestinationName(string lang, bool transliterate, vector<SHARED_PTR<RouteSegmentResult>> &list, int routeInd);
+	string getStreetName(string lang, bool transliterate, vector<SHARED_PTR<RouteSegmentResult>> &list, int routeInd);
 	string getRef(string lang, bool transliterate);
-	SHARED_PTR<RouteDataObject> getObjectWithShield(vector<SHARED_PTR<RouteSegmentResult>> list, uint routeInd);
+	SHARED_PTR<RouteDataObject> getObjectWithShield(vector<SHARED_PTR<RouteSegmentResult>> &list, uint routeInd);
 
 	inline void updateCapacity() {
 		int capacity = abs(endPointIndex - startPointIndex) + 1;
