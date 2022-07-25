@@ -32,4 +32,5 @@ bool hasTU(string turnLanesPrevSegm, bool attachedOnTheRight);
 bool foundTUturn(vector<int> turnList);
 void printRouteInfoSegments(vector<SHARED_PTR<RouteSegmentResult> >& result);
 string buildRouteMessagesFromInfo(UNORDERED(map) < string, UNORDERED(map) < string, string >> info, vector<string>& routeMessages);
+void calculateTimeSpeed(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResult> >& result);
 #endif /*_OSMAND_ROUTE_RESULT_PREPARATION_H*/
