@@ -415,7 +415,7 @@ string RouteSegmentResult::getDestinationName(string lang, bool transliterate, v
     }
     if (dnRef.size() > 0 && destinationName.size() > 0) {
         destinationName = dnRef + ", " + destinationName;
-    } else {
+    } else if (dnRef.size() > 0 && destinationName.size() == 0) {
         destinationName = dnRef;
     }
     return destinationName;
