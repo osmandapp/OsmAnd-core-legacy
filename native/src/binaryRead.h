@@ -387,6 +387,8 @@ struct RouteDataObject {
 
 			for (auto it = names.begin(); it != names.end(); ++it) {
 				int k = it->first;
+                if (it->second.empty())
+                    continue;
 				if (region->routeEncodingRules.size() > k) {
 					if (!lang.empty() && destinationTagLangFB == region->routeEncodingRules[k].getTag()) {
 						return destRef1 + (translit ? transliterate(names[k]) : names[k]);
