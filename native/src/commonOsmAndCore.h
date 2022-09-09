@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "Internal.h"
+#include "CommonCollections.h"
 
 // M_PI is no longer part of math.h/cmath by standart, but some GCC's define them
 #define _USE_MATH_DEFINES
