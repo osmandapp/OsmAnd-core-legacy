@@ -3,7 +3,6 @@
 #include "multipolygons.h"
 
 #include "Logging.h"
-#include "binaryRead.h"
 
 const bool DEBUG_LINE = false;
 

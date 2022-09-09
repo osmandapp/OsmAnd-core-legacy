@@ -8,7 +8,6 @@
 
 #include "CommonCollections.h"
 #include "commonOsmAndCore.h"
-#include "renderRules.h"
 
 /// !!! Fuly copied from MapRenderRepositories.java, should be carefully synchroinized
 bool isClockwiseWay(std::vector<int_pair>& c);
