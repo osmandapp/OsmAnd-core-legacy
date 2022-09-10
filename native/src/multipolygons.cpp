@@ -1,6 +1,7 @@
 #ifndef _MULTIPOLYGONS_CPP
 #define _MULTIPOLYGONS_CPP
 #include "multipolygons.h"
+#include <limits.h>
 
 #include "Logging.h"
 
