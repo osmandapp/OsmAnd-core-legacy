@@ -66,7 +66,9 @@ static double h(RoutingContext* ctx, int begX, int begY, int endX, int endY) {
 	double result = distToFinalPoint / ctx->config->router->getMaxSpeed();
 	if (ctx->precalcRoute != nullptr) {
 		float te = ctx->precalcRoute->timeEstimate(begX, begY, endX, endY);
-		if (te > 0) return te;
+		if (te > 0 && te < result) {
+			return te;
+		}
 	}
 	return result;
 }
