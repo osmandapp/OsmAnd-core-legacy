@@ -152,6 +152,17 @@ void makeStartEndPointsPrecise(vector<SHARED_PTR<RouteSegmentResult>>& res, int 
 	}
 }
 
+bool hasSegment(vector<SHARED_PTR<RouteSegmentResult>>& result, SHARED_PTR<RouteSegment>& current) {
+	for (SHARED_PTR<RouteSegmentResult> r : result) {
+		long currentId = r->object->id;
+		if (currentId == current->road->id && r->getStartPointIndex() == current->getSegmentStart() &&
+			r->getEndPointIndex() == current->getSegmentEnd()) {
+			return true;
+		}
+	}
+	return false;
+}
+
 vector<SHARED_PTR<RouteSegmentResult>> runRouting(RoutingContext* ctx, SHARED_PTR<RouteSegment> recalculationEnd) {
 	refreshProgressDistance(ctx);
 
@@ -190,17 +201,6 @@ vector<SHARED_PTR<RouteSegmentResult>> runRouting(RoutingContext* ctx, SHARED_PT
 	}
 
 	return prepareResult(ctx, result);
-}
-
-bool hasSegment(vector<SHARED_PTR<RouteSegmentResult>>& result, SHARED_PTR<RouteSegment>& current) {
-	for (SHARED_PTR<RouteSegmentResult> r : result) {
-		long currentId = r->object->id;
-		if (currentId == current->road->id && r->getStartPointIndex() == current->getSegmentStart() &&
-			r->getEndPointIndex() == current->getSegmentEnd()) {
-			return true;
-		}
-	}
-	return false;
 }
 
 vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRouteInternalPrepare(
