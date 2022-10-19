@@ -93,6 +93,7 @@ private:
 	bool pointCloseEnough(SHARED_PTR<GpxRouteApproximation>& gctx, SHARED_PTR<GpxPoint>& ipoint,
 	                      vector<SHARED_PTR<RouteSegmentResult>>& res);
 	void makeSegmentPointPrecise(SHARED_PTR<RouteSegmentResult>& routeSegmentResult, double lat, double lon, bool st);
+	bool hasSegment(vector<SHARED_PTR<RouteSegmentResult>>& result, SHARED_PTR<RouteSegment>& current);
 };
 
 #endif /*_OSMAND_ROUTE_PLANNER_FRONT_END_H*/
