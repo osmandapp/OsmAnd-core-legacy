@@ -192,7 +192,7 @@ vector<SHARED_PTR<RouteSegmentResult>> runRouting(RoutingContext* ctx, SHARED_PT
 	return prepareResult(ctx, result);
 }
 
-bool hasSegment(vector<SHARED_PTR<RouteSegmentResult>>& result, SHARED_PTR<RouteSegment>& current) {
+bool RoutePlannerFrontEnd::hasSegment(vector<SHARED_PTR<RouteSegmentResult>>& result, SHARED_PTR<RouteSegment>& current) {
 	for (SHARED_PTR<RouteSegmentResult> r : result) {
 		long currentId = r->object->id;
 		if (currentId == current->road->id && r->getStartPointIndex() == current->getSegmentStart() &&
