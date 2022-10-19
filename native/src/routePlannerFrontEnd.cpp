@@ -167,7 +167,7 @@ vector<SHARED_PTR<RouteSegmentResult>> runRouting(RoutingContext* ctx, SHARED_PT
 	if (recalculationEnd) {
 		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "[Native] use precalculated route");
 		SHARED_PTR<RouteSegment> current = recalculationEnd;
-		if (!hasSegment(result, current)) {
+		if (!RoutePlannerFrontEnd::hasSegment(result, current)) {
 			auto segmentResult = std::make_shared<RouteSegmentResult>(current->road, current->getSegmentStart(), current->getSegmentEnd());
 			result.push_back(segmentResult);
 		}
