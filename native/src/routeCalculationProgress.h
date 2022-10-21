@@ -56,6 +56,8 @@ class RouteCalculationProgress {
 		UNORDERED(map) < string, string >> getInfo(SHARED_PTR<RouteCalculationProgress> firstPhase);
 	virtual bool isCancelled() { return cancelled; }
 	virtual void setSegmentNotFound(int s) { segmentNotFound = s; }
+	virtual void updateIteration(int i) { iteration = i; }
+	virtual void updateTotalEstimatedDistance(float distance) { totalEstimatedDistance = distance; }
 	virtual void updateStatus(float distanceFromBegin, int directSegmentQueueSize, float distanceFromEnd,
 							  int reverseSegmentQueueSize);
 	virtual float getLinearProgress();
