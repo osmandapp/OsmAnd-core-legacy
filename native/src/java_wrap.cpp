@@ -444,6 +444,7 @@ jfieldID jfield_RouteCalculationProgress_segmentNotFound = NULL;
 jfieldID jfield_RouteCalculationProgress_distanceFromBegin = NULL;
 jfieldID jfield_RouteCalculationProgress_distanceFromEnd = NULL;
 jfieldID jfield_RouteCalculationProgress_isCancelled = NULL;
+jfieldID jfield_RouteCalculationProgress_totalEstimatedDistance = NULL;
 jfieldID jfield_RouteCalculationProgress_routingCalculatedTime = NULL;
 jfieldID jfield_RouteCalculationProgress_directSegmentQueueSize = NULL;
 jfieldID jfield_RouteCalculationProgress_reverseSegmentQueueSize = NULL;
@@ -452,6 +453,7 @@ jfieldID jfield_RouteCalculationProgress_visitedDirectSegments = NULL;
 jfieldID jfield_RouteCalculationProgress_visitedOppositeSegments = NULL;
 jfieldID jfield_RouteCalculationProgress_directQueueSize = NULL;
 jfieldID jfield_RouteCalculationProgress_oppositeQueueSize = NULL;
+jfieldID jfield_RouteCalculationProgress_iteration = NULL;
 jfieldID jfield_RouteCalculationProgress_timeNanoToCalcDeviation = NULL;
 jfieldID jfield_RouteCalculationProgress_timeToLoad = NULL;
 jfieldID jfield_RouteCalculationProgress_timeToLoadHeaders = NULL;
@@ -829,6 +831,8 @@ void loadJniRenderingContext(JNIEnv* env) {
 		getFid(env, jclass_RouteCalculationProgress, "directSegmentQueueSize", "I");
 	jfield_RouteCalculationProgress_reverseSegmentQueueSize =
 		getFid(env, jclass_RouteCalculationProgress, "reverseSegmentQueueSize", "I");
+	jfield_RouteCalculationProgress_totalEstimatedDistance =
+		getFid(env, jclass_RouteCalculationProgress, "totalEstimatedDistance", "F");
 	jfield_RouteCalculationProgress_routingCalculatedTime =
 		getFid(env, jclass_RouteCalculationProgress, "routingCalculatedTime", "F");
 	jfield_RouteCalculationProgress_visitedSegments =
@@ -841,6 +845,8 @@ void loadJniRenderingContext(JNIEnv* env) {
 		getFid(env, jclass_RouteCalculationProgress, "directQueueSize", "I");
 	jfield_RouteCalculationProgress_oppositeQueueSize =
 		getFid(env, jclass_RouteCalculationProgress, "oppositeQueueSize", "I");
+	jfield_RouteCalculationProgress_iteration =
+		getFid(env, jclass_RouteCalculationProgress, "iteration", "I");
 	jfield_RouteCalculationProgress_timeNanoToCalcDeviation =
 		getFid(env, jclass_RouteCalculationProgress, "timeNanoToCalcDeviation", "J");
 	jfield_RouteCalculationProgress_timeToLoad = getFid(env, jclass_RouteCalculationProgress, "timeToLoad", "J");
@@ -1324,28 +1330,45 @@ extern "C" JNIEXPORT void JNICALL Java_net_osmand_NativeLibrary_deleteRouteSearc
 
 class RouteCalculationProgressWrapper : public RouteCalculationProgress {
 	JNIEnv* ienv;
-	jobject j;
+	jobject progress;
 
    public:
-	RouteCalculationProgressWrapper(JNIEnv* ienv, jobject j) : RouteCalculationProgress(), ienv(ienv), j(j) {}
+	RouteCalculationProgressWrapper(JNIEnv* ienv, jobject progress) : RouteCalculationProgress(), ienv(ienv), progress(progress) {}
+
 	virtual bool isCancelled() {
-		if (j == NULL) {
+		if (progress == NULL) {
 			return false;
 		}
-		return ienv->GetBooleanField(j, jfield_RouteCalculationProgress_isCancelled);
+		return ienv->GetBooleanField(progress, jfield_RouteCalculationProgress_isCancelled);
 	}
+
 	virtual void setSegmentNotFound(int s) {
-		if (j != NULL) {
-			ienv->SetIntField(j, jfield_RouteCalculationProgress_segmentNotFound, s);
+		if (progress != NULL) {
+			ienv->SetIntField(progress, jfield_RouteCalculationProgress_segmentNotFound, s);
 		}
 	}
+
+	virtual void updateIteration(int iteration) {
+		RouteCalculationProgress::updateIteration(iteration);
+		if (progress != NULL) {
+			ienv->SetIntField(progress, jfield_RouteCalculationProgress_iteration, iteration);
+		}
+	}
+
+	virtual void updateTotalEstimatedDistance(float distance) {
+		RouteCalculationProgress::updateTotalEstimatedDistance(distance);
+		if (progress != NULL) {
+			ienv->SetFloatField(progress, jfield_RouteCalculationProgress_totalEstimatedDistance, distance);
+		}
+	}
+
 	virtual void updateStatus(float distanceFromBegin, int directSegmentQueueSize, float distanceFromEnd,
 							  int reverseSegmentQueueSize) {
 		RouteCalculationProgress::updateStatus(distanceFromBegin, directSegmentQueueSize, distanceFromEnd,
 											   reverseSegmentQueueSize);
-		if (j != NULL) {
-			ienv->SetFloatField(j, jfield_RouteCalculationProgress_distanceFromBegin, this->distanceFromBegin);
-			ienv->SetFloatField(j, jfield_RouteCalculationProgress_distanceFromEnd, this->distanceFromEnd);
+		if (progress != NULL) {
+			ienv->SetFloatField(progress, jfield_RouteCalculationProgress_distanceFromBegin, this->distanceFromBegin);
+			ienv->SetFloatField(progress, jfield_RouteCalculationProgress_distanceFromEnd, this->distanceFromEnd);
 		}
 	}
 };

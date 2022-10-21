@@ -128,7 +128,7 @@ struct RoutingContext {
 		this->conditionalTimeStr = cp->conditionalTimeStr;
 		this->basemap = cp->basemap;
 		this->geocoding = cp->geocoding;
-		this->progress = std::make_shared<RouteCalculationProgress>();
+		this->progress = cp->progress;
 		this->calculationProgressFirstPhase = std::make_shared<RouteCalculationProgress>();
 		this->alertFasterRoadToVisitedSegments = 0;
 		this->alertSlowerSegmentedWasVisitedEarlier = 0;

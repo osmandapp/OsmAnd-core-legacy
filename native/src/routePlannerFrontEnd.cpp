@@ -60,7 +60,7 @@ void refreshProgressDistance(RoutingContext* ctx) {
 		ctx->progress->directSegmentQueueSize = 0;
 		float rd = (float)squareRootDist31(ctx->startX, ctx->startY, ctx->targetX, ctx->targetY);
 		float speed = 0.9f * ctx->config->router->maxSpeed;
-		ctx->progress->totalEstimatedDistance = (float)(rd / speed);
+		ctx->progress->updateTotalEstimatedDistance((float)(rd / speed));
 	}
 }
 
@@ -247,8 +247,8 @@ void RoutePlannerFrontEnd::searchGpxRoute(SHARED_PTR<GpxRouteApproximation> &gct
 		bool routeFound = false;
 		bool stepBack = false;
 		if (next && initRoutingPoint(start, gctx, gctx->ctx->config->minPointApproximation)) {
-			gctx->ctx->progress->totalEstimatedDistance = 0;
-			gctx->ctx->progress->iteration = (int)(next->cumDist / gctx->ctx->config->maxStepApproximation);
+			gctx->ctx->progress->updateTotalEstimatedDistance(0);
+			gctx->ctx->progress->updateIteration((int)(next->cumDist / gctx->ctx->config->maxStepApproximation));
 			while (routeDist >= gctx->ctx->config->minStepApproximation && !routeFound) {
 				routeFound = initRoutingPoint(next, gctx, gctx->ctx->config->minPointApproximation);
 				if (routeFound) {
