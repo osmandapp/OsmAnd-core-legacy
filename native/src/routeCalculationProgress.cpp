@@ -96,8 +96,6 @@ void RouteCalculationProgress::updateStatus(float distanceFromBegin, int directS
 }
 
 float RouteCalculationProgress::getLinearProgress() {
-	const float INITIAL_PROGRESS = 0.05f;
-	const float FIRST_ITERATION = 0.72f;
 	float p = std::max(this->distanceFromBegin, this->distanceFromEnd);
 	float all = totalEstimatedDistance * 1.35f;
 	float pr = 0;
@@ -116,6 +114,15 @@ float RouteCalculationProgress::getLinearProgress() {
 	} else {
 		progress = (float)((iteration + std::fmin(pr, 0.7)) / totalIterations);
 	}
+	return std::fmin(progress * 100.0, 99);
+}
+
+float RouteCalculationProgress::getApproximationProgress() {
+	float progress = 0;
+	if (totalApproximateDistance > 0) {
+		progress = approximatedDistance / totalApproximateDistance;
+	}
+	progress = INITIAL_PROGRESS + progress * (1 - INITIAL_PROGRESS);
 	return std::fmin(progress * 100.0, 99);
 }
 

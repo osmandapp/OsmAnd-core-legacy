@@ -237,8 +237,7 @@ void RoutePlannerFrontEnd::searchGpxRoute(SHARED_PTR<GpxRouteApproximation> &gct
 	SHARED_PTR<GpxPoint> start;
 	SHARED_PTR<GpxPoint> prev;
 	if (gpxPoints.size() > 0) {
-		gctx->ctx->progress->totalIterations =
-			(int)(gpxPoints[gpxPoints.size() - 1]->cumDist / gctx->ctx->config->maxStepApproximation + 1);
+		gctx->ctx->progress->updateTotalApproximateDistance(gpxPoints[gpxPoints.size() - 1]->cumDist);
 		start = gpxPoints[0];
 	}
 	while (start && !gctx->ctx->progress->isCancelled()) {
@@ -247,8 +246,6 @@ void RoutePlannerFrontEnd::searchGpxRoute(SHARED_PTR<GpxRouteApproximation> &gct
 		bool routeFound = false;
 		bool stepBack = false;
 		if (next && initRoutingPoint(start, gctx, gctx->ctx->config->minPointApproximation)) {
-			gctx->ctx->progress->updateTotalEstimatedDistance(0);
-			gctx->ctx->progress->updateIteration((int)(next->cumDist / gctx->ctx->config->maxStepApproximation));
 			while (routeDist >= gctx->ctx->config->minStepApproximation && !routeFound) {
 				routeFound = initRoutingPoint(next, gctx, gctx->ctx->config->minPointApproximation);
 				if (routeFound) {
@@ -309,6 +306,9 @@ void RoutePlannerFrontEnd::searchGpxRoute(SHARED_PTR<GpxRouteApproximation> &gct
 			prev = start;
 		}
 		start = next;
+		if (gctx->ctx->progress && start) {
+			gctx->ctx->progress->updateApproximatedDistance(start->cumDist);
+		}
 	}
 	if (gctx->ctx->progress) {
 		gctx->ctx->progress->timeToCalculate.Pause();

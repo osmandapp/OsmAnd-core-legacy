@@ -445,6 +445,8 @@ jfieldID jfield_RouteCalculationProgress_distanceFromBegin = NULL;
 jfieldID jfield_RouteCalculationProgress_distanceFromEnd = NULL;
 jfieldID jfield_RouteCalculationProgress_isCancelled = NULL;
 jfieldID jfield_RouteCalculationProgress_totalEstimatedDistance = NULL;
+jfieldID jfield_RouteCalculationProgress_totalApproximateDistance = NULL;
+jfieldID jfield_RouteCalculationProgress_approximatedDistance = NULL;
 jfieldID jfield_RouteCalculationProgress_routingCalculatedTime = NULL;
 jfieldID jfield_RouteCalculationProgress_directSegmentQueueSize = NULL;
 jfieldID jfield_RouteCalculationProgress_reverseSegmentQueueSize = NULL;
@@ -833,6 +835,10 @@ void loadJniRenderingContext(JNIEnv* env) {
 		getFid(env, jclass_RouteCalculationProgress, "reverseSegmentQueueSize", "I");
 	jfield_RouteCalculationProgress_totalEstimatedDistance =
 		getFid(env, jclass_RouteCalculationProgress, "totalEstimatedDistance", "F");
+	jfield_RouteCalculationProgress_totalApproximateDistance =
+		getFid(env, jclass_RouteCalculationProgress, "totalApproximateDistance", "F");
+	jfield_RouteCalculationProgress_approximatedDistance =
+		getFid(env, jclass_RouteCalculationProgress, "approximatedDistance", "F");
 	jfield_RouteCalculationProgress_routingCalculatedTime =
 		getFid(env, jclass_RouteCalculationProgress, "routingCalculatedTime", "F");
 	jfield_RouteCalculationProgress_visitedSegments =
@@ -1359,6 +1365,20 @@ class RouteCalculationProgressWrapper : public RouteCalculationProgress {
 		RouteCalculationProgress::updateTotalEstimatedDistance(distance);
 		if (progress != NULL) {
 			ienv->SetFloatField(progress, jfield_RouteCalculationProgress_totalEstimatedDistance, distance);
+		}
+	}
+
+	virtual void updateTotalApproximateDistance(float distance) {
+		RouteCalculationProgress::updateTotalApproximateDistance(distance);
+		if (progress != NULL) {
+			ienv->SetFloatField(progress, jfield_RouteCalculationProgress_totalApproximateDistance, distance);
+		}
+	}
+
+	virtual void updateApproximatedDistance(float distance) {
+		RouteCalculationProgress::updateApproximatedDistance(distance);
+		if (progress != NULL) {
+			ienv->SetFloatField(progress, jfield_RouteCalculationProgress_approximatedDistance, distance);
 		}
 	}
 
