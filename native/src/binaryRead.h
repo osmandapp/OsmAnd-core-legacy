@@ -110,6 +110,8 @@ struct RoutingIndex : BinaryPartIndex {
 	int destinationRefTypeRule;
 	int directionForward = -1;
 	int directionBackward = -1;
+	int maxheightForward = -1;
+	int maxheightBackward = -1;
 	int directionTrafficSignalsForward = -1;
 	int directionTrafficSignalsBackward = -1;
 	int trafficSignals = -1;

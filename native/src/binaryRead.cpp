@@ -124,6 +124,10 @@ void RoutingIndex::initRouteEncodingRule(uint32_t id, std::string tag, std::stri
 		} else if (val == "backward") {
 			directionBackward = id;
 		}
+	} else if (tag == "maxheight:forward" && !val.empty()) {
+		maxheightForward = id;
+	} else if (tag == "maxheight:backward" && !val.empty()) {
+		maxheightBackward = id;
 	}
 }
 
