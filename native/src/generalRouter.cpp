@@ -371,6 +371,7 @@ SHARED_PTR<vector<uint32_t>> filterDirectionTags(RoutingIndex* reg, vector<uint3
 	int wayOppositeDirection = dir ? -1 : 1;
 	int direction = 0;
 	int tdirection = 0;
+	int hdirection = 0;
 	std::shared_ptr<vector<uint32_t>> ptr = nullptr;
 	for (int i = 0; i < pointTypes.size(); i++) {
 		if (pointTypes[i] == reg->directionBackward) {
@@ -381,15 +382,21 @@ SHARED_PTR<vector<uint32_t>> filterDirectionTags(RoutingIndex* reg, vector<uint3
 			tdirection = -1;
 		} else if (pointTypes[i] == reg->directionTrafficSignalsForward) {
 			tdirection = 1;
+		} else if (pointTypes[i] == reg->maxheightBackward) {
+			hdirection = -1;
+		} else if (pointTypes[i] == reg->maxheightForward) {
+			hdirection = 1;
 		}
 	}
-	if (direction != 0 || tdirection != 0) {
+	if (direction != 0 || tdirection != 0 || hdirection != 0) {
 		ptr = shared_ptr<vector<uint32_t>>(new vector<uint32_t>());
 		for (uint32_t r : pointTypes) {
 			bool skip = false;
 			if ((r == reg->stopSign || r == reg->giveWaySign) && direction == wayOppositeDirection) {
 				skip = true;
 			} else if (r == reg->trafficSignals && tdirection == wayOppositeDirection) {
+				skip = true;
+			} else if (hdirection == wayOppositeDirection) {
 				skip = true;
 			}
 			if (!skip) {
