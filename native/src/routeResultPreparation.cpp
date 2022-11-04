@@ -884,7 +884,6 @@ SHARED_PTR<TurnType> createKeepLeftRightTurnBasedOnTurnTypes(RoadSplitStructure&
             }
         }
     }
-    t->setSkipToSpeak(!rs.speak);
     t->setLanes(rawLanes);
     t->setPossibleLeftTurn(possiblyLeftTurn);
     t->setPossibleRightTurn(possiblyRightTurn);
