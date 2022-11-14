@@ -226,6 +226,10 @@ public:
         return type == TSLL || type == TSLR || type == C || type == KL || type == KR;
     }
     
+    static bool isKeepDirectionTurn(int type) {
+        return type == C || type == KL || type == KR;
+    }
+    
     static bool hasAnySlightTurnLane(int type) {
         return isSlightTurn(getPrimaryTurn(type)) || isSlightTurn(getSecondaryTurn(type)) || isSlightTurn(getTertiaryTurn(type));
     }
