@@ -150,6 +150,7 @@ struct RouteSegmentPoint : RouteSegment {
 		: RouteSegment(road, segmentStart), dist(distSquare) {
 		this->preciseX = road->pointsX[segmentStart];
 		this->preciseY = road->pointsY[segmentStart];
+		this->dist = sqrt(distSquare);
 	}
 
 	RouteSegmentPoint(SHARED_PTR<RouteSegmentPoint>& pnt)
