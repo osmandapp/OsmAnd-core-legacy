@@ -250,8 +250,9 @@ void splitRoadsAndAttachRoadSegments(RoutingContext* ctx, vector<SHARED_PTR<Rout
 }
 
 void calculateTimeSpeed(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResult> >& result) {
-    // for Naismith
+    //for Naismith/Scarf
     bool usePedestrianHeight = ctx->config->router->getProfile() == GeneralRouterProfile::PEDESTRIAN && ctx->config->router->heightObstacles;
+    double scarfSeconds = 7.92f / ctx->config->router->getDefaultSpeed();
     
     for (int i = 0; i < result.size(); i++) {
         auto rr = result[i];
@@ -271,8 +272,7 @@ void calculateTimeSpeed(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResul
         int next;
         double distance = 0;
         
-        //for Naismith
-        float prevHeight = -99999.0f;
+        //for Naismith/Scarf
         vector<double> heightDistanceArray;
         if (usePedestrianHeight) {
             road->calculateHeightArray();
@@ -289,26 +289,30 @@ void calculateTimeSpeed(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResul
             }
             distOnRoadToPass += d / speed + obstacle;
             
-            //for Naismith
+            //for Naismith/Scarf
             if (usePedestrianHeight) {
                 int heightIndex = 2 * j + 1;
-                if (!heightDistanceArray.empty() && heightIndex < heightDistanceArray.size()) {
-                    float height = heightDistanceArray[heightIndex];
-                    if (prevHeight != -99999.0f) {
-                        float heightDiff = height - prevHeight;
-                        if (heightDiff > 0) {  //ascent only
-                            distOnRoadToPass += heightDiff * 6.0f;  //Naismith's rule: add 1 hour per every 600m of ascent
-                        }
+                int nextHeightIndex = 2 * next + 1;
+                if (!heightDistanceArray.empty() && heightIndex < heightDistanceArray.size() && nextHeightIndex < heightDistanceArray.size()) {
+                    float heightDiff = heightDistanceArray[nextHeightIndex] - heightDistanceArray[heightIndex];
+                    if (heightDiff > 0) { // ascent only
+                        // Naismith/Scarf rule: An ascent adds 7.92 times the hiking time its vertical elevation gain takes to cover horizontally
+                        //   (- Naismith original: Add 1 hour per vertical 2000ft (600m) at assumed horizontal speed 3mph)
+                        //   (- Swiss Alpine Club: Uses conservative 1 hour per 400m at 4km/h)
+                        distOnRoadToPass += heightDiff * scarfSeconds;
                     }
-                    prevHeight = height;
                 }
             }
         }
         // last point turn time can be added
         // if(i + 1 < result.size()) { distOnRoadToPass += ctx.getRouter().calculateTurnTime(); }
         rr->segmentTime = (float) distOnRoadToPass;
-        rr->segmentSpeed = (float) speed;
         rr->distance = (float) distance;
+        if (distOnRoadToPass != 0) {
+            rr->segmentSpeed = (float) (distance / distOnRoadToPass);//effective segment speed incl. obstacle and height effects
+        } else {
+            rr->segmentSpeed = (float) speed;
+        }
     }
 }
 
