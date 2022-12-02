@@ -30,11 +30,13 @@ public:
     vector<RouteTypeRule> insertOrder;
     vector<Location> locations;
     UNORDERED_map<SHARED_PTR<RouteDataObject>, vector<vector<uint32_t>>> pointNamesMap;
+    vector<int> routePointIndexes;
     
     RouteDataResources();
     RouteDataResources(vector<Location> locations);
     
     Location getLocation(int index);
+    int getCurrentLocationIndex();
     void incrementCurrentLocation(int index);
 };
 
