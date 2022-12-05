@@ -106,6 +106,12 @@ struct RouteSegmentResult {
 		return endPointIndex - startPointIndex > 0;
 	}
 
+	inline bool continuesBeyondRouteSegment(RouteSegmentResult segment) {
+		bool commonX = object->pointsX[startPointIndex] == segment.object->pointsX[segment.endPointIndex];
+		bool commonY = object->pointsY[startPointIndex] == segment.object->pointsY[segment.endPointIndex];
+		return commonX && commonY;
+	}
+
 	inline float getBearingBegin() {
 		return getBearingBegin(startPointIndex, distance > 0 && distance < DIST_BEARING_DETECT ? distance : DIST_BEARING_DETECT);
 	}
