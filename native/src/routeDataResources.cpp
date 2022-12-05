@@ -28,6 +28,12 @@ Location RouteDataResources::getLocation(int index) {
 	}
 	return Location();
 }
+
+int RouteDataResources::getCurrentLocationIndex()
+{
+    return currentLocation;
+}
+
 void RouteDataResources::incrementCurrentLocation(int index) {
 	currentLocation += index;
 }
