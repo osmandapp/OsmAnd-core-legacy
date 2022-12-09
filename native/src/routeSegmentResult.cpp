@@ -291,9 +291,12 @@ void RouteSegmentResult::readFromBundle(SHARED_PTR<RouteDataBundle>& bundle) {
 	
 	int nextLocationIndex = resources->getCurrentLocationIndex() + length;
 	std::vector<int>::iterator it = std::find(resources->routePointIndexes.begin(), resources->routePointIndexes.end(), nextLocationIndex);
-	int routePointIndex = (int) std::distance(resources->routePointIndexes.begin(), it);
+    int routePointIndex = -1;
+    if (it != resources->routePointIndexes.end()) {
+        routePointIndex = (int) std::distance(resources->routePointIndexes.begin(), it);
+    }
 	bool intermediateRoutePoint = routePointIndex > 0 && routePointIndex < resources->routePointIndexes.size() - 1;
-	resources->incrementCurrentLocation(intermediateRoutePoint ? length :length - 1);
+	resources->incrementCurrentLocation(intermediateRoutePoint ? length : length - 1);
 }
 
 void RouteSegmentResult::writeToBundle(SHARED_PTR<RouteDataBundle>& bundle) {
