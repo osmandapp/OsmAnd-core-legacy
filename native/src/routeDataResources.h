@@ -24,8 +24,8 @@ struct Location {
 
 struct RouteDataResources {
 private:
-    int currentLocation;
 public:
+    int currentSegmentStartLocationIndex;
     UNORDERED_map<RouteTypeRule, uint32_t> rules;
     vector<RouteTypeRule> insertOrder;
     vector<Location> locations;
@@ -33,11 +33,11 @@ public:
     vector<int> routePointIndexes;
     
     RouteDataResources();
-    RouteDataResources(vector<Location> locations);
+    RouteDataResources(vector<Location> locations, vector<int>& routePointIndexes);
     
-    Location getLocation(int index);
-    int getCurrentLocationIndex();
-    void incrementCurrentLocation(int index);
+    Location getCurrentSegmentLocation(int offset);
+    int getCurrentSegmentStartLocationIndex();
+    void updateNextSegmentStartLocation(int currentSegmentLength);
 };
 
 #endif /*_OSMAND_ROUTE_DATA_RESOURCES_H*/
