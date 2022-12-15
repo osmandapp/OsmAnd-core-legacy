@@ -73,6 +73,8 @@ struct RouteSegmentResult {
 	LatLon getEndPoint();
 	LatLon getPoint(int i);
 	
+	bool continuesBeyondRouteSegment(const SHARED_PTR<RouteSegmentResult> &segment) const;
+	
 	string getDestinationName(string lang, bool transliterate, vector<SHARED_PTR<RouteSegmentResult>> &list, int routeInd);
 	string getStreetName(string lang, bool transliterate, vector<SHARED_PTR<RouteSegmentResult>> &list, int routeInd);
 	string getRef(string lang, bool transliterate);
