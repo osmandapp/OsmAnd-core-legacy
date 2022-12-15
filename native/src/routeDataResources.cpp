@@ -27,11 +27,11 @@ RouteDataResources::RouteDataResources(vector<Location> locations, vector<int>& 
 }
 
 Location RouteDataResources::getCurrentSegmentLocation(int offset) {
-    int locationIndex = currentSegmentStartLocationIndex + offset;
-    if (locationIndex >= locations.size()) {
-        throw std::invalid_argument("Locations index: " + to_string(locationIndex) + " out of bounds");
-    }
-    return locations[locationIndex];
+	int locationIndex = currentSegmentStartLocationIndex + offset;
+	if (locationIndex >= locations.size()) {
+		throw std::invalid_argument("Locations index: " + to_string(locationIndex) + " out of bounds");
+	}
+	return locations[locationIndex];
 }
 
 int RouteDataResources::getCurrentSegmentStartLocationIndex()
@@ -40,12 +40,12 @@ int RouteDataResources::getCurrentSegmentStartLocationIndex()
 }
 
 void RouteDataResources::updateNextSegmentStartLocation(int currentSegmentLength) {
-    const auto it = find(routePointIndexes.begin(), routePointIndexes.end(), currentSegmentStartLocationIndex + currentSegmentLength);
-    int routePointIndex = -1;
-    if (it != routePointIndexes.end())
-        routePointIndex = (int) (it - routePointIndexes.begin());
-    bool overlappingNextRouteSegment = !(routePointIndex > 0 && routePointIndex < routePointIndexes.size() - 1);
-    currentSegmentStartLocationIndex += overlappingNextRouteSegment ? currentSegmentLength - 1 : currentSegmentLength;
+	const auto it = find(routePointIndexes.begin(), routePointIndexes.end(), currentSegmentStartLocationIndex + currentSegmentLength);
+	int routePointIndex = -1;
+	if (it != routePointIndexes.end())
+		routePointIndex = (int) (it - routePointIndexes.begin());
+	bool overlappingNextRouteSegment = !(routePointIndex > 0 && routePointIndex < routePointIndexes.size() - 1);
+	currentSegmentStartLocationIndex += overlappingNextRouteSegment ? currentSegmentLength - 1 : currentSegmentLength;
 }
 
 #endif /*_OSMAND_ROUTE_DATA_RESOURCES_CPP*/

@@ -293,14 +293,14 @@ void RouteSegmentResult::readFromBundle(SHARED_PTR<RouteDataBundle>& bundle) {
 }
 
 void RouteSegmentResult::writeToBundle(SHARED_PTR<RouteDataBundle>& bundle) {
-    const auto& resources = bundle->resources;
+	const auto& resources = bundle->resources;
 	auto& rules = resources->rules;
 	bool reversed = endPointIndex < startPointIndex;
 	stringstream ss;
 	ss << fixed << setprecision(2) << segmentTime;
-    int length = abs(endPointIndex - startPointIndex) + 1;
+	int length = abs(endPointIndex - startPointIndex) + 1;
 	bundle->put("length", to_string(length));
-    bundle->put("startTrkptIdx", to_string(resources->getCurrentSegmentStartLocationIndex()));
+	bundle->put("startTrkptIdx", to_string(resources->getCurrentSegmentStartLocationIndex()));
 	bundle->put("segmentTime", ss.str());
 	ss.str("");
 	ss << fixed << setprecision(2) << segmentSpeed;
@@ -349,7 +349,7 @@ void RouteSegmentResult::writeToBundle(SHARED_PTR<RouteDataBundle>& bundle) {
 		}
 		bundle->putVectors("pointNames", convertPointNames(types, names, rules, bundle->resources->insertOrder));
 	}
-    resources->updateNextSegmentStartLocation(length);
+	resources->updateNextSegmentStartLocation(length);
 }
 
 void RouteSegmentResult::attachRoute(int roadIndex, SHARED_PTR<RouteSegmentResult> r) {
@@ -399,9 +399,9 @@ LatLon RouteSegmentResult::getEndPoint() { return convertPoint(object, endPointI
 LatLon RouteSegmentResult::getPoint(int i) { return convertPoint(object, i); }
 
 bool RouteSegmentResult::continuesBeyondRouteSegment(const SHARED_PTR<RouteSegmentResult> &segment) const {
-    bool commonX = object->pointsX[startPointIndex] == segment->object->pointsX[segment->endPointIndex];
-    bool commonY = object->pointsY[startPointIndex] == segment->object->pointsY[segment->endPointIndex];
-    return commonX && commonY;
+	bool commonX = object->pointsX[startPointIndex] == segment->object->pointsX[segment->endPointIndex];
+	bool commonY = object->pointsY[startPointIndex] == segment->object->pointsY[segment->endPointIndex];
+	return commonX && commonY;
 }
 
 string RouteSegmentResult::getDestinationName(string lang, bool transliterate, vector<SHARED_PTR<RouteSegmentResult>> &list, int routeInd) {
