@@ -263,7 +263,7 @@ void RouteSegmentResult::readFromBundle(SHARED_PTR<RouteDataBundle>& bundle) {
 	double distance = 0;
 	Location prevLocation;
 	for (int i = 0; i < length; i++) {
-		Location location = resources->getLocation(index);
+		Location location = resources->getCurrentSegmentLocation(index);
 		if (location.isInitialized()) {
 			double dist = 0;
 			if (prevLocation.isInitialized()) {
@@ -289,22 +289,18 @@ void RouteSegmentResult::readFromBundle(SHARED_PTR<RouteDataBundle>& bundle) {
 	}
 	this->distance = distance;
 	
-	int nextLocationIndex = resources->getCurrentLocationIndex() + length;
-	std::vector<int>::iterator it = std::find(resources->routePointIndexes.begin(), resources->routePointIndexes.end(), nextLocationIndex);
-    int routePointIndex = -1;
-    if (it != resources->routePointIndexes.end()) {
-        routePointIndex = (int) std::distance(resources->routePointIndexes.begin(), it);
-    }
-	bool intermediateRoutePoint = routePointIndex > 0 && routePointIndex < resources->routePointIndexes.size() - 1;
-	resources->incrementCurrentLocation(intermediateRoutePoint ? length : length - 1);
+    resources->updateNextSegmentStartLocation(length);
 }
 
 void RouteSegmentResult::writeToBundle(SHARED_PTR<RouteDataBundle>& bundle) {
-	auto& rules = bundle->resources->rules;
+	const auto& resources = bundle->resources;
+	auto& rules = resources->rules;
 	bool reversed = endPointIndex < startPointIndex;
 	stringstream ss;
 	ss << fixed << setprecision(2) << segmentTime;
-	bundle->put("length", to_string(abs(endPointIndex - startPointIndex) + 1));
+	int length = abs(endPointIndex - startPointIndex) + 1;
+	bundle->put("length", to_string(length));
+	bundle->put("startTrkptIdx", to_string(resources->getCurrentSegmentStartLocationIndex()));
 	bundle->put("segmentTime", ss.str());
 	ss.str("");
 	ss << fixed << setprecision(2) << segmentSpeed;
@@ -353,6 +349,7 @@ void RouteSegmentResult::writeToBundle(SHARED_PTR<RouteDataBundle>& bundle) {
 		}
 		bundle->putVectors("pointNames", convertPointNames(types, names, rules, bundle->resources->insertOrder));
 	}
+	resources->updateNextSegmentStartLocation(length);
 }
 
 void RouteSegmentResult::attachRoute(int roadIndex, SHARED_PTR<RouteSegmentResult> r) {
@@ -400,6 +397,12 @@ LatLon RouteSegmentResult::getStartPoint() { return convertPoint(object, startPo
 LatLon RouteSegmentResult::getEndPoint() { return convertPoint(object, endPointIndex); }
 
 LatLon RouteSegmentResult::getPoint(int i) { return convertPoint(object, i); }
+
+bool RouteSegmentResult::continuesBeyondRouteSegment(const SHARED_PTR<RouteSegmentResult> &segment) const {
+	bool commonX = object->pointsX[startPointIndex] == segment->object->pointsX[segment->endPointIndex];
+	bool commonY = object->pointsY[startPointIndex] == segment->object->pointsY[segment->endPointIndex];
+	return commonX && commonY;
+}
 
 string RouteSegmentResult::getDestinationName(string lang, bool transliterate, vector<SHARED_PTR<RouteSegmentResult>> &list, int routeInd) {
     string dnRef = object->getDestinationRef(isForwardDirection());

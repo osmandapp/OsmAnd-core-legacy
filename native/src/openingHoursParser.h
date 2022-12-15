@@ -656,7 +656,7 @@ struct OpeningHoursParser {
 						 const std::string& expected, int sequenceIndex);
 
 	static void testParsedAndAssembledCorrectly(const std::string& timeString,
-												const std::shared_ptr<OpeningHours>& hours);
+												const std::shared_ptr<OpeningHours>& hours, bool useLocalization);
 	static std::shared_ptr<OpeningHours> parseOpenedHoursHandleErrors(const std::string& format);
 
 	static void buildRule(std::shared_ptr<BasicOpeningHourRule>& basic, std::vector<std::shared_ptr<Token>>& tokens,
@@ -664,10 +664,10 @@ struct OpeningHoursParser {
 	static void fillRuleArray(std::vector<bool>* array,
 							  const std::shared_ptr<std::vector<std::shared_ptr<Token>>>& pair);
 
-	static void formatTimeRange(int startMinute, int endMinute, std::stringstream& b);
+	static void formatTimeRange(int startMinute, int endMinute, std::stringstream& b, bool useLocalization);
 	static void formatTime(int minutes, std::stringstream& b);
-	static void formatTime(int minutes, std::stringstream& b, bool appendAmPM);
-	static void formatTime(int hours, int minutes, std::stringstream& b, bool appendAmPm);
+	static void formatTime(int minutes, std::stringstream& b, bool appendAmPM, bool useLocalization);
+	static void formatTime(int hours, int minutes, std::stringstream& b, bool appendAmPm, bool useLocalization);
 
    public:
 	OpeningHoursParser(const std::string& openingHours);
