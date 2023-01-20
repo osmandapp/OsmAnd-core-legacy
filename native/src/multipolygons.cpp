@@ -124,7 +124,7 @@ bool processCoastlines(std::vector<FoundMapDataObject>& coastLines, int leftX, i
 		o->area = true;
 		res.push_back(FoundMapDataObject(o, NULL, zoom));
 	}
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Ocean: islands %d, closed water %d, coastline touches screen %d",
+	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "Ocean: islands %d, closed water %d, coastline touches screen %d",
 					  landFound, waterFound, coastlineCrossScreen);
 	if (!waterFound && !coastlineCrossScreen) {
 		// add complete water tile
