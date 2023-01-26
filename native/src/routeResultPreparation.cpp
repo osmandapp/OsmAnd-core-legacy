@@ -1137,6 +1137,9 @@ void inferCommonActiveLane(const SHARED_PTR<TurnType>& currentTurn, const SHARED
             singleTurn = nextTurn->getValue();
         } else if (currentTurn->isPossibleRightTurn() && TurnType::isRightTurn(nextTurn->getActiveCommonLaneTurn())) {
             singleTurn = nextTurn->getActiveCommonLaneTurn();
+        } else if ((currentTurn->goAhead() || currentTurn->keepLeft() || currentTurn->keepRight())
+                   && TurnType::isKeepDirectionTurn(nextTurn->getActiveCommonLaneTurn())) {
+            singleTurn = nextTurn->getActiveCommonLaneTurn();
         }
     }
     if (singleTurn == 0) {
