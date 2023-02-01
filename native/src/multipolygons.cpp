@@ -75,8 +75,8 @@ bool processCoastlines(std::vector<FoundMapDataObject>& coastLines, int leftX, i
 	}
 	if (completedRings.size() == 0 && uncompletedRings.size() == 0) {
 		// printf("No completed & uncompleted");
-		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Ocean: no completed & incompleted coastlines %d",
-						  coastLines.size());
+		//OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Ocean: no completed & incompleted coastlines %d",
+		//				  coastLines.size());
 		return false;  // Fix 5833
 					   // fix is not fully correct cause now zoom in causes land
 					   // return coastLines.size() != 0;
@@ -103,8 +103,8 @@ bool processCoastlines(std::vector<FoundMapDataObject>& coastLines, int leftX, i
 	}
 	if (!showIfThereIncompleted && uncompletedRings.size() > 0) {
 		// printf("There are ignored uncompleted");
-		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Ocean: incompleted coastlines %d from %d",
-						  uncompletedRings.size(), coastLines.size());
+		//OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Ocean: incompleted coastlines %d from %d",
+		//				  uncompletedRings.size(), coastLines.size());
 		return false;
 	}
 	int landFound = 0;
@@ -124,8 +124,8 @@ bool processCoastlines(std::vector<FoundMapDataObject>& coastLines, int leftX, i
 		o->area = true;
 		res.push_back(FoundMapDataObject(o, NULL, zoom));
 	}
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "Ocean: islands %d, closed water %d, coastline touches screen %d",
-					  landFound, waterFound, coastlineCrossScreen);
+	//OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "Ocean: islands %d, closed water %d, coastline touches screen %d",
+	//				  landFound, waterFound, coastlineCrossScreen);
 	if (!waterFound && !coastlineCrossScreen) {
 		// add complete water tile
 		MapDataObject* o = new MapDataObject();
