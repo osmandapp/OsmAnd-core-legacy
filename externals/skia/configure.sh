@@ -3,6 +3,7 @@
 SRCLOC="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 if ls -1 $SRCLOC/upstream.patched >/dev/null 2>&1
 then
+   echo "Exists $SRCLOC/upstream.patched, ignoring..."
    exit
 fi
 
@@ -36,9 +37,15 @@ if [ -d $SRCLOC/patches ]; then
 	done
 fi
 
+# get python
+EXEC_PY=$(which python)
+if [ ! -e "${EXEC_PY}" ]; then
+  EXEC_PY=$(which python3)
+fi
+
 # sync deps
 cd $SRCLOC/upstream.patched/tools
-./git-sync-deps
+${EXEC_PY} ./git-sync-deps
 
 VERSION_HARFBUZZ="b37f03f" #2.8.1
 (cd $SRCLOC/upstream.patched/third_party/externals/harfbuzz && \
