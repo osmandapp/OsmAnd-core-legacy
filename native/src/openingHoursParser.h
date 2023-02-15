@@ -550,6 +550,9 @@ struct OpeningHoursParser {
 		int _sequenceCount;
 
 		std::shared_ptr<Info> getInfo(const tm& dateTime, int sequenceIndex) const;
+		bool isCheckNextNeeded(const tm&  cal, const std::vector<std::shared_ptr<OpeningHoursRule>>& rules, int i,
+		 						const std::shared_ptr<OpeningHoursRule>& rule) const;
+		bool hasOverlappingRules(const std::vector<std::shared_ptr<OpeningHoursRule>>& rules) const;
 
 	   public:
 		/**
