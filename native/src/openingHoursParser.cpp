@@ -2111,6 +2111,8 @@ void OpeningHoursParser::runTest() {
 	// 0. not properly supported
 	// hours = parseOpenedHours("Mo-Su (sunrise-00:30)-(sunset+00:30)");
 
+	setenv("TZ", "", 1); // daylight saving off fix testOpened("23.07.2019 04:00", hours, false); 
+	tzset();
 	OpeningHoursParser::setTwelveHourFormattingEnabled(false);
 	auto hours = parseOpenedHours("Mo 09:00-12:00; We,Sa 13:30-17:00, Apr 01-Oct 31 We,Sa 17:00-18:30; PH off");
 	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
@@ -2481,7 +2483,7 @@ void OpeningHoursParser::runTest() {
 
 	hours = parseOpenedHours("Mo-Sa 08:30-17:00; Th off");
 	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testInfo("17.01.2018 20:00", hours, "Will open on 08:30 Fri.");
+	testInfo("17.01.2018 20:00", hours, "Will open on 08:30 Fr.");
 	testInfo("18.01.2018 05:00", hours, "Will open tomorrow at 08:30");
 	testInfo("20.01.2018 05:00", hours, "Open from 08:30");
 	testInfo("21.01.2018 05:00", hours, "Will open tomorrow at 08:30");
@@ -2545,7 +2547,7 @@ void OpeningHoursParser::runTest() {
 	hours = parseOpenedHours("Mo-Fr 08:00-12:00, Mo,Tu,Th 15:00-17:00; PH off");
 	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
 	testOpened("09.08.2019 15:00", hours, false);
-	testInfo("09.08.2019 15:00", hours, "Will open on 08:00 Mon.");
+	testInfo("09.08.2019 15:00", hours, "Will open on 08:00 Mo.");
 
 	hours = parseOpenedHours("Mo-Fr 10:00-21:00; Sa 12:00-23:00; PH \"Wird auf der Homepage bekannt gegeben.\"");
 	testParsedAndAssembledCorrectly("Mo-Fr 10:00-21:00; Sa 12:00-23:00; PH - Wird auf der Homepage bekannt gegeben.", hours, false);
