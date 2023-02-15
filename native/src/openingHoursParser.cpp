@@ -1266,13 +1266,15 @@ std::string OpeningHoursParser::OpeningHours::getOpeningTomorrow(const tm& dateT
 	std::mktime(&cal);
 	time_t calTime = std::mktime(&cal);
 	time_t openingCalTime = 0;
-
+	std::shared_ptr<OpeningHoursRule> openingRule = nullptr;
 	const auto& rules = getRules(sequenceIndex);
 	for (const auto& r : rules) {
 		if (r->containsDay(cal) && r->containsMonth(cal)) {
 			std::string time = r->getTime(cal, false, WITHOUT_TIME_LIMIT, true);
-			if (time.empty() || openingCalTime == 0 || difftime(calTime, openingCalTime) < 0) {
+			if (time.empty() || openingCalTime == 0 || difftime(calTime, openingCalTime) < 0 
+				|| r->hasOverlapTimes(cal, openingRule, false)) {
 				openingTime = time;
+				openingRule = r;
 			}
 			openingCalTime = calTime;
 		}
@@ -1290,12 +1292,15 @@ std::string OpeningHoursParser::OpeningHours::getOpeningDay(const tm& dateTime, 
 		cal.tm_mday += 1;
 		time_t calTime = std::mktime(&cal);
 		time_t openingCalTime = 0;
+		std::shared_ptr<OpeningHoursRule> openingRule = nullptr;
 
 		for (const auto& r : rules) {
 			if (r->containsDay(cal) && r->containsMonth(cal)) {
 				std::string time = r->getTime(cal, false, WITHOUT_TIME_LIMIT, true);
-				if (time.empty() || openingCalTime == 0 || difftime(calTime, openingCalTime) < 0) {
+				if (time.empty() || openingCalTime == 0 || difftime(calTime, openingCalTime) < 0
+					|| r->hasOverlapTimes(cal, openingRule, false)) {
 					openingTime = time;
+					openingRule = r;
 				}
 				openingCalTime = calTime;
 			}
@@ -2139,6 +2144,7 @@ void OpeningHoursParser::runTest() {
 	testOpened("05.12.2022 10:30", hours, false);
 	testOpened("05.12.2022 11:30", hours, true);
 	testOpened("30.12.2022 11:00", hours, false);
+	testInfo("29.12.2022 14:00", hours, "Will open tomorrow at 11:00");
 	hours = parseOpenedHours("Mo 09:00-12:00; We,Sa 13:30-17:00, Apr 01-Oct 31 We,Sa 17:00-18:30; PH off");
 	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
 	testInfo("03.10.2020 14:00", hours, "Open till 18:30");
@@ -2172,7 +2178,7 @@ void OpeningHoursParser::runTest() {
 	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
 	testOpened("23.07.2018 15:00", hours, false);
 	testOpened("23.07.2019 15:00", hours, true);
-	//testOpened("23.07.2019 04:00", hours, false);
+	testOpened("23.07.2019 04:00", hours, false);
 	testOpened("23.07.2020 15:00", hours, false);
 	testOpened("25.07.2018 15:00", hours, false);
 	testOpened("24.07.2019 15:00", hours, true);
