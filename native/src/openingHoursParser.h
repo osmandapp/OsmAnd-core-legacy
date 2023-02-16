@@ -206,7 +206,7 @@ struct OpeningHoursParser {
 		void addArray(const std::vector<bool>& array, const std::vector<std::string>& arrayNames,
 					  std::stringstream& b) const;
 		bool hasFullYears() const;
-		bool getDayMonths(int month, int dmonth, int year) const;
+		bool isOpened(int year, int month, int dmonth) const;
 		
 
 	   private:
