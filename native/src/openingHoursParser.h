@@ -205,6 +205,9 @@ struct OpeningHoursParser {
 		std::string toRuleString(bool useLocalization) const;
 		void addArray(const std::vector<bool>& array, const std::vector<std::string>& arrayNames,
 					  std::stringstream& b) const;
+		bool hasFullYears() const;
+		bool getDayMonths(int month, int dmonth, int year) const;
+		
 
 	   private:
 		/**
@@ -224,7 +227,9 @@ struct OpeningHoursParser {
 		 * represents the list on which year / month it is open.
 		 */
 		std::vector<int> _firstYearMonths;
+		std::vector<std::vector<bool>> _firstYearDayMonth;
 		std::vector<int> _lastYearMonths;
+		std::vector<std::vector<bool>> _lastYearDayMonth;
 		int _fullYears;
 		int _year;
 
@@ -297,6 +302,9 @@ struct OpeningHoursParser {
 		 */
 		std::vector<bool>& getDayMonths(int month);
 		bool hasDayMonths() const;
+
+		std::vector<bool>& getFirstYearDayMonths(int month);
+		std::vector<bool>& getLastYearDayMonths(int month);
 
 		bool hasDays() const;
 		void setHasDays(bool value);
@@ -664,6 +672,8 @@ struct OpeningHoursParser {
 
 	static void buildRule(std::shared_ptr<BasicOpeningHourRule>& basic, std::vector<std::shared_ptr<Token>>& tokens,
 						  std::vector<std::shared_ptr<OpeningHoursRule>>& rules);
+	static void fillFirstLastYearsDayOfMonth(std::shared_ptr<BasicOpeningHourRule>& basic,
+								 const std::shared_ptr<std::vector<std::shared_ptr<Token>>>& pair);
 	static void fillRuleArray(std::vector<bool>* array,
 							  const std::shared_ptr<std::vector<std::shared_ptr<Token>>>& pair);
 
