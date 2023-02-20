@@ -1907,18 +1907,18 @@ void OpeningHoursParser::fillFirstLastYearsDayOfMonth(std::shared_ptr<BasicOpeni
 	                                                  const std::shared_ptr<std::vector<std::shared_ptr<Token>>>& pair) {
 	int startMonth = pair->at(0)->parent ? pair->at(0)->parent->mainNumber : pair->at(0)->mainNumber;
 	int startDayOfMonth = pair->at(0)->parent ? pair->at(0)->mainNumber : 0;
-	auto firstYearDayMonth = &basic->getFirstYearDayMonths(startMonth);
+	auto* firstYearDayMonth = &basic->getFirstYearDayMonths(startMonth);
 	std::fill(firstYearDayMonth->begin() + startDayOfMonth, firstYearDayMonth->end(), true);
 	for (int month = startMonth + 1; month < 12; month++) {
-		auto firstYearDayMonth = &basic->getFirstYearDayMonths(month);
+		auto* firstYearDayMonth = &basic->getFirstYearDayMonths(month);
 		std::fill(firstYearDayMonth->begin(), firstYearDayMonth->end(), true);
 	}
 	int endMonth = pair->at(1)->parent ? pair->at(1)->parent->mainNumber : pair->at(1)->mainNumber;
 	int endDayOfMonth = pair->at(1)->parent ? pair->at(1)->mainNumber : 30;
-	auto lastYearDayMonth = &basic->getLastYearDayMonths(endMonth);
+	auto* lastYearDayMonth = &basic->getLastYearDayMonths(endMonth);
 	std::fill(lastYearDayMonth->begin(), lastYearDayMonth->begin() + endDayOfMonth + 1, true);
 	for (int month = 0; month < endMonth; month++) {
-		auto lastYearDayMonth = &basic->getLastYearDayMonths(month);
+		auto* lastYearDayMonth = &basic->getLastYearDayMonths(month);
 		std::fill(lastYearDayMonth->begin(), lastYearDayMonth->end(), true);
 	}
 }
