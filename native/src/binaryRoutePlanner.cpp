@@ -186,7 +186,7 @@ void initQueuesWithStartEnd(RoutingContext* ctx, SHARED_PTR<RouteSegment> start,
 	}
 
 	// for start : f(start) = g(start) + h(start) = 0 + h(start) = h(start)
-	if (ctx->config->initialDirection > -180 && ctx->config->initialDirection < 180) {
+	if (ctx->config->initialDirection > -M_PI && ctx->config->initialDirection < M_PI) {
 		double plusDir = start->getRoad()->directionRoute(start->getSegmentStart(), true);
 		double diff = plusDir - ctx->config->initialDirection;
 		if (abs(alignAngleDifference(diff)) <= M_PI / 3) {
