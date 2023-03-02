@@ -205,6 +205,9 @@ struct OpeningHoursParser {
 		std::string toRuleString(bool useLocalization) const;
 		void addArray(const std::vector<bool>& array, const std::vector<std::string>& arrayNames,
 					  std::stringstream& b) const;
+		bool hasFullYears() const;
+		bool isOpened(int year, int month, int dmonth) const;
+		
 
 	   private:
 		/**
@@ -224,7 +227,9 @@ struct OpeningHoursParser {
 		 * represents the list on which year / month it is open.
 		 */
 		std::vector<int> _firstYearMonths;
+		std::vector<std::vector<bool>> _firstYearDayMonth;
 		std::vector<int> _lastYearMonths;
+		std::vector<std::vector<bool>> _lastYearDayMonth;
 		int _fullYears;
 		int _year;
 
@@ -297,6 +302,9 @@ struct OpeningHoursParser {
 		 */
 		std::vector<bool>& getDayMonths(int month);
 		bool hasDayMonths() const;
+
+		std::vector<bool>& getFirstYearDayMonths(int month);
+		std::vector<bool>& getLastYearDayMonths(int month);
 
 		bool hasDays() const;
 		void setHasDays(bool value);
@@ -550,6 +558,9 @@ struct OpeningHoursParser {
 		int _sequenceCount;
 
 		std::shared_ptr<Info> getInfo(const tm& dateTime, int sequenceIndex) const;
+		bool isCheckNextNeeded(const tm&  cal, const std::vector<std::shared_ptr<OpeningHoursRule>>& rules, int i,
+		                       const std::shared_ptr<OpeningHoursRule>& rule) const;
+		bool hasOverlappingRules(const std::vector<std::shared_ptr<OpeningHoursRule>>& rules) const;
 
 	   public:
 		/**
@@ -651,18 +662,20 @@ struct OpeningHoursParser {
 	static bool parseTime(const std::string& time, tm& dateTime);
 	static void testOpened(const std::string& time, const std::shared_ptr<OpeningHours>& hours, bool expected);
 	static void testInfo(const std::string& time, const std::shared_ptr<OpeningHours>& hours,
-						 const std::string& expected);
+	                     const std::string& expected);
 	static void testInfo(const std::string& time, const std::shared_ptr<OpeningHours>& hours,
-						 const std::string& expected, int sequenceIndex);
+	                     const std::string& expected, int sequenceIndex);
 
 	static void testParsedAndAssembledCorrectly(const std::string& timeString,
-												const std::shared_ptr<OpeningHours>& hours, bool useLocalization);
+	                                            const std::shared_ptr<OpeningHours>& hours, bool useLocalization);
 	static std::shared_ptr<OpeningHours> parseOpenedHoursHandleErrors(const std::string& format);
 
 	static void buildRule(std::shared_ptr<BasicOpeningHourRule>& basic, std::vector<std::shared_ptr<Token>>& tokens,
-						  std::vector<std::shared_ptr<OpeningHoursRule>>& rules);
+	                      std::vector<std::shared_ptr<OpeningHoursRule>>& rules);
+	static void fillFirstLastYearsDayOfMonth(std::shared_ptr<BasicOpeningHourRule>& basic,
+	                                         const std::shared_ptr<std::vector<std::shared_ptr<Token>>>& pair);
 	static void fillRuleArray(std::vector<bool>* array,
-							  const std::shared_ptr<std::vector<std::shared_ptr<Token>>>& pair);
+	                          const std::shared_ptr<std::vector<std::shared_ptr<Token>>>& pair);
 
 	static void formatTimeRange(int startMinute, int endMinute, std::stringstream& b, bool useLocalization);
 	static void formatTime(int minutes, std::stringstream& b);
@@ -682,9 +695,9 @@ struct OpeningHoursParser {
 	static void setTwelveHourFormattingEnabled(bool enabled);
 
 	static void parseRuleV2(const std::string& rl, int sequenceIndex,
-							std::vector<std::shared_ptr<OpeningHoursRule>>& rules);
+	                        std::vector<std::shared_ptr<OpeningHoursRule>>& rules);
 	static void parseRules(const std::string& rl, int sequenceIndex,
-						   std::vector<std::shared_ptr<OpeningHoursRule>>& rules);
+	                       std::vector<std::shared_ptr<OpeningHoursRule>>& rules);
 
 	static std::shared_ptr<OpeningHours> parseOpenedHours(const std::string& format);
 
