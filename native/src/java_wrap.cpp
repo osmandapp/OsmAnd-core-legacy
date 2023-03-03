@@ -1646,6 +1646,7 @@ RoutingContext* getRoutingContext(JNIEnv* ienv, jobject jCtx, jfloat initDirecti
 		c = new RoutingContext(config);
 		ienv->SetLongField(jCtx, jfield_RoutingContext_nativeRoutingContext, (jlong)c);
 	}
+	c->config->initialDirection = initDirection;
 	c->progress = SHARED_PTR<RouteCalculationProgress>(new RouteCalculationProgressWrapper(ienv, progress));
 	c->startX = ienv->GetIntField(jCtx, jfield_RoutingContext_startX);
 	c->startY = ienv->GetIntField(jCtx, jfield_RoutingContext_startY);

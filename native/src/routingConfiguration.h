@@ -88,7 +88,7 @@ struct RoutingConfiguration {
     float recalculateDistance;
     time_t routeCalculationTime = 0;
 
-    RoutingConfiguration(float initDirection = -360, int memLimit = DEFAULT_MEMORY_LIMIT) : router(new GeneralRouter()), memoryLimitation(memLimit), initialDirection(initDirection), zoomToLoad(16), heurCoefficient(1), planRoadDirection(0), routerName(""), recalculateDistance(20000.0f) {
+    RoutingConfiguration(float initDirection = -2 * M_PI, int memLimit = DEFAULT_MEMORY_LIMIT) : router(new GeneralRouter()), memoryLimitation(memLimit), initialDirection(initDirection), zoomToLoad(16), heurCoefficient(1), planRoadDirection(0), routerName(""), recalculateDistance(20000.0f) {
     }
 
     string getAttribute(SHARED_PTR<GeneralRouter> router, string propertyName) {
@@ -126,7 +126,7 @@ public:
     }
     
     SHARED_PTR<RoutingConfiguration> build(string router, int memoryLimitMB, MAP_STR_STR& params) {
-        return build(router, -360, memoryLimitMB, params);
+        return build(router, -2 * M_PI, memoryLimitMB, params);
     }
     
     SHARED_PTR<RoutingConfiguration> build(string router, float direction, long memoryLimitMB, MAP_STR_STR& params) {
