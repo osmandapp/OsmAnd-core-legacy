@@ -628,7 +628,8 @@ struct RouteDataObject {
 		return true;
 	}
 	
-	// Gives route direction of EAST degrees from NORTH ]-PI, PI]	double directionRoute(int startPoint, bool plus, float dist) {
+	// Gives route direction of EAST degrees from NORTH ]-PI, PI]
+	double directionRoute(int startPoint, bool plus, float dist) {
 		int x = pointsX[startPoint];
 		int y = pointsY[startPoint];
 		int nx = startPoint;
