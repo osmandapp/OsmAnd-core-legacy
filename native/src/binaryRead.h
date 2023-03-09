@@ -610,7 +610,25 @@ struct RouteDataObject {
 		return true;
 	}
 
-	// Gives route direction of EAST degrees from NORTH ]-PI, PI]
+    bool isDirectionApplicable(bool direction, int intId) {
+        auto pt = pointTypes[intId];
+        auto sz = pt.size();
+        for (int i = 0; i < sz; i++) {
+            auto& r = region->quickGetEncodingRule(pt[i]);
+            // Evaluate direction tag if present
+            if ("direction" == r.getTag()) {
+                auto dv = r.getValue();
+                if ((dv == "forward" && direction) || (dv == "backward" && !direction)) {
+                    return true;
+                } else if ((dv == "forward" && !direction) || (dv == "backward" && direction)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+    
+    // Gives route direction of EAST degrees from NORTH ]-PI, PI]
 	double directionRoute(int startPoint, bool plus, float dist) {
 		int x = pointsX[startPoint];
 		int y = pointsY[startPoint];
