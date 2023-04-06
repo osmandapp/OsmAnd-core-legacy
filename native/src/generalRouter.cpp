@@ -367,41 +367,36 @@ double GeneralRouter::evaluateCache(RouteDataObjectAttribute attr, SHARED_PTR<Ro
 	return evaluateCache(attr, way->region, way->types, def, false);
 }
 
-SHARED_PTR<vector<uint32_t>> filterDirectionTags(RoutingIndex* reg, vector<uint32_t>& pointTypes, bool dir) {
-	int wayOppositeDirection = dir ? -1 : 1;
+SHARED_PTR<vector<uint32_t>> filterDirectionTags(RoutingIndex* reg, vector<uint32_t>& pointTypes, bool forwardDir) {
+	int wayDirection = forwardDir ? 1 : -1;
 	int direction = 0;
 	int tdirection = 0;
 	int hdirection = 0;
 	std::shared_ptr<vector<uint32_t>> ptr = nullptr;
-	for (int i = 0; i < pointTypes.size(); i++) {
-		if (pointTypes[i] == reg->directionBackward) {
+	for (uint32_t type : pointTypes) {
+		if (type == reg->directionBackward) {
 			direction = -1;
-		} else if (pointTypes[i] == reg->directionForward) {
+		} else if (type == reg->directionForward) {
 			direction = 1;
-		} else if (pointTypes[i] == reg->directionTrafficSignalsBackward) {
+		} else if (type == reg->directionTrafficSignalsBackward) {
 			tdirection = -1;
-		} else if (pointTypes[i] == reg->directionTrafficSignalsForward) {
+		} else if (type == reg->directionTrafficSignalsForward) {
 			tdirection = 1;
-		} else if (pointTypes[i] == reg->maxheightBackward) {
+		} else if (type == reg->maxheightBackward) {
 			hdirection = -1;
-		} else if (pointTypes[i] == reg->maxheightForward) {
+		} else if (type == reg->maxheightForward) {
 			hdirection = 1;
 		}
 	}
 	if (direction != 0 || tdirection != 0 || hdirection != 0) {
 		ptr = shared_ptr<vector<uint32_t>>(new vector<uint32_t>());
-		for (uint32_t r : pointTypes) {
-			bool skip = false;
-			if ((r == reg->stopSign || r == reg->giveWaySign) && direction == wayOppositeDirection) {
-				skip = true;
-			} else if (r == reg->trafficSignals && tdirection == wayOppositeDirection) {
-				skip = true;
-			} else if (hdirection == wayOppositeDirection) {
-				skip = true;
+		for (uint32_t type : pointTypes) {
+			if (((type == reg->stopSign || type == reg->giveWaySign) && direction == wayDirection) ||
+				(type == reg->trafficSignals && tdirection == wayDirection) ||
+				(hdirection == wayDirection)) {
+				continue;
 			}
-			if (!skip) {
-				ptr->push_back(r);
-			}
+			ptr->push_back(type);
 		}
 	}
 	return ptr;

@@ -488,8 +488,8 @@ bool checkIfOppositeSegmentWasVisited(bool reverseWaySearch, SEGMENTS_QUEUE& gra
 double calculateRouteSegmentTime(RoutingContext* ctx, bool reverseWaySearch, SHARED_PTR<RouteSegment> segment) {
 	SHARED_PTR<RouteDataObject> road = segment->getRoad();
 	// store <segment> in order to not have unique <segment, direction> in visitedSegments
-	short segmentInd = !reverseWaySearch ? segment->getSegmentStart() : segment->getSegmentEnd();
-	short prevSegmentInd = reverseWaySearch ? segment->getSegmentStart() : segment->getSegmentEnd();
+	short segmentInd = reverseWaySearch ? segment->getSegmentStart() : segment->getSegmentEnd();
+	short prevSegmentInd = !reverseWaySearch ? segment->getSegmentStart() : segment->getSegmentEnd();
 	const int x = road->pointsX[segmentInd];
 	const int y = road->pointsY[segmentInd];
 	const int prevX = road->pointsX[prevSegmentInd];
