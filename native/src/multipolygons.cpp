@@ -81,10 +81,8 @@ bool processCoastlines(std::vector<FoundMapDataObject>& coastLines, int leftX, i
 					   // fix is not fully correct cause now zoom in causes land
 					   // return coastLines.size() != 0;
 	}
-	bool coastlineCrossScreen = uncompletedRings.size() > 0;
-	if (coastlineCrossScreen) {
-		unifyIncompletedRings(uncompletedRings, completedRings, leftX, rightX, bottomY, topY, dbId, zoom);
-	}
+	bool unifiedUncompletedRings = uncompletedRings.size() > 0
+		&& unifyIncompletedRings(uncompletedRings, completedRings, leftX, rightX, bottomY, topY, dbId, zoom);
 	if (addDebugIncompleted) {
 		// draw uncompleted for debug purpose
 		for (uint i = 0; i < uncompletedRings.size(); i++) {
@@ -125,8 +123,8 @@ bool processCoastlines(std::vector<FoundMapDataObject>& coastLines, int leftX, i
 		res.push_back(FoundMapDataObject(o, NULL, zoom));
 	}
 	//OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "Ocean: islands %d, closed water %d, coastline touches screen %d",
-	//				  landFound, waterFound, coastlineCrossScreen);
-	if (!waterFound && !coastlineCrossScreen) {
+	//				  landFound, waterFound, unifiedUncompletedRings);
+	if (!waterFound && !unifiedUncompletedRings) {
 		// add complete water tile
 		MapDataObject* o = new MapDataObject();
 		o->points.push_back(int_pair(leftX, topY));
@@ -358,7 +356,7 @@ int safelyAddDelta(int number, int delta) {
 	return res;
 }
 
-void unifyIncompletedRings(std::vector<std::vector<int_pair> >& toProccess,
+bool unifyIncompletedRings(std::vector<std::vector<int_pair> >& toProccess,
 						   std::vector<std::vector<int_pair> >& completedRings, int leftX, int rightX, int bottomY,
 						   int topY, int64_t dbId, int zoom) {
 	std::set<int> nonvisitedRings;
@@ -389,6 +387,39 @@ void unifyIncompletedRings(std::vector<std::vector<int_pair> >& toProccess,
 			nonvisitedRings.insert(j);
 		}
 	}
+
+	const int EVAL_DELTA = 2 << (22 - zoom);
+
+	// If there is one unclosed ring with gap <= EVAL_DELTA, close it without unification
+	// to fix wrong unified polygon
+	if (nonvisitedRings.size() == 1) {
+		auto index = *nonvisitedRings.begin();
+		auto ring = incompletedRings.at(index);
+
+		if (ring.size() >= 3) {
+			const auto firstIntersectionPoint = ring.front();
+			const auto secondIntersectionPoint = ring.back();
+
+			const auto firstX = firstIntersectionPoint.first;
+			const auto firstY = firstIntersectionPoint.second;
+			const auto secondX = secondIntersectionPoint.first;
+			const auto secondY = secondIntersectionPoint.second;
+
+			bool shortLeftGap = firstX == leftX && secondX == leftX && firstY <= safelyAddDelta(secondY, EVAL_DELTA);
+			bool shortTopGap = firstY == topY && secondY == topY && firstX >= safelyAddDelta(secondX, -EVAL_DELTA);
+			bool shortRightGap = firstX == rightX && secondX == rightX && firstY >= safelyAddDelta(secondY, -EVAL_DELTA);
+			bool shortBottomGap = firstY == bottomY && secondY == bottomY && firstX <= safelyAddDelta(secondX, EVAL_DELTA);
+
+			if (shortLeftGap || shortTopGap || shortRightGap || shortBottomGap)
+			{
+				// Close ring
+				ring.push_back(ring.front());
+				completedRings.push_back(ring);
+				return false;
+			}
+		}
+	}
+
 	ir = incompletedRings.begin();
 	for (j = 0; ir != incompletedRings.end(); ir++, j++) {
 		if (nonvisitedRings.find(j) == nonvisitedRings.end()) {
@@ -396,8 +427,6 @@ void unifyIncompletedRings(std::vector<std::vector<int_pair> >& toProccess,
 		}
 		int x = ir->at(ir->size() - 1).first;
 		int y = ir->at(ir->size() - 1).second;
-		// 31 - (zoom + 8)
-		const int EVAL_DELTA = 2 << (22 - zoom);
 		const int UNDEFINED_MIN_DIFF = -1 - EVAL_DELTA;
 		const double h = bottomY - topY;
 		const double w = rightX - leftX;
@@ -537,6 +566,8 @@ void unifyIncompletedRings(std::vector<std::vector<int_pair> >& toProccess,
 
 		completedRings.push_back(*ir);
 	}
+
+	return true;
 }
 
 /**
