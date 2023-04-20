@@ -348,13 +348,12 @@ void RenderingRulesStorage::parseRulesFromXmlInputStream(const char* filename,
 		delete handler;
 		return;
 	}
-	char buffer[512];
-	bool done = false;
+	char buffer[1024];
+	XML_Bool done = XML_FALSE;
 	while (!done) {
-		fgets(buffer, sizeof(buffer), file);
-		int len = strlen(buffer);
-		if (feof(file) != 0) {
-			done = true;
+		int len = (int) fread(buffer, 1, sizeof(buffer), file);
+		if (feof(file)) {
+			done = XML_TRUE;
 		}
 		if (XML_Parse(parser, buffer, len, done) == XML_STATUS_ERROR) {
 			fclose(file);
