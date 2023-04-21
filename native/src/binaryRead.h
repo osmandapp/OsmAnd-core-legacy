@@ -814,6 +814,14 @@ struct BinaryMapFile {
 	bool roadOnly;
 	bool liveMap;
 
+	struct OsmAndOwner {
+		std::string owner;
+		std::string pluginid;
+		std::string description;
+    };
+
+	OsmAndOwner owner;
+
 	int openFile() {
 #if defined(_WIN32)
 		int fileDescriptor = open(inputName.c_str(), O_RDONLY | O_BINARY);		
