@@ -818,7 +818,7 @@ struct BinaryMapFile {
 		std::string owner;
 		std::string pluginid;
 		std::string description;
-    };
+	};
 
 	OsmAndOwner owner;
 

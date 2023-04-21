@@ -900,30 +900,30 @@ bool readMapIndex(CodedInputStream* input, MapIndex* mapIndex, bool onlyInitEnco
 }
 
 bool readOsmAndOwner(CodedInputStream* input, BinaryMapFile::OsmAndOwner & owner) {
-    uint32_t tag;
-    while ((tag = input->ReadTag()) != 0) {
-        switch (WireFormatLite::GetTagFieldNumber(tag)) {
-            case OsmAnd::OBF::OsmAndOwner::kOwnerFieldNumber: {
-                DO_((WireFormatLite::ReadString(input, &owner.owner)));
-                break;
-            }
-            case OsmAnd::OBF::OsmAndOwner::kPluginidFieldNumber: {
-                DO_((WireFormatLite::ReadString(input, &owner.pluginid)));
-                break;
-            }
-            case OsmAnd::OBF::OsmAndOwner::kDescriptionFieldNumber: {
-                DO_((WireFormatLite::ReadString(input, &owner.description)));
-                break;
-            }
-            default: {
-                if (!skipUnknownFields(input, tag)) {
-                    return false;
-                }
-                break;
-            }
-        }
-    }
-    return true;
+	uint32_t tag;
+	while ((tag = input->ReadTag()) != 0) {
+		switch (WireFormatLite::GetTagFieldNumber(tag)) {
+			case OsmAnd::OBF::OsmAndOwner::kOwnerFieldNumber: {
+				DO_((WireFormatLite::ReadString(input, &owner.owner)));
+				break;
+			}
+			case OsmAnd::OBF::OsmAndOwner::kPluginidFieldNumber: {
+				DO_((WireFormatLite::ReadString(input, &owner.pluginid)));
+				break;
+			}
+			case OsmAnd::OBF::OsmAndOwner::kDescriptionFieldNumber: {
+				DO_((WireFormatLite::ReadString(input, &owner.description)));
+				break;
+			}
+			default: {
+				if (!skipUnknownFields(input, tag)) {
+					return false;
+				}
+				break;
+			}
+		}
+	}
+	return true;
 }
 
 bool initMapStructure(CodedInputStream* input, BinaryMapFile* file, bool useLive, bool initRoutingOnly) {
@@ -942,11 +942,11 @@ bool initMapStructure(CodedInputStream* input, BinaryMapFile* file, bool useLive
 				break;
 			}
 			case OsmAnd::OBF::OsmAndStructure::kOwnerFieldNumber: {
-                int len = 0;
-                WireFormatLite::ReadPrimitive<int32_t, WireFormatLite::TYPE_INT32>(input, &len);
-                int oldLimit = input->PushLimit(len);
-                readOsmAndOwner(input, file->owner);
-                input->PopLimit(oldLimit);
+				nt len = 0;
+				WireFormatLite::ReadPrimitive<int32_t, WireFormatLite::TYPE_INT32>(input, &len);
+				int oldLimit = input->PushLimit(len);
+				readOsmAndOwner(input, file->owner);
+				input->PopLimit(oldLimit);
 				break;
 			}
 			case OsmAnd::OBF::OsmAndStructure::kMapIndexFieldNumber: {
