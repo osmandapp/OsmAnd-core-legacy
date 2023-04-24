@@ -94,7 +94,7 @@ class RoutingRulesHandler {
 
 	static bool checkTag(const string& pname) {
 		return "select" == pname || "if" == pname || "ifnot" == pname || "gt" == pname || "le" == pname ||
-			   "eq" == pname;
+			   "eq" == pname || "min" == pname || "max" == pname;
 	}
 
 	static void addSubclause(RoutingRule* rr, RouteAttributeContext& ctx, SHARED_PTR<GeneralRouter>& currentRouter) {
@@ -111,6 +111,10 @@ class RoutingRulesHandler {
 			ctx.getLastRule()->registerLessCondition(rr->value1, rr->value2, rr->type);
 		} else if (rr->tagName == "eq") {
 			ctx.getLastRule()->registerEqualCondition(rr->value1, rr->value2, rr->type);
+		} else if (rr->tagName == "min") {
+			ctx.getLastRule()->registerMinExpression(rr->value1, rr->value2, rr->type);
+		} else if (rr->tagName == "max") {
+			ctx.getLastRule()->registerMaxExpression(rr->value1, rr->value2, rr->type);
 		}
 	}
 
@@ -140,6 +144,12 @@ class RoutingRulesHandler {
 				for (int i = 0; i < stack.size(); i++) {
 					addSubclause(stack[i], ctx, currentRouter);
 				}
+			} else if ("min" == rr->tagName || "max" == rr->tagName) {
+				string initVal = attrValue(attrsMap, "value1");
+				string type = rr->type;
+				auto rule = ctx.newEvaluationRule();
+				rule->registerSelectValue(initVal, type);
+				addSubclause(rr, ctx, currentRouter);
 			} else if (stack.size() > 0 && stack.back()->tagName == "select") {
 				addSubclause(rr, ctx, currentRouter);
 			}

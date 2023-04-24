@@ -130,6 +130,8 @@ struct RouteAttributeExpression {
 	static const int LESS_EXPRESSION;
 	static const int GREAT_EXPRESSION;
 	static const int EQUAL_EXPRESSION;
+	static const int MIN_EXPRESSION;
+	static const int MAX_EXPRESSION;
 
 	vector<string> values;
 	int expressionType;
@@ -139,7 +141,7 @@ struct RouteAttributeExpression {
 	RouteAttributeExpression(vector<string>& vls, int type, string vType);
 
 	bool matches(dynbitset& types, ParameterContext& paramContext, GeneralRouter* router);
-
+	double calculateExpr(dynbitset& types, ParameterContext& paramContext, GeneralRouter* router);
 	double calculateExprValue(int id, dynbitset& types, ParameterContext& paramContext, GeneralRouter* router);
 };
 
@@ -208,6 +210,18 @@ class RouteAttributeEvalRule {
 	void registerEqualCondition(string value1, string value2, string valueType) {
 		vector<string> vls{value1, value2};
 		RouteAttributeExpression exp(vls, RouteAttributeExpression::EQUAL_EXPRESSION, valueType);
+		registerExpression(exp);
+	}
+
+	void registerMinExpression(string value1, string value2, string valueType) {
+		vector<string> vls{value1, value2};
+		RouteAttributeExpression exp(vls, RouteAttributeExpression::MIN_EXPRESSION, valueType);
+		registerExpression(exp);
+	}
+
+	void registerMaxExpression(string value1, string value2, string valueType) {
+		vector<string> vls{value1, value2};
+		RouteAttributeExpression exp(vls, RouteAttributeExpression::MAX_EXPRESSION, valueType);
 		registerExpression(exp);
 	}
 };

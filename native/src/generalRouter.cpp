@@ -12,6 +12,9 @@
 const int RouteAttributeExpression::LESS_EXPRESSION = 1;
 const int RouteAttributeExpression::GREAT_EXPRESSION = 2;
 const int RouteAttributeExpression::EQUAL_EXPRESSION = 3;
+const int RouteAttributeExpression::MIN_EXPRESSION = 4;
+const int RouteAttributeExpression::MAX_EXPRESSION = 5;
+
 
 const double GeneralRouterConstants::CAR_SHORTEST_DEFAULT_SPEED = 55 / 3.6f;
 const double GeneralRouterConstants::BICYCLE_SHORTEST_DEFAULT_SPEED = 15 / 3.6f;
@@ -630,6 +633,14 @@ dynbitset RouteAttributeContext::convert(RoutingIndex* reg, std::vector<uint32_t
 
 double RouteAttributeEvalRule::eval(dynbitset& types, ParameterContext& paramContext, GeneralRouter* router) {
 	if (matches(types, paramContext, router)) {
+		if (expressions.size() > 0) {
+			RouteAttributeExpression routeAttributeExpression = expressions[0];
+			int expressionType = routeAttributeExpression.expressionType;
+			if (expressionType == RouteAttributeExpression::MIN_EXPRESSION
+					|| expressionType == RouteAttributeExpression::MAX_EXPRESSION) {
+				selectValue = routeAttributeExpression.calculateExpr(types, paramContext, router);
+			}
+		}
 		return calcSelectValue(types, paramContext, router);
 	}
 	return DOUBLE_MISSING;
@@ -669,7 +680,9 @@ bool RouteAttributeExpression::matches(dynbitset& types, ParameterContext& param
 	if (f1 == DOUBLE_MISSING || f2 == DOUBLE_MISSING) {
 		return false;
 	}
-
+	if (expressionType == MIN_EXPRESSION || expressionType == MAX_EXPRESSION) {
+		return true;
+	}
 	if (expressionType == LESS_EXPRESSION) {
 		return f1 <= f2;
 	} else if (expressionType == GREAT_EXPRESSION) {
@@ -678,6 +691,20 @@ bool RouteAttributeExpression::matches(dynbitset& types, ParameterContext& param
 		return f1 == f2;
 	}
 	return false;
+}
+
+double RouteAttributeExpression::calculateExpr(dynbitset& types, ParameterContext& paramContext, GeneralRouter* router) {
+	double f1 = calculateExprValue(0, types, paramContext, router);
+	double f2 = calculateExprValue(1, types, paramContext, router);
+	if (f1 != DOUBLE_MISSING && f2 != DOUBLE_MISSING) {
+		switch (expressionType) {
+			case MIN_EXPRESSION:
+				return min(f1, f2);
+			case MAX_EXPRESSION:
+				return max(f1, f2);
+		}
+	}
+	return DOUBLE_MISSING;
 }
 
 double RouteAttributeExpression::calculateExprValue(int id, dynbitset& types, ParameterContext& paramContext,
