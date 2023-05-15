@@ -1,11 +1,12 @@
---- upstream.patched/third_party/externals/harfbuzz/src/hb-subset-cff1.cc 
-+++ upstream.patched/third_party/externals/harfbuzz/src/hb-subset-cff1.cc 
+diff -rupN upstream.patched/third_party/externals/harfbuzz/src/hb-subset-cff1.cc_copy upstream.patched/third_party/externals/harfbuzz/src/hb-subset-cff1.cc
+--- upstream.patched/third_party/externals/harfbuzz/src/hb-subset-cff1.cc_copy  2023-05-15 10:13:51.795867545 +0200
++++ upstream.patched/third_party/externals/harfbuzz/src/hb-subset-cff1.cc       2023-05-15 10:14:14.636166804 +0200
 @@ -402,7 +402,7 @@ struct cff_subset_plan {
    void plan_subset_encoding (const OT::cff1::accelerator_subset_t &acc, hb_subset_plan_t *plan)
    {
      const Encoding *encoding = acc.encoding;
 -    unsigned int  size0, size1, supp_size;
-+    unsigned int size0, size1;
++    unsigned int  size0, size1;
      hb_codepoint_t  code, last_code = CFF_UNDEF_CODE;
      hb_vector_t<hb_codepoint_t> supp_codes;
  
