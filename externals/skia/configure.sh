@@ -44,6 +44,6 @@ if [ -d $SRCLOC/patches ]; then
 	do
 		read  -rd '' PATCH <<< "$PATCH"
 		echo "Applying "`basename $PATCH`
-		patch --strip=1 --directory=$SRCLOC/upstream.patched/ --input=$PATCH
+		patch -l --strip=1 --directory=$SRCLOC/upstream.patched/ --input=$PATCH
 	done
 fi
