@@ -1,7 +1,5 @@
-diff --git a/src/hb-subset-cff1.cc b/src/hb-subset-cff1.cc
-index df322f845..28bf3c316 100644
---- a/src/hb-subset-cff1.cc
-+++ b/src/hb-subset-cff1.cc
+--- upstream.patched/third_party/externals/harfbuzz/src/hb-subset-cff1.cc 
++++ upstream.patched/third_party/externals/harfbuzz/src/hb-subset-cff1.cc 
 @@ -402,7 +402,7 @@ struct cff_subset_plan {
    void plan_subset_encoding (const OT::cff1::accelerator_subset_t &acc, hb_subset_plan_t *plan)
    {
