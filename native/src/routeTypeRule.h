@@ -30,6 +30,9 @@ struct RouteTypeRule {
 	const static int LANES = 8;
 	const static int TUNNEL = 9;
 
+	const static int PROFILE_NONE = 0;
+	const static int PROFILE_TRUCK = 1000;
+
    private:
 	std::string t;
 	std::string v;
@@ -102,7 +105,7 @@ struct RouteTypeRule {
 		return 0;
 	}
 
-	float maxSpeed();
+	float maxSpeed(int profile);
 
 	const uint32_t conditionalValue(const tm& dateTime);
 

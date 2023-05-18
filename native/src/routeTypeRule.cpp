@@ -15,8 +15,8 @@ const uint32_t RouteTypeRule::conditionalValue(const tm& dateTime) {
 	return 0;
 }
 
-float RouteTypeRule::maxSpeed() {
-	if (type == MAXSPEED) {
+float RouteTypeRule::maxSpeed(int profile) {
+	if (type == MAXSPEED + profile) {
 		return floatValue;
 	}
 	return -1;
@@ -62,17 +62,14 @@ void RouteTypeRule::analyze() {
 				conditions.push_back(cond);
 			}
 		}
-	} else if (tl == "maxspeed" && !v.empty()) {
-		type = MAXSPEED;
+	} else if (startsWith(tl, "maxspeed") && !v.empty()) {
+		forward = endsWith(tl, ":forward") ? 1 : endsWith(tl, ":backward") ? -1 : 0;
 		floatValue = parseSpeed(v, 0);
-	} else if (tl == "maxspeed:forward" && !v.empty()) {
-		type = MAXSPEED;
-		forward = 1;
-		floatValue = parseSpeed(v, 0);
-	} else if (tl == "maxspeed:backward" && !v.empty()) {
-		type = MAXSPEED;
-		forward = -1;
-		floatValue = parseSpeed(v, 0);
+		if (tl == "maxspeed") {
+			type = MAXSPEED;
+		} else if (tl == "maxspeed:hgv") {
+			type = MAXSPEED + PROFILE_TRUCK;
+		}
 	} else if (startsWith(t, "access") && !v.empty()) {
 		type = ACCESS;
 	} else if (tl == "lanes" && !v.empty()) {
