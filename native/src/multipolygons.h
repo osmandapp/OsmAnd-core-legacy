@@ -22,6 +22,8 @@ bool calculateLineCoordinates(bool inside, int x, int y, bool pinside, int px, i
 void combineMultipolygonLine(std::vector<coordinates>& completedRings, std::vector<coordinates>& incompletedRings,
 							 coordinates& coordinates);
 
+bool closeIncompletedRing(coordinates& incompletedRing, int leftX, int rightX, int bottomY, int topY, int evalDelta);
+
 bool unifyIncompletedRings(std::vector<std::vector<int_pair> >& incompletedRings,
 						   std::vector<std::vector<int_pair> >& completedRings, int leftX, int rightX, int bottomY,
 						   int topY, int64_t dbId, int zoom);
