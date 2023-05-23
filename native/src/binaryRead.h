@@ -532,26 +532,21 @@ struct RouteDataObject {
 	}
 
 	float getMaximumSpeed(bool direction) {
-		auto sz = types.size();
-		float maxSpeed = 0;
-		for (int i = 0; i < sz; i++) {
-			auto& r = region->quickGetEncodingRule(types[i]);
-			float mx = r.maxSpeed();
-			if (mx > 0) {
-				if (r.isForward() != 0) {
-					if ((r.isForward() == 1) != direction) {
-						continue;
-					} else {
-						// priority over default
-						maxSpeed = mx;
-						break;
-					}
-				} else {
-					maxSpeed = mx;
-				}
+		return getMaximumSpeed(direction, RouteTypeRule::PROFILE_NONE);
+	}
+
+	float getMaximumSpeed(bool direction, int profile) {
+		float maxSpeed = 0, maxProfileSpeed = 0;
+		for (int type : types) {
+			RouteTypeRule r = region->quickGetEncodingRule(type);
+			bool forwardDirection = r.isForward() >= 0;
+			if (forwardDirection == direction) {
+				// priority over default
+				maxSpeed = r.maxSpeed(RouteTypeRule::PROFILE_NONE) > 0 ? r.maxSpeed(RouteTypeRule::PROFILE_NONE) : maxSpeed;
+				maxProfileSpeed = r.maxSpeed(profile) > 0 ? r.maxSpeed(profile) : maxProfileSpeed;
 			}
 		}
-		return maxSpeed;
+		return maxProfileSpeed > 0 ? maxProfileSpeed : maxSpeed;
 	}
 
 	double directionRoute(int startPoint, bool plus) {
