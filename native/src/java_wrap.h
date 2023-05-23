@@ -4,6 +4,7 @@
 #include "Logging.h"
 #include "binaryRead.h"
 #include "commonRendering.h"
+#include "generalRouter.h"
 #include "jni.h"
 
 struct ResultJNIPublisher : ResultPublisher {
@@ -103,6 +104,7 @@ std::string getStringMethod(JNIEnv* env, jobject o, jmethodID fid, int i) {
 	return s;
 }
 jobject convertTransportRouteToJava(JNIEnv* ienv, SHARED_PTR<TransportRoute>& route);
+RouteAttributeExpression convertExpressionFromJava(JNIEnv* ienv, jobject jExpression);
 
 void clearDirectionPointFromRouteResult(SHARED_PTR<RouteSegmentResult> r );
 

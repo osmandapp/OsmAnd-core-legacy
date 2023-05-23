@@ -550,6 +550,7 @@ jmethodID jmethod_RouteAttributeEvalRule_getTagValueCondDefValue = NULL;
 jmethodID jmethod_RouteAttributeEvalRule_getTagValueCondDefTag = NULL;
 jmethodID jmethod_RouteAttributeEvalRule_getParameters = NULL;
 jmethodID jmethod_RouteAttributeEvalRule_getExpressions = NULL;
+jfieldID jfield_RouteAttributeEvalRule_selectExpression = NULL;
 
 jclass jclass_RouteAttributeExpression = NULL;
 jfieldID jfield_RouteAttributeExpression_values = NULL;
@@ -992,6 +993,8 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jmethod_RouteAttributeEvalRule_getExpressions =
 		env->GetMethodID(jclass_RouteAttributeEvalRule, "getExpressions",
 						 "()[Lnet/osmand/router/GeneralRouter$RouteAttributeExpression;");
+	jfield_RouteAttributeEvalRule_selectExpression =
+		getFid(env, jclass_RouteAttributeEvalRule, "selectExpression", "Lnet/osmand/router/GeneralRouter$RouteAttributeExpression;");
 
 	jclass_RouteAttributeExpression = findGlobalClass(env, "net/osmand/router/GeneralRouter$RouteAttributeExpression");
 	jfield_RouteAttributeExpression_values =
@@ -1483,27 +1486,34 @@ void parseRouteAttributeEvalRule(JNIEnv* ienv, jobject rule, shared_ptr<RouteAtt
 	ienv->ReleaseBooleanArrayElements(tagValueDefNot, nots, 0);
 	ienv->DeleteLocalRef(tagValueDefNot);
 
-	jobjectArray expressions =
+	jobjectArray conditionExpressions =
 		(jobjectArray)ienv->CallObjectMethod(rule, jmethod_RouteAttributeEvalRule_getExpressions);
-	for (int j = 0; j < ienv->GetArrayLength(expressions); j++) {
-		jobject expr = ienv->GetObjectArrayElement(expressions, j);
-		jobjectArray jvls = (jobjectArray)ienv->GetObjectField(expr, jfield_RouteAttributeExpression_values);
-		vector<string> values = convertJArrayToStrings(ienv, jvls);
-		ienv->DeleteLocalRef(jvls);
-		int expressionType = ienv->GetIntField(expr, jfield_RouteAttributeExpression_expressionType);
-
-		jstring jvalueType = (jstring)ienv->GetObjectField(expr, jfield_RouteAttributeExpression_valueType);
-		string valueType;
-		if (jvalueType) {
-			valueType = getString(ienv, jvalueType);
-			ienv->DeleteLocalRef(jvalueType);
-		}
-
-		RouteAttributeExpression e(values, expressionType, valueType);
-		erule->registerExpression(e);
-		ienv->DeleteLocalRef(expr);
+	for (int j = 0; j < ienv->GetArrayLength(conditionExpressions); j++) {
+		jobject jconditionExpr = ienv->GetObjectArrayElement(conditionExpressions, j);
+		RouteAttributeExpression expr = convertExpressionFromJava(ienv, jconditionExpr);
+		erule->registerExpression(expr);
+		ienv->DeleteLocalRef(jconditionExpr);
 	}
-	ienv->DeleteLocalRef(expressions);
+	ienv->DeleteLocalRef(conditionExpressions);
+	jobject jselectExpr = ienv->GetObjectField(rule, jfield_RouteAttributeEvalRule_selectExpression);
+	if (jselectExpr) {
+		erule->selectExpression = convertExpressionFromJava(ienv, jselectExpr);
+	}
+	ienv->DeleteLocalRef(jselectExpr);
+}
+
+RouteAttributeExpression convertExpressionFromJava(JNIEnv* ienv, jobject jExpression){
+	jobjectArray jvls = (jobjectArray)ienv->GetObjectField(jExpression, jfield_RouteAttributeExpression_values);
+	vector<string> values = convertJArrayToStrings(ienv, jvls);
+	ienv->DeleteLocalRef(jvls);
+	int expressionType = ienv->GetIntField(jExpression, jfield_RouteAttributeExpression_expressionType);
+	jstring jvalueType = (jstring)ienv->GetObjectField(jExpression, jfield_RouteAttributeExpression_valueType);
+	string valueType;
+	if (jvalueType) {
+		valueType = getString(ienv, jvalueType);
+		ienv->DeleteLocalRef(jvalueType);
+	}
+	return RouteAttributeExpression(values, expressionType, valueType);
 }
 
 void parseRouteConfiguration(JNIEnv* ienv, SHARED_PTR<RoutingConfiguration> rConfig, jobject jRouteConfig) {
