@@ -132,7 +132,7 @@ public:
     SHARED_PTR<RoutingConfiguration> build(string router, float direction, long memoryLimitMB, MAP_STR_STR& params) {
         string derivedProfile;
         if (routers.find(router) == routers.end()) {
-            for (auto r : routers) {
+            for (const auto& r : routers) {
                 string derivedProfiles = r.second->getAttribute("derivedProfiles");
                 if (!derivedProfiles.empty() && derivedProfiles.find(router) != std::string::npos) {
                     derivedProfile = router;
@@ -188,7 +188,10 @@ public:
     }
     
     SHARED_PTR<GeneralRouter> getRouter(string applicationMode) {
-        return routers[applicationMode];
+        const auto it = routers.find(applicationMode);
+        if (it == routers.end())
+            return nullptr;
+        return it->second;
     }
     
     void addRouter(string name, SHARED_PTR<GeneralRouter> router) {

@@ -25,16 +25,7 @@ mkdir -p "$SRCLOC/upstream.original"
 
 # Patch
 cp -rf $SRCLOC/upstream.original $SRCLOC/upstream.patched
-if [ -d $SRCLOC/patches ]; then
-	echo "Patching..."
-	PATCHES=`ls -1 $SRCLOC/patches/*.patch | sort`
-	for PATCH in $PATCHES
-	do
-		read  -rd '' PATCH <<< "$PATCH"
-		echo "Applying "`basename $PATCH`
-		patch --strip=1 --directory=$SRCLOC/upstream.patched/ --input=$PATCH
-	done
-fi
+
 
 # sync deps
 cd $SRCLOC/upstream.patched/tools
@@ -45,4 +36,14 @@ VERSION_HARFBUZZ="b37f03f" #2.8.1
 	git checkout $VERSION_HARFBUZZ)
 	
 #Patch jerror.c after git sync, before it is not available
-patch $SRCLOC/upstream.patched/third_party/externals/libjpeg-turbo/jerror.c $SRCLOC/patches/12-libjpeg-jerror.after_git_sync_patch
+#patch $SRCLOC/upstream.patched/third_party/externals/libjpeg-turbo/jerror.c $SRCLOC/patches/12-libjpeg-jerror.after_git_sync_patch
+if [ -d $SRCLOC/patches ]; then
+	echo "Patching..."
+	PATCHES=`ls -1 $SRCLOC/patches/*.patch | sort`
+	for PATCH in $PATCHES
+	do
+		read  -rd '' PATCH <<< "$PATCH"
+		echo "Applying "`basename $PATCH`
+		patch -l --strip=1 --directory=$SRCLOC/upstream.patched/ --input=$PATCH
+	done
+fi
