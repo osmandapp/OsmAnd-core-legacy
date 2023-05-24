@@ -130,16 +130,19 @@ struct RouteAttributeExpression {
 	static const int LESS_EXPRESSION;
 	static const int GREAT_EXPRESSION;
 	static const int EQUAL_EXPRESSION;
+	static const int MIN_EXPRESSION;
+	static const int MAX_EXPRESSION;
 
 	vector<string> values;
 	int expressionType;
 	string valueType;
 	vector<double> cacheValues;
 
+	RouteAttributeExpression(): expressionType(0){};
 	RouteAttributeExpression(vector<string>& vls, int type, string vType);
 
 	bool matches(dynbitset& types, ParameterContext& paramContext, GeneralRouter* router);
-
+	double calculateExprValue(dynbitset& types, ParameterContext& paramContext, GeneralRouter* router);
 	double calculateExprValue(int id, dynbitset& types, ParameterContext& paramContext, GeneralRouter* router);
 };
 
@@ -156,7 +159,7 @@ class RouteAttributeEvalRule {
 
 	UNORDERED(set)<string> onlyTags;
 	UNORDERED(set)<string> onlyNotTags;
-	vector<RouteAttributeExpression> expressions;
+	vector<RouteAttributeExpression> conditionExpressions;
 
 	vector<string> tagValueCondDefValue;
 	vector<string> tagValueCondDefTag;
@@ -175,6 +178,7 @@ class RouteAttributeEvalRule {
 	void printRule(GeneralRouter* r);
 
    public:
+	RouteAttributeExpression selectExpression;
 	RouteAttributeEvalRule() : selectValue(0), selectValueDef(""), selectType("") {
 	}
 
@@ -190,7 +194,7 @@ class RouteAttributeEvalRule {
 	void registerSelectValue(string selectValue, string selectType);
 
 	void registerExpression(RouteAttributeExpression& expression) {
-		expressions.push_back(expression);
+		conditionExpressions.push_back(expression);
 	}
 
 	void registerLessCondition(string value1, string value2, string valueType) {
@@ -209,6 +213,18 @@ class RouteAttributeEvalRule {
 		vector<string> vls{value1, value2};
 		RouteAttributeExpression exp(vls, RouteAttributeExpression::EQUAL_EXPRESSION, valueType);
 		registerExpression(exp);
+	}
+
+	void registerMinExpression(string value1, string value2, string valueType) {
+		vector<string> vls{value1, value2};
+		RouteAttributeExpression exp(vls, RouteAttributeExpression::MIN_EXPRESSION, valueType);
+		selectExpression = exp;
+	}
+
+	void registerMaxExpression(string value1, string value2, string valueType) {
+		vector<string> vls{value1, value2};
+		RouteAttributeExpression exp(vls, RouteAttributeExpression::MAX_EXPRESSION, valueType);
+		selectExpression = exp;
 	}
 };
 

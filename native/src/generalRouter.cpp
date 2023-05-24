@@ -12,6 +12,9 @@
 const int RouteAttributeExpression::LESS_EXPRESSION = 1;
 const int RouteAttributeExpression::GREAT_EXPRESSION = 2;
 const int RouteAttributeExpression::EQUAL_EXPRESSION = 3;
+const int RouteAttributeExpression::MIN_EXPRESSION = 4;
+const int RouteAttributeExpression::MAX_EXPRESSION = 5;
+
 
 const double GeneralRouterConstants::CAR_SHORTEST_DEFAULT_SPEED = 55 / 3.6f;
 const double GeneralRouterConstants::BICYCLE_SHORTEST_DEFAULT_SPEED = 15 / 3.6f;
@@ -248,8 +251,11 @@ void RouteAttributeEvalRule::printRule(GeneralRouter* r) {
 		s << " not match tag = ";
 		toStr(s, onlyNotTags);
 	}
-	if (expressions.size() > 0) {
-		s << " subexpressions " << expressions.size();
+	if (conditionExpressions.size() > 0) {
+		s << " conditionExpressions " << conditionExpressions.size();
+	}
+	if (selectExpression.expressionType != 0) {
+		s << " selectexpression " << selectExpression.expressionType;
 	}
 	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "%s", s.str().c_str());
 }
@@ -277,7 +283,8 @@ RouteAttributeEvalRule::RouteAttributeEvalRule(SHARED_PTR<RouteAttributeEvalRule
 
 	onlyTags = original->onlyTags;
 	onlyNotTags = original->onlyNotTags;
-	expressions = original->expressions;
+	selectExpression = original->selectExpression;
+	conditionExpressions = original->conditionExpressions;
 
 	tagValueCondDefValue = original->tagValueCondDefValue;
 	tagValueCondDefTag = original->tagValueCondDefTag;
@@ -637,6 +644,9 @@ double RouteAttributeEvalRule::eval(dynbitset& types, ParameterContext& paramCon
 
 double RouteAttributeEvalRule::calcSelectValue(dynbitset& types, ParameterContext& paramContext,
 											   GeneralRouter* router) {
+	if (selectExpression.expressionType != 0) {
+		selectValue = selectExpression.calculateExprValue(types, paramContext, router);
+	}
 	if (selectValue != DOUBLE_MISSING) {
 		return selectValue;
 	}
@@ -669,7 +679,6 @@ bool RouteAttributeExpression::matches(dynbitset& types, ParameterContext& param
 	if (f1 == DOUBLE_MISSING || f2 == DOUBLE_MISSING) {
 		return false;
 	}
-
 	if (expressionType == LESS_EXPRESSION) {
 		return f1 <= f2;
 	} else if (expressionType == GREAT_EXPRESSION) {
@@ -678,6 +687,20 @@ bool RouteAttributeExpression::matches(dynbitset& types, ParameterContext& param
 		return f1 == f2;
 	}
 	return false;
+}
+
+double RouteAttributeExpression::calculateExprValue(dynbitset& types, ParameterContext& paramContext, GeneralRouter* router) {
+	double f1 = calculateExprValue(0, types, paramContext, router);
+	double f2 = calculateExprValue(1, types, paramContext, router);
+	if (f1 != DOUBLE_MISSING && f2 != DOUBLE_MISSING) {
+		switch (expressionType) {
+			case MIN_EXPRESSION:
+				return min(f1, f2);
+			case MAX_EXPRESSION:
+				return max(f1, f2);
+		}
+	}
+	return DOUBLE_MISSING;
 }
 
 double RouteAttributeExpression::calculateExprValue(int id, dynbitset& types, ParameterContext& paramContext,
@@ -732,8 +755,8 @@ bool RouteAttributeEvalRule::matches(dynbitset& types, ParameterContext& paramCo
 }
 
 bool RouteAttributeEvalRule::checkExpressions(dynbitset& types, ParameterContext& paramContext, GeneralRouter* router) {
-	for (uint i = 0; i < expressions.size(); i++) {
-		if (!expressions[i].matches(types, paramContext, router)) {
+	for (uint i = 0; i < conditionExpressions.size(); i++) {
+		if (!conditionExpressions[i].matches(types, paramContext, router)) {
 			return false;
 		}
 	}
