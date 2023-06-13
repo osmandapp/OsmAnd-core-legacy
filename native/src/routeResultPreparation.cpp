@@ -1825,6 +1825,27 @@ void combineWayPointsForAreaRouting(RoutingContext* ctx, vector<SHARED_PTR<Route
 	}
 }
 
+void avoidKeepForThroughMoving(vector<SHARED_PTR<RouteSegmentResult> >& result) {
+    for (int i = 1; i < result.size(); i++) {
+        auto & curr = result[i];
+        auto & turnType = curr->turnType;
+        if (!turnType) {
+            continue;
+        }
+        if (!turnType->keepLeft() && !turnType->keepRight()) {
+            continue;
+        }
+        int tt = TurnType::C;
+        int cnt = turnType->countTurnTypeDirections(tt, true);
+        int cntAll = turnType->countTurnTypeDirections(tt, false);
+        if(cnt > 0 && cnt == cntAll) {
+            curr->turnType = std::make_shared<TurnType>(tt, turnType->getExitOut(), turnType->getTurnAngle(),
+                                                          turnType->isSkipToSpeak(), turnType->getLanes(),
+                                                          turnType->isPossibleLeftTurn(), turnType->isPossibleRightTurn());
+        }
+    }
+}
+
 void prepareTurnResults(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResult> >& result) {
     for (int i = 0; i < result.size(); i ++) {
         const auto& turnType = getTurnInfo(result, i, ctx->leftSideNavigation);
@@ -1834,6 +1855,7 @@ void prepareTurnResults(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResul
     determineTurnsToMerge(ctx->leftSideNavigation, result);
     ignorePrecedingStraightsOnSameIntersection(ctx->leftSideNavigation, result);
     justifyUTurns(ctx->leftSideNavigation, result);
+    avoidKeepForThroughMoving(result);
     addTurnInfoDescriptions(result);
 }
 

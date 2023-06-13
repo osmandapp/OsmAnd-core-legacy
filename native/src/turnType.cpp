@@ -150,6 +150,35 @@ string TurnType::toString(vector<int>& lns) {
 	return s;
 }
 
+int TurnType::countTurnTypeDirections(int type, bool onlyActive) {
+    int cnt = 0;
+    for (int h = 0; h < lanes.size(); h++) {
+        bool active = lanes[h] % 2 == 1;
+        if (onlyActive && !active) {
+            continue;
+        }
+        int primary = getPrimaryTurn(lanes[h]);
+        if (primary == 0) {
+            primary = C;
+        }
+        if (primary == type) {
+            cnt++;
+        }
+        if (onlyActive) {
+            continue;
+        }
+        int secondary = getSecondaryTurn(lanes[h]);
+        if (secondary == type) {
+            cnt++;
+        }
+        int tertiary = getTertiaryTurn(lanes[h]);
+        if (tertiary == type) {
+            cnt++;
+        }
+    }
+    return cnt;
+}
+
 string TurnType::toString() {
 	string vl;
 	if (isRoundAbout()) {

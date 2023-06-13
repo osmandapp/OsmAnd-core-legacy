@@ -34,6 +34,17 @@ public:
     TurnType(int vl) : value(vl), exitOut(0), turnAngle(0), skipToSpeak(false), possiblyLeftTurn(false), possiblyRightTurn(false) {
     }
     
+    TurnType(int value, int exitOut, float turnAngle, bool skipToSpeak, vector<int> lanes, bool possiblyLeftTurn, bool possiblyRightTurn)
+    : value(value)
+    , exitOut(exitOut)
+    , turnAngle(turnAngle)
+    , skipToSpeak(skipToSpeak)
+    , lanes(lanes)
+    , possiblyLeftTurn(possiblyLeftTurn)
+    , possiblyRightTurn(possiblyRightTurn)
+    {
+    }
+    
     static TurnType valueOf(int vs, bool leftSide);
     static TurnType straight();
     static SHARED_PTR<TurnType> ptrValueOf(int vs, bool leftSide);
@@ -237,6 +248,8 @@ public:
     static bool hasAnyTurnLane(int type, int turn) {
         return getPrimaryTurn(type) == turn || getSecondaryTurn(type) == turn || getTertiaryTurn(type) == turn;
     }
+    
+    int countTurnTypeDirections(int type, bool onlyActive);
 };
 
 #endif /*_OSMAND_TURN_TYPE_H*/
