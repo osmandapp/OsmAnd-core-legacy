@@ -607,6 +607,7 @@ jfieldID jfield_RouteDataObject_pointNames = NULL;
 jfieldID jfield_RouteDataObject_pointNameTypes = NULL;
 jfieldID jfield_RouteDataObject_id = NULL;
 jmethodID jmethod_RouteDataObject_init = NULL;
+jmethodID jmethod_RouteDataObject_setRestriction = NULL;
 
 jclass jclass_NativeRouteSearchResult = NULL;
 jmethodID jmethod_NativeRouteSearchResult_init = NULL;
@@ -1072,6 +1073,8 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jmethod_RouteDataObject_init =
 		env->GetMethodID(jclass_RouteDataObject, "<init>",
 						 "(Lnet/osmand/binary/BinaryMapRouteReaderAdapter$RouteRegion;[I[Ljava/lang/String;)V");
+	jmethod_RouteDataObject_setRestriction =
+		env->GetMethodID(jclass_RouteDataObject, "setRestriction", "(IJIJ)V");
 
 	jclass_RouteRegion = findGlobalClass(env, "net/osmand/binary/BinaryMapRouteReaderAdapter$RouteRegion");
 	jfield_RouteRegion_length = getFid(env, jclass_RouteRegion, "length", "I");
@@ -1219,11 +1222,12 @@ jobject convertRouteDataObjectToJava(JNIEnv* ienv, RouteDataObject* route, jobje
 	ienv->DeleteLocalRef(pointsY);
 
 	jlongArray restrictions = ienv->NewLongArray(route->restrictions.size());
-	if (route->restrictions.size() > 0) {
-		ienv->SetLongArrayRegion(restrictions, 0, route->restrictions.size(), (jlong*)&route->restrictions[0]);
-	}
 	ienv->SetObjectField(robj, jfield_RouteDataObject_restrictions, restrictions);
 	ienv->DeleteLocalRef(restrictions);
+	for (int i = 0; i < route->restrictions.size(); i++) {
+		RestrictionInfo r = route->restrictions[i];
+		ienv->CallVoidMethod(robj, jmethod_RouteDataObject_setRestriction, i, r.to, r.type, r.via);
+	}	
 
 	jobjectArray pointTypes = ienv->NewObjectArray(route->pointTypes.size(), jclassIntArray, NULL);
 	for (uint k = 0; k < route->pointTypes.size(); k++) {
