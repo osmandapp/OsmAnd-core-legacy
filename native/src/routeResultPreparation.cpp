@@ -316,6 +316,31 @@ void calculateTimeSpeed(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResul
     }
 }
 
+void recalculateTimeDistance(vector<SHARED_PTR<RouteSegmentResult>> &result) {
+    for (int i = 0; i < result.size(); ++i) {
+        SHARED_PTR<RouteSegmentResult> &rr = result[i];
+        SHARED_PTR<RouteDataObject> &road = rr->object;
+        double distOnRoadToPass = 0.0;
+        double speed = (double) rr->segmentSpeed;
+        if (speed != 0.0) {
+            bool plus = rr->getStartPointIndex() < rr->getEndPointIndex();
+            double distance = 0.0;
+
+            int next;
+            for (int j = rr->getStartPointIndex(); j != rr->getEndPointIndex(); j = next) {
+                next = plus ? j + 1 : j - 1;
+                double d = measuredDist31(road->pointsX[j], road->pointsY[j], road->pointsX[next], road->pointsY[next]);
+                distance += d;
+                distOnRoadToPass += d / speed;
+            }
+
+            rr->segmentTime = (float) distOnRoadToPass;
+            rr->segmentSpeed = (float) speed;
+            rr->distance = (float) distance;
+        }
+    }
+}
+
 SHARED_PTR<TurnType> processRoundaboutTurn(vector<SHARED_PTR<RouteSegmentResult> >& result, int i, bool leftSide, SHARED_PTR<RouteSegmentResult>& prev, SHARED_PTR<RouteSegmentResult>& rr) {
     int exit = 1;
     auto last = rr;
