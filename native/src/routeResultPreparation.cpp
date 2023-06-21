@@ -409,7 +409,166 @@ bool setAllowedLanes(int mainTurnType, vector<int>& lanesArray) {
     return turnSet;
 }
 
-vector<int> getTurnLanesInfo(SHARED_PTR<RouteSegmentResult>& prevSegm, int mainTurnType) {
+int countLanesMinOne(SHARED_PTR<RouteSegmentResult>& attached) {
+    bool oneway = attached->object->getOneway() != 0;
+    int lns = attached->object->getLanes();
+    if (lns == 0) {
+        string tls = getTurnLanesString(attached);
+        if (tls != "") {
+            return max(1, countOccurrences(tls, '|'));
+        }
+    }
+    if (oneway) {
+        return max(1, lns);
+    }
+    if (attached->isForwardDirection() && attached->object->getValue("lanes:forward") != "") {
+        int val = -1;
+        if (sscanf(attached->object->getValue("lanes:forward").c_str(), "%d", &val) != EOF) {
+            return val;
+        }
+    } else if (!attached->isForwardDirection() && attached->object->getValue("lanes:backward") != "") {
+        int val = -1;
+        if (sscanf(attached->object->getValue("lanes:backward").c_str(), "%d", &val) != EOF) {
+            return val;
+        }
+    }
+    return max(1, (lns + 1) / 2);
+}
+
+RoadSplitStructure calculateRoadSplitStructure(SHARED_PTR<RouteSegmentResult>& prevSegm,
+                                               SHARED_PTR<RouteSegmentResult>& currentSegm,
+                                               vector<SHARED_PTR<RouteSegmentResult>>& attachedRoutes,
+                                               string turnLanesPrevSegm) {
+    RoadSplitStructure rs;
+    int speakPriority = max(highwaySpeakPriority(prevSegm->object->getHighway()),
+                            highwaySpeakPriority(currentSegm->object->getHighway()));
+    double currentAngle = normalizeDegrees360(currentSegm->getBearingBegin());
+    double prevAngle =  normalizeDegrees360(prevSegm->getBearingBegin() - 180);
+    bool hasSharpOrReverseLane = hasSharpOrReverseTurnLane(turnLanesPrevSegm);
+    bool isSameTurnLanes = hasSameTurnLanes(prevSegm, currentSegm);
+    for (auto attached : attachedRoutes) {
+        bool restricted = false;
+        for (int k = 0; k < prevSegm->object->getRestrictionLength(); k++) {
+            if (prevSegm->object->getRestrictionId(k) == attached->object->getId() &&
+                prevSegm->object->getRestrictionType(k) <= RESTRICTION_NO_STRAIGHT_ON) {
+                restricted = true;
+                break;
+            }
+        }
+        if (restricted) {
+            continue;
+        }
+        double ex = degreesDiff(attached->getBearingBegin(), currentSegm->getBearingBegin());
+        double mpi = abs(degreesDiff(prevSegm->getBearingEnd(), attached->getBearingBegin()));
+        int rsSpeakPriority = highwaySpeakPriority(attached->object->getHighway());
+        int lanes = countLanesMinOne(attached);
+        const auto& turnLanesAttachedRoad = parseTurnLanes(attached->object, attached->getBearingBegin() * M_PI / 180);
+        bool smallStraightVariation = mpi < TURN_DEGREE_MIN;
+        bool smallTargetVariation = abs(ex) < TURN_DEGREE_MIN;
+        bool attachedOnTheRight = ex >= 0;
+        bool verySharpTurn = abs(ex) > 150;
+
+        if (!verySharpTurn || hasSharpOrReverseLane) {
+            double attachedAngle = normalizeDegrees360(attached->getBearingBegin());
+            bool rightSide;
+            if (prevAngle > currentAngle) {
+                // left side angle range contains 0 degree transition
+                rightSide = attachedAngle > currentAngle && attachedAngle < prevAngle;
+            } else {
+                // right side angle range contains 0 degree transition
+                bool leftSide = attachedAngle > prevAngle && attachedAngle < currentAngle;
+                rightSide = !leftSide;
+            }
+            
+            //check if need ignore right or left attached road
+            if (isSameTurnLanes && !smallTargetVariation && !smallStraightVariation) {
+                if (rightSide && !hasTurn(turnLanesPrevSegm, TurnType::TR)) {
+                    //restricted
+                    continue;
+                } else if (!hasTurn(turnLanesPrevSegm, TurnType::TL)) {
+                    //restricted
+                    continue;
+                }
+            }
+            
+            if (rightSide) {
+                rs.roadsOnRight++;
+            } else {
+                rs.roadsOnLeft++;
+            }
+        }
+        
+        if (!turnLanesPrevSegm.empty() || rsSpeakPriority != MAX_SPEAK_PRIORITY ||
+            speakPriority == MAX_SPEAK_PRIORITY) {
+            if (smallTargetVariation || smallStraightVariation) {
+                if (attachedOnTheRight) {
+                    rs.keepLeft = true;
+                    rs.rightLanes += lanes;
+                    if (!turnLanesAttachedRoad.empty()) {
+                        rs.rightLanesInfo.push_back(turnLanesAttachedRoad);
+                    }
+                } else {
+                    rs.keepRight = true;
+                    rs.leftLanes += lanes;
+                    if (!turnLanesAttachedRoad.empty()) {
+                        rs.leftLanesInfo.push_back(turnLanesAttachedRoad);
+                    }
+                }
+                rs.speak = rs.speak || rsSpeakPriority <= speakPriority;
+            } else {
+                if (attachedOnTheRight) {
+                    rs.addRoadsOnRight++;
+                } else {
+                    rs.addRoadsOnLeft++;
+                }
+            }
+        }
+    }
+    return rs;
+}
+
+std::pair<int, int> findActiveIndex(SHARED_PTR<RouteSegmentResult> prevSegm, SHARED_PTR<RouteSegmentResult> currentSegm, vector<int> rawLanes, SHARED_PTR<RoadSplitStructure> rs) {
+    pair<int, int> pair(-1 ,-1);
+    string turnLanes = getTurnLanesString(prevSegm);
+    if (turnLanes.empty()) {
+        return pair;
+    }
+    if (!rs) {
+        std::vector<SHARED_PTR<RouteSegmentResult>> attachedRoutes = currentSegm->getAttachedRoutes(currentSegm->getStartPointIndex());
+        if(attachedRoutes.size() > 0) {
+            rs = std::make_shared<RoadSplitStructure>(calculateRoadSplitStructure(prevSegm, currentSegm, attachedRoutes, turnLanes));
+        }
+    }
+    if (!rs) {
+        return pair;
+    }
+    vector<int> directions = getUniqTurnTypes(turnLanes);
+    if (rs->roadsOnLeft + rs->roadsOnRight < directions.size()) {
+        int startDirection = directions[rs->roadsOnLeft];
+        int endDirection = directions[directions.size() - rs->roadsOnRight - 1];
+        for (int i = 0; i < rawLanes.size(); i++) {
+            int p = TurnType::getPrimaryTurn(rawLanes[i]);
+            int s = TurnType::getSecondaryTurn(rawLanes[i]);
+            int t = TurnType::getTertiaryTurn(rawLanes[i]);
+            if (p == startDirection || s == startDirection || t == startDirection) {
+                pair.first = i;
+                break;
+            }
+        }
+        for (int i = (int)rawLanes.size() - 1; i >= 0; i--) {
+            int p = TurnType::getPrimaryTurn(rawLanes[i]);
+            int s = TurnType::getSecondaryTurn(rawLanes[i]);
+            int t = TurnType::getTertiaryTurn(rawLanes[i]);
+            if (p == endDirection || s == endDirection || t == endDirection) {
+                pair.second = i;
+                break;
+            }
+        }
+    }
+    return pair;
+}
+
+vector<int> getTurnLanesInfo(SHARED_PTR<RouteSegmentResult>& prevSegm, SHARED_PTR<RouteSegmentResult>& currentSegm, int mainTurnType) {
     string turnLanes = getTurnLanesString(prevSegm);
     vector<int> lanesArray;
     if (turnLanes.empty()) {
@@ -431,8 +590,23 @@ vector<int> getTurnLanesInfo(SHARED_PTR<RouteSegmentResult>& prevSegm, int mainT
     } else {
         lanesArray = calculateRawTurnLanes(turnLanes, mainTurnType);
     }
-    // Manually set the allowed lanes.
-    bool isSet = setAllowedLanes(mainTurnType, lanesArray);
+    bool isSet = false;
+    std::pair act = findActiveIndex(prevSegm, currentSegm, lanesArray, nullptr);
+    int startIndex = act.first;
+    int endIndex = act.second;
+    if (startIndex != -1 && endIndex != -1) {
+        if (hasAllowedLanes(mainTurnType, lanesArray, startIndex, endIndex)) {
+            for (int k = startIndex; k <= endIndex; k++) {
+                lanesArray[k] |= 1;
+                TurnType::getPrimaryTurn(lanesArray[k]);
+            }
+            isSet = true;
+        }
+    }
+    if (!isSet) {
+        // Manually set the allowed lanes.
+        isSet = setAllowedLanes(mainTurnType, lanesArray);
+    }
     if (!isSet && lanesArray.size() > 0) {
         // In some cases (at least in the US), the rightmost lane might not have a right turn indicated as per turn:lanes,
         // but is allowed and being used here. This section adds in that indicator.  The same applies for where leftSide is true.
@@ -519,32 +693,6 @@ int countOccurrences(const string& haystack, char needle) {
     return count;
 }
 
-int countLanesMinOne(SHARED_PTR<RouteSegmentResult>& attached) {
-    bool oneway = attached->object->getOneway() != 0;
-    int lns = attached->object->getLanes();
-    if (lns == 0) {
-        string tls = getTurnLanesString(attached);
-        if (tls != "") {
-            return max(1, countOccurrences(tls, '|'));
-        }
-    }
-    if (oneway) {
-        return max(1, lns);
-    }
-    if (attached->isForwardDirection() && attached->object->getValue("lanes:forward") != "") {
-        int val = -1;
-        if (sscanf(attached->object->getValue("lanes:forward").c_str(), "%d", &val) != EOF) {
-            return val;
-        }
-    } else if (!attached->isForwardDirection() && attached->object->getValue("lanes:backward") != "") {
-        int val = -1;
-        if (sscanf(attached->object->getValue("lanes:backward").c_str(), "%d", &val) != EOF) {
-            return val;
-        }
-    }
-    return max(1, (lns + 1) / 2);
-}
-
 vector<int> parseTurnLanes(const SHARED_PTR<RouteDataObject>& ro, double dirToNorthEastPi) {
     string turnLanes;
     if (ro->getOneway() == 0) {
@@ -591,73 +739,6 @@ vector<int> parseLanes(const SHARED_PTR<RouteDataObject>& ro, double dirToNorthE
     return vector<int>();
 }
 
-RoadSplitStructure calculateRoadSplitStructure(SHARED_PTR<RouteSegmentResult>& prevSegm,
-											   SHARED_PTR<RouteSegmentResult>& currentSegm,
-											   vector<SHARED_PTR<RouteSegmentResult>>& attachedRoutes,
-											   string turnLanesPrevSegm) {
-	RoadSplitStructure rs;
-	int speakPriority = max(highwaySpeakPriority(prevSegm->object->getHighway()),
-							highwaySpeakPriority(currentSegm->object->getHighway()));
-	for (auto attached : attachedRoutes) {
-		bool restricted = false;
-		for (int k = 0; k < prevSegm->object->getRestrictionLength(); k++) {
-			if (prevSegm->object->getRestrictionId(k) == attached->object->getId() &&
-				prevSegm->object->getRestrictionType(k) <= RESTRICTION_NO_STRAIGHT_ON) {
-				restricted = true;
-				break;
-			}
-		}
-		if (restricted) {
-			continue;
-		}
-		double ex = degreesDiff(attached->getBearingBegin(), currentSegm->getBearingBegin());
-		double mpi = abs(degreesDiff(prevSegm->getBearingEnd(), attached->getBearingBegin()));
-		int rsSpeakPriority = highwaySpeakPriority(attached->object->getHighway());
-		int lanes = countLanesMinOne(attached);
-		const auto& turnLanesAttachedRoad = parseTurnLanes(attached->object, attached->getBearingBegin() * M_PI / 180);
-		bool smallStraightVariation = mpi < TURN_DEGREE_MIN;
-		bool smallTargetVariation = abs(ex) < TURN_DEGREE_MIN;
-		bool attachedOnTheRight = ex >= 0;
-		bool verySharpTurn = abs(ex) > 150;
-		bool prevSegmHasTU = hasTU(turnLanesPrevSegm, attachedOnTheRight);
-
-		if (!verySharpTurn && !prevSegmHasTU) {
-			if (attachedOnTheRight) {
-				rs.roadsOnRight++;
-			} else {
-				rs.roadsOnLeft++;
-			}
-		}
-
-		if (!turnLanesPrevSegm.empty() || rsSpeakPriority != MAX_SPEAK_PRIORITY ||
-			speakPriority == MAX_SPEAK_PRIORITY) {
-			if (smallTargetVariation || smallStraightVariation) {
-				if (attachedOnTheRight) {
-					rs.keepLeft = true;
-					rs.rightLanes += lanes;
-					if (!turnLanesAttachedRoad.empty()) {
-						rs.rightLanesInfo.push_back(turnLanesAttachedRoad);
-					}
-				} else {
-					rs.keepRight = true;
-					rs.leftLanes += lanes;
-					if (!turnLanesAttachedRoad.empty()) {
-						rs.leftLanesInfo.push_back(turnLanesAttachedRoad);
-					}
-				}
-				rs.speak = rs.speak || rsSpeakPriority <= speakPriority;
-			} else {
-				if (attachedOnTheRight) {
-					rs.addRoadsOnRight++;
-				} else {
-					rs.addRoadsOnLeft++;
-				}
-			}
-		}
-	}
-	return rs;
-}
-
 bool hasTU(string turnLanesPrevSegm, bool attachedOnTheRight) {
 	if (!turnLanesPrevSegm.empty()) {
 		vector<int> turns = calculateRawTurnLanes(turnLanesPrevSegm, TurnType::C);
@@ -681,51 +762,6 @@ bool foundTUturn(vector<int> turnList) {
 		}
 	}
 	return false;
-}
-
-int findActiveIndex(vector<int>& rawLanes, vector<string>& splitLaneOptions, int lanes, bool left,
-                              vector<vector<int> >& lanesInfo, int roads, int addRoads) {
-    int activeStartIndex = -1;
-    bool lookupSlightTurn = addRoads > 0;
-    set<int> addedTurns;
-    // if we have information increase number of roads per each turn direction
-    int diffTurnRoads = roads;
-    int increaseTurnRoads = 0;
-    for (auto li : lanesInfo) {
-        set<int> set;
-        if (!li.empty()) {
-            for(int k = 0; k < li.size(); k++) {
-                TurnType::collectTurnTypes(li[k], set);
-            }
-        }
-        increaseTurnRoads = max((int)set.size() - 1, 0);
-    }
-    
-    for (int i = 0; i < rawLanes.size(); i++) {
-        int ind = left ? i : (int)rawLanes.size() - i - 1;
-        if (!lookupSlightTurn || TurnType::hasAnySlightTurnLane(rawLanes[ind])) {
-            vector<string> laneTurns = split_string(splitLaneOptions[ind], ";");
-            int cnt = 0;
-            for(auto& lTurn : laneTurns) {
-                auto added = addedTurns.insert(TurnType::convertType(lTurn));
-                if (added.second) {
-                    cnt++;
-                    diffTurnRoads --;
-                }
-            }
-            lanes -= cnt;
-            //lanes--;
-            // we already found slight turn others are turn in different direction
-            lookupSlightTurn = false;
-        }
-        if (lanes < 0 || diffTurnRoads + increaseTurnRoads < 0) {
-            activeStartIndex = ind;
-            break;
-        } else if (diffTurnRoads < 0 && activeStartIndex < 0) {
-            activeStartIndex = ind;
-        }
-    }
-    return activeStartIndex;
 }
 
 SHARED_PTR<TurnType> createSimpleKeepLeftRightTurn(bool leftSide, SHARED_PTR<RouteSegmentResult>& prevSegm,
@@ -805,12 +841,10 @@ SHARED_PTR<TurnType> createKeepLeftRightTurnBasedOnTurnTypes(RoadSplitStructure&
         }
     }
     
+    std::pair act = findActiveIndex(prevSegm, currentSegm, rawLanes, std::make_shared<RoadSplitStructure>(rs));
+    int activeBeginIndex = act.first;
+    int activeEndIndex = act.second;
     if (rs.keepLeft || rs.keepRight) {
-        vector<string> splitLaneOptions = split_string(turnLanes, "|");
-        int activeBeginIndex = findActiveIndex(rawLanes, splitLaneOptions, rs.leftLanes, true,
-                                               rs.leftLanesInfo, rs.roadsOnLeft, rs.addRoadsOnLeft);
-        int activeEndIndex = findActiveIndex(rawLanes, splitLaneOptions, rs.rightLanes, false,
-                                             rs.rightLanesInfo, rs.roadsOnRight, rs.addRoadsOnRight);
         if (activeBeginIndex == -1 || activeEndIndex == -1 || activeBeginIndex > activeEndIndex) {
             // something went wrong
             return createSimpleKeepLeftRightTurn(leftSide, prevSegm, currentSegm, rs);
@@ -845,48 +879,11 @@ SHARED_PTR<TurnType> createKeepLeftRightTurnBasedOnTurnTypes(RoadSplitStructure&
 			}
         }
     } else {
-        // case for go straight and identify correct turn:lane to go straight
-        const auto possibleTurns = getPossibleTurns(rawLanes, false, false);
-        int tp = TurnType::C;
-        if (possibleTurns.size() == 1) {
-            tp = possibleTurns[0];
-        } else if (possibleTurns.size() == 3) {
-            if ((!possiblyLeftTurn || !possiblyRightTurn) && TurnType::isSlightTurn(possibleTurns[1])) {
-                tp = possibleTurns[1];
-                t = TurnType::ptrValueOf(tp, leftSide);
-                t->setSkipToSpeak(true);
-            }
-        }
-        for (int k = 0; k < rawLanes.size(); k++) {
-            int turn = TurnType::getPrimaryTurn(rawLanes[k]);
-            int sturn = TurnType::getSecondaryTurn(rawLanes[k]);
-            int tturn = TurnType::getTertiaryTurn(rawLanes[k]);
-            
-            bool active = false;
-            // some turns go through many segments (to turn right or left)
-            // so on one first segment the lane could be available and may be only 1 possible
-            // all undesired lanes will be disabled through the 2nd pass
-            if((TurnType::isRightTurn(sturn) && possiblyRightTurn) ||
-               (TurnType::isLeftTurn(sturn) && possiblyLeftTurn)) {
-                // we can't predict here whether it will be a left turn or straight on,
-                // it could be done during 2nd pass
-                TurnType::setSecondaryToPrimary(rawLanes, k);
-                active = true;
-            } else if((TurnType::isRightTurn(tturn) && possiblyRightTurn) ||
-                      (TurnType::isLeftTurn(tturn) && possiblyLeftTurn)) {
-                TurnType::setTertiaryToPrimary(rawLanes, k);
-                active = true;
-            } else if((TurnType::isRightTurn(turn) && possiblyRightTurn) ||
-                      (TurnType::isLeftTurn(turn) && possiblyLeftTurn)) {
-                active = true;
-            } else if (TurnType::isSlightTurn(turn) && !possiblyRightTurn && !possiblyLeftTurn) {
-                active = true;
-            } else if (turn == tp) {
-                active = true;
-            }
-            if (active) {
+        if (activeBeginIndex != -1 && activeEndIndex != -1) {
+            for (int k = activeBeginIndex; k <= activeEndIndex; k++) {
                 rawLanes[k] |= 1;
             }
+            t = getActiveTurnType(rawLanes, leftSide, t);
         }
     }
     
@@ -1003,7 +1000,8 @@ SHARED_PTR<TurnType> getTurnInfo(vector<SHARED_PTR<RouteSegmentResult> >& result
 			} else {
 				t = TurnType::ptrValueOf(TurnType::TU, leftSide);
 			}
-			const auto& lanes = getTurnLanesInfo(prev, t->getValue());
+			const auto& lanes = getTurnLanesInfo(prev, rr, t->getValue());
+            t = getActiveTurnType(lanes, leftSide, t);
 			t->setLanes(lanes);
 		} else if (mpi < -TURN_DEGREE_MIN) {
 			if (mpi > -TURN_DEGREE_MIN) {
@@ -1015,7 +1013,8 @@ SHARED_PTR<TurnType> getTurnInfo(vector<SHARED_PTR<RouteSegmentResult> >& result
 			} else {
 				t = TurnType::ptrValueOf(TurnType::TRU, leftSide);
 			}
-			const auto& lanes = getTurnLanesInfo(prev, t->getValue());
+			const auto& lanes = getTurnLanesInfo(prev, rr, t->getValue());
+            t = getActiveTurnType(lanes, leftSide, t);
 			t->setLanes(lanes);
 		} else {
 			t = attachKeepLeftInfoAndLanes(leftSide, prev, rr);
@@ -1875,6 +1874,127 @@ vector<SHARED_PTR<RouteSegmentResult> > prepareResult(RoutingContext* ctx, const
     auto result = convertFinalSegmentToResults(ctx, finalSegment);
     prepareResult(ctx, result);
     return result;
+}
+
+vector<int> getUniqTurnTypes(const string & turnLanes) {
+    std::set<int> tSet;
+    vector<int> uniq;
+    vector<string> splitLaneOptions = split_string(turnLanes, "|");
+    for (int i = 0; i < splitLaneOptions.size(); i++) {
+        vector<string> laneOptions = split_string(splitLaneOptions[i], ";");
+        for (int j = 0; j < laneOptions.size(); j++) {
+            int turn = TurnType::convertType(laneOptions[j]);
+            auto result = tSet.insert(turn);
+            if (result.second) {
+                uniq.push_back(turn);
+            }
+        }
+    }
+    return uniq;
+}
+
+bool hasTurn(const string & turnLanes, int turnType) {
+    if (turnLanes.empty()) {
+        return false;
+    }
+    vector<int> uniqTurnTypes = getUniqTurnTypes(turnLanes);
+    for (int lane : uniqTurnTypes) {
+        if (lane == turnType) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool hasSharpOrReverseTurnLane(const string & turnLanes) {
+    if (turnLanes.empty()) {
+        return false;
+    }
+    vector<int> uniqTurnTypes = getUniqTurnTypes(turnLanes);
+    for (int lane : uniqTurnTypes) {
+        if (TurnType::isSharpOrReverse(lane)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool hasSameTurnLanes(SHARED_PTR<RouteSegmentResult> & prevSegm, SHARED_PTR<RouteSegmentResult> & currentSegm) {
+    string turnLanesPrevSegm = getTurnLanesString(prevSegm);
+    string turnLanesCurrSegm = getTurnLanesString(currentSegm);
+    if (turnLanesPrevSegm.empty() || turnLanesCurrSegm.empty()) {
+        return false;
+    }
+    vector<int> uniqPrev = getUniqTurnTypes(turnLanesPrevSegm);
+    vector<int> uniqCurr = getUniqTurnTypes(turnLanesCurrSegm);
+    if (uniqPrev.size() != uniqCurr.size()) {
+        return false;
+    }
+    for (int i = 0; i < uniqCurr.size(); i++) {
+        if (uniqPrev[i] != uniqCurr[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool hasAllowedLanes(int mainTurnType, vector<int>& lanesArray, int startActiveIndex, int endActiveIndex) {
+    if (lanesArray.size() == 0 || startActiveIndex > endActiveIndex) {
+        return false;
+    }
+    vector<int> activeLines;
+    for (int i = startActiveIndex; i <= endActiveIndex; i++) {
+        activeLines.push_back(lanesArray[i]);
+    }
+    bool possibleSharpLeftOrUTurn = startActiveIndex == 0;
+    bool possibleSharpRightOrUTurn = endActiveIndex == lanesArray.size() - 1;
+    for (int i = 0; i < activeLines.size(); i++) {
+        int turnType = TurnType::getPrimaryTurn(activeLines[i]);
+        if (turnType == mainTurnType) {
+            return true;
+        }
+        if (TurnType::isLeftTurnNoUTurn(mainTurnType) && TurnType::isLeftTurnNoUTurn(turnType)) {
+            return true;
+        }
+        if (TurnType::isRightTurnNoUTurn(mainTurnType) && TurnType::isRightTurnNoUTurn(turnType)) {
+            return true;
+        }
+        if (mainTurnType == TurnType::C && TurnType::isSlightTurn(turnType)) {
+            return true;
+        }
+        if (possibleSharpLeftOrUTurn && TurnType::isSharpLeftOrUTurn(mainTurnType) && TurnType::isSharpLeftOrUTurn(turnType)) {
+            return true;
+        }
+        if (possibleSharpRightOrUTurn && TurnType::isSharpRightOrUTurn(mainTurnType) && TurnType::isSharpRightOrUTurn(turnType)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+SHARED_PTR<TurnType> getActiveTurnType(const vector<int>& lanes, bool leftSide, SHARED_PTR<TurnType> oldTurnType) {
+    if (lanes.size() == 0) {
+        return oldTurnType;
+    }
+    int tp = oldTurnType->getValue();
+    int cnt = 0;
+    for (int k = 0; k < lanes.size(); k++) {
+        int ln = lanes[k];
+        if ((ln & 1) > 0) {
+            vector<int> oneActiveLane;
+            oneActiveLane.push_back(lanes[k]);
+            if (hasAllowedLanes(oldTurnType->getValue(), oneActiveLane, 0, 0)) {
+                 tp = TurnType::getPrimaryTurn(lanes[k]);
+            }
+            cnt++;
+        }
+    }
+    SHARED_PTR<TurnType> t = TurnType::ptrValueOf(tp, leftSide);
+    // mute when most lanes have a straight/slight direction
+    if (cnt >= 3 && TurnType::isSlightTurn(t->getValue())) {
+        t->setSkipToSpeak(true);
+    }
+    return t;
 }
 
 #endif /*_OSMAND_ROUTE_RESULT_PREPARATION_CPP*/

@@ -396,6 +396,7 @@ double alignAngleDifference(double diff);
 double strtod_li(string v);
 
 double degreesDiff(const double a1, const double a2);
+double normalizeDegrees360(double degrees);
 
 int findFirstNumberEndIndex(string value);
 double parseSpeed(string v, double def);

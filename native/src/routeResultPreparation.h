@@ -34,4 +34,12 @@ bool foundTUturn(vector<int> turnList);
 void printRouteInfoSegments(vector<SHARED_PTR<RouteSegmentResult> >& result);
 string buildRouteMessagesFromInfo(UNORDERED(map) < string, UNORDERED(map) < string, string >> info, vector<string>& routeMessages);
 void calculateTimeSpeed(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResult> >& result);
+vector<int> getUniqTurnTypes(const string& turnLanes);
+bool hasTurn(const string& turnLanes, int turnType);
+bool hasSharpOrReverseTurnLane(const string& turnLanes);
+bool hasSameTurnLanes(SHARED_PTR<RouteSegmentResult>& prevSegm, SHARED_PTR<RouteSegmentResult>& currentSegm);
+SHARED_PTR<TurnType> getActiveTurnType(const vector<int>& lanes, bool leftSide, SHARED_PTR<TurnType> oldTurnType);
+bool hasAllowedLanes(int mainTurnType, vector<int>& lanesArray, int startActiveIndex, int endActiveIndex);
+int countOccurrences(const string& haystack, char needle);
+int highwaySpeakPriority(const string& highway);
 #endif /*_OSMAND_ROUTE_RESULT_PREPARATION_H*/
