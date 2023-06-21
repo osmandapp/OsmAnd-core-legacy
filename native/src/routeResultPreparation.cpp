@@ -591,7 +591,7 @@ vector<int> getTurnLanesInfo(SHARED_PTR<RouteSegmentResult>& prevSegm, SHARED_PT
         lanesArray = calculateRawTurnLanes(turnLanes, mainTurnType);
     }
     bool isSet = false;
-    std::pair act = findActiveIndex(prevSegm, currentSegm, lanesArray, nullptr);
+    std::pair<int, int> act = findActiveIndex(prevSegm, currentSegm, lanesArray, nullptr);
     int startIndex = act.first;
     int endIndex = act.second;
     if (startIndex != -1 && endIndex != -1) {
