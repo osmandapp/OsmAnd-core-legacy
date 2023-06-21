@@ -181,6 +181,17 @@ double degreesDiff(const double a1, const double a2) {
 	return diff;
 }
 
+double normalizeDegrees360(double degrees)
+{
+    while (degrees < 0.0f) {
+        degrees += 360.0f;
+    }
+    while (degrees >= 360.0f) {
+        degrees -= 360.0f;
+    }
+    return degrees;
+}
+
 double checkLongitude(double longitude) {
 	while (longitude < -180 || longitude > 180) {
 		if (longitude < 0) {

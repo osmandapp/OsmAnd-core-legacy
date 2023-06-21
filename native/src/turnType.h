@@ -249,6 +249,19 @@ public:
         return getPrimaryTurn(type) == turn || getSecondaryTurn(type) == turn || getTertiaryTurn(type) == turn;
     }
     
+    static bool isSharpOrReverse(int type) {
+        return type == TSHL || type == TSHR || type == TU || type == TRU;
+    }
+    
+    static bool isSharpLeftOrUTurn(int type) {
+        return type == TSHL || type == TU;
+    }
+
+    static bool isSharpRightOrUTurn(int type) {
+    // turn:lanes=reverse is transform to TU only
+        return type == TSHR || type == TRU || type == TU;
+    }
+    
     int countTurnTypeDirections(int type, bool onlyActive);
 };
 
