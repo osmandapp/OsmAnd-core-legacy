@@ -662,6 +662,9 @@ bool RoutePlannerFrontEnd::findGpxRouteSegment(SHARED_PTR<GpxRouteApproximation>
 				if (res[0]->object->getId() == start->pnt->getRoad()->getId()) {
 					// start point could shift to +-1 due to direction
 					res[0]->setStartPointIndex(start->pnt->getSegmentStart());
+					if (res[0]->object->getPointsLength() != start->pnt->getRoad()->getPointsLength()) {
+						res[0]->object = start->pnt->getRoad();
+					}
 				} else {
 					// for native routing this is possible when point lies on intersection of 2 lines
 					// solution here could be to pass to native routing id of the route
