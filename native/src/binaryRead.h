@@ -544,7 +544,9 @@ struct RouteDataObject {
 				// priority over default
 				maxSpeed = r.maxSpeed(RouteTypeRule::PROFILE_NONE) > 0 ? r.maxSpeed(RouteTypeRule::PROFILE_NONE) : maxSpeed;
 				maxProfileSpeed = r.maxSpeed(profile) > 0 ? r.maxSpeed(profile) : maxProfileSpeed;
-			}
+            } else if (r.maxSpeed(RouteTypeRule::PROFILE_NONE) > 0) {
+                maxSpeed = r.maxSpeed(RouteTypeRule::PROFILE_NONE);
+            }
 		}
 		return maxProfileSpeed > 0 ? maxProfileSpeed : maxSpeed;
 	}
