@@ -540,7 +540,9 @@ struct RouteDataObject {
 		for (int type : types) {
 			RouteTypeRule r = region->quickGetEncodingRule(type);
 			bool forwardDirection = r.isForward() >= 0;
-			if (forwardDirection == direction) {
+			if ((direction && r.isForward() == 1) ||
+				(!direction && r.isForward() == -1) ||
+				r.isForward() == 0) {
 				// priority over default
 				maxSpeed = r.maxSpeed(RouteTypeRule::PROFILE_NONE) > 0 ? r.maxSpeed(RouteTypeRule::PROFILE_NONE) : maxSpeed;
 				maxProfileSpeed = r.maxSpeed(profile) > 0 ? r.maxSpeed(profile) : maxProfileSpeed;
