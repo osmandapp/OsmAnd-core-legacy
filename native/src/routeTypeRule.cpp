@@ -63,7 +63,17 @@ void RouteTypeRule::analyze() {
 			}
 		}
 	} else if (startsWith(tl, "maxspeed") && !v.empty()) {
-		forward = endsWith(tl, ":forward") ? 1 : endsWith(tl, ":backward") ? -1 : 0;
+		std::string forwardTag = ":forward";
+		std::string backwardTag = ":backward";
+		if (endsWith(tl, forwardTag)) {
+			tl = tl.substr(0, tl.length() - forwardTag.length());
+			forward = 1;
+		} else if (endsWith(tl, backwardTag)) {
+			tl = tl.substr(0, tl.length() - backwardTag.length());
+			forward = -1;
+		} else {
+			forward = 0;
+		}
 		floatValue = parseSpeed(v, 0);
 		if (tl == "maxspeed") {
 			type = MAXSPEED;
