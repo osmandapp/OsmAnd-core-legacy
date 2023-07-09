@@ -2573,18 +2573,41 @@ bool ResultPublisher::publish(FoundMapDataObject o) {
 			// 		newerLiveMap = true;
 			// 	}
 			// }
-			if (ex->points.size() >= r->points.size() || o.zoom >= 13) {
+			if (ex->points.size() > r->points.size() || o.zoom >= 13) {
 				return false;
-			} else {
-				auto it = result.begin();
-				for (; it != result.end(); it++) {
-					if (it->obj == ex) {
-						result.erase(it);
-						break;
-					}
-				}
-				delete ex;
 			}
+
+			bool replace = false;
+			if (r->points.size() > ex->points.size()) {
+				replace = true;
+			} else {
+				double exLength = 0.0;
+				double length = 0.0;
+				for (int pointIdx = 1; pointIdx < r->points.size(); pointIdx++) {
+					const auto& exPrevPoint = ex->points[pointIdx - 1];
+					const auto& exCurrPoint = ex->points[pointIdx];
+					exLength += squareDist31TileMetric(exPrevPoint.first, exPrevPoint.second, exCurrPoint.first, exCurrPoint.second);
+
+					const auto& prevPoint = r->points[pointIdx - 1];
+					const auto& currPoint = r->points[pointIdx];
+					length += squareDist31TileMetric(prevPoint.first, prevPoint.second, currPoint.first, currPoint.second);
+				}
+
+				replace = length > exLength;
+			}
+
+			if (!replace) {
+				return false;
+			}
+
+			auto it = result.begin();
+			for (; it != result.end(); it++) {
+				if (it->obj == ex) {
+					result.erase(it);
+					break;
+				}
+			}
+			delete ex;
 		}
 		ids[r->id] = o;
 	}
