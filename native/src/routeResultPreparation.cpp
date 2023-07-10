@@ -780,13 +780,13 @@ bool foundTUturn(vector<int> turnList) {
 	return false;
 }
 
-vector<int> createCombinedSingleLane(RoadSplitStructure & rs, double currentDeviation) {
+vector<int> createCombinedTurnTypeForSingleLane(RoadSplitStructure & rs, double currentDeviation) {
     rs.attachedAngles.push_back(currentDeviation);
     std::sort(rs.attachedAngles.begin(), rs.attachedAngles.end(), std::less<double>{});
     int size = (int) rs.attachedAngles.size();
     bool allStraight = rs.allAreStraight();
     vector<int> lanes(1);
-    int cnt = 0;
+    int extraLanes = 0;
     //iterate from left to right turns
     for (int i = size - 1; i >= 0; i--) {
         double angle = rs.attachedAngles[i];
@@ -805,17 +805,13 @@ vector<int> createCombinedSingleLane(RoadSplitStructure & rs, double currentDevi
         }
         if (angle == currentDeviation) {
             TurnType::setPrimaryTurn(lanes, 0, turn);
-            continue;
-        }
-        switch (cnt) {
-            case 0:
+        } else {
+            if (extraLanes++ == 0) {
                 TurnType::setSecondaryTurn(lanes, 0, turn);
-                break;
-            case 1:
+            } else {
                 TurnType::setTertiaryTurn(lanes, 0, turn);
-                break;
+            }
         }
-        cnt++;
     }
     lanes[0] |= 1;
     return lanes;
@@ -848,7 +844,7 @@ SHARED_PTR<TurnType> createSimpleKeepLeftRightTurn(bool leftSide, SHARED_PTR<Rou
     int ls = currentLanesCount + rs.leftLanes + rs.rightLanes;
     vector<int> lanes(ls);
     if (oneLane) {
-        lanes = createCombinedSingleLane(rs, deviation);
+        lanes = createCombinedTurnTypeForSingleLane(rs, deviation);
     } else {
         for (int it = 0; it < ls; it++) {
             if (it < rs.leftLanes) {
@@ -870,7 +866,7 @@ SHARED_PTR<TurnType> createSimpleKeepLeftRightTurn(bool leftSide, SHARED_PTR<Rou
             } else {
                 //active lane
                 if (currentLanesCount == 1) {
-                    auto combined = createCombinedSingleLane(rs, deviation);
+                    auto combined = createCombinedTurnTypeForSingleLane(rs, deviation);
                     lanes[it] = combined[0];
                 } else {
                     lanes[it] = (laneType << 1) + 1;
@@ -1018,6 +1014,14 @@ SHARED_PTR<TurnType> getTurnByCurrentTurns(std::vector<std::vector<int>> otherSi
             }
             if (currentTurns.size() == 1) {
                 return TurnType::ptrValueOf(*currentTurns.begin(), leftSide);
+            }
+        } else {
+            // Avoid "keep" instruction if active side contains only "through" moving
+            if ((keepTurnType == TurnType::KL && currentTurns[0] == TurnType::C)) {
+                return TurnType::ptrValueOf(TurnType::C, leftSide);
+            }
+            if (keepTurnType == TurnType::KR && currentTurns[currentTurns.size() - 1] == TurnType::C) {
+                return TurnType::ptrValueOf(TurnType::C, leftSide);
             }
         }
     }
