@@ -24,11 +24,10 @@ vector<int> parseTurnLanes(const SHARED_PTR<RouteDataObject>& ro, double dirToNo
 vector<int> parseLanes(const SHARED_PTR<RouteDataObject>& ro, double dirToNorthEastPi);
 void avoidKeepForThroughMoving(vector<SHARED_PTR<RouteSegmentResult> >& result);
 void prepareTurnResults(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResult> >& result);
-SHARED_PTR<TurnType> getTurnByCurrentTurns(std::vector<std::vector<int>> lanesInfo,
-										   SHARED_PTR<RouteSegmentResult>& currentSegm, vector<int>& rawLanes,
+SHARED_PTR<TurnType> getTurnByCurrentTurns(std::vector<std::vector<int>> lanesInfo, vector<int>& rawLanes,
 										   int keepTurnType, bool leftSide);
 void checkTotalRoutingTime(vector<SHARED_PTR<RouteSegmentResult> > result, float cmp);
-bool containsAll(set<int> a, set<int> b);
+bool containsAll(vector<int> a, vector<int> b);
 bool hasTU(string turnLanesPrevSegm, bool attachedOnTheRight);
 bool foundTUturn(vector<int> turnList);
 void printRouteInfoSegments(vector<SHARED_PTR<RouteSegmentResult> >& result);
@@ -42,4 +41,6 @@ SHARED_PTR<TurnType> getActiveTurnType(const vector<int>& lanes, bool leftSide, 
 bool hasAllowedLanes(int mainTurnType, vector<int>& lanesArray, int startActiveIndex, int endActiveIndex);
 int countOccurrences(const string& haystack, char needle);
 int highwaySpeakPriority(const string& highway);
+string getVirtualTurnLanes(SHARED_PTR<RouteSegmentResult>& segm);
+int getTurnByAngle(double angle);
 #endif /*_OSMAND_ROUTE_RESULT_PREPARATION_H*/
