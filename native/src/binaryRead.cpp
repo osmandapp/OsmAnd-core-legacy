@@ -2564,52 +2564,52 @@ bool ResultPublisher::publish(FoundMapDataObject o) {
 	if (r->id > 0) {
 		auto it = ids.find(r->id);
 		if (it != ids.end()) {
-			MapDataObject* ex = it->second.obj;
-			// MapIndex *exInd = (MapIndex *) it->second.ind;
-			// // check that object is not from newer live maps
-			// bool newerLiveMap = false;
-			// if (ind != NULL && exInd != NULL) {
-			// 	if (simpleNonLiveName(exInd->name) == simpleNonLiveName(ind->name)) {
-			// 		newerLiveMap = true;
-			// 	}
-			// }
-			if (ex->points.size() > r->points.size() || o.zoom >= 13) {
+			if (o.zoom >= 15) {
 				return false;
 			}
 
-			bool replace = false;
-			if (r->points.size() > ex->points.size()) {
-				replace = true;
+			auto& addedObjects = it->second;
+			const auto* firstEx = addedObjects[0].obj;
+
+			// All previously added objects with equal id have equal number of points,
+			// so no need to check all points' size
+			bool removeAdded = firstEx->points.size() < r->points.size();
+			if (removeAdded) {
+				auto itResult = result.begin();
+				for (; itResult != result.end(); itResult++) {
+
+					if (addedObjects.empty()) {
+						break;
+					}
+
+					auto itObjectsToErase = addedObjects.begin();
+					for (; itObjectsToErase != addedObjects.end(); itObjectsToErase++) {
+						const auto* ex = itObjectsToErase->obj;
+						if (itResult->obj == ex) {
+							result.erase(itResult);
+							addedObjects.erase(itObjectsToErase);
+							delete ex;
+							break;
+						}
+					}
+				}
 			} else {
-				double exLength = 0.0;
-				double length = 0.0;
-				for (int pointIdx = 1; pointIdx < r->points.size(); pointIdx++) {
-					const auto& exPrevPoint = ex->points[pointIdx - 1];
-					const auto& exCurrPoint = ex->points[pointIdx];
-					exLength += squareDist31TileMetric(exPrevPoint.first, exPrevPoint.second, exCurrPoint.first, exCurrPoint.second);
-
-					const auto& prevPoint = r->points[pointIdx - 1];
-					const auto& currPoint = r->points[pointIdx];
-					length += squareDist31TileMetric(prevPoint.first, prevPoint.second, currPoint.first, currPoint.second);
-				}
-
-				replace = length > exLength;
-			}
-
-			if (!replace) {
-				return false;
-			}
-
-			auto it = result.begin();
-			for (; it != result.end(); it++) {
-				if (it->obj == ex) {
-					result.erase(it);
-					break;
+				for (const auto& object : addedObjects) {
+					const auto* ex = object.obj;
+					bool equalStart = ex->points.front() == r->points.front();
+					bool equalEnd = ex->points.back() == r->points.back();
+					if (equalStart && equalEnd) {
+						return false;
+					}
 				}
 			}
-			delete ex;
+			
+			addedObjects.push_back(o);
+		} else {
+			std::vector<FoundMapDataObject> addedObjects;
+			addedObjects.push_back(o);
+			ids[r->id] = addedObjects;
 		}
-		ids[r->id] = o;
 	}
 	result.push_back(o);
 	return true;
