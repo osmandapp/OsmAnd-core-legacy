@@ -2564,7 +2564,7 @@ bool ResultPublisher::publish(FoundMapDataObject o) {
 	if (r->id > 0) {
 		auto it = ids.find(r->id);
 		if (it != ids.end()) {
-			if (o.zoom >= 15) {
+			if (o.zoom > 15) {
 				return false;
 			}
 
