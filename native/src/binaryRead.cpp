@@ -2564,43 +2564,17 @@ bool ResultPublisher::publish(FoundMapDataObject o) {
 	if (r->id > 0) {
 		auto it = ids.find(r->id);
 		if (it != ids.end()) {
-			if (o.zoom > 15) {
+			if (o.zoom >= 15) {
 				return false;
 			}
 
 			auto& addedObjects = it->second;
-			const auto* firstEx = addedObjects[0].obj;
-
-			// All previously added objects with equal id have equal number of points,
-			// so no need to check all points' size
-			bool removeAdded = firstEx->points.size() < r->points.size();
-			if (removeAdded) {
-				auto itResult = result.begin();
-				for (; itResult != result.end(); itResult++) {
-
-					if (addedObjects.empty()) {
-						break;
-					}
-
-					auto itObjectsToErase = addedObjects.begin();
-					for (; itObjectsToErase != addedObjects.end(); itObjectsToErase++) {
-						const auto* ex = itObjectsToErase->obj;
-						if (itResult->obj == ex) {
-							result.erase(itResult);
-							addedObjects.erase(itObjectsToErase);
-							delete ex;
-							break;
-						}
-					}
-				}
-			} else {
-				for (const auto& object : addedObjects) {
-					const auto* ex = object.obj;
-					bool equalStart = ex->points.front() == r->points.front();
-					bool equalEnd = ex->points.back() == r->points.back();
-					if (equalStart && equalEnd) {
-						return false;
-					}
+			for (const auto& object : addedObjects) {
+				const auto* ex = object.obj;
+				bool equalStart = ex->points.front() == r->points.front();
+				bool equalEnd = ex->points.back() == r->points.back();
+				if (equalStart && equalEnd) {
+					return false;
 				}
 			}
 			
