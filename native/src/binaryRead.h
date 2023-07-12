@@ -875,7 +875,7 @@ struct BinaryMapFile {
 
 struct ResultPublisher {
 	std::vector<FoundMapDataObject> result;
-	UNORDERED(map)< uint64_t, std::vector<FoundMapDataObject> > ids;
+	UNORDERED(map)<uint64_t, FoundMapDataObject> ids;
 
 	bool publish(FoundMapDataObject r);
 

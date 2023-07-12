@@ -2568,22 +2568,14 @@ bool ResultPublisher::publish(FoundMapDataObject o) {
 				return false;
 			}
 
-			auto& addedObjects = it->second;
-			for (const auto& object : addedObjects) {
-				const auto* ex = object.obj;
-				bool equalStart = ex->points.front() == r->points.front();
-				bool equalEnd = ex->points.back() == r->points.back();
-				if (equalStart && equalEnd) {
-					return false;
-				}
+			const auto* ex = it->second.obj;
+			bool equalStart = ex->points.front() == r->points.front();
+			bool equalEnd = ex->points.back() == r->points.back();
+			if (equalStart && equalEnd) {
+				return false;
 			}
-			
-			addedObjects.push_back(o);
-		} else {
-			std::vector<FoundMapDataObject> addedObjects;
-			addedObjects.push_back(o);
-			ids[r->id] = addedObjects;
 		}
+		ids[r->id] = o;
 	}
 	result.push_back(o);
 	return true;
