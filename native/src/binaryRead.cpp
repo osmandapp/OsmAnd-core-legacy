@@ -2564,26 +2564,15 @@ bool ResultPublisher::publish(FoundMapDataObject o) {
 	if (r->id > 0) {
 		auto it = ids.find(r->id);
 		if (it != ids.end()) {
-			MapDataObject* ex = it->second.obj;
-			// MapIndex *exInd = (MapIndex *) it->second.ind;
-			// // check that object is not from newer live maps
-			// bool newerLiveMap = false;
-			// if (ind != NULL && exInd != NULL) {
-			// 	if (simpleNonLiveName(exInd->name) == simpleNonLiveName(ind->name)) {
-			// 		newerLiveMap = true;
-			// 	}
-			// }
-			if (ex->points.size() >= r->points.size() || o.zoom >= 13) {
+			if (o.zoom >= 15) {
 				return false;
-			} else {
-				auto it = result.begin();
-				for (; it != result.end(); it++) {
-					if (it->obj == ex) {
-						result.erase(it);
-						break;
-					}
-				}
-				delete ex;
+			}
+
+			const auto* ex = it->second.obj;
+			bool equalStart = ex->points.front() == r->points.front();
+			bool equalEnd = ex->points.back() == r->points.back();
+			if (equalStart && equalEnd) {
+				return false;
 			}
 		}
 		ids[r->id] = o;
