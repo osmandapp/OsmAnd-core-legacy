@@ -221,7 +221,6 @@ void OpeningHoursParser::BasicOpeningHourRule::init() {
 	_schoolHoliday = false;
 	_easter = false;
 	_off = false;
-	_fullYears = 0;
 	_year = 0;
 }
 
@@ -269,14 +268,6 @@ std::vector<bool>& OpeningHoursParser::BasicOpeningHourRule::getLastYearDayMonth
 		}
 	}
 	return _lastYearDayMonth[month];
-}
-
-int OpeningHoursParser::BasicOpeningHourRule::getFullYears() const {
-	return _fullYears;
-}
-
-void OpeningHoursParser::BasicOpeningHourRule::setFullYears(int value) {
-	_fullYears = value;
 }
 
 int OpeningHoursParser::BasicOpeningHourRule::getYear() const {
@@ -442,25 +433,22 @@ bool OpeningHoursParser::BasicOpeningHourRule::containsPreviousDay(const tm& dat
 }
 
 bool OpeningHoursParser::BasicOpeningHourRule::containsMonth(const tm& dateTime) const {
-	int i = dateTime.tm_mon;
-	return containsYear(dateTime) && (_months[i] || hasFullYears());
-}
-
-bool OpeningHoursParser::BasicOpeningHourRule::containsYear(const tm& dateTime) const {
-	if (_year == 0 && _firstYearMonths.empty()) return true;
-
 	int month = dateTime.tm_mon;
 	int year = dateTime.tm_year + 1900;
-	if ((!_firstYearMonths.empty() && _firstYearMonths[month] == year) ||
-		(!_lastYearMonths.empty() && _lastYearMonths[month] == year) ||
-		(_firstYearMonths.empty() && _lastYearMonths.empty() && _year == year)) {
-		return true;
+	if (!hasYears()) {
+		return (_year == 0 || _year == year) && _months[month];
 	}
-	if (_fullYears > 0 && _year > 0) {
-		for (int i = 1; i <= _fullYears; i++)
-			if (_year + i == year) return true;
+	if (_year > year) {
+		return false;
+	} else if (_year < year) {
+		if (_lastYearMonths.empty()) {
+			return false;
+		}
+		int lastYear = _lastYearMonths[month];
+		return lastYear > 0 && year <= lastYear;
+	} else {
+		return _firstYearMonths[month] > 0;
 	}
-	return false;
 }
 
 int OpeningHoursParser::BasicOpeningHourRule::getCurrentDay(const tm& dateTime) const {
@@ -893,8 +881,8 @@ int OpeningHoursParser::BasicOpeningHourRule::calculate(const tm& dateTime) cons
 	int i = dateTime.tm_wday + 1;
 	int day = (i + 5) % 7;
 	int previous = (day + 6) % 7;
-	bool thisDay = _hasDays || hasDayMonths() || hasFullYears();
-	if (hasFullYears()) {
+	bool thisDay = true; // _hasDays || hasDayMonths() || hasFullYears();
+	if (hasYears()) {
 		thisDay = isOpened(year, month, dmonth);
 	} else {
 		if (thisDay && hasDayMonths()) {
@@ -905,8 +893,8 @@ int OpeningHoursParser::BasicOpeningHourRule::calculate(const tm& dateTime) cons
 		thisDay = _days[day];
 	}
 	// potential error for Dec 31 12:00-01:00
-	bool previousDay = _hasDays || hasDayMonths() || hasFullYears();
-	if (hasFullYears()) {
+	bool previousDay = true; //_hasDays || hasDayMonths() || hasFullYears();
+	if (hasYears()) {
 		if (dmonth > 0) {
 			previousDay = isOpened(year, month, dmonth - 1);
 		}
@@ -948,23 +936,29 @@ int OpeningHoursParser::BasicOpeningHourRule::calculate(const tm& dateTime) cons
 
 bool OpeningHoursParser::BasicOpeningHourRule::isOpened(int year, int month, int dmonth) const {
 	bool opened = hasDayMonths() && _dayMonths[month][dmonth];
-	if (hasFullYears()) {
-		if (year == _year) {
-			opened = _firstYearDayMonth[month][dmonth];
+	if (hasYears()) {
+		if (year < _year) {
+			opened = false;
+		} else if (year == _year) {
+			if (!_firstYearDayMonth.empty()) {
+				opened = _firstYearDayMonth[month][dmonth];
+			}
 		} else {
-			int lastYear = _year + _fullYears + 1;
-			if (year == lastYear) {
+			int lastYear = _lastYearMonths[month];
+			if (year < lastYear) {
+				opened = true;
+			} else if (year == lastYear) {
 				opened = _lastYearDayMonth[month][dmonth];
 			} else {
-				opened = year > _year && year < lastYear;
+				opened = false;
 			}
 		}
 	}
 	return opened;
 }
 
-bool OpeningHoursParser::BasicOpeningHourRule::hasFullYears() const {
-	return _fullYears > 0;
+bool OpeningHoursParser::BasicOpeningHourRule::hasYears() const {
+	return !_firstYearMonths.empty();
 }
 
 bool OpeningHoursParser::BasicOpeningHourRule::hasOverlapTimes() const {
@@ -1046,10 +1040,6 @@ bool OpeningHoursParser::UnparseableRule::containsNextDay(const tm& dateTime) co
 }
 
 bool OpeningHoursParser::UnparseableRule::containsMonth(const tm& dateTime) const {
-	return false;
-}
-
-bool OpeningHoursParser::UnparseableRule::containsYear(const tm& dateTime) const {
 	return false;
 }
 
@@ -1758,7 +1748,7 @@ void OpeningHoursParser::buildRule(std::shared_ptr<BasicOpeningHourRule>& basic,
 
 								if (firstMonthToken->mainNumber <= lastMonthToken->mainNumber) {
 									for (int month = firstMonthToken->mainNumber + 1;
-										 month < lastMonthToken->mainNumber; month++) {
+										month < lastMonthToken->mainNumber; month++) {
 										auto& dayMonths = basic->getDayMonths(month);
 										std::fill(dayMonths.begin(), dayMonths.end(), true);
 									}
@@ -1788,18 +1778,24 @@ void OpeningHoursParser::buildRule(std::shared_ptr<BasicOpeningHourRule>& basic,
 								for (int i = 0; i < 12; i++) firstYearMonths->push_back(0);
 							}
 							std::fill(firstYearMonths->begin() + firstMonthToken->mainNumber, firstYearMonths->end(), startYear);
-							auto* lastYearMonths = &basic->getLastYearMonths();
-							if (lastYearMonths->empty()) {
-								for (int i = 0; i < 12; i++) lastYearMonths->push_back(0);
-							}
-							std::fill(lastYearMonths->begin(), lastYearMonths->begin() + lastMonthToken->mainNumber + 1, endYear);
-							if (endYear - startYear > 1) {
-								basic->setFullYears(endYear - startYear - 1);
+							if (endYear > startYear) {
+								auto* lastYearMonths = &basic->getLastYearMonths();
+								if (lastYearMonths->empty()) {
+									for (int i = 0; i < 12; i++) lastYearMonths->push_back(0);
+								}
+								int startInd = lastMonthToken->mainNumber + 1;
+								std::fill(lastYearMonths->begin(), lastYearMonths->begin() + startInd, endYear);
+								if (endYear - startYear > 1) {
+									std::fill(lastYearMonths->begin() + startInd, lastYearMonths->end(), endYear - 1);
+								} else {
+									startInd = std::max(startInd, firstMonthToken->mainNumber);
+									std::fill(lastYearMonths->begin() + startInd, lastYearMonths->end(), startYear);
+								}
 								fillFirstLastYearsDayOfMonth(basic, pair);
-							}
-							if (endYear > startYear && firstMonthToken->mainNumber >= lastMonthToken->mainNumber) {
-								auto& months = basic->getMonths();
-								for (int i = 0; i < 12; i++) months[i] = true;
+								if (firstMonthToken->mainNumber >= lastMonthToken->mainNumber) {
+									auto& months = basic->getMonths();
+									for (int i = 0; i < 12; i++) months[i] = true;
+								}
 							}
 						}
 					} else if (pair->at(0)) {
@@ -2206,12 +2202,32 @@ void OpeningHoursParser::runTest() {
 	OpeningHoursParser::setTwelveHourFormattingEnabled(false);
 	auto hours = parseOpenedHours("Mo-Fr 10:00-18:30; We 10:00-14:00; Sa 10:00-13:00; Dec-Feb Mo-Fr 11:00-17:00; Dec-Feb We off; Dec-Feb Sa 11:00-13:00; Dec 24-Dec 31 off \"Inventurarbeiten\"; PH off");
 	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("05.11.2022 10:30", hours, true);
+	testOpened("05.11.2022 10:30", hours, true); // saturday
 	testOpened("05.12.2022 10:30", hours, false);
 	testOpened("05.12.2022 11:30", hours, true);
 	testOpened("30.12.2022 11:00", hours, false);
 	testInfo("29.12.2022 14:00", hours, "Will open on 11:00 Mo.");
 	testInfo("30.12.2022 14:00", hours, "Will open on 11:00 Mo.");
+
+	hours = parseOpenedHours("2022 Oct 24 - 2023 Oct 30");
+	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
+	testOpened("20.10.2022 10:00", hours, false);
+	testOpened("20.06.2023 10:00", hours, true);
+	testOpened("01.11.2023 10:00", hours, false);
+	testOpened("31.12.2023 10:00", hours, false);
+
+	hours = parseOpenedHours("2022 Oct 30 - 2023 Oct 24");
+	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
+	testOpened("25.10.2023 10:00", hours, false);
+
+	hours = parseOpenedHours("2022 Oct 24 - 2023 Aug 30");
+	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
+	testOpened("25.10.2022 10:00", hours, true);
+	testOpened("25.09.2023 10:00", hours, false);
+	testOpened("25.09.2022 10:00", hours, false);
+	testOpened("25.08.2022 10:00", hours, false);
+	testOpened("25.08.2023 10:00", hours, true);
+
 	hours = parseOpenedHours("Mo 09:00-12:00; We,Sa 13:30-17:00, Apr 01-Oct 31 We,Sa 17:00-18:30; PH off");
 	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
 	testInfo("03.10.2020 14:00", hours, "Open till 18:30");
@@ -2246,6 +2262,7 @@ void OpeningHoursParser::runTest() {
 	testOpened("01.04.2018 15:00", hours, false);
 	testOpened("01.04.2019 15:00", hours, true);
 	testOpened("01.04.2020 15:00", hours, true);
+	testOpened("01.08.2019 15:00", hours, true);
 
 	hours = parseOpenedHours("2019 Apr 15 -  2020 Mar 1");
 	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());

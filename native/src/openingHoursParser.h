@@ -151,14 +151,6 @@ struct OpeningHoursParser {
 		virtual bool containsMonth(const tm& dateTime) const = 0;
 
 		/**
-		 * Check if the year of "date" is part of this rule
-		 *
-		 * @param cal the time to check
-		 * @return true if the year is part of the rule
-		 */
-		virtual bool containsYear(const tm& dateTime) const = 0;
-
-		/**
 		 * @return true if the rule overlap to the next day
 		 */
 		virtual bool hasOverlapTimes() const = 0;
@@ -205,7 +197,7 @@ struct OpeningHoursParser {
 		std::string toRuleString(bool useLocalization) const;
 		void addArray(const std::vector<bool>& array, const std::vector<std::string>& arrayNames,
 					  std::stringstream& b) const;
-		bool hasFullYears() const;
+		bool hasYears() const;
 		bool isOpened(int year, int month, int dmonth) const;
 		
 
@@ -226,11 +218,10 @@ struct OpeningHoursParser {
 		/**
 		 * represents the list on which year / month it is open.
 		 */
-		std::vector<int> _firstYearMonths;
+		std::vector<int> _firstYearMonths; // stores YEAR == this.year for valid months [0, 0, ... 0, YEAR, YEAR, ... YEAR, 0...]
 		std::vector<std::vector<bool>> _firstYearDayMonth;
 		std::vector<int> _lastYearMonths;
 		std::vector<std::vector<bool>> _lastYearDayMonth;
-		int _fullYears;
 		int _year;
 
 		bool _fallback;
@@ -292,7 +283,6 @@ struct OpeningHoursParser {
 		std::vector<int>& getFirstYearMonths();
 		std::vector<int>& getLastYearMonths();
 		int getFullYears() const;
-		void setFullYears(int value);
 		int getYear() const;
 		void setYear(int year);
 		void setFallback(bool fallback);
@@ -443,14 +433,6 @@ struct OpeningHoursParser {
 		bool containsMonth(const tm& dateTime) const;
 
 		/**
-		 * Check if the year of "date" is part of this rule
-		 *
-		 * @param cal the time to check
-		 * @return true if the year is part of the rule
-		 */
-		bool containsYear(const tm& dateTime) const;
-
-		/**
 		 * Check if this rule says the feature is open at time "date"
 		 *
 		 * @param date the time to check
@@ -502,7 +484,6 @@ struct OpeningHoursParser {
 		bool containsDay(const tm& dateTime) const;
 		bool containsNextDay(const tm& dateTime) const;
 		bool containsMonth(const tm& dateTime) const;
-		bool containsYear(const tm& dateTime) const;
 
 		int getSequenceIndex() const;
 		bool isFallbackRule() const;
