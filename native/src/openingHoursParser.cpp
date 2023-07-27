@@ -964,7 +964,17 @@ bool OpeningHoursParser::BasicOpeningHourRule::isOpened(int year, int month, int
 }
 
 bool OpeningHoursParser::BasicOpeningHourRule::hasFullYears() const {
-	return _fullYears > 0;
+	bool overlappedYears = false;
+	if (!_firstYearMonths.empty() && !_lastYearMonths.empty()) {
+		int monthIdx = 0;
+		while (_firstYearMonths[monthIdx] == 0 && monthIdx < 12){
+			monthIdx++;
+		}
+		if (_firstYearMonths[monthIdx] < _lastYearMonths[monthIdx]) {
+			overlappedYears = true;
+		}
+	}
+	return _fullYears > 0 || overlappedYears;
 }
 
 bool OpeningHoursParser::BasicOpeningHourRule::hasOverlapTimes() const {
@@ -1793,7 +1803,7 @@ void OpeningHoursParser::buildRule(std::shared_ptr<BasicOpeningHourRule>& basic,
 								for (int i = 0; i < 12; i++) lastYearMonths->push_back(0);
 							}
 							std::fill(lastYearMonths->begin(), lastYearMonths->begin() + lastMonthToken->mainNumber + 1, endYear);
-							if (endYear - startYear > 1) {
+							if (endYear - startYear > 0) {
 								basic->setFullYears(endYear - startYear - 1);
 								fillFirstLastYearsDayOfMonth(basic, pair);
 							}
@@ -2212,6 +2222,14 @@ void OpeningHoursParser::runTest() {
 	testOpened("30.12.2022 11:00", hours, false);
 	testInfo("29.12.2022 14:00", hours, "Will open on 11:00 Mo.");
 	testInfo("30.12.2022 14:00", hours, "Will open on 11:00 Mo.");
+
+	hours = parseOpenedHours("2022 Oct 24 - 2023 Oct 30");
+	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
+	testOpened("20.10.2022 10:00", hours, false);
+	testOpened("20.06.2023 10:00", hours, true);
+	testOpened("01.11.2023 10:00", hours, false);
+	testOpened("31.12.2023 10:00", hours, false);
+
 	hours = parseOpenedHours("Mo 09:00-12:00; We,Sa 13:30-17:00, Apr 01-Oct 31 We,Sa 17:00-18:30; PH off");
 	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
 	testInfo("03.10.2020 14:00", hours, "Open till 18:30");
@@ -2246,6 +2264,7 @@ void OpeningHoursParser::runTest() {
 	testOpened("01.04.2018 15:00", hours, false);
 	testOpened("01.04.2019 15:00", hours, true);
 	testOpened("01.04.2020 15:00", hours, true);
+	testOpened("01.08.2019 15:00", hours, true);
 
 	hours = parseOpenedHours("2019 Apr 15 -  2020 Mar 1");
 	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
