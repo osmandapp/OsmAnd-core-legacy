@@ -26,7 +26,7 @@ void RouteSegmentResult::collectTypes(SHARED_PTR<RouteDataResources>& resources)
 void RouteSegmentResult::collectNames(SHARED_PTR<RouteDataResources>& resources) {
 	auto& rules = resources->rules;
 	auto& insertOrder = resources->insertOrder;
-	RoutingIndex* region = object->region;
+	const auto& region = object->region;
 	if (region->nameTypeRule != -1) {
 		auto& r = region->quickGetEncodingRule(region->nameTypeRule);
 		if (rules.find(r) == rules.end()) {
@@ -71,7 +71,7 @@ void RouteSegmentResult::collectNames(SHARED_PTR<RouteDataResources>& resources)
 }
 
 void RouteSegmentResult::collectRules(UNORDERED_map<RouteTypeRule, uint32_t>& rules, vector<RouteTypeRule>& insertOrder, vector<uint32_t>& types) {
-	RoutingIndex* region = object->region;
+	const auto& region = object->region;
 	for (uint32_t type : types) {
 		auto& rule = region->quickGetEncodingRule(type);
 		const auto& tag = rule.getTag();
@@ -179,7 +179,7 @@ vector<vector<uint32_t>> RouteSegmentResult::convertPointNames(vector<vector<uin
 
 void RouteSegmentResult::fillNames(SHARED_PTR<RouteDataResources>& resources) {
 	if (object->namesIds.size() > 0) {
-		RoutingIndex* region = object->region;
+		const auto& region = object->region;
 		int nameTypeRule = region->nameTypeRule;
 		int refTypeRule = region->refTypeRule;
 		object->names = {};
@@ -388,7 +388,7 @@ vector<SHARED_PTR<RouteSegmentResult>> RouteSegmentResult::getAttachedRoutes(int
 	}
 }
 
-LatLon convertPoint(SHARED_PTR<RouteDataObject> o, int ind) {
+LatLon convertPoint(const SHARED_PTR<RouteDataObject>& o, int ind) {
 	return LatLon(get31LatitudeY(o->pointsY[ind]), get31LongitudeX(o->pointsX[ind]));
 }
 

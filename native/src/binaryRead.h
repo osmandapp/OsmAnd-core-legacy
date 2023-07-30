@@ -68,9 +68,9 @@ struct RouteSubregion {
 	uint32_t top;
 	uint32_t bottom;
 	std::vector<RouteSubregion> subregions;
-	RoutingIndex* routingIndex;
+    SHARED_PTR<RoutingIndex> routingIndex;
 
-	RouteSubregion(RoutingIndex* ind) : length(0), filePointer(0), mapDataBlock(0), routingIndex(ind) {
+	RouteSubregion(const SHARED_PTR<RoutingIndex>& ind) : length(0), filePointer(0), mapDataBlock(0), routingIndex(ind) {
 	}
 };
 
@@ -142,7 +142,7 @@ struct RouteDataObject {
 	const static uint64_t RESTRICTION_MASK = 7;
 	const static int HEIGHT_UNDEFINED = -80000;
 
-	RoutingIndex* region;
+    SHARED_PTR<RoutingIndex> region;
 	std::vector<uint32_t> types;
 	std::vector<uint32_t> pointsX;
 	std::vector<uint32_t> pointsY;
@@ -153,8 +153,7 @@ struct RouteDataObject {
 	std::vector<std::vector<std::string>> pointNames;
 	std::vector<double> heightDistanceArray;
 	int64_t id;
-	bool ownsRegion;
-    
+
     void setPointTypes(int pntInd, std::vector<uint32_t> array) {
         if (pointTypes.size() <= pntInd) {
             std::vector<std::vector<uint32_t>> npointTypes(pntInd + 1);
@@ -169,10 +168,10 @@ struct RouteDataObject {
 	UNORDERED(map)<int, std::string> names;
 	vector<pair<uint32_t, uint32_t>> namesIds;
 
-	RouteDataObject() : region(NULL), id(0), ownsRegion(false) {
+	RouteDataObject() : region(nullptr), id(0) {
 	}
 
-	RouteDataObject(RoutingIndex* region, bool ownsRegion = false) : region(region), id(0), ownsRegion(ownsRegion) {
+	RouteDataObject(const SHARED_PTR<RoutingIndex>& region) : region(region), id(0) {
 	}
 
 	RouteDataObject(SHARED_PTR<RouteDataObject>& copy) {
@@ -187,14 +186,10 @@ struct RouteDataObject {
 		pointTypes = copy->pointTypes;
 		pointNames = copy->pointNames;
 		pointNameTypes = copy->pointNameTypes;
-		ownsRegion = copy->ownsRegion;
 		id = copy->id;
 	}
 
 	~RouteDataObject() {
-		if (ownsRegion && region != NULL) {
-			delete region;
-		}
 	}
 
 	inline string getName() {
@@ -796,11 +791,10 @@ struct BinaryMapFile {
 	std::string inputName;
 	uint32_t version;
 	uint64_t dateCreated;
-	std::vector<MapIndex> mapIndexes;
-	// TODO refactor to shared ptr or plain objects to avoid memory leaks
-	std::vector<RoutingIndex*> routingIndexes;
-	std::vector<TransportIndex*> transportIndexes;
-	std::vector<BinaryPartIndex*> indexes;
+	std::vector<SHARED_PTR<MapIndex>> mapIndexes;
+	std::vector<SHARED_PTR<RoutingIndex>> routingIndexes;
+	std::vector<SHARED_PTR<TransportIndex>> transportIndexes;
+	std::vector<SHARED_PTR<BinaryPartIndex>> indexes;
 	UNORDERED(map)<uint64_t, shared_ptr<IncompleteTransportRoute>> incompleteTransportRoutes;
 	bool incompleteLoaded = false;
 	int fd = -1;

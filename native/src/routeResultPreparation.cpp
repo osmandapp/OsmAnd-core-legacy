@@ -84,11 +84,11 @@ struct CombineAreaRoutePoint {
 
 vector<int> getPossibleTurns(vector<int>& oLanes, bool onlyPrimary, bool uniqueFromActive);
 
-long getPoint(SHARED_PTR<RouteDataObject>& road, int pointInd) {
+long getPoint(const SHARED_PTR<RouteDataObject>& road, int pointInd) {
     return (((long) road->pointsX[pointInd]) << 31) + (long) road->pointsY[pointInd];
 }
 
-bool isMotorway(SHARED_PTR<RouteSegmentResult>& s) {
+bool isMotorway(const SHARED_PTR<RouteSegmentResult>& s) {
     string h = s->object->getHighway();
     return "motorway" == h || "motorway_link" == h  || "trunk" == h || "trunk_link" == h;
 }
@@ -132,7 +132,7 @@ void validateAllPointsConnected(vector<SHARED_PTR<RouteSegmentResult> >& result)
 }
 
 // try to attach all segments except with current id
-void attachSegments(RoutingContext* ctx, SHARED_PTR<RouteSegment>& routeSegment, SHARED_PTR<RouteDataObject>& road, SHARED_PTR<RouteSegmentResult>& rr, long previousRoadId, int pointInd, long prevL, long nextL) {
+void attachSegments(RoutingContext* ctx, const SHARED_PTR<RouteSegment>& routeSegment, const SHARED_PTR<RouteDataObject>& road, const SHARED_PTR<RouteSegmentResult>& rr, long previousRoadId, int pointInd, long prevL, long nextL) {
     if (routeSegment->road->getId() != road->getId() && routeSegment->road->getId() != previousRoadId) {
         auto addRoad = routeSegment->road;
         //checkAndInitRouteRegion(ctx, addRoad); ? TODO

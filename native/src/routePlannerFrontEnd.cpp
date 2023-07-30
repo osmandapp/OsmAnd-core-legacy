@@ -455,10 +455,9 @@ mainLoop:
 }
 
 void RoutePlannerFrontEnd::calculateGpxRoute(SHARED_PTR<GpxRouteApproximation>& gctx, vector<SHARED_PTR<GpxPoint>>& gpxPoints) {
-	RoutingIndex* reg = new RoutingIndex();
+	auto reg = std::make_shared<RoutingIndex>();
 	reg->initRouteEncodingRule(0, "highway", UNMATCHED_HIGHWAY_TYPE);
 	vector<LatLon> lastStraightLine;
-	bool shouldOwnRoutingIndex = true;
 	SHARED_PTR<GpxPoint> straightPointStart;
 	for (int i = 0; i < gpxPoints.size() && !gctx->ctx->progress->isCancelled();) {
 		SHARED_PTR<GpxPoint>& pnt = gpxPoints[i];
@@ -466,8 +465,7 @@ void RoutePlannerFrontEnd::calculateGpxRoute(SHARED_PTR<GpxRouteApproximation>& 
 			LatLon startPoint = LatLon(pnt->routeToTarget[0]->getStartPoint().lat, pnt->routeToTarget[0]->getStartPoint().lon);
 			if (!lastStraightLine.empty()) {
 				lastStraightLine.push_back(startPoint);
-				addStraightLine(gctx, lastStraightLine, straightPointStart, reg, shouldOwnRoutingIndex);
-				shouldOwnRoutingIndex = false;
+				addStraightLine(gctx, lastStraightLine, straightPointStart, reg);
 				lastStraightLine.clear();
 			}
 			if (gctx->distFromLastPoint(startPoint.lat, startPoint.lon) > 1) {
@@ -494,19 +492,15 @@ void RoutePlannerFrontEnd::calculateGpxRoute(SHARED_PTR<GpxRouteApproximation>& 
 		}
 	}
 	if (!lastStraightLine.empty()) {
-		addStraightLine(gctx, lastStraightLine, straightPointStart, reg, shouldOwnRoutingIndex);
-	} else if (shouldOwnRoutingIndex) {
-		// No object has claimed the region ownership
-		delete reg;
+		addStraightLine(gctx, lastStraightLine, straightPointStart, reg);
 	}
 	// clean turns to recaculate them
 	cleanupResultAndAddTurns(gctx);
 }
 
-void RoutePlannerFrontEnd::addStraightLine(SHARED_PTR<GpxRouteApproximation>& gctx, vector<LatLon>& lastStraightLine, SHARED_PTR<GpxPoint>& strPnt,
-	                 RoutingIndex* reg, bool shouldOwnRoutingIndex) {
+void RoutePlannerFrontEnd::addStraightLine(const SHARED_PTR<GpxRouteApproximation>& gctx, vector<LatLon>& lastStraightLine, const SHARED_PTR<GpxPoint>& strPnt,
+                                           const SHARED_PTR<RoutingIndex>& reg) {
 	SHARED_PTR<RouteDataObject> rdo = std::make_shared<RouteDataObject>(reg);
-	rdo->ownsRegion = shouldOwnRoutingIndex;
 	if (gctx->ctx->config->smoothenPointsNoRoute > 0) {
 		std::vector<bool> include(lastStraightLine.size(), true);
 		simplifyDouglasPeucker(lastStraightLine, gctx->ctx->config->smoothenPointsNoRoute, 0, (int) lastStraightLine.size() - 1, include);
@@ -898,9 +892,9 @@ bool RoutePlannerFrontEnd::needRequestPrivateAccessRouting(SHARED_PTR<RoutingCon
 
 SHARED_PTR<RouteSegmentResult> RoutePlannerFrontEnd::generateStraightLineSegment(
 	float averageSpeed, std::vector<pair<double, double>> points) {
-	RoutingIndex* reg = new RoutingIndex();
+	auto reg = std::make_shared<RoutingIndex>();
 	reg->initRouteEncodingRule(0, "highway", "unmatched");
-	SHARED_PTR<RouteDataObject> rdo = make_shared<RouteDataObject>(reg, true);
+	auto rdo = make_shared<RouteDataObject>(reg);
 	unsigned long size = points.size();
 
 	vector<uint32_t> x(size);

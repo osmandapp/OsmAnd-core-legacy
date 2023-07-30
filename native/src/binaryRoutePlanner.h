@@ -29,7 +29,7 @@ SHARED_PTR<RouteSegmentPoint> findRouteSegment(int px, int py, RoutingContext* c
 
 vector<SHARED_PTR<RouteSegmentResult> > searchRouteInternal(RoutingContext* ctx, bool leftSideNavigation);
 
-bool checkMovementAllowed(RoutingContext* ctx, bool reverseWaySearch, SHARED_PTR<RouteSegment>& segment);
+bool checkMovementAllowed(RoutingContext* ctx, bool reverseWaySearch, const SHARED_PTR<RouteSegment>& segment);
 bool containsKey(VISITED_MAP& visited, int64_t routePointId);
 SHARED_PTR<RouteSegment> createNull();
 double initDistFromStart(RoutingContext* ctx, SHARED_PTR<RouteSegment> initSegment, bool reverseSearchWay);

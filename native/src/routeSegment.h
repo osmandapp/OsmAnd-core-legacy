@@ -113,7 +113,7 @@ struct RouteSegment {
 		  distanceToEnd(0),
 		  isFinalSegment(false) {}
 
-	RouteSegment(SHARED_PTR<RouteDataObject> road, int segmentStart, int segmentEnd)
+	RouteSegment(const SHARED_PTR<RouteDataObject>& road, int segmentStart, int segmentEnd)
 		: segmentStart(segmentStart),
 		  segmentEnd(segmentEnd),
 		  road(road),
@@ -125,7 +125,7 @@ struct RouteSegment {
 		  distanceToEnd(0),
 		  isFinalSegment(false) {}
 
-	RouteSegment(SHARED_PTR<RouteDataObject>& road, int segmentStart)
+	RouteSegment(const SHARED_PTR<RouteDataObject>& road, int segmentStart)
 		: segmentStart(segmentStart),
 		  segmentEnd(segmentStart < road->getPointsLength() - 1 ? segmentStart + 1 : segmentStart - 1),
 		  road(road),
@@ -146,7 +146,7 @@ inline bool RouteSegment::isNull() {
 inline SHARED_PTR<RouteSegment> RouteSegment::getParentRoute() { return isNull() ? nullptr : parentRoute; };
 
 struct RouteSegmentPoint : RouteSegment {
-	RouteSegmentPoint(SHARED_PTR<RouteDataObject>& road, int segmentStart, double distSquare)
+	RouteSegmentPoint(const SHARED_PTR<RouteDataObject>& road, int segmentStart, double distSquare)
 		: RouteSegment(road, segmentStart), dist(distSquare) {
 		this->preciseX = road->pointsX[segmentStart];
 		this->preciseY = road->pointsY[segmentStart];
@@ -165,7 +165,7 @@ struct RouteSegmentPoint : RouteSegment {
 };
 
 struct FinalRouteSegment : RouteSegment {
-	FinalRouteSegment(SHARED_PTR<RouteDataObject>& road, int segmentStart, int segmentEnd)
+	FinalRouteSegment(const SHARED_PTR<RouteDataObject>& road, int segmentStart, int segmentEnd)
 		: RouteSegment(road, segmentStart, segmentEnd) {}
 	bool reverseWaySearch;
 	SHARED_PTR<RouteSegment> opposite;
