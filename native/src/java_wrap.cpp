@@ -2202,10 +2202,10 @@ extern "C" JNIEXPORT jobject JNICALL Java_net_osmand_NativeLibrary_loadRoutingDa
 																				   jobject reg, jstring regName,
 																				   jint regFilePointer, jobject subreg,
 																				   jboolean loadObjects) {
-	RoutingIndex ind;
-	ind.filePointer = regFilePointer;
-	ind.name = getString(ienv, regName);
-	RouteSubregion sub(&ind);
+	auto ind = std::make_shared<RoutingIndex>();
+	ind->filePointer = regFilePointer;
+	ind->name = getString(ienv, regName);
+	RouteSubregion sub(ind);
 	sub.filePointer = ienv->GetIntField(subreg, jfield_RouteSubregion_filePointer);
 	sub.length = ienv->GetIntField(subreg, jfield_RouteSubregion_length);
 	sub.left = ienv->GetIntField(subreg, jfield_RouteSubregion_left);
