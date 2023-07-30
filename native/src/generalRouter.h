@@ -182,7 +182,7 @@ class RouteAttributeEvalRule {
 	RouteAttributeEvalRule() : selectValue(0), selectValueDef(""), selectType("") {
 	}
 
-	RouteAttributeEvalRule(SHARED_PTR<RouteAttributeEvalRule>& original);
+	RouteAttributeEvalRule(const SHARED_PTR<RouteAttributeEvalRule>& original);
 
 	void registerAndTagValueCondition(GeneralRouter* r, string tag, string value, bool nt);
 
@@ -321,9 +321,9 @@ class RouteAttributeContext {
 		return DOUBLE_MISSING;
 	}
 
-	dynbitset convert(RoutingIndex* reg, std::vector<uint32_t>& types);
+	dynbitset convert(const SHARED_PTR<RoutingIndex>& reg, std::vector<uint32_t>& types);
 
-	double evaluateDouble(RoutingIndex* reg, std::vector<uint32_t>& types, double defValue) {
+	double evaluateDouble(const SHARED_PTR<RoutingIndex>& reg, std::vector<uint32_t>& types, double defValue) {
 		dynbitset local = convert(reg, types);
 		double d = evaluate(local);
 		if (d == DOUBLE_MISSING) {
@@ -358,8 +358,8 @@ class GeneralRouter {
 	UNORDERED(map)<string, dynbitset> tagRuleMask;
 	vector<double> ruleToValue;	 // Object TODO;
 
-	UNORDERED(map)<RoutingIndex*, MAP_INT_INT> regionConvert;
-	vector<UNORDERED(map) < RoutingIndex*, MAP_INTV_DOUBLE> > cacheEval;
+	UNORDERED(map)<SHARED_PTR<RoutingIndex>, MAP_INT_INT> regionConvert;
+	vector<UNORDERED(map) <SHARED_PTR<RoutingIndex>, MAP_INTV_DOUBLE>> cacheEval;
 
    public:
 	// cached values
@@ -461,57 +461,57 @@ class GeneralRouter {
 	/**
 	 * return if the road is accepted for routing
 	 */
-	bool acceptLine(SHARED_PTR<RouteDataObject>& way);
+	bool acceptLine(const SHARED_PTR<RouteDataObject>& way);
 
 	/**
 	 * return oneway +/- 1 if it is oneway and 0 if both ways
 	 */
-	int isOneWay(SHARED_PTR<RouteDataObject>& road);
+	int isOneWay(const SHARED_PTR<RouteDataObject>& road);
 
 	/**
 	 * return true if area == 1 and false otherwise
 	 */
-	bool isArea(SHARED_PTR<RouteDataObject>& road);
+	bool isArea(const SHARED_PTR<RouteDataObject>& road);
 
 	/**
 	 * return delay in seconds (0 no obstacles)
 	 */
-	double defineObstacle(SHARED_PTR<RouteDataObject>& road, uint point, bool dir);
+	double defineObstacle(const SHARED_PTR<RouteDataObject>& road, uint point, bool dir);
 
 	/**
 	 * return delay in seconds for height obstacles
 	 */
-	double defineHeightObstacle(SHARED_PTR<RouteDataObject>& road, uint startIndex, uint endIndex);
+	double defineHeightObstacle(const SHARED_PTR<RouteDataObject>& road, uint startIndex, uint endIndex);
 
 	/**
 	 * return delay in seconds (0 no obstacles)
 	 */
-	double defineRoutingObstacle(SHARED_PTR<RouteDataObject>& road, uint point, bool dir);
+	double defineRoutingObstacle(const SHARED_PTR<RouteDataObject>& road, uint point, bool dir);
 
 	/**
 	 * return routing speed in m/s for vehicle for specified road
 	 */
-	double defineRoutingSpeed(SHARED_PTR<RouteDataObject>& road);
+	double defineRoutingSpeed(const SHARED_PTR<RouteDataObject>& road);
 
 	/*
 	 * return transition penalty between different road classes in seconds
 	 */
-	double definePenaltyTransition(SHARED_PTR<RouteDataObject>& road);
+	double definePenaltyTransition(const SHARED_PTR<RouteDataObject>& road);
 
 	/**
 	 * return real speed in m/s for vehicle for specified road
 	 */
-	double defineVehicleSpeed(SHARED_PTR<RouteDataObject>& road);
+	double defineVehicleSpeed(const SHARED_PTR<RouteDataObject>& road);
 
 	/**
 	 * define priority to multiply the speed for g(x) A*
 	 */
-	double defineSpeedPriority(SHARED_PTR<RouteDataObject>& road);
+	double defineSpeedPriority(const SHARED_PTR<RouteDataObject>& road);
 
 	/**
 	 * define destination priority
 	 */
-	double defineDestinationPriority(SHARED_PTR<RouteDataObject>& road);
+	double defineDestinationPriority(const SHARED_PTR<RouteDataObject>& road);
 
 	/**
 	 * Used for A* routing to calculate g(x)
@@ -542,7 +542,7 @@ class GeneralRouter {
 	/**
 	 * Calculate turn time
 	 */
-	double calculateTurnTime(SHARED_PTR<RouteSegment>& segment, int segmentEnd, SHARED_PTR<RouteSegment>& prev,
+	double calculateTurnTime(const SHARED_PTR<RouteSegment>& segment, int segmentEnd, const SHARED_PTR<RouteSegment>& prev,
 							 int prevSegmentEnd);
 
 	void printRules();
@@ -550,9 +550,9 @@ class GeneralRouter {
    private:
 	double parseValueFromTag(uint id, string type, GeneralRouter* router);
 
-	double evaluateCache(RouteDataObjectAttribute attr, RoutingIndex* reg, std::vector<uint32_t>& types, double def,
+	double evaluateCache(RouteDataObjectAttribute attr, const SHARED_PTR<RoutingIndex>& reg, std::vector<uint32_t>& types, double def,
 						 bool dir);
-	double evaluateCache(RouteDataObjectAttribute attr, SHARED_PTR<RouteDataObject>& way, double def);
+	double evaluateCache(RouteDataObjectAttribute attr, const SHARED_PTR<RouteDataObject>& way, double def);
 
    public:
 	uint registerTagValueAttribute(const tag_value& r);
