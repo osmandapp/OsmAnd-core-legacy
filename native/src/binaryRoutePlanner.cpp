@@ -38,9 +38,9 @@ void printRoad(const char* prefix, RouteSegment* segment) {
 						  : 0);
 }
 
-void printRoad(const char* prefix, SHARED_PTR<RouteSegment>& segment) { printRoad(prefix, segment.get()); }
+void printRoad(const char* prefix, const SHARED_PTR<RouteSegment>& segment) { printRoad(prefix, segment.get()); }
 
-int64_t calculateRoutePointInternalId(SHARED_PTR<RouteDataObject>& road, int pntId, int nextPntId) {
+int64_t calculateRoutePointInternalId(const SHARED_PTR<RouteDataObject>& road, int pntId, int nextPntId) {
 	int positive = nextPntId - pntId;
 	int pntLen = road->getPointsLength();
 	if (pntId < 0 || nextPntId < 0 || pntId >= pntLen || nextPntId >= pntLen || (positive != -1 && positive != 1)) {
@@ -49,7 +49,7 @@ int64_t calculateRoutePointInternalId(SHARED_PTR<RouteDataObject>& road, int pnt
 	return (road->id << ROUTE_POINTS) + (pntId << 1) + (positive > 0 ? 1 : 0);
 }
 
-int64_t calculateRoutePointId(SHARED_PTR<RouteSegment>& segm) {
+int64_t calculateRoutePointId(const SHARED_PTR<RouteSegment>& segm) {
 	return calculateRoutePointInternalId(
 		segm->getRoad(), segm->getSegmentStart(),
 		segm->isPositive() ? segm->getSegmentStart() + 1 : segm->getSegmentStart() - 1);
@@ -92,16 +92,16 @@ struct NonHeuristicSegmentsComparator
 typedef UNORDERED(map)<int64_t, SHARED_PTR<RouteSegment>> VISITED_MAP;
 typedef priority_queue<SHARED_PTR<RouteSegment>, vector<SHARED_PTR<RouteSegment>>, SegmentsComparator> SEGMENTS_QUEUE;
 void processRouteSegment(RoutingContext* ctx, bool reverseWaySearch, SEGMENTS_QUEUE& graphSegments,
-						 VISITED_MAP& visitedSegments, SHARED_PTR<RouteSegment>& segment, VISITED_MAP& oppositeSegments,
+						 VISITED_MAP& visitedSegments, const SHARED_PTR<RouteSegment>& segment, VISITED_MAP& oppositeSegments,
 						 bool direction);
 
 SHARED_PTR<RouteSegment> processIntersections(RoutingContext* ctx, SEGMENTS_QUEUE& graphSegments,
-											  VISITED_MAP& visitedSegments, SHARED_PTR<RouteSegment>& currentSegment,
+											  VISITED_MAP& visitedSegments, const SHARED_PTR<RouteSegment>& currentSegment,
 											  bool reverseWaySearch, bool doNotAddIntersections);
 
 bool processOneRoadIntersection(RoutingContext* ctx, bool reverseWaySearch, SEGMENTS_QUEUE& graphSegments,
-								VISITED_MAP& visitedSegments, SHARED_PTR<RouteSegment>& segment,
-								SHARED_PTR<RouteSegment>& next, bool nullGraph = false);
+								VISITED_MAP& visitedSegments, const SHARED_PTR<RouteSegment>& segment,
+								const SHARED_PTR<RouteSegment>& next, bool nullGraph = false);
 
 long calculateSizeOfSearchMaps(SEGMENTS_QUEUE& graphDirectSegments, SEGMENTS_QUEUE& graphReverseSegments,
 							   VISITED_MAP& visitedDirectSegments, VISITED_MAP& visitedOppositeSegments) {
@@ -388,7 +388,7 @@ SHARED_PTR<RouteSegment> searchRouteInternal(RoutingContext* ctx, SHARED_PTR<Rou
 	return finalSegment;
 }
 
-bool checkMovementAllowed(RoutingContext* ctx, bool reverseWaySearch, SHARED_PTR<RouteSegment>& segment) {
+bool checkMovementAllowed(RoutingContext* ctx, bool reverseWaySearch, const SHARED_PTR<RouteSegment>& segment) {
 	bool directionAllowed;
 	int oneway = ctx->config->router->isOneWay(segment->getRoad());
 	// use positive direction as agreed
@@ -408,7 +408,7 @@ bool checkMovementAllowed(RoutingContext* ctx, bool reverseWaySearch, SHARED_PTR
 	return directionAllowed;
 }
 
-float calculateTimeWithObstacles(RoutingContext* ctx, SHARED_PTR<RouteDataObject>& road, float distOnRoadToPass,
+float calculateTimeWithObstacles(RoutingContext* ctx, const SHARED_PTR<RouteDataObject>& road, float distOnRoadToPass,
 								 float obstaclesTime) {
 	// ctx->timeExtra.Start();
 	float priority = ctx->config->router->defineSpeedPriority(road);
@@ -424,7 +424,7 @@ float calculateTimeWithObstacles(RoutingContext* ctx, SHARED_PTR<RouteDataObject
 	return obstaclesTime + distOnRoadToPass / speed;
 }
 
-bool checkViaRestrictions(SHARED_PTR<RouteSegment>& from, SHARED_PTR<RouteSegment>& to) {
+bool checkViaRestrictions(const SHARED_PTR<RouteSegment>& from, const SHARED_PTR<RouteSegment>& to) {
 	if (from && to) {
 		int64_t fid = to->getRoad()->getId();
 		for (uint i = 0; i < from->getRoad()->restrictions.size(); i++) {
@@ -455,7 +455,7 @@ SHARED_PTR<RouteSegment> getParentDiffId(SHARED_PTR<RouteSegment> s) {
 }
 
 bool checkIfOppositeSegmentWasVisited(bool reverseWaySearch, SEGMENTS_QUEUE& graphSegments,
-									  SHARED_PTR<RouteSegment>& currentSegment, VISITED_MAP& oppositeSegments) {
+									  const SHARED_PTR<RouteSegment>& currentSegment, VISITED_MAP& oppositeSegments) {
 	// check inverse direction for opposite
 	int64_t currPoint = calculateRoutePointInternalId(currentSegment->getRoad(), currentSegment->getSegmentEnd(),
 													  currentSegment->getSegmentStart());
@@ -520,7 +520,7 @@ double calculateRouteSegmentTime(RoutingContext* ctx, bool reverseWaySearch, SHA
 }
 
 void processRouteSegment(RoutingContext* ctx, bool reverseWaySearch, SEGMENTS_QUEUE& graphSegments,
-						 VISITED_MAP& visitedSegments, SHARED_PTR<RouteSegment>& startSegment,
+						 VISITED_MAP& visitedSegments, const SHARED_PTR<RouteSegment>& startSegment,
 						 VISITED_MAP& oppositeSegments, bool doNotAddIntersections) {
 	SHARED_PTR<RouteDataObject> road = startSegment->getRoad();
 	//	bool directionAllowed = true;
@@ -599,7 +599,7 @@ void clearSegments(vector<SHARED_PTR<RouteSegment>>& segments) {
 }
 
 void processRestriction(RoutingContext* ctx, std::vector<SHARED_PTR<RouteSegment>>& inputNext, bool reverseWay,
-						int64_t viaId, SHARED_PTR<RouteDataObject>& road) {
+						int64_t viaId, const SHARED_PTR<RouteDataObject>& road) {
 	bool via = viaId != 0;
 	std::vector<SHARED_PTR<RouteSegment>> segments = inputNext;
 	bool exclusiveRestriction = false;
@@ -695,7 +695,7 @@ void processRestriction(RoutingContext* ctx, std::vector<SHARED_PTR<RouteSegment
 	ctx->segmentsToVisitPrescripted.shrink_to_fit();
 }
 
-bool proccessRestrictions(RoutingContext* ctx, SHARED_PTR<RouteSegment>& segment,
+bool proccessRestrictions(RoutingContext* ctx, const SHARED_PTR<RouteSegment>& segment,
 						  std::vector<SHARED_PTR<RouteSegment>>& inputNext, bool reverseWay) {
 	if (!ctx->config->router->restrictionsAware()) {
 		return false;
@@ -716,7 +716,7 @@ bool proccessRestrictions(RoutingContext* ctx, SHARED_PTR<RouteSegment>& segment
 }
 
 SHARED_PTR<RouteSegment> processIntersections(RoutingContext* ctx, SEGMENTS_QUEUE& graphSegments,
-											  VISITED_MAP& visitedSegments, SHARED_PTR<RouteSegment>& currentSegment,
+											  VISITED_MAP& visitedSegments, const SHARED_PTR<RouteSegment>& currentSegment,
 											  bool reverseWaySearch, bool doNotAddIntersections) {
 	SHARED_PTR<RouteSegment> nextCurrentSegment;
 	int targetEndX = reverseWaySearch ? ctx->startX : ctx->targetX;
@@ -927,7 +927,7 @@ SHARED_PTR<RouteSegmentPoint> findRouteSegment(int px, int py, RoutingContext* c
 	return nullptr;
 }
 
-bool combineTwoSegmentResultPlanner(SHARED_PTR<RouteSegmentResult>& toAdd, SHARED_PTR<RouteSegmentResult>& previous,
+bool combineTwoSegmentResultPlanner(const SHARED_PTR<RouteSegmentResult>& toAdd, const SHARED_PTR<RouteSegmentResult>& previous,
 									bool reverse) {
 	bool ld = previous->getEndPointIndex() > previous->getStartPointIndex();
 	bool rd = toAdd->getEndPointIndex() > toAdd->getStartPointIndex();
@@ -945,7 +945,7 @@ bool combineTwoSegmentResultPlanner(SHARED_PTR<RouteSegmentResult>& toAdd, SHARE
 	return false;
 }
 
-void addRouteSegmentToResult(vector<SHARED_PTR<RouteSegmentResult>>& result, SHARED_PTR<RouteSegmentResult>& res,
+void addRouteSegmentToResult(vector<SHARED_PTR<RouteSegmentResult>>& result, const SHARED_PTR<RouteSegmentResult>& res,
 							 bool reverse) {
 	if (res->getEndPointIndex() != res->getStartPointIndex()) {
 		if (result.size() > 0) {
@@ -981,8 +981,8 @@ void attachConnectedRoads(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentRes
 }
 
 bool processOneRoadIntersection(RoutingContext* ctx, bool reverseWaySearch, SEGMENTS_QUEUE& graphSegments,
-								VISITED_MAP& visitedSegments, SHARED_PTR<RouteSegment>& segment,
-								SHARED_PTR<RouteSegment>& next, bool isNullGraph) {
+								VISITED_MAP& visitedSegments, const SHARED_PTR<RouteSegment>& segment,
+								const SHARED_PTR<RouteSegment>& next, bool isNullGraph) {
 	if (next) {
 		if (!checkMovementAllowed(ctx, reverseWaySearch, next)) {
 			return false;
@@ -1059,7 +1059,7 @@ bool processOneRoadIntersection(RoutingContext* ctx, bool reverseWaySearch, SEGM
 }
 
 vector<SHARED_PTR<RouteSegmentResult>> convertFinalSegmentToResults(RoutingContext* ctx,
-																	SHARED_PTR<RouteSegment>& finalSegment) {
+																	const SHARED_PTR<RouteSegment>& finalSegment) {
 	vector<SHARED_PTR<RouteSegmentResult>> result;
 	if (finalSegment) {
 		SHARED_PTR<RouteSegment> segment =

@@ -273,7 +273,7 @@ RouteAttributeExpression::RouteAttributeExpression(vector<string>& vls, int type
 	}
 }
 
-RouteAttributeEvalRule::RouteAttributeEvalRule(SHARED_PTR<RouteAttributeEvalRule>& original) {
+RouteAttributeEvalRule::RouteAttributeEvalRule(const SHARED_PTR<RouteAttributeEvalRule>& original) {
 	parameters = original->parameters;
 	selectValue = original->selectValue;
 	selectValueDef = original->selectValueDef;
@@ -370,11 +370,11 @@ int GeneralRouter::getIntAttribute(string attr, int defVal) {
 	return (int)parseFloat(getAttribute(attr), (float)defVal);
 }
 
-double GeneralRouter::evaluateCache(RouteDataObjectAttribute attr, SHARED_PTR<RouteDataObject>& way, double def) {
+double GeneralRouter::evaluateCache(RouteDataObjectAttribute attr, const SHARED_PTR<RouteDataObject>& way, double def) {
 	return evaluateCache(attr, way->region, way->types, def, false);
 }
 
-SHARED_PTR<vector<uint32_t>> filterDirectionTags(RoutingIndex* reg, vector<uint32_t>& pointTypes, bool forwardDir) {
+SHARED_PTR<vector<uint32_t>> filterDirectionTags(const SHARED_PTR<RoutingIndex>& reg, vector<uint32_t>& pointTypes, bool forwardDir) {
 	int wayDirection = forwardDir ? 1 : -1;
 	int direction = 0;
 	int tdirection = 0;
@@ -409,7 +409,7 @@ SHARED_PTR<vector<uint32_t>> filterDirectionTags(RoutingIndex* reg, vector<uint3
 	return ptr;
 }
 
-double GeneralRouter::evaluateCache(RouteDataObjectAttribute attr, RoutingIndex* reg, std::vector<uint32_t>& types,
+double GeneralRouter::evaluateCache(RouteDataObjectAttribute attr, const SHARED_PTR<RoutingIndex>& reg, std::vector<uint32_t>& types,
 									double def, bool extra) {
 	auto regCacheIt = cacheEval[(unsigned int)attr].find(reg);
 	MAP_INTV_DOUBLE* regCache;
@@ -433,7 +433,7 @@ double GeneralRouter::evaluateCache(RouteDataObjectAttribute attr, RoutingIndex*
 	return res;
 }
 
-bool GeneralRouter::acceptLine(SHARED_PTR<RouteDataObject>& way) {
+bool GeneralRouter::acceptLine(const SHARED_PTR<RouteDataObject>& way) {
 	int res = (int)evaluateCache(RouteDataObjectAttribute::ACCESS, way, 0);
 	if (impassableRoadIds.find(way->id) != impassableRoadIds.end()) {
 		return false;
@@ -441,22 +441,22 @@ bool GeneralRouter::acceptLine(SHARED_PTR<RouteDataObject>& way) {
 	return res >= 0;
 }
 
-int GeneralRouter::isOneWay(SHARED_PTR<RouteDataObject>& road) {
+int GeneralRouter::isOneWay(const SHARED_PTR<RouteDataObject>& road) {
 	return (int)evaluateCache(RouteDataObjectAttribute::ONEWAY, road, 0);
 }
 
-bool GeneralRouter::isArea(SHARED_PTR<RouteDataObject>& road) {
+bool GeneralRouter::isArea(const SHARED_PTR<RouteDataObject>& road) {
 	return ((int)evaluateCache(RouteDataObjectAttribute::AREA, road, 0)) == 1;
 }
 
-double GeneralRouter::defineObstacle(SHARED_PTR<RouteDataObject>& road, uint point, bool dir) {
+double GeneralRouter::defineObstacle(const SHARED_PTR<RouteDataObject>& road, uint point, bool dir) {
 	if (road->pointTypes.size() > point && road->pointTypes[point].size() > 0) {
 		return evaluateCache(RouteDataObjectAttribute::OBSTACLES, road->region, road->pointTypes[point], 0, dir);
 	}
 	return 0;
 }
 
-double GeneralRouter::defineHeightObstacle(SHARED_PTR<RouteDataObject>& road, uint startIndex, uint endIndex) {
+double GeneralRouter::defineHeightObstacle(const SHARED_PTR<RouteDataObject>& road, uint startIndex, uint endIndex) {
 	if (!heightObstacles) {
 		return 0;
 	}
@@ -486,7 +486,7 @@ double GeneralRouter::defineHeightObstacle(SHARED_PTR<RouteDataObject>& road, ui
 	return sum;
 }
 
-double GeneralRouter::defineRoutingObstacle(SHARED_PTR<RouteDataObject>& road, uint point, bool dir) {
+double GeneralRouter::defineRoutingObstacle(const SHARED_PTR<RouteDataObject>& road, uint point, bool dir) {
 	if (road->pointTypes.size() > point && road->pointTypes[point].size() > 0) {
 		return evaluateCache(RouteDataObjectAttribute::ROUTING_OBSTACLES, road->region, road->pointTypes[point], 0,
 							 dir);
@@ -494,28 +494,28 @@ double GeneralRouter::defineRoutingObstacle(SHARED_PTR<RouteDataObject>& road, u
 	return 0;
 }
 
-double GeneralRouter::defineRoutingSpeed(SHARED_PTR<RouteDataObject>& road) {
+double GeneralRouter::defineRoutingSpeed(const SHARED_PTR<RouteDataObject>& road) {
 	double spd = evaluateCache(RouteDataObjectAttribute::ROAD_SPEED, road, defaultSpeed);
 	return max(min(spd, maxSpeed), minSpeed);
 }
 
-double GeneralRouter::defineVehicleSpeed(SHARED_PTR<RouteDataObject>& road) {
+double GeneralRouter::defineVehicleSpeed(const SHARED_PTR<RouteDataObject>& road) {
 	double spd = evaluateCache(RouteDataObjectAttribute::ROAD_SPEED, road, defaultSpeed);
 	return max(min(spd, maxVehicleSpeed), minSpeed);
 }
 
-double GeneralRouter::definePenaltyTransition(SHARED_PTR<RouteDataObject>& road) {
+double GeneralRouter::definePenaltyTransition(const SHARED_PTR<RouteDataObject>& road) {
 	if (!isObjContextAvailable(RouteDataObjectAttribute::PENALTY_TRANSITION)) {
 		return 0;
 	}
 	return evaluateCache(RouteDataObjectAttribute::PENALTY_TRANSITION, road, 0);
 }
 
-double GeneralRouter::defineSpeedPriority(SHARED_PTR<RouteDataObject>& road) {
+double GeneralRouter::defineSpeedPriority(const SHARED_PTR<RouteDataObject>& road) {
 	return evaluateCache(RouteDataObjectAttribute::ROAD_PRIORITIES, road, 1.);
 }
 
-double GeneralRouter::defineDestinationPriority(SHARED_PTR<RouteDataObject>& road) {
+double GeneralRouter::defineDestinationPriority(const SHARED_PTR<RouteDataObject>& road) {
 	return evaluateCache(RouteDataObjectAttribute::DESTINATION_PRIORITIES, road, 1.);
 }
 
@@ -535,8 +535,8 @@ bool GeneralRouter::restrictionsAware() {
 	return _restrictionsAware;
 }
 
-double GeneralRouter::calculateTurnTime(SHARED_PTR<RouteSegment>& segment, int segmentEnd,
-										SHARED_PTR<RouteSegment>& prev, int prevSegmentEnd) {
+double GeneralRouter::calculateTurnTime(const SHARED_PTR<RouteSegment>& segment, int segmentEnd,
+                                        const SHARED_PTR<RouteSegment>& prev, int prevSegmentEnd) {
 	double ts = definePenaltyTransition(segment->getRoad());
 	double prevTs = definePenaltyTransition(prev->getRoad());
 
@@ -607,7 +607,7 @@ uint64_t GeneralRouter::getBitSetSize() {
 	return universalRules.size();
 }
 
-dynbitset RouteAttributeContext::convert(RoutingIndex* reg, std::vector<uint32_t>& types) {
+dynbitset RouteAttributeContext::convert(const SHARED_PTR<RoutingIndex>& reg, std::vector<uint32_t>& types) {
 	dynbitset b(router->universalRules.size());
 	MAP_INT_INT map;
 	if (router->regionConvert.find(reg) != router->regionConvert.end()) {
