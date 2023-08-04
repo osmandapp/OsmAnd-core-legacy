@@ -564,6 +564,10 @@ void RoutePlannerFrontEnd::cleanupResultAndAddTurns(SHARED_PTR<GpxRouteApproxima
 	if (!gctx->ctx->progress->isCancelled()) {
 		prepareTurnResults(gctx->ctx, gctx->result);
 	}
+	for (SHARED_PTR<RouteSegmentResult> r : gctx->result) {
+		r->attachedRoutes.clear();
+		r->preAttachedRoutes.clear();
+	}
 }
 
 void RoutePlannerFrontEnd::simplifyDouglasPeucker(vector<LatLon>& l, double eps, int start, int end, std::vector<bool>& include) {
