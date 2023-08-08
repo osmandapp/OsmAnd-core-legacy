@@ -153,7 +153,7 @@ struct OpeningHoursParser {
 		/**
 		 * @return true if the rule overlap to the next day
 		 */
-		virtual bool hasOverlapTimes() const = 0;
+		virtual bool hasOverlapTimesOverDay() const = 0;
 
 		/**
 		 * Check if r rule times overlap with this rule times at "cal" date.
@@ -404,7 +404,7 @@ struct OpeningHoursParser {
 		 */
 		bool containsDay(const tm& dateTime) const;
 
-		bool hasOverlapTimes() const;
+		bool hasOverlapTimesOverDay() const;
 
 		bool hasOverlapTimes(const tm& dateTime, const std::shared_ptr<OpeningHoursRule>& r, bool strictOverlap) const;
 
@@ -479,7 +479,7 @@ struct OpeningHoursParser {
 
 		bool isOpenedForTime(const tm& dateTime, bool checkPrevious) const;
 		bool containsPreviousDay(const tm& dateTime) const;
-		bool hasOverlapTimes() const;
+		bool hasOverlapTimesOverDay() const;
 		bool hasOverlapTimes(const tm& dateTime, const std::shared_ptr<OpeningHoursRule>& r, bool strictOverlap) const;
 		bool containsDay(const tm& dateTime) const;
 		bool containsNextDay(const tm& dateTime) const;
@@ -541,7 +541,7 @@ struct OpeningHoursParser {
 		std::shared_ptr<Info> getInfo(const tm& dateTime, int sequenceIndex) const;
 		bool isCheckNextNeeded(const tm&  cal, const std::vector<std::shared_ptr<OpeningHoursRule>>& rules, int i,
 		                       const std::shared_ptr<OpeningHoursRule>& rule) const;
-		bool hasOverlappingRules(const std::vector<std::shared_ptr<OpeningHoursRule>>& rules) const;
+		bool hasRulesOverlapDayBackwardCompatible(const std::vector<std::shared_ptr<OpeningHoursRule>>& rules) const;
 
 	   public:
 		/**
