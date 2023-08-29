@@ -952,13 +952,13 @@ SHARED_PTR<TurnType> createKeepLeftRightTurnBasedOnTurnTypes(RoadSplitStructure&
         if (tp != t->getValue() && tp != 0) {
             t = TurnType::ptrValueOf(tp, leftSide);
         } else {
-			// use keepRight and keepLeft turns when attached road doesn't have lanes
-			// or prev segment has more then 1 turn to the active lane
-            if (rs.keepRight) {
-				t = getTurnByCurrentTurns(rs.leftLanesInfo, rawLanes, TurnType::KR, leftSide);
-			} else if (rs.keepLeft) {
-				t = getTurnByCurrentTurns(rs.rightLanesInfo, rawLanes, TurnType::KL, leftSide);
-			}
+            // use keepRight and keepLeft turns when attached road doesn't have lanes
+            // or prev segment has more then 1 turn to the active lane
+            if (rs.keepRight && !rs.keepLeft) {
+                t = getTurnByCurrentTurns(rs.leftLanesInfo, rawLanes, TurnType::KR, leftSide);
+            } else if (rs.keepLeft && !rs.keepRight) {
+                t = getTurnByCurrentTurns(rs.rightLanesInfo, rawLanes, TurnType::KL, leftSide);
+            }
         }
     } else {
         if (activeBeginIndex != -1 && activeEndIndex != -1) {
