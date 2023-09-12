@@ -553,6 +553,8 @@ class GeneralRouter {
 	double evaluateCache(RouteDataObjectAttribute attr, const SHARED_PTR<RoutingIndex>& reg, std::vector<uint32_t>& types, double def,
 						 bool dir);
 	double evaluateCache(RouteDataObjectAttribute attr, const SHARED_PTR<RouteDataObject>& way, double def);
+    
+    void putCache(RouteDataObjectAttribute attr, const SHARED_PTR<RoutingIndex>& reg, std::vector<uint32_t>& types, double val, bool extra);
 
    public:
 	uint registerTagValueAttribute(const tag_value& r);
