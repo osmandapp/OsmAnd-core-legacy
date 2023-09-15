@@ -21,7 +21,7 @@ struct RouteSegmentResult {
    private:
 	int startPointIndex;
 	int endPointIndex;
-    bool leftSide = false;
+	bool leftSide = false;
 
 	void collectRules(UNORDERED_map<RouteTypeRule, uint32_t>& rules, vector<RouteTypeRule>& insertOrder, vector<uint32_t>& types);
 	vector<uint32_t> convertTypes(vector<uint32_t>& types, UNORDERED_map<RouteTypeRule, uint32_t>& rules);
@@ -46,17 +46,17 @@ struct RouteSegmentResult {
 
 	// this make not possible to make turns in between segment result for now
 	SHARED_PTR<TurnType> turnType;
-    
-    RouteSegmentResult(const SHARED_PTR<RouteDataObject>& object, bool leftSide)
-        : startPointIndex(0), endPointIndex(0), object(object), segmentTime(0),
-        segmentSpeed(0), routingTime(0), distance(0), description(""), leftSide(leftSide) {
-    }
+
+	RouteSegmentResult(const SHARED_PTR<RouteDataObject>& object, bool leftSide)
+		: startPointIndex(0), endPointIndex(0), object(object), segmentTime(0),
+		segmentSpeed(0), routingTime(0), distance(0), description(""), leftSide(leftSide) {
+	}
 
 	RouteSegmentResult(const SHARED_PTR<RouteDataObject>& object)
 		: startPointIndex(0), endPointIndex(0), object(object), segmentTime(0),
 		segmentSpeed(0), routingTime(0), distance(0), description("") {
 	}
-    
+
 	RouteSegmentResult(const SHARED_PTR<RouteDataObject>& object, int startPointIndex, int endPointIndex)
 		: startPointIndex(startPointIndex), endPointIndex(endPointIndex), object(object), segmentTime(0),
 		  segmentSpeed(0), routingTime(0), distance(0), description("") {
