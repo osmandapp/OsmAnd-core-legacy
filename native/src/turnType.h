@@ -105,6 +105,16 @@ public:
         r.setTurnAngle(angle);
         return r;
     }
+    
+    static TurnType getExitTurn(int type, int out, float angle, bool leftSide) {
+        if (type != RNDB && type != RNLB) {
+            return getExitTurn(out, angle, leftSide);
+        }
+        TurnType r = valueOf(type, leftSide);
+        r.exitOut = out;
+        r.setTurnAngle(angle);
+        return r;
+    }
 
     static SHARED_PTR<TurnType> getPtrExitTurn(int out, float angle, bool leftSide) {
         auto r = ptrValueOf(RNDB, leftSide);
