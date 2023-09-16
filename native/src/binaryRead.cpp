@@ -2619,7 +2619,9 @@ ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, 
 				objectsFromRoutingSectionRead = tempResult.size() != sz;
 			}
 		}
+#ifdef DEBUG_NAT_OPERATIONS		
 		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Route objects %d", tempResult.size());
+#endif		
 	}
 
 	// sort results/ analyze coastlines and publish back to publisher
@@ -2676,11 +2678,13 @@ ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, 
 				processCoastlines(basemapCoastLines, bleft, bright, bbottom, btop, q->zoom, true, true, tempResult);
 		}
 		// processCoastlines always create new objects
+#ifdef DEBUG_NAT_OPERATIONS
 		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
 						  "Detailed coastlines = %d, basemap coastlines %d, ocean tile %f. Detailed added %d, basemap "
 						  "processed %d, basemap added %d.",
 						  coastLines.size(), basemapCoastLines.size(), ocean, detailedCoastlinesWereAdded,
 						  addBasemapCoastlines, (addBasemapCoastlines ? coastlinesWereAdded : false));
+#endif						  
 		deleteObjects(basemapCoastLines);
 		deleteObjects(coastLines);
 		if (!coastlinesWereAdded && ocean > 0.5) {

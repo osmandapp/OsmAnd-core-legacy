@@ -1295,9 +1295,11 @@ void doRendering(std::vector<FoundMapDataObject>& mapDataObjects, SkCanvas* canv
 
 	delete paint;
 	rc->nativeOperations.Pause();
+#ifdef DEBUG_NAT_OPERATIONS
 	OsmAnd::LogPrintf(
 		OsmAnd::LogSeverityLevel::Info,
 		"Native ok (rendering %d, text %d ms) \n (%d points, %d points inside, %d of %d objects visible)\n",
 		(int)rc->nativeOperations.GetElapsedMs(), (int)rc->textRendering.GetElapsedMs(), rc->pointCount,
 		rc->pointInsideCount, rc->visible, rc->allObjects);
+#endif
 }
