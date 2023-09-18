@@ -453,10 +453,10 @@ double GeneralRouter::evaluateCache(RouteDataObjectAttribute attr, const SHARED_
 
 bool GeneralRouter::acceptLine(const SHARED_PTR<RouteDataObject>& way) {
 	double res = evaluateCache(RouteDataObjectAttribute::ACCESS, way, 0);
-		if (res < 0) {
-			res = getObjContext(RouteDataObjectAttribute::ACCESS).evaluateDouble(way->region, way->types, 0);
-			putCache(RouteDataObjectAttribute::ACCESS, way->region, way->types, res, false);
-		}
+	if (res < 0) {
+		res = getObjContext(RouteDataObjectAttribute::ACCESS).evaluateDouble(way->region, way->types, 0);
+		putCache(RouteDataObjectAttribute::ACCESS, way->region, way->types, res, false);
+	}
 	if (impassableRoadIds.find(way->id) != impassableRoadIds.end()) {
 		return false;
 	}
