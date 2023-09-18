@@ -396,7 +396,7 @@ SHARED_PTR<vector<uint32_t>> filterDirectionTags(const SHARED_PTR<RoutingIndex>&
 		}
 	}
 	if (direction != 0 || tdirection != 0 || hdirection != 0) {
-        ptr = shared_ptr<vector<uint32_t>>(new vector<uint32_t>());
+		ptr = shared_ptr<vector<uint32_t>>(new vector<uint32_t>());
 		for (uint32_t type : pointTypes) {
 			if (((type == reg->stopSign || type == reg->giveWaySign) && direction == wayDirection) ||
 				(type == reg->trafficSignals && tdirection == wayDirection) ||
@@ -420,7 +420,7 @@ void GeneralRouter::putCache(RouteDataObjectAttribute attr, const SHARED_PTR<Rou
 			regCache = &regCacheIt->second;
 		}
 		types.push_back(extra ? 1 : 0);
-        (*regCache)[types] = val;
+		(*regCache)[types] = val;
 		types.pop_back();
 	}
 }
