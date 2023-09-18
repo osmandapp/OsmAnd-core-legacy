@@ -402,9 +402,9 @@ SHARED_PTR<vector<uint32_t>> filterDirectionTags(const SHARED_PTR<RoutingIndex>&
 				(hdirection == wayDirection)) {
 				continue;
 			}
-            if (!ptr) {
-                ptr = shared_ptr<vector<uint32_t>>(new vector<uint32_t>());
-            }
+			if (!ptr) {
+				ptr = shared_ptr<vector<uint32_t>>(new vector<uint32_t>());
+			}
 			ptr->push_back(type);
 		}
 	}
@@ -436,7 +436,7 @@ double GeneralRouter::evaluateCache(RouteDataObjectAttribute attr, const SHARED_
 }
 
 bool GeneralRouter::acceptLine(const SHARED_PTR<RouteDataObject>& way) {
-    int res = (int)evaluateCache(RouteDataObjectAttribute::ACCESS, way, 0);
+	int res = (int)evaluateCache(RouteDataObjectAttribute::ACCESS, way, 0);
 	if (impassableRoadIds.find(way->id) != impassableRoadIds.end()) {
 		return false;
 	}
