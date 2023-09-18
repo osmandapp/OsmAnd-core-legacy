@@ -396,13 +396,15 @@ SHARED_PTR<vector<uint32_t>> filterDirectionTags(const SHARED_PTR<RoutingIndex>&
 		}
 	}
 	if (direction != 0 || tdirection != 0 || hdirection != 0) {
-		ptr = shared_ptr<vector<uint32_t>>(new vector<uint32_t>());
 		for (uint32_t type : pointTypes) {
 			if (((type == reg->stopSign || type == reg->giveWaySign) && direction == wayDirection) ||
 				(type == reg->trafficSignals && tdirection == wayDirection) ||
 				(hdirection == wayDirection)) {
 				continue;
 			}
+            if (!ptr) {
+                ptr = shared_ptr<vector<uint32_t>>(new vector<uint32_t>());
+            }
 			ptr->push_back(type);
 		}
 	}
@@ -433,28 +435,8 @@ double GeneralRouter::evaluateCache(RouteDataObjectAttribute attr, const SHARED_
 	return res;
 }
 
-void GeneralRouter::putCache(RouteDataObjectAttribute attr, const SHARED_PTR<RoutingIndex>& reg, std::vector<uint32_t>& types, double val, bool extra) {
-	if (USE_CACHE) {
-		auto regCacheIt = cacheEval[(unsigned int)attr].find(reg);
-		MAP_INTV_DOUBLE* regCache;
-		if (regCacheIt == cacheEval[(unsigned int)attr].end()) {
-			cacheEval[(unsigned int)attr][reg] = MAP_INTV_DOUBLE();
-			regCache = &cacheEval[(unsigned int)attr][reg];
-		} else {
-			regCache = &regCacheIt->second;
-		}
-		types.push_back(extra ? 1 : 0);
-		(*regCache)[types] = val;
-		types.pop_back();
-	}
-}
-
 bool GeneralRouter::acceptLine(const SHARED_PTR<RouteDataObject>& way) {
-	double res = evaluateCache(RouteDataObjectAttribute::ACCESS, way, 0);
-	if (res < 0) {
-		res = getObjContext(RouteDataObjectAttribute::ACCESS).evaluateDouble(way->region, way->types, 0);
-		putCache(RouteDataObjectAttribute::ACCESS, way->region, way->types, res, false);
-	}
+    int res = (int)evaluateCache(RouteDataObjectAttribute::ACCESS, way, 0);
 	if (impassableRoadIds.find(way->id) != impassableRoadIds.end()) {
 		return false;
 	}
