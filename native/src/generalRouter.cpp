@@ -425,8 +425,7 @@ double GeneralRouter::evaluateCache(RouteDataObjectAttribute attr, const SHARED_
 	if (r != regCache->end()) {
 		return r->second;
 	}
-	auto ptr = filterDirectionTags(reg, types, extra);
-	double res = getObjContext(attr).evaluateDouble(reg, ptr != nullptr ? *ptr : types, def);
+	double res = getObjContext(attr).evaluateDouble(reg, types, def);
 	types.push_back(extra ? 1 : 0);
 	(*regCache)[types] = res;
 	types.pop_back();
@@ -451,7 +450,9 @@ bool GeneralRouter::isArea(const SHARED_PTR<RouteDataObject>& road) {
 
 double GeneralRouter::defineObstacle(const SHARED_PTR<RouteDataObject>& road, uint point, bool dir) {
 	if (road->pointTypes.size() > point && road->pointTypes[point].size() > 0) {
-		return evaluateCache(RouteDataObjectAttribute::OBSTACLES, road->region, road->pointTypes[point], 0, dir);
+        auto & types = road->pointTypes[point];
+        auto ptr = filterDirectionTags(road->region, types, dir);
+		return evaluateCache(RouteDataObjectAttribute::OBSTACLES, road->region, ptr ? *ptr : types, 0, dir);
 	}
 	return 0;
 }
@@ -488,8 +489,9 @@ double GeneralRouter::defineHeightObstacle(const SHARED_PTR<RouteDataObject>& ro
 
 double GeneralRouter::defineRoutingObstacle(const SHARED_PTR<RouteDataObject>& road, uint point, bool dir) {
 	if (road->pointTypes.size() > point && road->pointTypes[point].size() > 0) {
-		return evaluateCache(RouteDataObjectAttribute::ROUTING_OBSTACLES, road->region, road->pointTypes[point], 0,
-							 dir);
+        auto & types = road->pointTypes[point];
+        auto ptr = filterDirectionTags(road->region, types, dir);
+		return evaluateCache(RouteDataObjectAttribute::ROUTING_OBSTACLES, road->region, ptr ? *ptr : types, 0, dir);
 	}
 	return 0;
 }
