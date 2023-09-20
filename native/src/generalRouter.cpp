@@ -425,10 +425,10 @@ double GeneralRouter::evaluateCache(RouteDataObjectAttribute attr, const SHARED_
 	if (r != regCache->end()) {
 		return r->second;
 	}
-    SHARED_PTR<vector<uint32_t>> ptr = nullptr;
-    if (filter) {
-        ptr = filterDirectionTags(reg, types, extra);
-    }
+	SHARED_PTR<vector<uint32_t>> ptr = nullptr;
+	if (filter) {
+		ptr = filterDirectionTags(reg, types, extra);
+	}
 	double res = getObjContext(attr).evaluateDouble(reg, ptr != nullptr ? *ptr : types, def);
 	types.push_back(extra ? 1 : 0);
 	(*regCache)[types] = res;
