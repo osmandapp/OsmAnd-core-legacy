@@ -371,7 +371,7 @@ int GeneralRouter::getIntAttribute(string attr, int defVal) {
 }
 
 double GeneralRouter::evaluateCache(RouteDataObjectAttribute attr, const SHARED_PTR<RouteDataObject>& way, double def) {
-	return evaluateCache(attr, way->region, way->types, def, false);
+	return evaluateCache(attr, way->region, way->types, def, false, false);
 }
 
 SHARED_PTR<vector<uint32_t>> filterDirectionTags(const SHARED_PTR<RoutingIndex>& reg, vector<uint32_t>& pointTypes, bool forwardDir) {
@@ -410,7 +410,7 @@ SHARED_PTR<vector<uint32_t>> filterDirectionTags(const SHARED_PTR<RoutingIndex>&
 }
 
 double GeneralRouter::evaluateCache(RouteDataObjectAttribute attr, const SHARED_PTR<RoutingIndex>& reg, std::vector<uint32_t>& types,
-									double def, bool extra) {
+									double def, bool extra, bool filter) {
 	auto regCacheIt = cacheEval[(unsigned int)attr].find(reg);
 	MAP_INTV_DOUBLE* regCache;
 	if (regCacheIt == cacheEval[(unsigned int)attr].end()) {
@@ -425,7 +425,10 @@ double GeneralRouter::evaluateCache(RouteDataObjectAttribute attr, const SHARED_
 	if (r != regCache->end()) {
 		return r->second;
 	}
-	auto ptr = filterDirectionTags(reg, types, extra);
+	SHARED_PTR<vector<uint32_t>> ptr = nullptr;
+	if (filter) {
+		ptr = filterDirectionTags(reg, types, extra);
+	}
 	double res = getObjContext(attr).evaluateDouble(reg, ptr != nullptr ? *ptr : types, def);
 	types.push_back(extra ? 1 : 0);
 	(*regCache)[types] = res;
@@ -451,7 +454,7 @@ bool GeneralRouter::isArea(const SHARED_PTR<RouteDataObject>& road) {
 
 double GeneralRouter::defineObstacle(const SHARED_PTR<RouteDataObject>& road, uint point, bool dir) {
 	if (road->pointTypes.size() > point && road->pointTypes[point].size() > 0) {
-		return evaluateCache(RouteDataObjectAttribute::OBSTACLES, road->region, road->pointTypes[point], 0, dir);
+		return evaluateCache(RouteDataObjectAttribute::OBSTACLES, road->region, road->pointTypes[point], 0, dir, true);
 	}
 	return 0;
 }
@@ -488,8 +491,7 @@ double GeneralRouter::defineHeightObstacle(const SHARED_PTR<RouteDataObject>& ro
 
 double GeneralRouter::defineRoutingObstacle(const SHARED_PTR<RouteDataObject>& road, uint point, bool dir) {
 	if (road->pointTypes.size() > point && road->pointTypes[point].size() > 0) {
-		return evaluateCache(RouteDataObjectAttribute::ROUTING_OBSTACLES, road->region, road->pointTypes[point], 0,
-							 dir);
+		return evaluateCache(RouteDataObjectAttribute::ROUTING_OBSTACLES, road->region, road->pointTypes[point], 0, dir, true);
 	}
 	return 0;
 }
