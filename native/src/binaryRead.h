@@ -355,13 +355,6 @@ struct RouteDataObject {
     
     
 	inline string getDestinationName(string& lang, bool translit, bool direction) {
-		// Issue #3289: Treat destination:ref like a destination, not like a ref
-		string destRef =
-			((getDestinationRef(direction) == "") || getDestinationRef(direction) == getRef(lang, translit, direction))
-				? ""
-				: getDestinationRef(direction);
-		string destRef1 = ("" == destRef ? "" : destRef + ", ");
-
 		if (!names.empty()) {
 			// Issue #3181: Parse destination keys in this order:
 			//              destination:lang:XX:forward/backward
@@ -389,13 +382,13 @@ struct RouteDataObject {
 				}
 				if (region->routeEncodingRules.size() > k) {
 					if (!lang.empty() && destinationTagLangFB == region->routeEncodingRules[k].getTag()) {
-						return destRef1 + (translit ? transliterate(names[k]) : names[k]);
+						return translit ? transliterate(names[k]) : names[k];
 					}
 					if (destinationTagFB == region->routeEncodingRules[k].getTag()) {
-						return destRef1 + (translit ? transliterate(names[k]) : names[k]);
+						return translit ? transliterate(names[k]) : names[k];
 					}
 					if (!lang.empty() && destinationTagLang == region->routeEncodingRules[k].getTag()) {
-						return destRef1 + (translit ? transliterate(names[k]) : names[k]);
+						return translit ? transliterate(names[k]) : names[k];
 					}
 					if (destinationTagDefault == region->routeEncodingRules[k].getTag()) {
 						destinationDefault = names[k];
@@ -403,10 +396,10 @@ struct RouteDataObject {
 				}
 			}
 			if (!destinationDefault.empty()) {
-				return destRef1 + (translit ? transliterate(destinationDefault) : destinationDefault);
+				return translit ? transliterate(destinationDefault) : destinationDefault;
 			}
 		}
-		return "" == destRef ? "" : destRef;
+		return "";
 	}
 
 	inline int64_t getId() {
