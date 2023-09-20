@@ -551,7 +551,7 @@ class GeneralRouter {
 	double parseValueFromTag(uint id, string type, GeneralRouter* router);
 
 	double evaluateCache(RouteDataObjectAttribute attr, const SHARED_PTR<RoutingIndex>& reg, std::vector<uint32_t>& types, double def,
-						 bool dir);
+						 bool dir, bool filter);
 	double evaluateCache(RouteDataObjectAttribute attr, const SHARED_PTR<RouteDataObject>& way, double def);
 
    public:
