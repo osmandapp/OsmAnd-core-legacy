@@ -32,6 +32,7 @@ struct RouteTypeRule {
 
 	const static int PROFILE_NONE = 0;
 	const static int PROFILE_TRUCK = 1000;
+	const static int PROFILE_CAR = 1001;
 
    private:
 	std::string t;
