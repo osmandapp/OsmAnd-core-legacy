@@ -79,6 +79,8 @@ void RouteTypeRule::analyze() {
 			type = MAXSPEED;
 		} else if (tl == "maxspeed:hgv") {
 			type = MAXSPEED + PROFILE_TRUCK;
+		} else if (tl == "maxspeed:motorcar") {
+			type = MAXSPEED + PROFILE_CAR;
 		}
 	} else if (startsWith(t, "access") && !v.empty()) {
 		type = ACCESS;
