@@ -569,7 +569,7 @@ int assignOnewayColor(MapDataObject* mObj, RenderingRuleSearchRequest* req, Rend
 		onewayColor = 0xff6286ff;
 	}
 	if (tag == "seamark:type" && rc->getWaterwayArrows() > 0 &&
-		((rc->getZoom() >= 9 && value == "separation_lane") || (rc->getZoom() >= 9 && value == "separation_line"))) {
+		(rc->getZoom() >= 9 && value == "separation_lane")) {
 		oneway = 1;
 		onewayColor = 0xff6286ff;
 	}
