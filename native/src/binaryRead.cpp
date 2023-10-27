@@ -1,4 +1,4 @@
-#include "binaryRead.h"
+#include "generalRouter.h"
 
 #include <fcntl.h>
 #include <stdlib.h>
@@ -349,11 +349,14 @@ string RouteDataObject::getHighway() {
 	return "";
 }
 
-bool RouteDataObject::hasPrivateAccess() {
+bool RouteDataObject::hasPrivateAccess(GeneralRouterProfile profile) {
 	int sz = types.size();
 	for (int i = 0; i < sz; i++) {
 		auto& r = region->quickGetEncodingRule(types[i]);
-		if (r.getTag() == "motorcar" || r.getTag() == "motor_vehicle" || r.getTag() == "vehicle" || r.getTag() == "access") {
+		auto tag = r.getTag();
+		if (tag == "vehicle" || tag == "access" || 
+				(profile == GeneralRouterProfile::CAR && (tag == "motorcar" || tag == "motor_vehicle")) ||
+				(profile == GeneralRouterProfile::BICYCLE && (tag == "bicycle"))) {
 			if (r.getValue() == "private") {
 				return true;
 			}

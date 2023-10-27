@@ -874,14 +874,14 @@ bool RoutePlannerFrontEnd::needRequestPrivateAccessRouting(SHARED_PTR<RoutingCon
 		ctx->unloadAllData();
 		UNORDERED(map)<string, string> params({{GeneralRouterConstants::ALLOW_PRIVATE, "true"}, 
 		                                       {GeneralRouterConstants::CHECK_ALLOW_PRIVATE_NEEDED, "true"}});
-		auto generalRouter = GeneralRouter(router->getProfile(), params);
+		auto generalRouter = GeneralRouter(parseGeneralRouterProfile(ctx->config->routerName, GeneralRouterProfile::CAR), params);
 		ctx->config->router = generalRouter.build();
 		for (int i = 0; i < targetsX.size(); i++) {
 			int x31 = targetsX[i];
 			int y31 = targetsY[i];
 			SHARED_PTR<RouteSegmentPoint> rp = findRouteSegment(x31, y31, ctx.get());
 			if (rp && rp->road) {
-				if (rp->road->hasPrivateAccess()) {
+				if (rp->road->hasPrivateAccess(ctx->config->router->getProfile())) {
 					res = true;
 					break;
 				}
