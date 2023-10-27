@@ -353,17 +353,15 @@ bool RouteDataObject::hasPrivateAccess(GeneralRouterProfile profile) {
 	int sz = types.size();
 	for (int i = 0; i < sz; i++) {
 		auto& r = region->quickGetEncodingRule(types[i]);
-		auto tag = r.getTag();
-		bool checkPrivate = false;
-		if (tag == "vehicle" || tag == "access") {
-			checkPrivate = true;
-		} else if (profile == GeneralRouterProfile::CAR) {
-			checkPrivate = tag == "motorcar" || tag == "motor_vehicle";
-		} else if (profile == GeneralRouterProfile::BICYCLE) {
-			checkPrivate = tag == "bicycle";
-		}
-		if (checkPrivate && r.getValue() == "private") {
-			return true;
+		auto& tag = r.getTag();
+		if (r.getValue() == "private") {
+			if (tag == "vehicle" || tag == "access") {
+				return true;
+			} else if (profile == GeneralRouterProfile::CAR) {
+				return tag == "motorcar" || tag == "motor_vehicle";
+			} else if (profile == GeneralRouterProfile::BICYCLE) {
+				return tag == "bicycle";
+			}
 		}
 	}
 	return false;
