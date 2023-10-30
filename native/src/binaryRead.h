@@ -35,6 +35,7 @@
 #include "Logging.h"
 #endif
 
+enum class GeneralRouterProfile;
 static const uint MAP_VERSION = 2;
 static const int SHIFT_ID = 6;
 struct MapTreeBounds {
@@ -490,7 +491,7 @@ struct RouteDataObject {
 
 	string getHighway();
 
-	bool hasPrivateAccess();
+	bool hasPrivateAccess(GeneralRouterProfile profile);
 
 	bool platform();
 
