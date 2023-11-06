@@ -225,6 +225,9 @@ struct RenderingContext {
 	int roadDensityZoomTile;
 	int roadsDensityLimitPerTile;
 
+	bool saveTextTile;
+	std::string textTile;
+
    public:
 	RenderingContext()
 		: preferredLocale(""), transliterate(false), density(1), screenDensityRatio(1),
@@ -276,6 +279,14 @@ struct RenderingContext {
 	void setDimension(int width, int height) {
 		this->width = width;
 		this->height = height;
+	}
+
+	void isSaveTextTile (bool s) {
+		saveTextTile = s;
+	}
+
+	inline std::string getTextTile() {
+		return textTile;
 	}
 
 	inline int getShadowRenderingMode() {

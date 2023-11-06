@@ -580,6 +580,8 @@ jfieldID jfield_RenderingContext_tileDivisor = NULL;
 jfieldID jfield_RenderingContext_rotate = NULL;
 jfieldID jfield_RenderingContext_preferredLocale = NULL;
 jfieldID jfield_RenderingContext_transliterate = NULL;
+jfieldID jfield_RenderingContext_saveTextTile = NULL;
+jfieldID jfield_RenderingContext_textTile = NULL;
 
 jfieldID jfield_RenderingContext_pointCount = NULL;
 jfieldID jfield_RenderingContext_pointInsideCount = NULL;
@@ -1026,6 +1028,8 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jfield_RenderingContext_zoom = getFid(env, jclass_RenderingContext, "zoom", "I");
 	jfield_RenderingContext_tileDivisor = getFid(env, jclass_RenderingContext, "tileDivisor", "D");
 	jfield_RenderingContext_rotate = getFid(env, jclass_RenderingContext, "rotate", "F");
+	jfield_RenderingContext_saveTextTile = getFid(env, jclass_RenderingContext, "saveTextTile", "Z");
+	jfield_RenderingContext_textTile = getFid(env, jclass_RenderingContext, "textTile", "Ljava/lang/String;");
 	jfield_RenderingContext_preferredLocale =
 		getFid(env, jclass_RenderingContext, "preferredLocale", "Ljava/lang/String;");
 	jfield_RenderingContext_transliterate = getFid(env, jclass_RenderingContext, "transliterate", "Z");
@@ -1121,6 +1125,7 @@ void pullFromJavaRenderingContext(JNIEnv* env, jobject jrc, JNIRenderingContext*
 	rc->setDensityScale(env->GetFloatField(jrc, jfield_RenderingContext_density));
 	rc->setTextScale(env->GetFloatField(jrc, jfield_RenderingContext_textScale));
 	rc->setScreenDensityRatio(env->GetFloatField(jrc, jfield_RenderingContext_screenDensityRatio));
+	rc->isSaveTextTile(env->GetBooleanField(jrc, jfield_RenderingContext_saveTextTile));
 
 	jstring jpref = (jstring)env->GetObjectField(jrc, jfield_RenderingContext_preferredLocale);
 	jboolean transliterate = (jboolean)env->GetBooleanField(jrc, jfield_RenderingContext_transliterate);
@@ -2265,6 +2270,11 @@ void pushToJavaRenderingContext(JNIEnv* env, jobject jrc, JNIRenderingContext* r
 	env->SetIntField(jrc, jfield_RenderingContext_allObjects, rc->allObjects);
 	env->SetIntField(jrc, jfield_RenderingContext_textRenderingTime, rc->textRendering.GetElapsedMs());
 	env->SetIntField(jrc, jfield_RenderingContext_lastRenderedKey, rc->lastRenderedKey);
+	if (rc->saveTextTile) {
+		jstring j_tile = env->NewStringUTF(rc->textTile.c_str());
+		env->SetObjectField(jrc, jfield_RenderingContext_textTile, j_tile);
+		env->DeleteLocalRef(j_tile);
+	}
 }
 
 bool JNIRenderingContext::interrupted() {

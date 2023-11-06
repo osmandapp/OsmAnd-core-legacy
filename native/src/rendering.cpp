@@ -1264,6 +1264,30 @@ void sortObjectsByProperOrder(std::vector<FoundMapDataObject>& mapDataObjects, R
 	}
 }
 
+void saveTextTile(RenderingContext* rc, std::vector<MapDataObjectPrimitive> & arr) {
+	std::string result = "";
+	int zoom = 1 << (31 - rc->getZoom());
+	double width = rc->getWidth() * zoom;
+	double leftX = rc->getLeft() * zoom;
+	double topY = rc->getTop() * zoom;
+
+	for (auto & p : arr) {
+		result += to_string((int)p.order) + " ";
+		MapDataObject* obj = p.obj;
+		for (uint k = 0; k < obj->points.size(); k++) {
+			double x31 = (double) obj->points[k].first;
+			double y31 = (double) obj->points[k].second;
+			double x = (x31 - leftX) / width;
+			double y = (y31 - topY) / width;
+			if (x > 0 && y > 0) {
+				result += to_string(x) + " " + to_string(y) + " ";
+			}
+		}
+		result += "\n";
+	}
+	rc->textTile = result;
+}
+
 void doRendering(std::vector<FoundMapDataObject>& mapDataObjects, SkCanvas* canvas, RenderingRuleSearchRequest* req,
 				 RenderingContext* rc) {
 	rc->nativeOperations.Start();
@@ -1274,6 +1298,11 @@ void doRendering(std::vector<FoundMapDataObject>& mapDataObjects, SkCanvas* canv
 	std::vector<MapDataObjectPrimitive> pointsArray;
 	std::vector<MapDataObjectPrimitive> linesArray;
 	sortObjectsByProperOrder(mapDataObjects, req, rc, polygonsArray, pointsArray, linesArray);
+	if (rc->saveTextTile) {
+		saveTextTile(rc, pointsArray);
+		saveTextTile(rc, linesArray);
+		saveTextTile(rc, polygonsArray);
+	}
 	rc->lastRenderedKey = 0;
 	drawObject(rc, canvas, req, paint, polygonsArray, 0);
 	rc->lastRenderedKey = DEFAULT_POLYGON_MAX;
