@@ -1266,14 +1266,12 @@ void sortObjectsByProperOrder(std::vector<FoundMapDataObject>& mapDataObjects, R
 
 void saveTextTile(RenderingContext* rc, std::vector<MapDataObjectPrimitive> & arr) {
 	std::string result = "";
-	int zoom = 1 << (31 - rc->getZoom());
-	double width = rc->getWidth() * zoom;
-	double leftX = rc->getLeft() * zoom;
-	double topY = rc->getTop() * zoom;
-
-	bool inTile = false;
+	double width = rc->getWidth() * (1 << (31 - rc->getZoom() - 8));
+	double leftX = rc->getLeft() * (1 << (31 - rc->getZoom()));
+	double topY = rc->getTop() * (1 << (31 - rc->getZoom()));
+	
 	for (auto & p : arr) {
-		result += to_string((int)p.order) + " ";
+		std::string s = "";
 		MapDataObject* obj = p.obj;
 		for (uint k = 0; k < obj->points.size(); k++) {
 			double x31 = (double) obj->points[k].first;
@@ -1281,15 +1279,15 @@ void saveTextTile(RenderingContext* rc, std::vector<MapDataObjectPrimitive> & ar
 			double x = (x31 - leftX) / width;
 			double y = (y31 - topY) / width;
 			if (x > 0 && y > 0 && x <= 1 && y <= 1) {
-				result += to_string(x) + " " + to_string(y) + " ";
-				inTile = true;
+				s += to_string(x) + " " + to_string(y) + " ";				
 			}
 		}
-		result += "\n";
+		if (s.length() > 0) {
+			s = to_string((int)p.order) + " " + s;
+			result += s + "\n";
+		}
 	}
-	if (inTile) {
-		rc->textTile = result;
-	}
+	rc->textTile = result;	
 }
 
 void doRendering(std::vector<FoundMapDataObject>& mapDataObjects, SkCanvas* canvas, RenderingRuleSearchRequest* req,
