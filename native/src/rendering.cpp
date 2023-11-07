@@ -1271,6 +1271,7 @@ void saveTextTile(RenderingContext* rc, std::vector<MapDataObjectPrimitive> & ar
 	double leftX = rc->getLeft() * zoom;
 	double topY = rc->getTop() * zoom;
 
+	bool inTile = false;
 	for (auto & p : arr) {
 		result += to_string((int)p.order) + " ";
 		MapDataObject* obj = p.obj;
@@ -1281,11 +1282,14 @@ void saveTextTile(RenderingContext* rc, std::vector<MapDataObjectPrimitive> & ar
 			double y = (y31 - topY) / width;
 			if (x > 0 && y > 0 && x <= 1 && y <= 1) {
 				result += to_string(x) + " " + to_string(y) + " ";
+				inTile = true;
 			}
 		}
 		result += "\n";
 	}
-	rc->textTile = result;
+	if (inTile) {
+		rc->textTile = result;
+	}
 }
 
 void doRendering(std::vector<FoundMapDataObject>& mapDataObjects, SkCanvas* canvas, RenderingRuleSearchRequest* req,
