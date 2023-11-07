@@ -1279,7 +1279,7 @@ void saveTextTile(RenderingContext* rc, std::vector<MapDataObjectPrimitive> & ar
 			double y31 = (double) obj->points[k].second;
 			double x = (x31 - leftX) / width;
 			double y = (y31 - topY) / width;
-			if (x > 0 && y > 0) {
+			if (x > 0 && y > 0 && x <= 1 && y <= 1) {
 				result += to_string(x) + " " + to_string(y) + " ";
 			}
 		}
