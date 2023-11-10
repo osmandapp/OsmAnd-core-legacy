@@ -360,6 +360,87 @@ double alignAngleDifference(double diff) {
 	return diff;
 }
 
+/**
+ * @return -1 if there is no instersection or x<<32 | y
+ */
+bool calculateIntersection(int x, int y, int px, int py, int leftX, int rightX, int bottomY, int topY, int_pair& b) {
+	// firstly try to search if the line goes in
+	if (py < topY && y >= topY) {
+		int tx = (int)(px + ((double)(x - px) * (topY - py)) / (y - py));
+		if (leftX <= tx && tx <= rightX) {
+			b.first = tx;
+			b.second = topY;
+			return true;
+		}
+	}
+	if (py > bottomY && y <= bottomY) {
+		int tx = (int)(px + ((double)(x - px) * (py - bottomY)) / (py - y));
+		if (leftX <= tx && tx <= rightX) {
+			b.first = tx;
+			b.second = bottomY;
+			return true;
+		}
+	}
+	if (px < leftX && x >= leftX) {
+		int ty = (int)(py + ((double)(y - py) * (leftX - px)) / (x - px));
+		if (ty >= topY && ty <= bottomY) {
+			b.first = leftX;
+			b.second = ty;
+			return true;
+		}
+	}
+	if (px > rightX && x <= rightX) {
+		int ty = (int)(py + ((double)(y - py) * (px - rightX)) / (px - x));
+		if (ty >= topY && ty <= bottomY) {
+			b.first = rightX;
+			b.second = ty;
+			return true;
+		}
+	}
+
+	// try to search if point goes out
+	if (py > topY && y <= topY) {
+		int tx = (int)(px + ((double)(x - px) * (topY - py)) / (y - py));
+		if (leftX <= tx && tx <= rightX) {
+			b.first = tx;
+			b.second = topY;
+			return true;
+		}
+	}
+	if (py < bottomY && y >= bottomY) {
+		int tx = (int)(px + ((double)(x - px) * (py - bottomY)) / (py - y));
+		if (leftX <= tx && tx <= rightX) {
+			b.first = tx;
+			b.second = bottomY;
+			return true;
+		}
+	}
+	if (px > leftX && x <= leftX) {
+		int ty = (int)(py + ((double)(y - py) * (leftX - px)) / (x - px));
+		if (ty >= topY && ty <= bottomY) {
+			b.first = leftX;
+			b.second = ty;
+			return true;
+		}
+	}
+	if (px < rightX && x >= rightX) {
+		int ty = (int)(py + ((double)(y - py) * (px - rightX)) / (px - x));
+		if (ty >= topY && ty <= bottomY) {
+			b.first = rightX;
+			b.second = ty;
+			return true;
+		}
+	}
+
+	if (px == rightX || px == leftX || py == topY || py == bottomY) {
+		b.first = px;
+		b.second = py;
+		//		return true;
+		// Is it right? to not return anything?
+	}
+	return false;
+}
+
 std::string to_lowercase(const std::string& in) {
 	std::string out(in);
 	for (uint i = 0; i < in.length(); i++) {

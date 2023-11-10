@@ -1264,30 +1264,84 @@ void sortObjectsByProperOrder(std::vector<FoundMapDataObject>& mapDataObjects, R
 	}
 }
 
-void saveTextTile(RenderingContext* rc, std::vector<MapDataObjectPrimitive> & arr) {
+void saveTextTile(RenderingContext* rc, std::vector<MapDataObjectPrimitive> & arr, bool isPolygon, std::vector<int64_t> processed) {
 	std::string result = "";
 	double width = rc->getWidth() * (1 << (31 - rc->getZoom() - 8));
+	double height = rc->getHeight() * (1 << (31 - rc->getZoom() - 8));
 	double leftX = rc->getLeft() * (1 << (31 - rc->getZoom()));
 	double topY = rc->getTop() * (1 << (31 - rc->getZoom()));
-	
-	for (auto & p : arr) {
-		std::string s = "";
+	double bottomY = topY + height;
+	double rightX = leftX + width;
+
+	for (auto & p : arr) {		
 		MapDataObject* obj = p.obj;
-		for (uint k = 0; k < obj->points.size(); k++) {
+		int64_t id = obj->id;
+		auto it = find(processed.begin(), processed.end(), id);
+	  	if (it != processed.end()) {
+			continue;
+		}
+		processed.push_back(id);
+
+		bool prevInside = false;
+		double px = 0;
+		double py = 0;
+		std::vector<double> res;
+		for (uint k = 0; k < obj->points.size(); k++) { 
 			double x31 = (double) obj->points[k].first;
 			double y31 = (double) obj->points[k].second;
 			double x = (x31 - leftX) / width;
 			double y = (y31 - topY) / width;
 			if (x > 0 && y > 0 && x <= 1 && y <= 1) {
-				s += to_string(x) + " " + to_string(y) + " ";				
+				if (!prevInside && px > 0 && py > 0) {
+					int_pair b(x31, y31);
+					bool is = calculateIntersection(px, py, x31, y31, leftX, rightX, bottomY, topY, b);
+					if (is) {
+						res.push_back(b.first);
+						res.push_back(b.second);
+					}
+				}
+				res.push_back(x31);
+				res.push_back(y31);
+				prevInside = true;				
+			} else {
+				if (prevInside) {
+					int_pair b(x31, y31);
+					bool is = calculateIntersection(x31, y31, px, py, leftX, rightX, bottomY, topY, b);
+					if (is) {
+						res.push_back(b.first);
+						res.push_back(b.second);
+					}
+				}
+				prevInside = false;
 			}
+			px = x31;
+			py = y31;
 		}
-		if (s.length() > 0) {
+		if (res.size() > 0) {
+			std::string s = "";
+			for (int i = 0; i < res.size(); i = i + 2) {
+				double x31 = res[i];
+				double y31 = res[i+1];
+				double x = (x31 - leftX) / width;
+				double y = (y31 - topY) / width;
+				s += to_string(x) + " " + to_string(y) + " ";
+			}
+			if (isPolygon) {
+				double x0 = res[0];
+				double y0 = res[1];
+				double xl = res[res.size() - 2];
+				double yl = res[res.size() - 1];
+				if (x0 != xl || y0 != yl) {
+					double x = (x0 - leftX) / width;
+					double y = (y0 - topY) / width;
+					s += to_string(x) + " " + to_string(y) + " ";
+				}
+			}
 			s = to_string((int)p.order) + " " + s;
 			result += s + "\n";
-		}
+		}		
 	}
-	rc->textTile = result;	
+	rc->textTile += result;
 }
 
 void doRendering(std::vector<FoundMapDataObject>& mapDataObjects, SkCanvas* canvas, RenderingRuleSearchRequest* req,
@@ -1300,10 +1354,11 @@ void doRendering(std::vector<FoundMapDataObject>& mapDataObjects, SkCanvas* canv
 	std::vector<MapDataObjectPrimitive> pointsArray;
 	std::vector<MapDataObjectPrimitive> linesArray;
 	sortObjectsByProperOrder(mapDataObjects, req, rc, polygonsArray, pointsArray, linesArray);
-	if (rc->saveTextTile) {
-		saveTextTile(rc, pointsArray);
-		saveTextTile(rc, linesArray);
-		saveTextTile(rc, polygonsArray);
+	if (rc->saveTextTile) {	
+		std::vector<int64_t> processedIds;	
+		saveTextTile(rc, polygonsArray, true, processedIds);
+		saveTextTile(rc, linesArray, false, processedIds);
+		saveTextTile(rc, pointsArray, false, processedIds);
 	}
 	rc->lastRenderedKey = 0;
 	drawObject(rc, canvas, req, paint, polygonsArray, 0);
