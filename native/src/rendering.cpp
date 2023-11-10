@@ -1339,7 +1339,7 @@ void saveTextTile(RenderingContext* rc, std::vector<MapDataObjectPrimitive> & ar
 			}
 			s = to_string((int)p.order) + " " + s;
 			result += s + "\n";
-		}		
+		}
 	}
 	rc->textTile += result;
 }
