@@ -261,9 +261,22 @@ void splitRoadsAndAttachRoadSegments(RoutingContext* ctx, vector<SHARED_PTR<Rout
 }
 
 void calculateTimeSpeed(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResult> >& result) {
-    //for Naismith/Scarf
-    bool usePedestrianHeight = ctx->config->router->getProfile() == GeneralRouterProfile::PEDESTRIAN && ctx->config->router->heightObstacles;
-    double scarfSeconds = 7.92f / ctx->config->router->getDefaultSpeed();
+    // Naismith's/Scarf rules are used to clarify time on uphills
+    bool useNaismithRule = false;
+    double scarfSeconds = 0;
+    if (ctx->config->router->heightObstacles) {
+        useNaismithRule = true;
+        double speed = ctx->config->router->getDefaultSpeed();
+        if (ctx->config->router->getProfile() == GeneralRouterProfile::PEDESTRIAN) {
+            // PEDESTRIAN 1:7.92 based on https://en.wikipedia.org/wiki/Naismith%27s_rule
+            scarfSeconds = 7.92f / speed;
+        } else if (ctx->config->router->getProfile() == GeneralRouterProfile::BICYCLE) {
+            // BICYCLE 1:8.2 based on https://pubmed.ncbi.nlm.nih.gov/17454539/
+            scarfSeconds = 8.2f / speed;
+        } else {
+            useNaismithRule = false;
+        }
+    }
     
     for (int i = 0; i < result.size(); i++) {
         auto rr = result[i];
@@ -285,7 +298,7 @@ void calculateTimeSpeed(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResul
         
         //for Naismith/Scarf
         vector<double> heightDistanceArray;
-        if (usePedestrianHeight) {
+        if (useNaismithRule) {
             road->calculateHeightArray();
             heightDistanceArray = road->heightDistanceArray;
         }
@@ -301,7 +314,7 @@ void calculateTimeSpeed(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResul
             distOnRoadToPass += d / speed + obstacle;
             
             //for Naismith/Scarf
-            if (usePedestrianHeight) {
+            if (useNaismithRule) {
                 int heightIndex = 2 * j + 1;
                 int nextHeightIndex = 2 * next + 1;
                 if (!heightDistanceArray.empty() && heightIndex < heightDistanceArray.size() && nextHeightIndex < heightDistanceArray.size()) {
