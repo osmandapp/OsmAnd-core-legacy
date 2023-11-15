@@ -474,10 +474,6 @@ struct RouteDataObject {
 		return pointTypes[ind];
 	}
 	
-	bool loop() {
-		return pointsX[0] == pointsX[pointsX.size() - 1] && pointsY[0] == pointsY[pointsY.size() - 1];
-	}
-
 	void insert(int pos, int x31, int y31) {
 		pointsX.insert(pointsX.begin() + pos, x31);
 		pointsY.insert(pointsY.begin() + pos, y31);
