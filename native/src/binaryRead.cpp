@@ -389,9 +389,7 @@ bool RouteDataObject::roundabout() {
 		auto k = types[i];
 		if (region->routeEncodingRules.size() > k) {
 			auto& r = region->routeEncodingRules[k];
-			if (r.getTag() == "roundabout" || r.getValue() == "roundabout") {
-				return true;
-			} else if (r.getTag() == "oneway" && r.getValue() != "no" && loop()) {
+			if (r.getTag() == "roundabout" || (r.getTag() == "junction" && r.getValue() == "roundabout")) {
 				return true;
 			}
 		}
