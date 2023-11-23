@@ -169,6 +169,24 @@ const ::google::protobuf::internal::GeneratedMessageReflection*
 const ::google::protobuf::Descriptor* OsmAndRoutingIndex_RouteDataBlock_descriptor_ = NULL;
 const ::google::protobuf::internal::GeneratedMessageReflection*
   OsmAndRoutingIndex_RouteDataBlock_reflection_ = NULL;
+const ::google::protobuf::Descriptor* OsmAndHHRoutingIndex_descriptor_ = NULL;
+const ::google::protobuf::internal::GeneratedMessageReflection*
+  OsmAndHHRoutingIndex_reflection_ = NULL;
+const ::google::protobuf::Descriptor* OsmAndHHRoutingIndex_HHRoutePointsBox_descriptor_ = NULL;
+const ::google::protobuf::internal::GeneratedMessageReflection*
+  OsmAndHHRoutingIndex_HHRoutePointsBox_reflection_ = NULL;
+const ::google::protobuf::Descriptor* OsmAndHHRoutingIndex_HHRouteNetworkPoint_descriptor_ = NULL;
+const ::google::protobuf::internal::GeneratedMessageReflection*
+  OsmAndHHRoutingIndex_HHRouteNetworkPoint_reflection_ = NULL;
+const ::google::protobuf::Descriptor* OsmAndHHRoutingIndex_HHRouteBlockSegments_descriptor_ = NULL;
+const ::google::protobuf::internal::GeneratedMessageReflection*
+  OsmAndHHRoutingIndex_HHRouteBlockSegments_reflection_ = NULL;
+const ::google::protobuf::Descriptor* OsmAndHHRoutingIndex_HHRoutePointSegments_descriptor_ = NULL;
+const ::google::protobuf::internal::GeneratedMessageReflection*
+  OsmAndHHRoutingIndex_HHRoutePointSegments_reflection_ = NULL;
+const ::google::protobuf::Descriptor* OsmAndOwner_descriptor_ = NULL;
+const ::google::protobuf::internal::GeneratedMessageReflection*
+  OsmAndOwner_reflection_ = NULL;
 
 }  // namespace
 
@@ -180,14 +198,16 @@ void protobuf_AssignDesc_OBF_2eproto() {
       "OBF.proto");
   GOOGLE_CHECK(file != NULL);
   OsmAndStructure_descriptor_ = file->message_type(0);
-  static const int OsmAndStructure_offsets_[8] = {
+  static const int OsmAndStructure_offsets_[10] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndStructure, version_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndStructure, datecreated_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndStructure, owner_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndStructure, addressindex_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndStructure, transportindex_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndStructure, poiindex_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndStructure, mapindex_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndStructure, routingindex_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndStructure, hhroutingindex_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndStructure, versionconfirm_),
   };
   OsmAndStructure_reflection_ =
@@ -588,7 +608,7 @@ void protobuf_AssignDesc_OBF_2eproto() {
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(TransportRoutes));
   TransportRoute_descriptor_ = file->message_type(16);
-  static const int TransportRoute_offsets_[12] = {
+  static const int TransportRoute_offsets_[14] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(TransportRoute, id_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(TransportRoute, type_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(TransportRoute, operator__),
@@ -601,6 +621,8 @@ void protobuf_AssignDesc_OBF_2eproto() {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(TransportRoute, reversestops_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(TransportRoute, geometry_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(TransportRoute, scheduletrip_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(TransportRoute, attributetagids_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(TransportRoute, attributetexttagvalues_),
   };
   TransportRoute_reflection_ =
     new ::google::protobuf::internal::GeneratedMessageReflection(
@@ -1117,6 +1139,122 @@ void protobuf_AssignDesc_OBF_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(OsmAndRoutingIndex_RouteDataBlock));
+  OsmAndHHRoutingIndex_descriptor_ = file->message_type(40);
+  static const int OsmAndHHRoutingIndex_offsets_[4] = {
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndHHRoutingIndex, edition_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndHHRoutingIndex, profile_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndHHRoutingIndex, pointboxes_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndHHRoutingIndex, pointsegments_),
+  };
+  OsmAndHHRoutingIndex_reflection_ =
+    new ::google::protobuf::internal::GeneratedMessageReflection(
+      OsmAndHHRoutingIndex_descriptor_,
+      OsmAndHHRoutingIndex::default_instance_,
+      OsmAndHHRoutingIndex_offsets_,
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndHHRoutingIndex, _has_bits_[0]),
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndHHRoutingIndex, _unknown_fields_),
+      -1,
+      ::google::protobuf::DescriptorPool::generated_pool(),
+      ::google::protobuf::MessageFactory::generated_factory(),
+      sizeof(OsmAndHHRoutingIndex));
+  OsmAndHHRoutingIndex_HHRoutePointsBox_descriptor_ = OsmAndHHRoutingIndex_descriptor_->nested_type(0);
+  static const int OsmAndHHRoutingIndex_HHRoutePointsBox_offsets_[8] = {
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndHHRoutingIndex_HHRoutePointsBox, boxid_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndHHRoutingIndex_HHRoutePointsBox, profileparams_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndHHRoutingIndex_HHRoutePointsBox, left_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndHHRoutingIndex_HHRoutePointsBox, right_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndHHRoutingIndex_HHRoutePointsBox, top_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndHHRoutingIndex_HHRoutePointsBox, bottom_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndHHRoutingIndex_HHRoutePointsBox, boxes_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndHHRoutingIndex_HHRoutePointsBox, points_),
+  };
+  OsmAndHHRoutingIndex_HHRoutePointsBox_reflection_ =
+    new ::google::protobuf::internal::GeneratedMessageReflection(
+      OsmAndHHRoutingIndex_HHRoutePointsBox_descriptor_,
+      OsmAndHHRoutingIndex_HHRoutePointsBox::default_instance_,
+      OsmAndHHRoutingIndex_HHRoutePointsBox_offsets_,
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndHHRoutingIndex_HHRoutePointsBox, _has_bits_[0]),
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndHHRoutingIndex_HHRoutePointsBox, _unknown_fields_),
+      -1,
+      ::google::protobuf::DescriptorPool::generated_pool(),
+      ::google::protobuf::MessageFactory::generated_factory(),
+      sizeof(OsmAndHHRoutingIndex_HHRoutePointsBox));
+  OsmAndHHRoutingIndex_HHRouteNetworkPoint_descriptor_ = OsmAndHHRoutingIndex_descriptor_->nested_type(1);
+  static const int OsmAndHHRoutingIndex_HHRouteNetworkPoint_offsets_[9] = {
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndHHRoutingIndex_HHRouteNetworkPoint, id_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndHHRoutingIndex_HHRouteNetworkPoint, dx_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndHHRoutingIndex_HHRouteNetworkPoint, dy_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndHHRoutingIndex_HHRouteNetworkPoint, globalid_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndHHRoutingIndex_HHRouteNetworkPoint, roadid_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndHHRoutingIndex_HHRouteNetworkPoint, roadstartendindex_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndHHRoutingIndex_HHRouteNetworkPoint, clusterid_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndHHRoutingIndex_HHRouteNetworkPoint, dualpointid_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndHHRoutingIndex_HHRouteNetworkPoint, dualclusterid_),
+  };
+  OsmAndHHRoutingIndex_HHRouteNetworkPoint_reflection_ =
+    new ::google::protobuf::internal::GeneratedMessageReflection(
+      OsmAndHHRoutingIndex_HHRouteNetworkPoint_descriptor_,
+      OsmAndHHRoutingIndex_HHRouteNetworkPoint::default_instance_,
+      OsmAndHHRoutingIndex_HHRouteNetworkPoint_offsets_,
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndHHRoutingIndex_HHRouteNetworkPoint, _has_bits_[0]),
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndHHRoutingIndex_HHRouteNetworkPoint, _unknown_fields_),
+      -1,
+      ::google::protobuf::DescriptorPool::generated_pool(),
+      ::google::protobuf::MessageFactory::generated_factory(),
+      sizeof(OsmAndHHRoutingIndex_HHRouteNetworkPoint));
+  OsmAndHHRoutingIndex_HHRouteBlockSegments_descriptor_ = OsmAndHHRoutingIndex_descriptor_->nested_type(2);
+  static const int OsmAndHHRoutingIndex_HHRouteBlockSegments_offsets_[4] = {
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndHHRoutingIndex_HHRouteBlockSegments, boxid_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndHHRoutingIndex_HHRouteBlockSegments, idrangestart_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndHHRoutingIndex_HHRouteBlockSegments, idrangelength_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndHHRoutingIndex_HHRouteBlockSegments, pointsegments_),
+  };
+  OsmAndHHRoutingIndex_HHRouteBlockSegments_reflection_ =
+    new ::google::protobuf::internal::GeneratedMessageReflection(
+      OsmAndHHRoutingIndex_HHRouteBlockSegments_descriptor_,
+      OsmAndHHRoutingIndex_HHRouteBlockSegments::default_instance_,
+      OsmAndHHRoutingIndex_HHRouteBlockSegments_offsets_,
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndHHRoutingIndex_HHRouteBlockSegments, _has_bits_[0]),
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndHHRoutingIndex_HHRouteBlockSegments, _unknown_fields_),
+      -1,
+      ::google::protobuf::DescriptorPool::generated_pool(),
+      ::google::protobuf::MessageFactory::generated_factory(),
+      sizeof(OsmAndHHRoutingIndex_HHRouteBlockSegments));
+  OsmAndHHRoutingIndex_HHRoutePointSegments_descriptor_ = OsmAndHHRoutingIndex_descriptor_->nested_type(3);
+  static const int OsmAndHHRoutingIndex_HHRoutePointSegments_offsets_[3] = {
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndHHRoutingIndex_HHRoutePointSegments, pointid_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndHHRoutingIndex_HHRoutePointSegments, segmentsin_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndHHRoutingIndex_HHRoutePointSegments, segmentsout_),
+  };
+  OsmAndHHRoutingIndex_HHRoutePointSegments_reflection_ =
+    new ::google::protobuf::internal::GeneratedMessageReflection(
+      OsmAndHHRoutingIndex_HHRoutePointSegments_descriptor_,
+      OsmAndHHRoutingIndex_HHRoutePointSegments::default_instance_,
+      OsmAndHHRoutingIndex_HHRoutePointSegments_offsets_,
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndHHRoutingIndex_HHRoutePointSegments, _has_bits_[0]),
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndHHRoutingIndex_HHRoutePointSegments, _unknown_fields_),
+      -1,
+      ::google::protobuf::DescriptorPool::generated_pool(),
+      ::google::protobuf::MessageFactory::generated_factory(),
+      sizeof(OsmAndHHRoutingIndex_HHRoutePointSegments));
+  OsmAndOwner_descriptor_ = file->message_type(41);
+  static const int OsmAndOwner_offsets_[4] = {
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndOwner, name_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndOwner, resource_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndOwner, description_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndOwner, pluginid_),
+  };
+  OsmAndOwner_reflection_ =
+    new ::google::protobuf::internal::GeneratedMessageReflection(
+      OsmAndOwner_descriptor_,
+      OsmAndOwner::default_instance_,
+      OsmAndOwner_offsets_,
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndOwner, _has_bits_[0]),
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OsmAndOwner, _unknown_fields_),
+      -1,
+      ::google::protobuf::DescriptorPool::generated_pool(),
+      ::google::protobuf::MessageFactory::generated_factory(),
+      sizeof(OsmAndOwner));
 }
 
 namespace {
@@ -1227,6 +1365,18 @@ void protobuf_RegisterTypes(const ::std::string&) {
     OsmAndRoutingIndex_RouteDataBox_descriptor_, &OsmAndRoutingIndex_RouteDataBox::default_instance());
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
     OsmAndRoutingIndex_RouteDataBlock_descriptor_, &OsmAndRoutingIndex_RouteDataBlock::default_instance());
+  ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
+    OsmAndHHRoutingIndex_descriptor_, &OsmAndHHRoutingIndex::default_instance());
+  ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
+    OsmAndHHRoutingIndex_HHRoutePointsBox_descriptor_, &OsmAndHHRoutingIndex_HHRoutePointsBox::default_instance());
+  ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
+    OsmAndHHRoutingIndex_HHRouteNetworkPoint_descriptor_, &OsmAndHHRoutingIndex_HHRouteNetworkPoint::default_instance());
+  ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
+    OsmAndHHRoutingIndex_HHRouteBlockSegments_descriptor_, &OsmAndHHRoutingIndex_HHRouteBlockSegments::default_instance());
+  ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
+    OsmAndHHRoutingIndex_HHRoutePointSegments_descriptor_, &OsmAndHHRoutingIndex_HHRoutePointSegments::default_instance());
+  ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
+    OsmAndOwner_descriptor_, &OsmAndOwner::default_instance());
 }
 
 }  // namespace
@@ -1330,6 +1480,18 @@ void protobuf_ShutdownFile_OBF_2eproto() {
   delete OsmAndRoutingIndex_RouteDataBox_reflection_;
   delete OsmAndRoutingIndex_RouteDataBlock::default_instance_;
   delete OsmAndRoutingIndex_RouteDataBlock_reflection_;
+  delete OsmAndHHRoutingIndex::default_instance_;
+  delete OsmAndHHRoutingIndex_reflection_;
+  delete OsmAndHHRoutingIndex_HHRoutePointsBox::default_instance_;
+  delete OsmAndHHRoutingIndex_HHRoutePointsBox_reflection_;
+  delete OsmAndHHRoutingIndex_HHRouteNetworkPoint::default_instance_;
+  delete OsmAndHHRoutingIndex_HHRouteNetworkPoint_reflection_;
+  delete OsmAndHHRoutingIndex_HHRouteBlockSegments::default_instance_;
+  delete OsmAndHHRoutingIndex_HHRouteBlockSegments_reflection_;
+  delete OsmAndHHRoutingIndex_HHRoutePointSegments::default_instance_;
+  delete OsmAndHHRoutingIndex_HHRoutePointSegments_reflection_;
+  delete OsmAndOwner::default_instance_;
+  delete OsmAndOwner_reflection_;
 }
 
 void protobuf_AddDesc_OBF_2eproto() {
@@ -1339,197 +1501,225 @@ void protobuf_AddDesc_OBF_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-    "\n\tOBF.proto\022\nOsmAnd.OBF\"\321\002\n\017OsmAndStruct"
+    "\n\tOBF.proto\022\nOsmAnd.OBF\"\263\003\n\017OsmAndStruct"
     "ure\022\017\n\007version\030\001 \002(\r\022\023\n\013dateCreated\030\022 \002("
-    "\003\0224\n\014addressIndex\030\007 \003(\0132\036.OsmAnd.OBF.Osm"
+    "\003\022&\n\005owner\030! \001(\0132\027.OsmAnd.OBF.OsmAndOwne"
+    "r\0224\n\014addressIndex\030\007 \003(\0132\036.OsmAnd.OBF.Osm"
     "AndAddressIndex\0228\n\016transportIndex\030\004 \003(\0132"
     " .OsmAnd.OBF.OsmAndTransportIndex\022,\n\010poi"
     "Index\030\010 \003(\0132\032.OsmAnd.OBF.OsmAndPoiIndex\022"
     ",\n\010mapIndex\030\006 \003(\0132\032.OsmAnd.OBF.OsmAndMap"
     "Index\0224\n\014routingIndex\030\t \003(\0132\036.OsmAnd.OBF"
-    ".OsmAndRoutingIndex\022\026\n\016versionConfirm\030  "
-    "\002(\r\"I\n\rOsmAndTileBox\022\014\n\004left\030\001 \002(\r\022\r\n\005ri"
-    "ght\030\002 \002(\r\022\013\n\003top\030\003 \002(\r\022\016\n\006bottom\030\004 \002(\r\"\030"
-    "\n\013StringTable\022\t\n\001s\030\001 \003(\t\"q\n\022IndexedStrin"
-    "gTable\022\016\n\006prefix\030\001 \001(\t\022\013\n\003key\030\003 \003(\t\022\013\n\003v"
-    "al\030\004 \003(\007\0221\n\tsubtables\030\005 \003(\0132\036.OsmAnd.OBF"
-    ".IndexedStringTable\"\337\004\n\016OsmAndMapIndex\022\014"
-    "\n\004name\030\002 \002(\t\0229\n\005rules\030\004 \003(\0132*.OsmAnd.OBF"
-    ".OsmAndMapIndex.MapEncodingRule\0227\n\006level"
-    "s\030\005 \003(\0132\'.OsmAnd.OBF.OsmAndMapIndex.MapR"
-    "ootLevel\032X\n\017MapEncodingRule\022\013\n\003tag\030\003 \002(\t"
-    "\022\r\n\005value\030\005 \001(\t\022\n\n\002id\030\007 \001(\r\022\017\n\007minZoom\030\t"
-    " \001(\r\022\014\n\004type\030\n \001(\r\032\312\001\n\014MapRootLevel\022\017\n\007m"
-    "axZoom\030\001 \002(\005\022\017\n\007minZoom\030\002 \002(\005\022\014\n\004left\030\003 "
-    "\002(\005\022\r\n\005right\030\004 \002(\005\022\013\n\003top\030\005 \002(\005\022\016\n\006botto"
-    "m\030\006 \002(\005\0224\n\005boxes\030\007 \003(\0132%.OsmAnd.OBF.OsmA"
-    "ndMapIndex.MapDataBox\022(\n\006blocks\030\017 \003(\0132\030."
-    "OsmAnd.OBF.MapDataBlock\032\243\001\n\nMapDataBox\022\014"
-    "\n\004left\030\001 \002(\021\022\r\n\005right\030\002 \002(\021\022\013\n\003top\030\003 \002(\021"
-    "\022\016\n\006bottom\030\004 \002(\021\022\026\n\016shiftToMapData\030\005 \001(\007"
-    "\022\r\n\005ocean\030\006 \001(\010\0224\n\005boxes\030\007 \003(\0132%.OsmAnd."
-    "OBF.OsmAndMapIndex.MapDataBox\"v\n\014MapData"
-    "Block\022\016\n\006baseId\030\n \001(\004\022(\n\013dataObjects\030\014 \003"
-    "(\0132\023.OsmAnd.OBF.MapData\022,\n\013stringTable\030\017"
-    " \001(\0132\027.OsmAnd.OBF.StringTable\"\320\001\n\007MapDat"
-    "a\022\023\n\013coordinates\030\001 \001(\014\022\027\n\017areaCoordinate"
-    "s\030\002 \001(\014\022\037\n\027polygonInnerCoordinates\030\004 \003(\014"
-    "\022\027\n\017additionalTypes\030\006 \001(\014\022\r\n\005types\030\007 \002(\014"
-    "\022\030\n\020labelcoordinates\030\010 \001(\014\022\023\n\013stringName"
-    "s\030\n \001(\014\022\n\n\002id\030\014 \002(\022\022\023\n\013rasterBytes\030\017 \001(\014"
-    "\"\364\003\n\022OsmAndAddressIndex\022\014\n\004name\030\001 \002(\t\022\017\n"
-    "\007name_en\030\002 \001(\t\022-\n\nboundaries\030\003 \001(\0132\031.Osm"
-    "And.OBF.OsmAndTileBox\0223\n\022attributeTagsTa"
-    "ble\030\004 \001(\0132\027.OsmAnd.OBF.StringTable\022:\n\006ci"
-    "ties\030\006 \003(\0132*.OsmAnd.OBF.OsmAndAddressInd"
-    "ex.CitiesIndex\0229\n\tnameIndex\030\007 \001(\0132&.OsmA"
-    "nd.OBF.OsmAndAddressNameIndexData\032\343\001\n\013Ci"
-    "tiesIndex\022C\n\004type\030\002 \002(\01625.OsmAnd.OBF.Osm"
-    "AndAddressIndex.CitiesIndex.CitiesType\022%"
-    "\n\006cities\030\005 \003(\0132\025.OsmAnd.OBF.CityIndex\022*\n"
-    "\006blocks\030\007 \003(\0132\032.OsmAnd.OBF.CityBlockInde"
-    "x\"<\n\nCitiesType\022\021\n\rCitiesOrTowns\020\001\022\r\n\tPo"
-    "stcodes\020\002\022\014\n\010Villages\020\003\"\342\001\n\032OsmAndAddres"
-    "sNameIndexData\022-\n\005table\030\004 \002(\0132\036.OsmAnd.O"
-    "BF.IndexedStringTable\022I\n\004atom\030\007 \003(\0132;.Os"
-    "mAnd.OBF.OsmAndAddressNameIndexData.Addr"
-    "essNameIndexData\032J\n\024AddressNameIndexData"
-    "\0222\n\004atom\030\004 \003(\0132$.OsmAnd.OBF.AddressNameI"
-    "ndexDataAtom\"\204\001\n\030AddressNameIndexDataAto"
-    "m\022\014\n\004name\030\001 \001(\t\022\016\n\006nameEn\030\002 \001(\t\022\014\n\004type\030"
-    "\003 \002(\r\022\024\n\014shiftToIndex\030\005 \003(\005\022\030\n\020shiftToCi"
-    "tyIndex\030\006 \003(\005\022\014\n\004xy16\030\007 \003(\r\"\260\001\n\tCityInde"
-    "x\022\021\n\tcity_type\030\001 \001(\r\022\014\n\004name\030\002 \002(\t\022\017\n\007na"
-    "me_en\030\003 \001(\t\022\n\n\002id\030\004 \001(\004\022\t\n\001x\030\005 \002(\r\022\t\n\001y\030"
-    "\006 \002(\r\022\027\n\017attributeTagIds\030\007 \003(\r\022\027\n\017attrib"
-    "uteValues\030\010 \003(\t\022\035\n\025shiftToCityBlockIndex"
-    "\030\n \001(\007\"\202\001\n\016CityBlockIndex\022\030\n\020shiftToCity"
-    "Index\030\004 \001(\007\022,\n\tbuildings\030\n \003(\0132\031.OsmAnd."
-    "OBF.BuildingIndex\022(\n\007streets\030\014 \003(\0132\027.Osm"
-    "And.OBF.StreetIndex\"\345\001\n\013StreetIndex\022\014\n\004n"
-    "ame\030\001 \002(\t\022\017\n\007name_en\030\002 \001(\t\022\t\n\001x\030\003 \002(\021\022\t\n"
-    "\001y\030\004 \002(\021\0225\n\rintersections\030\005 \003(\0132\036.OsmAnd"
-    ".OBF.StreetIntersection\022\n\n\002id\030\006 \001(\004\022\027\n\017a"
-    "ttributeTagIds\030\007 \003(\r\022\027\n\017attributeValues\030"
-    "\010 \003(\t\022,\n\tbuildings\030\014 \003(\0132\031.OsmAnd.OBF.Bu"
-    "ildingIndex\"\221\001\n\022StreetIntersection\022\014\n\004na"
-    "me\030\002 \002(\t\022\017\n\007name_en\030\003 \001(\t\022\024\n\014intersected"
-    "X\030\004 \002(\021\022\024\n\014intersectedY\030\005 \002(\021\022\027\n\017attribu"
-    "teTagIds\030\007 \003(\r\022\027\n\017attributeValues\030\010 \003(\t\""
-    "\230\002\n\rBuildingIndex\022\014\n\004name\030\001 \002(\t\022\017\n\007name_"
-    "en\030\002 \001(\t\022\r\n\005name2\030\003 \001(\t\022\020\n\010name_en2\030\004 \001("
-    "\t\022\025\n\rinterpolation\030\005 \001(\021\022\t\n\001x\030\007 \002(\021\022\t\n\001y"
-    "\030\010 \002(\021\022\n\n\002x2\030\t \001(\021\022\n\n\002y2\030\n \001(\021\022\n\n\002id\030\r \001"
-    "(\004\022\020\n\010postcode\030\016 \001(\t\022\027\n\017attributeTagIds\030"
-    "\017 \003(\r\022\027\n\017attributeValues\030\020 \003(\t\022\030\n\020attrib"
-    "uteTagIds2\030\021 \003(\r\022\030\n\020attributeValues2\030\022 \003"
-    "(\t\"=\n\017TransportRoutes\022*\n\006routes\030\006 \003(\0132\032."
-    "OsmAnd.OBF.TransportRoute\"\300\002\n\016TransportR"
-    "oute\022\n\n\002id\030\001 \002(\004\022\014\n\004type\030\003 \001(\r\022\020\n\010operat"
-    "or\030\004 \001(\r\022\013\n\003ref\030\005 \001(\t\022\014\n\004name\030\006 \001(\r\022\017\n\007n"
-    "ame_en\030\007 \001(\r\022\020\n\010distance\030\010 \001(\r\022\r\n\005color\030"
-    "\t \001(\r\0223\n\013directStops\030\017 \003(\0132\036.OsmAnd.OBF."
-    "TransportRouteStop\0224\n\014reverseStops\030\020 \003(\013"
-    "2\036.OsmAnd.OBF.TransportRouteStop\022\020\n\010geom"
-    "etry\030\021 \001(\014\0228\n\014scheduleTrip\030\022 \003(\0132\".OsmAn"
-    "d.OBF.TransportRouteSchedule\"Q\n\031Incomple"
-    "teTransportRoutes\0224\n\006routes\030\006 \003(\0132$.OsmA"
-    "nd.OBF.IncompleteTransportRoute\"{\n\030Incom"
-    "pleteTransportRoute\022\n\n\002id\030\001 \002(\004\022\014\n\004type\030"
-    "\003 \001(\r\022\020\n\010operator\030\004 \001(\r\022\013\n\003ref\030\005 \001(\r\022\020\n\010"
-    "routeRef\030\007 \002(\r\022\024\n\014missingStops\030\010 \003(\r\"\244\001\n"
-    "\026TransportRouteSchedule\022\030\n\020avgStopInterv"
-    "als\030\001 \001(\014\022\030\n\020avgWaitIntervals\030\002 \001(\014\022\025\n\rt"
-    "ripIntervals\030\003 \001(\014\022\?\n\nexceptions\030\010 \003(\0132+"
-    ".OsmAnd.OBF.TransportRouteScheduleExcept"
-    "ion\"\313\001\n\037TransportRouteScheduleException\022"
-    "\023\n\013tripIndexes\030\001 \003(\r\022\023\n\013stopIndexes\030\002 \003("
-    "\r\022\021\n\tavailable\030\003 \001(\010\022\024\n\014delayArrival\030\005 \003"
-    "(\r\022\031\n\021deltaWaitInterval\030\006 \003(\005\022\034\n\024dayOfWe"
-    "ekRestriction\030\007 \003(\r\022\034\n\024dayOfYearRestrict"
-    "ion\030\010 \003(\r\"W\n\022TransportRouteStop\022\n\n\002id\030\001 "
-    "\002(\022\022\n\n\002dx\030\002 \002(\021\022\n\n\002dy\030\003 \002(\021\022\014\n\004name\030\006 \002("
-    "\r\022\017\n\007name_en\030\007 \001(\r\"\332\001\n\rTransportStop\022\n\n\002"
-    "dx\030\001 \002(\021\022\n\n\002dy\030\002 \002(\021\022\n\n\002id\030\005 \002(\022\022\014\n\004name"
-    "\030\006 \002(\r\022\017\n\007name_en\030\007 \001(\r\022\033\n\023additionalNam"
-    "ePairs\030\010 \001(\014\022,\n\005exits\030\t \003(\0132\035.OsmAnd.OBF"
-    ".TransportStopExit\022\016\n\006routes\030\020 \003(\r\022\030\n\020de"
-    "letedRoutesIds\030\024 \003(\004\022\021\n\troutesIds\030\026 \003(\004\""
-    "8\n\021TransportStopExit\022\n\n\002dx\030\001 \002(\021\022\n\n\002dy\030\002"
-    " \002(\021\022\013\n\003ref\030\003 \002(\r\"\272\001\n\022TransportStopsTree"
-    "\022\014\n\004left\030\001 \002(\021\022\r\n\005right\030\002 \002(\021\022\013\n\003top\030\003 \002"
-    "(\021\022\016\n\006bottom\030\004 \002(\021\0220\n\010subtrees\030\007 \003(\0132\036.O"
-    "smAnd.OBF.TransportStopsTree\022(\n\005leafs\030\010 "
-    "\003(\0132\031.OsmAnd.OBF.TransportStop\022\016\n\006baseId"
-    "\030\020 \001(\004\"\357\001\n\024OsmAndTransportIndex\022\014\n\004name\030"
-    "\001 \001(\t\022+\n\006routes\030\003 \001(\0132\033.OsmAnd.OBF.Trans"
-    "portRoutes\022-\n\005stops\030\006 \001(\0132\036.OsmAnd.OBF.T"
-    "ransportStopsTree\022\?\n\020incompleteRoutes\030\010 "
-    "\001(\0132%.OsmAnd.OBF.IncompleteTransportRout"
-    "es\022,\n\013stringTable\030\t \002(\0132\027.OsmAnd.OBF.Str"
-    "ingTable\"\312\002\n\016OsmAndPoiIndex\022\014\n\004name\030\001 \002("
-    "\t\022-\n\nboundaries\030\002 \002(\0132\031.OsmAnd.OBF.OsmAn"
-    "dTileBox\0228\n\017categoriesTable\030\003 \003(\0132\037.OsmA"
-    "nd.OBF.OsmAndCategoryTable\0221\n\tnameIndex\030"
-    "\004 \001(\0132\036.OsmAnd.OBF.OsmAndPoiNameIndex\0226\n"
-    "\rsubtypesTable\030\005 \001(\0132\037.OsmAnd.OBF.OsmAnd"
-    "SubtypesTable\022\'\n\005boxes\030\006 \003(\0132\030.OsmAnd.OB"
-    "F.OsmAndPoiBox\022-\n\007poiData\030\t \003(\0132\034.OsmAnd"
-    ".OBF.OsmAndPoiBoxData\"\331\001\n\022OsmAndPoiNameI"
-    "ndex\022-\n\005table\030\003 \002(\0132\036.OsmAnd.OBF.Indexed"
-    "StringTable\022C\n\004data\030\005 \003(\01325.OsmAnd.OBF.O"
-    "smAndPoiNameIndex.OsmAndPoiNameIndexData"
-    "\032O\n\026OsmAndPoiNameIndexData\0225\n\005atoms\030\003 \003("
-    "\0132&.OsmAnd.OBF.OsmAndPoiNameIndexDataAto"
-    "m\"Q\n\032OsmAndPoiNameIndexDataAtom\022\014\n\004zoom\030"
-    "\002 \001(\r\022\t\n\001x\030\003 \001(\r\022\t\n\001y\030\004 \001(\r\022\017\n\007shiftTo\030\016"
-    " \001(\007\">\n\023OsmAndCategoryTable\022\020\n\010category\030"
-    "\001 \002(\t\022\025\n\rsubcategories\030\003 \003(\t\"E\n\023OsmAndSu"
-    "btypesTable\022.\n\010subtypes\030\004 \003(\0132\034.OsmAnd.O"
-    "BF.OsmAndPoiSubtype\"\205\001\n\020OsmAndPoiSubtype"
-    "\022\014\n\004name\030\001 \002(\t\022\017\n\007tagname\030\002 \001(\t\022\016\n\006isTex"
-    "t\030\003 \002(\010\022\021\n\tfrequency\030\005 \001(\r\022\031\n\021subtypeVal"
-    "uesSize\030\006 \001(\r\022\024\n\014subtypeValue\030\010 \003(\t\"\255\001\n\014"
-    "OsmAndPoiBox\022\014\n\004zoom\030\001 \002(\r\022\014\n\004left\030\002 \002(\021"
-    "\022\013\n\003top\030\003 \002(\021\0223\n\ncategories\030\004 \001(\0132\037.OsmA"
-    "nd.OBF.OsmAndPoiCategories\022*\n\010subBoxes\030\n"
-    " \003(\0132\030.OsmAnd.OBF.OsmAndPoiBox\022\023\n\013shiftT"
-    "oData\030\016 \001(\007\"@\n\023OsmAndPoiCategories\022\022\n\nca"
-    "tegories\030\003 \003(\r\022\025\n\rsubcategories\030\005 \003(\r\"i\n"
-    "\020OsmAndPoiBoxData\022\014\n\004zoom\030\001 \001(\r\022\t\n\001x\030\002 \001"
-    "(\r\022\t\n\001y\030\003 \001(\r\0221\n\007poiData\030\005 \003(\0132 .OsmAnd."
-    "OBF.OsmAndPoiBoxDataAtom\"\205\002\n\024OsmAndPoiBo"
-    "xDataAtom\022\n\n\002dx\030\002 \002(\021\022\n\n\002dy\030\003 \002(\021\022\022\n\ncat"
-    "egories\030\004 \003(\r\022\025\n\rsubcategories\030\005 \003(\r\022\014\n\004"
-    "name\030\006 \001(\t\022\016\n\006nameEn\030\007 \001(\t\022\n\n\002id\030\010 \001(\004\022\024"
-    "\n\014openingHours\030\n \001(\t\022\014\n\004site\030\013 \001(\t\022\r\n\005ph"
-    "one\030\014 \001(\t\022\014\n\004note\030\r \001(\t\022\026\n\016textCategorie"
-    "s\030\016 \003(\r\022\022\n\ntextValues\030\017 \003(\t\022\023\n\013precision"
-    "XY\030\020 \001(\005\"\032\n\007IdTable\022\017\n\007routeId\030\001 \003(\022\"F\n\017"
-    "RestrictionData\022\014\n\004type\030\001 \002(\005\022\014\n\004from\030\002 "
-    "\002(\005\022\n\n\002to\030\003 \002(\005\022\013\n\003via\030\004 \001(\005\"x\n\tRouteDat"
-    "a\022\016\n\006points\030\001 \002(\014\022\022\n\npointTypes\030\004 \001(\014\022\022\n"
-    "\npointNames\030\005 \001(\014\022\r\n\005types\030\007 \002(\014\022\017\n\007rout"
-    "eId\030\014 \002(\005\022\023\n\013stringNames\030\016 \001(\014\"\304\005\n\022OsmAn"
-    "dRoutingIndex\022\014\n\004name\030\001 \002(\t\022\?\n\005rules\030\002 \003"
-    "(\01320.OsmAnd.OBF.OsmAndRoutingIndex.Route"
-    "EncodingRule\022>\n\trootBoxes\030\003 \003(\0132+.OsmAnd"
-    ".OBF.OsmAndRoutingIndex.RouteDataBox\022A\n\014"
-    "basemapBoxes\030\004 \003(\0132+.OsmAnd.OBF.OsmAndRo"
-    "utingIndex.RouteDataBox\022=\n\006blocks\030\005 \003(\0132"
-    "-.OsmAnd.OBF.OsmAndRoutingIndex.RouteDat"
-    "aBlock\032;\n\021RouteEncodingRule\022\013\n\003tag\030\003 \002(\t"
-    "\022\r\n\005value\030\005 \002(\t\022\n\n\002id\030\007 \001(\r\032\231\001\n\014RouteDat"
-    "aBox\022\014\n\004left\030\001 \002(\021\022\r\n\005right\030\002 \002(\021\022\013\n\003top"
-    "\030\003 \002(\021\022\016\n\006bottom\030\004 \002(\021\022\023\n\013shiftToData\030\005 "
-    "\001(\007\022:\n\005boxes\030\007 \003(\0132+.OsmAnd.OBF.OsmAndRo"
-    "utingIndex.RouteDataBox\032\303\001\n\016RouteDataBlo"
-    "ck\022$\n\007idTable\030\005 \001(\0132\023.OsmAnd.OBF.IdTable"
-    "\022*\n\013dataObjects\030\006 \003(\0132\025.OsmAnd.OBF.Route"
-    "Data\0221\n\014restrictions\030\007 \003(\0132\033.OsmAnd.OBF."
-    "RestrictionData\022,\n\013stringTable\030\010 \001(\0132\027.O"
-    "smAnd.OBF.StringTableB\036\n\021net.osmand.bina"
-    "ryB\tOsmandOdb", 7613);
+    ".OsmAndRoutingIndex\0228\n\016hhRoutingIndex\030\n "
+    "\003(\0132 .OsmAnd.OBF.OsmAndHHRoutingIndex\022\026\n"
+    "\016versionConfirm\030  \002(\r\"I\n\rOsmAndTileBox\022\014"
+    "\n\004left\030\001 \002(\r\022\r\n\005right\030\002 \002(\r\022\013\n\003top\030\003 \002(\r"
+    "\022\016\n\006bottom\030\004 \002(\r\"\030\n\013StringTable\022\t\n\001s\030\001 \003"
+    "(\t\"q\n\022IndexedStringTable\022\016\n\006prefix\030\001 \001(\t"
+    "\022\013\n\003key\030\003 \003(\t\022\013\n\003val\030\004 \003(\007\0221\n\tsubtables\030"
+    "\005 \003(\0132\036.OsmAnd.OBF.IndexedStringTable\"\337\004"
+    "\n\016OsmAndMapIndex\022\014\n\004name\030\002 \002(\t\0229\n\005rules\030"
+    "\004 \003(\0132*.OsmAnd.OBF.OsmAndMapIndex.MapEnc"
+    "odingRule\0227\n\006levels\030\005 \003(\0132\'.OsmAnd.OBF.O"
+    "smAndMapIndex.MapRootLevel\032X\n\017MapEncodin"
+    "gRule\022\013\n\003tag\030\003 \002(\t\022\r\n\005value\030\005 \001(\t\022\n\n\002id\030"
+    "\007 \001(\r\022\017\n\007minZoom\030\t \001(\r\022\014\n\004type\030\n \001(\r\032\312\001\n"
+    "\014MapRootLevel\022\017\n\007maxZoom\030\001 \002(\005\022\017\n\007minZoo"
+    "m\030\002 \002(\005\022\014\n\004left\030\003 \002(\005\022\r\n\005right\030\004 \002(\005\022\013\n\003"
+    "top\030\005 \002(\005\022\016\n\006bottom\030\006 \002(\005\0224\n\005boxes\030\007 \003(\013"
+    "2%.OsmAnd.OBF.OsmAndMapIndex.MapDataBox\022"
+    "(\n\006blocks\030\017 \003(\0132\030.OsmAnd.OBF.MapDataBloc"
+    "k\032\243\001\n\nMapDataBox\022\014\n\004left\030\001 \002(\021\022\r\n\005right\030"
+    "\002 \002(\021\022\013\n\003top\030\003 \002(\021\022\016\n\006bottom\030\004 \002(\021\022\026\n\016sh"
+    "iftToMapData\030\005 \001(\007\022\r\n\005ocean\030\006 \001(\010\0224\n\005box"
+    "es\030\007 \003(\0132%.OsmAnd.OBF.OsmAndMapIndex.Map"
+    "DataBox\"v\n\014MapDataBlock\022\016\n\006baseId\030\n \001(\004\022"
+    "(\n\013dataObjects\030\014 \003(\0132\023.OsmAnd.OBF.MapDat"
+    "a\022,\n\013stringTable\030\017 \001(\0132\027.OsmAnd.OBF.Stri"
+    "ngTable\"\320\001\n\007MapData\022\023\n\013coordinates\030\001 \001(\014"
+    "\022\027\n\017areaCoordinates\030\002 \001(\014\022\037\n\027polygonInne"
+    "rCoordinates\030\004 \003(\014\022\027\n\017additionalTypes\030\006 "
+    "\001(\014\022\r\n\005types\030\007 \002(\014\022\030\n\020labelcoordinates\030\010"
+    " \001(\014\022\023\n\013stringNames\030\n \001(\014\022\n\n\002id\030\014 \002(\022\022\023\n"
+    "\013rasterBytes\030\017 \001(\014\"\364\003\n\022OsmAndAddressInde"
+    "x\022\014\n\004name\030\001 \002(\t\022\017\n\007name_en\030\002 \001(\t\022-\n\nboun"
+    "daries\030\003 \001(\0132\031.OsmAnd.OBF.OsmAndTileBox\022"
+    "3\n\022attributeTagsTable\030\004 \001(\0132\027.OsmAnd.OBF"
+    ".StringTable\022:\n\006cities\030\006 \003(\0132*.OsmAnd.OB"
+    "F.OsmAndAddressIndex.CitiesIndex\0229\n\tname"
+    "Index\030\007 \001(\0132&.OsmAnd.OBF.OsmAndAddressNa"
+    "meIndexData\032\343\001\n\013CitiesIndex\022C\n\004type\030\002 \002("
+    "\01625.OsmAnd.OBF.OsmAndAddressIndex.Cities"
+    "Index.CitiesType\022%\n\006cities\030\005 \003(\0132\025.OsmAn"
+    "d.OBF.CityIndex\022*\n\006blocks\030\007 \003(\0132\032.OsmAnd"
+    ".OBF.CityBlockIndex\"<\n\nCitiesType\022\021\n\rCit"
+    "iesOrTowns\020\001\022\r\n\tPostcodes\020\002\022\014\n\010Villages\020"
+    "\003\"\342\001\n\032OsmAndAddressNameIndexData\022-\n\005tabl"
+    "e\030\004 \002(\0132\036.OsmAnd.OBF.IndexedStringTable\022"
+    "I\n\004atom\030\007 \003(\0132;.OsmAnd.OBF.OsmAndAddress"
+    "NameIndexData.AddressNameIndexData\032J\n\024Ad"
+    "dressNameIndexData\0222\n\004atom\030\004 \003(\0132$.OsmAn"
+    "d.OBF.AddressNameIndexDataAtom\"\204\001\n\030Addre"
+    "ssNameIndexDataAtom\022\014\n\004name\030\001 \001(\t\022\016\n\006nam"
+    "eEn\030\002 \001(\t\022\014\n\004type\030\003 \002(\r\022\024\n\014shiftToIndex\030"
+    "\005 \003(\005\022\030\n\020shiftToCityIndex\030\006 \003(\005\022\014\n\004xy16\030"
+    "\007 \003(\r\"\260\001\n\tCityIndex\022\021\n\tcity_type\030\001 \001(\r\022\014"
+    "\n\004name\030\002 \002(\t\022\017\n\007name_en\030\003 \001(\t\022\n\n\002id\030\004 \001("
+    "\004\022\t\n\001x\030\005 \002(\r\022\t\n\001y\030\006 \002(\r\022\027\n\017attributeTagI"
+    "ds\030\007 \003(\r\022\027\n\017attributeValues\030\010 \003(\t\022\035\n\025shi"
+    "ftToCityBlockIndex\030\n \001(\007\"\202\001\n\016CityBlockIn"
+    "dex\022\030\n\020shiftToCityIndex\030\004 \001(\007\022,\n\tbuildin"
+    "gs\030\n \003(\0132\031.OsmAnd.OBF.BuildingIndex\022(\n\007s"
+    "treets\030\014 \003(\0132\027.OsmAnd.OBF.StreetIndex\"\345\001"
+    "\n\013StreetIndex\022\014\n\004name\030\001 \002(\t\022\017\n\007name_en\030\002"
+    " \001(\t\022\t\n\001x\030\003 \002(\021\022\t\n\001y\030\004 \002(\021\0225\n\rintersecti"
+    "ons\030\005 \003(\0132\036.OsmAnd.OBF.StreetIntersectio"
+    "n\022\n\n\002id\030\006 \001(\004\022\027\n\017attributeTagIds\030\007 \003(\r\022\027"
+    "\n\017attributeValues\030\010 \003(\t\022,\n\tbuildings\030\014 \003"
+    "(\0132\031.OsmAnd.OBF.BuildingIndex\"\221\001\n\022Street"
+    "Intersection\022\014\n\004name\030\002 \002(\t\022\017\n\007name_en\030\003 "
+    "\001(\t\022\024\n\014intersectedX\030\004 \002(\021\022\024\n\014intersected"
+    "Y\030\005 \002(\021\022\027\n\017attributeTagIds\030\007 \003(\r\022\027\n\017attr"
+    "ibuteValues\030\010 \003(\t\"\230\002\n\rBuildingIndex\022\014\n\004n"
+    "ame\030\001 \002(\t\022\017\n\007name_en\030\002 \001(\t\022\r\n\005name2\030\003 \001("
+    "\t\022\020\n\010name_en2\030\004 \001(\t\022\025\n\rinterpolation\030\005 \001"
+    "(\021\022\t\n\001x\030\007 \002(\021\022\t\n\001y\030\010 \002(\021\022\n\n\002x2\030\t \001(\021\022\n\n\002"
+    "y2\030\n \001(\021\022\n\n\002id\030\r \001(\004\022\020\n\010postcode\030\016 \001(\t\022\027"
+    "\n\017attributeTagIds\030\017 \003(\r\022\027\n\017attributeValu"
+    "es\030\020 \003(\t\022\030\n\020attributeTagIds2\030\021 \003(\r\022\030\n\020at"
+    "tributeValues2\030\022 \003(\t\"=\n\017TransportRoutes\022"
+    "*\n\006routes\030\006 \003(\0132\032.OsmAnd.OBF.TransportRo"
+    "ute\"\371\002\n\016TransportRoute\022\n\n\002id\030\001 \002(\004\022\014\n\004ty"
+    "pe\030\003 \001(\r\022\020\n\010operator\030\004 \001(\r\022\013\n\003ref\030\005 \001(\t\022"
+    "\014\n\004name\030\006 \001(\r\022\017\n\007name_en\030\007 \001(\r\022\020\n\010distan"
+    "ce\030\010 \001(\r\022\r\n\005color\030\t \001(\r\0223\n\013directStops\030\017"
+    " \003(\0132\036.OsmAnd.OBF.TransportRouteStop\0224\n\014"
+    "reverseStops\030\020 \003(\0132\036.OsmAnd.OBF.Transpor"
+    "tRouteStop\022\020\n\010geometry\030\021 \001(\014\0228\n\014schedule"
+    "Trip\030\022 \003(\0132\".OsmAnd.OBF.TransportRouteSc"
+    "hedule\022\027\n\017attributeTagIds\030\023 \003(\r\022\036\n\026attri"
+    "buteTextTagValues\030\024 \003(\014\"Q\n\031IncompleteTra"
+    "nsportRoutes\0224\n\006routes\030\006 \003(\0132$.OsmAnd.OB"
+    "F.IncompleteTransportRoute\"{\n\030Incomplete"
+    "TransportRoute\022\n\n\002id\030\001 \002(\004\022\014\n\004type\030\003 \001(\r"
+    "\022\020\n\010operator\030\004 \001(\r\022\013\n\003ref\030\005 \001(\r\022\020\n\010route"
+    "Ref\030\007 \002(\r\022\024\n\014missingStops\030\010 \003(\r\"\244\001\n\026Tran"
+    "sportRouteSchedule\022\030\n\020avgStopIntervals\030\001"
+    " \001(\014\022\030\n\020avgWaitIntervals\030\002 \001(\014\022\025\n\rtripIn"
+    "tervals\030\003 \001(\014\022\?\n\nexceptions\030\010 \003(\0132+.OsmA"
+    "nd.OBF.TransportRouteScheduleException\"\313"
+    "\001\n\037TransportRouteScheduleException\022\023\n\013tr"
+    "ipIndexes\030\001 \003(\r\022\023\n\013stopIndexes\030\002 \003(\r\022\021\n\t"
+    "available\030\003 \001(\010\022\024\n\014delayArrival\030\005 \003(\r\022\031\n"
+    "\021deltaWaitInterval\030\006 \003(\005\022\034\n\024dayOfWeekRes"
+    "triction\030\007 \003(\r\022\034\n\024dayOfYearRestriction\030\010"
+    " \003(\r\"W\n\022TransportRouteStop\022\n\n\002id\030\001 \002(\022\022\n"
+    "\n\002dx\030\002 \002(\021\022\n\n\002dy\030\003 \002(\021\022\014\n\004name\030\006 \002(\r\022\017\n\007"
+    "name_en\030\007 \001(\r\"\332\001\n\rTransportStop\022\n\n\002dx\030\001 "
+    "\002(\021\022\n\n\002dy\030\002 \002(\021\022\n\n\002id\030\005 \002(\022\022\014\n\004name\030\006 \002("
+    "\r\022\017\n\007name_en\030\007 \001(\r\022\033\n\023additionalNamePair"
+    "s\030\010 \001(\014\022,\n\005exits\030\t \003(\0132\035.OsmAnd.OBF.Tran"
+    "sportStopExit\022\016\n\006routes\030\020 \003(\r\022\030\n\020deleted"
+    "RoutesIds\030\024 \003(\004\022\021\n\troutesIds\030\026 \003(\004\"8\n\021Tr"
+    "ansportStopExit\022\n\n\002dx\030\001 \002(\021\022\n\n\002dy\030\002 \002(\021\022"
+    "\013\n\003ref\030\003 \002(\r\"\272\001\n\022TransportStopsTree\022\014\n\004l"
+    "eft\030\001 \002(\021\022\r\n\005right\030\002 \002(\021\022\013\n\003top\030\003 \002(\021\022\016\n"
+    "\006bottom\030\004 \002(\021\0220\n\010subtrees\030\007 \003(\0132\036.OsmAnd"
+    ".OBF.TransportStopsTree\022(\n\005leafs\030\010 \003(\0132\031"
+    ".OsmAnd.OBF.TransportStop\022\016\n\006baseId\030\020 \001("
+    "\004\"\357\001\n\024OsmAndTransportIndex\022\014\n\004name\030\001 \001(\t"
+    "\022+\n\006routes\030\003 \001(\0132\033.OsmAnd.OBF.TransportR"
+    "outes\022-\n\005stops\030\006 \001(\0132\036.OsmAnd.OBF.Transp"
+    "ortStopsTree\022\?\n\020incompleteRoutes\030\010 \001(\0132%"
+    ".OsmAnd.OBF.IncompleteTransportRoutes\022,\n"
+    "\013stringTable\030\t \002(\0132\027.OsmAnd.OBF.StringTa"
+    "ble\"\312\002\n\016OsmAndPoiIndex\022\014\n\004name\030\001 \002(\t\022-\n\n"
+    "boundaries\030\002 \002(\0132\031.OsmAnd.OBF.OsmAndTile"
+    "Box\0228\n\017categoriesTable\030\003 \003(\0132\037.OsmAnd.OB"
+    "F.OsmAndCategoryTable\0221\n\tnameIndex\030\004 \001(\013"
+    "2\036.OsmAnd.OBF.OsmAndPoiNameIndex\0226\n\rsubt"
+    "ypesTable\030\005 \001(\0132\037.OsmAnd.OBF.OsmAndSubty"
+    "pesTable\022\'\n\005boxes\030\006 \003(\0132\030.OsmAnd.OBF.Osm"
+    "AndPoiBox\022-\n\007poiData\030\t \003(\0132\034.OsmAnd.OBF."
+    "OsmAndPoiBoxData\"\331\001\n\022OsmAndPoiNameIndex\022"
+    "-\n\005table\030\003 \002(\0132\036.OsmAnd.OBF.IndexedStrin"
+    "gTable\022C\n\004data\030\005 \003(\01325.OsmAnd.OBF.OsmAnd"
+    "PoiNameIndex.OsmAndPoiNameIndexData\032O\n\026O"
+    "smAndPoiNameIndexData\0225\n\005atoms\030\003 \003(\0132&.O"
+    "smAnd.OBF.OsmAndPoiNameIndexDataAtom\"Q\n\032"
+    "OsmAndPoiNameIndexDataAtom\022\014\n\004zoom\030\002 \001(\r"
+    "\022\t\n\001x\030\003 \001(\r\022\t\n\001y\030\004 \001(\r\022\017\n\007shiftTo\030\016 \001(\007\""
+    ">\n\023OsmAndCategoryTable\022\020\n\010category\030\001 \002(\t"
+    "\022\025\n\rsubcategories\030\003 \003(\t\"E\n\023OsmAndSubtype"
+    "sTable\022.\n\010subtypes\030\004 \003(\0132\034.OsmAnd.OBF.Os"
+    "mAndPoiSubtype\"\205\001\n\020OsmAndPoiSubtype\022\014\n\004n"
+    "ame\030\001 \002(\t\022\017\n\007tagname\030\002 \001(\t\022\016\n\006isText\030\003 \002"
+    "(\010\022\021\n\tfrequency\030\005 \001(\r\022\031\n\021subtypeValuesSi"
+    "ze\030\006 \001(\r\022\024\n\014subtypeValue\030\010 \003(\t\"\255\001\n\014OsmAn"
+    "dPoiBox\022\014\n\004zoom\030\001 \002(\r\022\014\n\004left\030\002 \002(\021\022\013\n\003t"
+    "op\030\003 \002(\021\0223\n\ncategories\030\004 \001(\0132\037.OsmAnd.OB"
+    "F.OsmAndPoiCategories\022*\n\010subBoxes\030\n \003(\0132"
+    "\030.OsmAnd.OBF.OsmAndPoiBox\022\023\n\013shiftToData"
+    "\030\016 \001(\007\"@\n\023OsmAndPoiCategories\022\022\n\ncategor"
+    "ies\030\003 \003(\r\022\025\n\rsubcategories\030\005 \003(\r\"i\n\020OsmA"
+    "ndPoiBoxData\022\014\n\004zoom\030\001 \001(\r\022\t\n\001x\030\002 \001(\r\022\t\n"
+    "\001y\030\003 \001(\r\0221\n\007poiData\030\005 \003(\0132 .OsmAnd.OBF.O"
+    "smAndPoiBoxDataAtom\"\205\002\n\024OsmAndPoiBoxData"
+    "Atom\022\n\n\002dx\030\002 \002(\021\022\n\n\002dy\030\003 \002(\021\022\022\n\ncategori"
+    "es\030\004 \003(\r\022\025\n\rsubcategories\030\005 \003(\r\022\014\n\004name\030"
+    "\006 \001(\t\022\016\n\006nameEn\030\007 \001(\t\022\n\n\002id\030\010 \001(\004\022\024\n\014ope"
+    "ningHours\030\n \001(\t\022\014\n\004site\030\013 \001(\t\022\r\n\005phone\030\014"
+    " \001(\t\022\014\n\004note\030\r \001(\t\022\026\n\016textCategories\030\016 \003"
+    "(\r\022\022\n\ntextValues\030\017 \003(\t\022\023\n\013precisionXY\030\020 "
+    "\001(\005\"\032\n\007IdTable\022\017\n\007routeId\030\001 \003(\022\"F\n\017Restr"
+    "ictionData\022\014\n\004type\030\001 \002(\005\022\014\n\004from\030\002 \002(\005\022\n"
+    "\n\002to\030\003 \002(\005\022\013\n\003via\030\004 \001(\005\"x\n\tRouteData\022\016\n\006"
+    "points\030\001 \002(\014\022\022\n\npointTypes\030\004 \001(\014\022\022\n\npoin"
+    "tNames\030\005 \001(\014\022\r\n\005types\030\007 \002(\014\022\017\n\007routeId\030\014"
+    " \002(\005\022\023\n\013stringNames\030\016 \001(\014\"\304\005\n\022OsmAndRout"
+    "ingIndex\022\014\n\004name\030\001 \002(\t\022\?\n\005rules\030\002 \003(\01320."
+    "OsmAnd.OBF.OsmAndRoutingIndex.RouteEncod"
+    "ingRule\022>\n\trootBoxes\030\003 \003(\0132+.OsmAnd.OBF."
+    "OsmAndRoutingIndex.RouteDataBox\022A\n\014basem"
+    "apBoxes\030\004 \003(\0132+.OsmAnd.OBF.OsmAndRouting"
+    "Index.RouteDataBox\022=\n\006blocks\030\005 \003(\0132-.Osm"
+    "And.OBF.OsmAndRoutingIndex.RouteDataBloc"
+    "k\032;\n\021RouteEncodingRule\022\013\n\003tag\030\003 \002(\t\022\r\n\005v"
+    "alue\030\005 \002(\t\022\n\n\002id\030\007 \001(\r\032\231\001\n\014RouteDataBox\022"
+    "\014\n\004left\030\001 \002(\021\022\r\n\005right\030\002 \002(\021\022\013\n\003top\030\003 \002("
+    "\021\022\016\n\006bottom\030\004 \002(\021\022\023\n\013shiftToData\030\005 \001(\007\022:"
+    "\n\005boxes\030\007 \003(\0132+.OsmAnd.OBF.OsmAndRouting"
+    "Index.RouteDataBox\032\303\001\n\016RouteDataBlock\022$\n"
+    "\007idTable\030\005 \001(\0132\023.OsmAnd.OBF.IdTable\022*\n\013d"
+    "ataObjects\030\006 \003(\0132\025.OsmAnd.OBF.RouteData\022"
+    "1\n\014restrictions\030\007 \003(\0132\033.OsmAnd.OBF.Restr"
+    "ictionData\022,\n\013stringTable\030\010 \001(\0132\027.OsmAnd"
+    ".OBF.StringTable\"\367\006\n\024OsmAndHHRoutingInde"
+    "x\022\017\n\007edition\030\001 \002(\003\022\017\n\007profile\030\002 \002(\t\022E\n\np"
+    "ointBoxes\030\003 \003(\01321.OsmAnd.OBF.OsmAndHHRou"
+    "tingIndex.HHRoutePointsBox\022L\n\rpointSegme"
+    "nts\030\004 \003(\01325.OsmAnd.OBF.OsmAndHHRoutingIn"
+    "dex.HHRouteBlockSegments\032\372\001\n\020HHRoutePoin"
+    "tsBox\022\r\n\005boxId\030\001 \003(\005\022\025\n\rprofileParams\030\014 "
+    "\001(\t\022\014\n\004left\030\002 \002(\021\022\r\n\005right\030\003 \002(\021\022\013\n\003top\030"
+    "\004 \002(\021\022\016\n\006bottom\030\005 \002(\021\022@\n\005boxes\030\006 \003(\01321.O"
+    "smAnd.OBF.OsmAndHHRoutingIndex.HHRoutePo"
+    "intsBox\022D\n\006points\030\007 \003(\01324.OsmAnd.OBF.Osm"
+    "AndHHRoutingIndex.HHRouteNetworkPoint\032\265\001"
+    "\n\023HHRouteNetworkPoint\022\n\n\002id\030\001 \002(\005\022\n\n\002dx\030"
+    "\002 \002(\021\022\n\n\002dy\030\003 \002(\021\022\020\n\010globalId\030\004 \002(\005\022\016\n\006r"
+    "oadId\030\005 \002(\003\022\031\n\021roadStartEndIndex\030\006 \002(\005\022\021"
+    "\n\tclusterId\030\007 \001(\005\022\023\n\013dualPointId\030\010 \001(\005\022\025"
+    "\n\rdualClusterId\030\t \001(\005\032\240\001\n\024HHRouteBlockSe"
+    "gments\022\r\n\005boxId\030\001 \002(\005\022\024\n\014idRangeStart\030\002 "
+    "\002(\005\022\025\n\ridRangeLength\030\003 \002(\005\022L\n\rpointSegme"
+    "nts\030\005 \003(\01325.OsmAnd.OBF.OsmAndHHRoutingIn"
+    "dex.HHRoutePointSegments\032P\n\024HHRoutePoint"
+    "Segments\022\017\n\007pointId\030\001 \002(\005\022\022\n\nsegmentsIn\030"
+    "\002 \002(\014\022\023\n\013segmentsOut\030\003 \002(\014\"T\n\013OsmAndOwne"
+    "r\022\014\n\004name\030\001 \002(\t\022\020\n\010resource\030\002 \001(\t\022\023\n\013des"
+    "cription\030\003 \001(\t\022\020\n\010pluginid\030\004 \001(\tB\036\n\021net."
+    "osmand.binaryB\tOsmandOdb", 8744);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "OBF.proto", &protobuf_RegisterTypes);
   OsmAndStructure::default_instance_ = new OsmAndStructure();
@@ -1581,6 +1771,12 @@ void protobuf_AddDesc_OBF_2eproto() {
   OsmAndRoutingIndex_RouteEncodingRule::default_instance_ = new OsmAndRoutingIndex_RouteEncodingRule();
   OsmAndRoutingIndex_RouteDataBox::default_instance_ = new OsmAndRoutingIndex_RouteDataBox();
   OsmAndRoutingIndex_RouteDataBlock::default_instance_ = new OsmAndRoutingIndex_RouteDataBlock();
+  OsmAndHHRoutingIndex::default_instance_ = new OsmAndHHRoutingIndex();
+  OsmAndHHRoutingIndex_HHRoutePointsBox::default_instance_ = new OsmAndHHRoutingIndex_HHRoutePointsBox();
+  OsmAndHHRoutingIndex_HHRouteNetworkPoint::default_instance_ = new OsmAndHHRoutingIndex_HHRouteNetworkPoint();
+  OsmAndHHRoutingIndex_HHRouteBlockSegments::default_instance_ = new OsmAndHHRoutingIndex_HHRouteBlockSegments();
+  OsmAndHHRoutingIndex_HHRoutePointSegments::default_instance_ = new OsmAndHHRoutingIndex_HHRoutePointSegments();
+  OsmAndOwner::default_instance_ = new OsmAndOwner();
   OsmAndStructure::default_instance_->InitAsDefaultInstance();
   OsmAndTileBox::default_instance_->InitAsDefaultInstance();
   StringTable::default_instance_->InitAsDefaultInstance();
@@ -1630,6 +1826,12 @@ void protobuf_AddDesc_OBF_2eproto() {
   OsmAndRoutingIndex_RouteEncodingRule::default_instance_->InitAsDefaultInstance();
   OsmAndRoutingIndex_RouteDataBox::default_instance_->InitAsDefaultInstance();
   OsmAndRoutingIndex_RouteDataBlock::default_instance_->InitAsDefaultInstance();
+  OsmAndHHRoutingIndex::default_instance_->InitAsDefaultInstance();
+  OsmAndHHRoutingIndex_HHRoutePointsBox::default_instance_->InitAsDefaultInstance();
+  OsmAndHHRoutingIndex_HHRouteNetworkPoint::default_instance_->InitAsDefaultInstance();
+  OsmAndHHRoutingIndex_HHRouteBlockSegments::default_instance_->InitAsDefaultInstance();
+  OsmAndHHRoutingIndex_HHRoutePointSegments::default_instance_->InitAsDefaultInstance();
+  OsmAndOwner::default_instance_->InitAsDefaultInstance();
   ::google::protobuf::internal::OnShutdown(&protobuf_ShutdownFile_OBF_2eproto);
 }
 
@@ -1645,11 +1847,13 @@ struct StaticDescriptorInitializer_OBF_2eproto {
 #ifndef _MSC_VER
 const int OsmAndStructure::kVersionFieldNumber;
 const int OsmAndStructure::kDateCreatedFieldNumber;
+const int OsmAndStructure::kOwnerFieldNumber;
 const int OsmAndStructure::kAddressIndexFieldNumber;
 const int OsmAndStructure::kTransportIndexFieldNumber;
 const int OsmAndStructure::kPoiIndexFieldNumber;
 const int OsmAndStructure::kMapIndexFieldNumber;
 const int OsmAndStructure::kRoutingIndexFieldNumber;
+const int OsmAndStructure::kHhRoutingIndexFieldNumber;
 const int OsmAndStructure::kVersionConfirmFieldNumber;
 #endif  // !_MSC_VER
 
@@ -1659,6 +1863,7 @@ OsmAndStructure::OsmAndStructure()
 }
 
 void OsmAndStructure::InitAsDefaultInstance() {
+  owner_ = const_cast< ::OsmAnd::OBF::OsmAndOwner*>(&::OsmAnd::OBF::OsmAndOwner::default_instance());
 }
 
 OsmAndStructure::OsmAndStructure(const OsmAndStructure& from)
@@ -1671,6 +1876,7 @@ void OsmAndStructure::SharedCtor() {
   _cached_size_ = 0;
   version_ = 0u;
   datecreated_ = GOOGLE_LONGLONG(0);
+  owner_ = NULL;
   versionconfirm_ = 0u;
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
@@ -1681,6 +1887,7 @@ OsmAndStructure::~OsmAndStructure() {
 
 void OsmAndStructure::SharedDtor() {
   if (this != default_instance_) {
+    delete owner_;
   }
 }
 
@@ -1709,6 +1916,11 @@ void OsmAndStructure::Clear() {
   if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
     version_ = 0u;
     datecreated_ = GOOGLE_LONGLONG(0);
+    if (has_owner()) {
+      if (owner_ != NULL) owner_->::OsmAnd::OBF::OsmAndOwner::Clear();
+    }
+  }
+  if (_has_bits_[9 / 32] & (0xffu << (9 % 32))) {
     versionconfirm_ = 0u;
   }
   addressindex_.Clear();
@@ -1716,6 +1928,7 @@ void OsmAndStructure::Clear() {
   poiindex_.Clear();
   mapindex_.Clear();
   routingindex_.Clear();
+  hhroutingindex_.Clear();
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
   mutable_unknown_fields()->Clear();
 }
@@ -1812,6 +2025,21 @@ bool OsmAndStructure::MergePartialFromCodedStream(
           goto handle_uninterpreted;
         }
         if (input->ExpectTag(74)) goto parse_routingIndex;
+        if (input->ExpectTag(82)) goto parse_hhRoutingIndex;
+        break;
+      }
+
+      // repeated .OsmAnd.OBF.OsmAndHHRoutingIndex hhRoutingIndex = 10;
+      case 10: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
+         parse_hhRoutingIndex:
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessageNoVirtual(
+                input, add_hhroutingindex()));
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(82)) goto parse_hhRoutingIndex;
         if (input->ExpectTag(144)) goto parse_dateCreated;
         break;
       }
@@ -1841,6 +2069,20 @@ bool OsmAndStructure::MergePartialFromCodedStream(
                    ::google::protobuf::uint32, ::google::protobuf::internal::WireFormatLite::TYPE_UINT32>(
                  input, &versionconfirm_)));
           set_has_versionconfirm();
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(266)) goto parse_owner;
+        break;
+      }
+
+      // optional .OsmAnd.OBF.OsmAndOwner owner = 33;
+      case 33: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
+         parse_owner:
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessageNoVirtual(
+               input, mutable_owner()));
         } else {
           goto handle_uninterpreted;
         }
@@ -1901,6 +2143,12 @@ void OsmAndStructure::SerializeWithCachedSizes(
       9, this->routingindex(i), output);
   }
 
+  // repeated .OsmAnd.OBF.OsmAndHHRoutingIndex hhRoutingIndex = 10;
+  for (int i = 0; i < this->hhroutingindex_size(); i++) {
+    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
+      10, this->hhroutingindex(i), output);
+  }
+
   // required int64 dateCreated = 18;
   if (has_datecreated()) {
     ::google::protobuf::internal::WireFormatLite::WriteInt64(18, this->datecreated(), output);
@@ -1909,6 +2157,12 @@ void OsmAndStructure::SerializeWithCachedSizes(
   // required uint32 versionConfirm = 32;
   if (has_versionconfirm()) {
     ::google::protobuf::internal::WireFormatLite::WriteUInt32(32, this->versionconfirm(), output);
+  }
+
+  // optional .OsmAnd.OBF.OsmAndOwner owner = 33;
+  if (has_owner()) {
+    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
+      33, this->owner(), output);
   }
 
   if (!unknown_fields().empty()) {
@@ -1959,6 +2213,13 @@ void OsmAndStructure::SerializeWithCachedSizes(
         9, this->routingindex(i), target);
   }
 
+  // repeated .OsmAnd.OBF.OsmAndHHRoutingIndex hhRoutingIndex = 10;
+  for (int i = 0; i < this->hhroutingindex_size(); i++) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      WriteMessageNoVirtualToArray(
+        10, this->hhroutingindex(i), target);
+  }
+
   // required int64 dateCreated = 18;
   if (has_datecreated()) {
     target = ::google::protobuf::internal::WireFormatLite::WriteInt64ToArray(18, this->datecreated(), target);
@@ -1967,6 +2228,13 @@ void OsmAndStructure::SerializeWithCachedSizes(
   // required uint32 versionConfirm = 32;
   if (has_versionconfirm()) {
     target = ::google::protobuf::internal::WireFormatLite::WriteUInt32ToArray(32, this->versionconfirm(), target);
+  }
+
+  // optional .OsmAnd.OBF.OsmAndOwner owner = 33;
+  if (has_owner()) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      WriteMessageNoVirtualToArray(
+        33, this->owner(), target);
   }
 
   if (!unknown_fields().empty()) {
@@ -1994,6 +2262,15 @@ int OsmAndStructure::ByteSize() const {
           this->datecreated());
     }
 
+    // optional .OsmAnd.OBF.OsmAndOwner owner = 33;
+    if (has_owner()) {
+      total_size += 2 +
+        ::google::protobuf::internal::WireFormatLite::MessageSizeNoVirtual(
+          this->owner());
+    }
+
+  }
+  if (_has_bits_[9 / 32] & (0xffu << (9 % 32))) {
     // required uint32 versionConfirm = 32;
     if (has_versionconfirm()) {
       total_size += 2 +
@@ -2042,6 +2319,14 @@ int OsmAndStructure::ByteSize() const {
         this->routingindex(i));
   }
 
+  // repeated .OsmAnd.OBF.OsmAndHHRoutingIndex hhRoutingIndex = 10;
+  total_size += 1 * this->hhroutingindex_size();
+  for (int i = 0; i < this->hhroutingindex_size(); i++) {
+    total_size +=
+      ::google::protobuf::internal::WireFormatLite::MessageSizeNoVirtual(
+        this->hhroutingindex(i));
+  }
+
   if (!unknown_fields().empty()) {
     total_size +=
       ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
@@ -2072,6 +2357,7 @@ void OsmAndStructure::MergeFrom(const OsmAndStructure& from) {
   poiindex_.MergeFrom(from.poiindex_);
   mapindex_.MergeFrom(from.mapindex_);
   routingindex_.MergeFrom(from.routingindex_);
+  hhroutingindex_.MergeFrom(from.hhroutingindex_);
   if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
     if (from.has_version()) {
       set_version(from.version());
@@ -2079,6 +2365,11 @@ void OsmAndStructure::MergeFrom(const OsmAndStructure& from) {
     if (from.has_datecreated()) {
       set_datecreated(from.datecreated());
     }
+    if (from.has_owner()) {
+      mutable_owner()->::OsmAnd::OBF::OsmAndOwner::MergeFrom(from.owner());
+    }
+  }
+  if (from._has_bits_[9 / 32] & (0xffu << (9 % 32))) {
     if (from.has_versionconfirm()) {
       set_versionconfirm(from.versionconfirm());
     }
@@ -2099,8 +2390,11 @@ void OsmAndStructure::CopyFrom(const OsmAndStructure& from) {
 }
 
 bool OsmAndStructure::IsInitialized() const {
-  if ((_has_bits_[0] & 0x00000083) != 0x00000083) return false;
+  if ((_has_bits_[0] & 0x00000203) != 0x00000203) return false;
 
+  if (has_owner()) {
+    if (!this->owner().IsInitialized()) return false;
+  }
   for (int i = 0; i < addressindex_size(); i++) {
     if (!this->addressindex(i).IsInitialized()) return false;
   }
@@ -2116,6 +2410,9 @@ bool OsmAndStructure::IsInitialized() const {
   for (int i = 0; i < routingindex_size(); i++) {
     if (!this->routingindex(i).IsInitialized()) return false;
   }
+  for (int i = 0; i < hhroutingindex_size(); i++) {
+    if (!this->hhroutingindex(i).IsInitialized()) return false;
+  }
   return true;
 }
 
@@ -2123,11 +2420,13 @@ void OsmAndStructure::Swap(OsmAndStructure* other) {
   if (other != this) {
     std::swap(version_, other->version_);
     std::swap(datecreated_, other->datecreated_);
+    std::swap(owner_, other->owner_);
     addressindex_.Swap(&other->addressindex_);
     transportindex_.Swap(&other->transportindex_);
     poiindex_.Swap(&other->poiindex_);
     mapindex_.Swap(&other->mapindex_);
     routingindex_.Swap(&other->routingindex_);
+    hhroutingindex_.Swap(&other->hhroutingindex_);
     std::swap(versionconfirm_, other->versionconfirm_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);
     _unknown_fields_.Swap(&other->_unknown_fields_);
@@ -10338,6 +10637,8 @@ const int TransportRoute::kDirectStopsFieldNumber;
 const int TransportRoute::kReverseStopsFieldNumber;
 const int TransportRoute::kGeometryFieldNumber;
 const int TransportRoute::kScheduleTripFieldNumber;
+const int TransportRoute::kAttributeTagIdsFieldNumber;
+const int TransportRoute::kAttributeTextTagValuesFieldNumber;
 #endif  // !_MSC_VER
 
 TransportRoute::TransportRoute()
@@ -10429,6 +10730,8 @@ void TransportRoute::Clear() {
   directstops_.Clear();
   reversestops_.Clear();
   scheduletrip_.Clear();
+  attributetagids_.Clear();
+  attributetexttagvalues_.Clear();
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
   mutable_unknown_fields()->Clear();
 }
@@ -10622,6 +10925,43 @@ bool TransportRoute::MergePartialFromCodedStream(
           goto handle_uninterpreted;
         }
         if (input->ExpectTag(146)) goto parse_scheduleTrip;
+        if (input->ExpectTag(152)) goto parse_attributeTagIds;
+        break;
+      }
+
+      // repeated uint32 attributeTagIds = 19;
+      case 19: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
+         parse_attributeTagIds:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadRepeatedPrimitive<
+                   ::google::protobuf::uint32, ::google::protobuf::internal::WireFormatLite::TYPE_UINT32>(
+                 2, 152, input, this->mutable_attributetagids())));
+        } else if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag)
+                   == ::google::protobuf::internal::WireFormatLite::
+                      WIRETYPE_LENGTH_DELIMITED) {
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPackedPrimitiveNoInline<
+                   ::google::protobuf::uint32, ::google::protobuf::internal::WireFormatLite::TYPE_UINT32>(
+                 input, this->mutable_attributetagids())));
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(152)) goto parse_attributeTagIds;
+        if (input->ExpectTag(162)) goto parse_attributeTextTagValues;
+        break;
+      }
+
+      // repeated bytes attributeTextTagValues = 20;
+      case 20: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
+         parse_attributeTextTagValues:
+          DO_(::google::protobuf::internal::WireFormatLite::ReadBytes(
+                input, this->add_attributetexttagvalues()));
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(162)) goto parse_attributeTextTagValues;
         if (input->ExpectAtEnd()) return true;
         break;
       }
@@ -10712,6 +11052,18 @@ void TransportRoute::SerializeWithCachedSizes(
       18, this->scheduletrip(i), output);
   }
 
+  // repeated uint32 attributeTagIds = 19;
+  for (int i = 0; i < this->attributetagids_size(); i++) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt32(
+      19, this->attributetagids(i), output);
+  }
+
+  // repeated bytes attributeTextTagValues = 20;
+  for (int i = 0; i < this->attributetexttagvalues_size(); i++) {
+    ::google::protobuf::internal::WireFormatLite::WriteBytes(
+      20, this->attributetexttagvalues(i), output);
+  }
+
   if (!unknown_fields().empty()) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         unknown_fields(), output);
@@ -10791,6 +11143,18 @@ void TransportRoute::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormatLite::
       WriteMessageNoVirtualToArray(
         18, this->scheduletrip(i), target);
+  }
+
+  // repeated uint32 attributeTagIds = 19;
+  for (int i = 0; i < this->attributetagids_size(); i++) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      WriteUInt32ToArray(19, this->attributetagids(i), target);
+  }
+
+  // repeated bytes attributeTextTagValues = 20;
+  for (int i = 0; i < this->attributetexttagvalues_size(); i++) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      WriteBytesToArray(20, this->attributetexttagvalues(i), target);
   }
 
   if (!unknown_fields().empty()) {
@@ -10894,6 +11258,23 @@ int TransportRoute::ByteSize() const {
         this->scheduletrip(i));
   }
 
+  // repeated uint32 attributeTagIds = 19;
+  {
+    int data_size = 0;
+    for (int i = 0; i < this->attributetagids_size(); i++) {
+      data_size += ::google::protobuf::internal::WireFormatLite::
+        UInt32Size(this->attributetagids(i));
+    }
+    total_size += 2 * this->attributetagids_size() + data_size;
+  }
+
+  // repeated bytes attributeTextTagValues = 20;
+  total_size += 2 * this->attributetexttagvalues_size();
+  for (int i = 0; i < this->attributetexttagvalues_size(); i++) {
+    total_size += ::google::protobuf::internal::WireFormatLite::BytesSize(
+      this->attributetexttagvalues(i));
+  }
+
   if (!unknown_fields().empty()) {
     total_size +=
       ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
@@ -10922,6 +11303,8 @@ void TransportRoute::MergeFrom(const TransportRoute& from) {
   directstops_.MergeFrom(from.directstops_);
   reversestops_.MergeFrom(from.reversestops_);
   scheduletrip_.MergeFrom(from.scheduletrip_);
+  attributetagids_.MergeFrom(from.attributetagids_);
+  attributetexttagvalues_.MergeFrom(from.attributetexttagvalues_);
   if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
     if (from.has_id()) {
       set_id(from.id());
@@ -10994,6 +11377,8 @@ void TransportRoute::Swap(TransportRoute* other) {
     reversestops_.Swap(&other->reversestops_);
     std::swap(geometry_, other->geometry_);
     scheduletrip_.Swap(&other->scheduletrip_);
+    attributetagids_.Swap(&other->attributetagids_);
+    attributetexttagvalues_.Swap(&other->attributetexttagvalues_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);
     _unknown_fields_.Swap(&other->_unknown_fields_);
     std::swap(_cached_size_, other->_cached_size_);
@@ -21156,6 +21541,2448 @@ void OsmAndRoutingIndex::Swap(OsmAndRoutingIndex* other) {
   ::google::protobuf::Metadata metadata;
   metadata.descriptor = OsmAndRoutingIndex_descriptor_;
   metadata.reflection = OsmAndRoutingIndex_reflection_;
+  return metadata;
+}
+
+
+// ===================================================================
+
+#ifndef _MSC_VER
+const int OsmAndHHRoutingIndex_HHRoutePointsBox::kBoxIdFieldNumber;
+const int OsmAndHHRoutingIndex_HHRoutePointsBox::kProfileParamsFieldNumber;
+const int OsmAndHHRoutingIndex_HHRoutePointsBox::kLeftFieldNumber;
+const int OsmAndHHRoutingIndex_HHRoutePointsBox::kRightFieldNumber;
+const int OsmAndHHRoutingIndex_HHRoutePointsBox::kTopFieldNumber;
+const int OsmAndHHRoutingIndex_HHRoutePointsBox::kBottomFieldNumber;
+const int OsmAndHHRoutingIndex_HHRoutePointsBox::kBoxesFieldNumber;
+const int OsmAndHHRoutingIndex_HHRoutePointsBox::kPointsFieldNumber;
+#endif  // !_MSC_VER
+
+OsmAndHHRoutingIndex_HHRoutePointsBox::OsmAndHHRoutingIndex_HHRoutePointsBox()
+  : ::google::protobuf::Message() {
+  SharedCtor();
+}
+
+void OsmAndHHRoutingIndex_HHRoutePointsBox::InitAsDefaultInstance() {
+}
+
+OsmAndHHRoutingIndex_HHRoutePointsBox::OsmAndHHRoutingIndex_HHRoutePointsBox(const OsmAndHHRoutingIndex_HHRoutePointsBox& from)
+  : ::google::protobuf::Message() {
+  SharedCtor();
+  MergeFrom(from);
+}
+
+void OsmAndHHRoutingIndex_HHRoutePointsBox::SharedCtor() {
+  _cached_size_ = 0;
+  profileparams_ = const_cast< ::std::string*>(&::google::protobuf::internal::kEmptyString);
+  left_ = 0;
+  right_ = 0;
+  top_ = 0;
+  bottom_ = 0;
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+}
+
+OsmAndHHRoutingIndex_HHRoutePointsBox::~OsmAndHHRoutingIndex_HHRoutePointsBox() {
+  SharedDtor();
+}
+
+void OsmAndHHRoutingIndex_HHRoutePointsBox::SharedDtor() {
+  if (profileparams_ != &::google::protobuf::internal::kEmptyString) {
+    delete profileparams_;
+  }
+  if (this != default_instance_) {
+  }
+}
+
+void OsmAndHHRoutingIndex_HHRoutePointsBox::SetCachedSize(int size) const {
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+}
+const ::google::protobuf::Descriptor* OsmAndHHRoutingIndex_HHRoutePointsBox::descriptor() {
+  protobuf_AssignDescriptorsOnce();
+  return OsmAndHHRoutingIndex_HHRoutePointsBox_descriptor_;
+}
+
+const OsmAndHHRoutingIndex_HHRoutePointsBox& OsmAndHHRoutingIndex_HHRoutePointsBox::default_instance() {
+  if (default_instance_ == NULL) protobuf_AddDesc_OBF_2eproto();
+  return *default_instance_;
+}
+
+OsmAndHHRoutingIndex_HHRoutePointsBox* OsmAndHHRoutingIndex_HHRoutePointsBox::default_instance_ = NULL;
+
+OsmAndHHRoutingIndex_HHRoutePointsBox* OsmAndHHRoutingIndex_HHRoutePointsBox::New() const {
+  return new OsmAndHHRoutingIndex_HHRoutePointsBox;
+}
+
+void OsmAndHHRoutingIndex_HHRoutePointsBox::Clear() {
+  if (_has_bits_[1 / 32] & (0xffu << (1 % 32))) {
+    if (has_profileparams()) {
+      if (profileparams_ != &::google::protobuf::internal::kEmptyString) {
+        profileparams_->clear();
+      }
+    }
+    left_ = 0;
+    right_ = 0;
+    top_ = 0;
+    bottom_ = 0;
+  }
+  boxid_.Clear();
+  boxes_.Clear();
+  points_.Clear();
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+  mutable_unknown_fields()->Clear();
+}
+
+bool OsmAndHHRoutingIndex_HHRoutePointsBox::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!(EXPRESSION)) return false
+  ::google::protobuf::uint32 tag;
+  while ((tag = input->ReadTag()) != 0) {
+    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
+      // repeated int32 boxId = 1;
+      case 1: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
+         parse_boxId:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadRepeatedPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 1, 8, input, this->mutable_boxid())));
+        } else if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag)
+                   == ::google::protobuf::internal::WireFormatLite::
+                      WIRETYPE_LENGTH_DELIMITED) {
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPackedPrimitiveNoInline<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, this->mutable_boxid())));
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(8)) goto parse_boxId;
+        if (input->ExpectTag(16)) goto parse_left;
+        break;
+      }
+
+      // required sint32 left = 2;
+      case 2: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
+         parse_left:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_SINT32>(
+                 input, &left_)));
+          set_has_left();
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(24)) goto parse_right;
+        break;
+      }
+
+      // required sint32 right = 3;
+      case 3: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
+         parse_right:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_SINT32>(
+                 input, &right_)));
+          set_has_right();
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(32)) goto parse_top;
+        break;
+      }
+
+      // required sint32 top = 4;
+      case 4: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
+         parse_top:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_SINT32>(
+                 input, &top_)));
+          set_has_top();
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(40)) goto parse_bottom;
+        break;
+      }
+
+      // required sint32 bottom = 5;
+      case 5: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
+         parse_bottom:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_SINT32>(
+                 input, &bottom_)));
+          set_has_bottom();
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(50)) goto parse_boxes;
+        break;
+      }
+
+      // repeated .OsmAnd.OBF.OsmAndHHRoutingIndex.HHRoutePointsBox boxes = 6;
+      case 6: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
+         parse_boxes:
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessageNoVirtual(
+                input, add_boxes()));
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(50)) goto parse_boxes;
+        if (input->ExpectTag(58)) goto parse_points;
+        break;
+      }
+
+      // repeated .OsmAnd.OBF.OsmAndHHRoutingIndex.HHRouteNetworkPoint points = 7;
+      case 7: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
+         parse_points:
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessageNoVirtual(
+                input, add_points()));
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(58)) goto parse_points;
+        if (input->ExpectTag(98)) goto parse_profileParams;
+        break;
+      }
+
+      // optional string profileParams = 12;
+      case 12: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
+         parse_profileParams:
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_profileparams()));
+          ::google::protobuf::internal::WireFormat::VerifyUTF8String(
+            this->profileparams().data(), this->profileparams().length(),
+            ::google::protobuf::internal::WireFormat::PARSE);
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectAtEnd()) return true;
+        break;
+      }
+
+      default: {
+      handle_uninterpreted:
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_END_GROUP) {
+          return true;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+  return true;
+#undef DO_
+}
+
+void OsmAndHHRoutingIndex_HHRoutePointsBox::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  // repeated int32 boxId = 1;
+  for (int i = 0; i < this->boxid_size(); i++) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(
+      1, this->boxid(i), output);
+  }
+
+  // required sint32 left = 2;
+  if (has_left()) {
+    ::google::protobuf::internal::WireFormatLite::WriteSInt32(2, this->left(), output);
+  }
+
+  // required sint32 right = 3;
+  if (has_right()) {
+    ::google::protobuf::internal::WireFormatLite::WriteSInt32(3, this->right(), output);
+  }
+
+  // required sint32 top = 4;
+  if (has_top()) {
+    ::google::protobuf::internal::WireFormatLite::WriteSInt32(4, this->top(), output);
+  }
+
+  // required sint32 bottom = 5;
+  if (has_bottom()) {
+    ::google::protobuf::internal::WireFormatLite::WriteSInt32(5, this->bottom(), output);
+  }
+
+  // repeated .OsmAnd.OBF.OsmAndHHRoutingIndex.HHRoutePointsBox boxes = 6;
+  for (int i = 0; i < this->boxes_size(); i++) {
+    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
+      6, this->boxes(i), output);
+  }
+
+  // repeated .OsmAnd.OBF.OsmAndHHRoutingIndex.HHRouteNetworkPoint points = 7;
+  for (int i = 0; i < this->points_size(); i++) {
+    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
+      7, this->points(i), output);
+  }
+
+  // optional string profileParams = 12;
+  if (has_profileparams()) {
+    ::google::protobuf::internal::WireFormat::VerifyUTF8String(
+      this->profileparams().data(), this->profileparams().length(),
+      ::google::protobuf::internal::WireFormat::SERIALIZE);
+    ::google::protobuf::internal::WireFormatLite::WriteString(
+      12, this->profileparams(), output);
+  }
+
+  if (!unknown_fields().empty()) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        unknown_fields(), output);
+  }
+}
+
+::google::protobuf::uint8* OsmAndHHRoutingIndex_HHRoutePointsBox::SerializeWithCachedSizesToArray(
+    ::google::protobuf::uint8* target) const {
+  // repeated int32 boxId = 1;
+  for (int i = 0; i < this->boxid_size(); i++) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      WriteInt32ToArray(1, this->boxid(i), target);
+  }
+
+  // required sint32 left = 2;
+  if (has_left()) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteSInt32ToArray(2, this->left(), target);
+  }
+
+  // required sint32 right = 3;
+  if (has_right()) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteSInt32ToArray(3, this->right(), target);
+  }
+
+  // required sint32 top = 4;
+  if (has_top()) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteSInt32ToArray(4, this->top(), target);
+  }
+
+  // required sint32 bottom = 5;
+  if (has_bottom()) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteSInt32ToArray(5, this->bottom(), target);
+  }
+
+  // repeated .OsmAnd.OBF.OsmAndHHRoutingIndex.HHRoutePointsBox boxes = 6;
+  for (int i = 0; i < this->boxes_size(); i++) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      WriteMessageNoVirtualToArray(
+        6, this->boxes(i), target);
+  }
+
+  // repeated .OsmAnd.OBF.OsmAndHHRoutingIndex.HHRouteNetworkPoint points = 7;
+  for (int i = 0; i < this->points_size(); i++) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      WriteMessageNoVirtualToArray(
+        7, this->points(i), target);
+  }
+
+  // optional string profileParams = 12;
+  if (has_profileparams()) {
+    ::google::protobuf::internal::WireFormat::VerifyUTF8String(
+      this->profileparams().data(), this->profileparams().length(),
+      ::google::protobuf::internal::WireFormat::SERIALIZE);
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        12, this->profileparams(), target);
+  }
+
+  if (!unknown_fields().empty()) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        unknown_fields(), target);
+  }
+  return target;
+}
+
+int OsmAndHHRoutingIndex_HHRoutePointsBox::ByteSize() const {
+  int total_size = 0;
+
+  if (_has_bits_[1 / 32] & (0xffu << (1 % 32))) {
+    // optional string profileParams = 12;
+    if (has_profileparams()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::StringSize(
+          this->profileparams());
+    }
+
+    // required sint32 left = 2;
+    if (has_left()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::SInt32Size(
+          this->left());
+    }
+
+    // required sint32 right = 3;
+    if (has_right()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::SInt32Size(
+          this->right());
+    }
+
+    // required sint32 top = 4;
+    if (has_top()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::SInt32Size(
+          this->top());
+    }
+
+    // required sint32 bottom = 5;
+    if (has_bottom()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::SInt32Size(
+          this->bottom());
+    }
+
+  }
+  // repeated int32 boxId = 1;
+  {
+    int data_size = 0;
+    for (int i = 0; i < this->boxid_size(); i++) {
+      data_size += ::google::protobuf::internal::WireFormatLite::
+        Int32Size(this->boxid(i));
+    }
+    total_size += 1 * this->boxid_size() + data_size;
+  }
+
+  // repeated .OsmAnd.OBF.OsmAndHHRoutingIndex.HHRoutePointsBox boxes = 6;
+  total_size += 1 * this->boxes_size();
+  for (int i = 0; i < this->boxes_size(); i++) {
+    total_size +=
+      ::google::protobuf::internal::WireFormatLite::MessageSizeNoVirtual(
+        this->boxes(i));
+  }
+
+  // repeated .OsmAnd.OBF.OsmAndHHRoutingIndex.HHRouteNetworkPoint points = 7;
+  total_size += 1 * this->points_size();
+  for (int i = 0; i < this->points_size(); i++) {
+    total_size +=
+      ::google::protobuf::internal::WireFormatLite::MessageSizeNoVirtual(
+        this->points(i));
+  }
+
+  if (!unknown_fields().empty()) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        unknown_fields());
+  }
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = total_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  return total_size;
+}
+
+void OsmAndHHRoutingIndex_HHRoutePointsBox::MergeFrom(const ::google::protobuf::Message& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  const OsmAndHHRoutingIndex_HHRoutePointsBox* source =
+    ::google::protobuf::internal::dynamic_cast_if_available<const OsmAndHHRoutingIndex_HHRoutePointsBox*>(
+      &from);
+  if (source == NULL) {
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+    MergeFrom(*source);
+  }
+}
+
+void OsmAndHHRoutingIndex_HHRoutePointsBox::MergeFrom(const OsmAndHHRoutingIndex_HHRoutePointsBox& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  boxid_.MergeFrom(from.boxid_);
+  boxes_.MergeFrom(from.boxes_);
+  points_.MergeFrom(from.points_);
+  if (from._has_bits_[1 / 32] & (0xffu << (1 % 32))) {
+    if (from.has_profileparams()) {
+      set_profileparams(from.profileparams());
+    }
+    if (from.has_left()) {
+      set_left(from.left());
+    }
+    if (from.has_right()) {
+      set_right(from.right());
+    }
+    if (from.has_top()) {
+      set_top(from.top());
+    }
+    if (from.has_bottom()) {
+      set_bottom(from.bottom());
+    }
+  }
+  mutable_unknown_fields()->MergeFrom(from.unknown_fields());
+}
+
+void OsmAndHHRoutingIndex_HHRoutePointsBox::CopyFrom(const ::google::protobuf::Message& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void OsmAndHHRoutingIndex_HHRoutePointsBox::CopyFrom(const OsmAndHHRoutingIndex_HHRoutePointsBox& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool OsmAndHHRoutingIndex_HHRoutePointsBox::IsInitialized() const {
+  if ((_has_bits_[0] & 0x0000003c) != 0x0000003c) return false;
+
+  for (int i = 0; i < boxes_size(); i++) {
+    if (!this->boxes(i).IsInitialized()) return false;
+  }
+  for (int i = 0; i < points_size(); i++) {
+    if (!this->points(i).IsInitialized()) return false;
+  }
+  return true;
+}
+
+void OsmAndHHRoutingIndex_HHRoutePointsBox::Swap(OsmAndHHRoutingIndex_HHRoutePointsBox* other) {
+  if (other != this) {
+    boxid_.Swap(&other->boxid_);
+    std::swap(profileparams_, other->profileparams_);
+    std::swap(left_, other->left_);
+    std::swap(right_, other->right_);
+    std::swap(top_, other->top_);
+    std::swap(bottom_, other->bottom_);
+    boxes_.Swap(&other->boxes_);
+    points_.Swap(&other->points_);
+    std::swap(_has_bits_[0], other->_has_bits_[0]);
+    _unknown_fields_.Swap(&other->_unknown_fields_);
+    std::swap(_cached_size_, other->_cached_size_);
+  }
+}
+
+::google::protobuf::Metadata OsmAndHHRoutingIndex_HHRoutePointsBox::GetMetadata() const {
+  protobuf_AssignDescriptorsOnce();
+  ::google::protobuf::Metadata metadata;
+  metadata.descriptor = OsmAndHHRoutingIndex_HHRoutePointsBox_descriptor_;
+  metadata.reflection = OsmAndHHRoutingIndex_HHRoutePointsBox_reflection_;
+  return metadata;
+}
+
+
+// -------------------------------------------------------------------
+
+#ifndef _MSC_VER
+const int OsmAndHHRoutingIndex_HHRouteNetworkPoint::kIdFieldNumber;
+const int OsmAndHHRoutingIndex_HHRouteNetworkPoint::kDxFieldNumber;
+const int OsmAndHHRoutingIndex_HHRouteNetworkPoint::kDyFieldNumber;
+const int OsmAndHHRoutingIndex_HHRouteNetworkPoint::kGlobalIdFieldNumber;
+const int OsmAndHHRoutingIndex_HHRouteNetworkPoint::kRoadIdFieldNumber;
+const int OsmAndHHRoutingIndex_HHRouteNetworkPoint::kRoadStartEndIndexFieldNumber;
+const int OsmAndHHRoutingIndex_HHRouteNetworkPoint::kClusterIdFieldNumber;
+const int OsmAndHHRoutingIndex_HHRouteNetworkPoint::kDualPointIdFieldNumber;
+const int OsmAndHHRoutingIndex_HHRouteNetworkPoint::kDualClusterIdFieldNumber;
+#endif  // !_MSC_VER
+
+OsmAndHHRoutingIndex_HHRouteNetworkPoint::OsmAndHHRoutingIndex_HHRouteNetworkPoint()
+  : ::google::protobuf::Message() {
+  SharedCtor();
+}
+
+void OsmAndHHRoutingIndex_HHRouteNetworkPoint::InitAsDefaultInstance() {
+}
+
+OsmAndHHRoutingIndex_HHRouteNetworkPoint::OsmAndHHRoutingIndex_HHRouteNetworkPoint(const OsmAndHHRoutingIndex_HHRouteNetworkPoint& from)
+  : ::google::protobuf::Message() {
+  SharedCtor();
+  MergeFrom(from);
+}
+
+void OsmAndHHRoutingIndex_HHRouteNetworkPoint::SharedCtor() {
+  _cached_size_ = 0;
+  id_ = 0;
+  dx_ = 0;
+  dy_ = 0;
+  globalid_ = 0;
+  roadid_ = GOOGLE_LONGLONG(0);
+  roadstartendindex_ = 0;
+  clusterid_ = 0;
+  dualpointid_ = 0;
+  dualclusterid_ = 0;
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+}
+
+OsmAndHHRoutingIndex_HHRouteNetworkPoint::~OsmAndHHRoutingIndex_HHRouteNetworkPoint() {
+  SharedDtor();
+}
+
+void OsmAndHHRoutingIndex_HHRouteNetworkPoint::SharedDtor() {
+  if (this != default_instance_) {
+  }
+}
+
+void OsmAndHHRoutingIndex_HHRouteNetworkPoint::SetCachedSize(int size) const {
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+}
+const ::google::protobuf::Descriptor* OsmAndHHRoutingIndex_HHRouteNetworkPoint::descriptor() {
+  protobuf_AssignDescriptorsOnce();
+  return OsmAndHHRoutingIndex_HHRouteNetworkPoint_descriptor_;
+}
+
+const OsmAndHHRoutingIndex_HHRouteNetworkPoint& OsmAndHHRoutingIndex_HHRouteNetworkPoint::default_instance() {
+  if (default_instance_ == NULL) protobuf_AddDesc_OBF_2eproto();
+  return *default_instance_;
+}
+
+OsmAndHHRoutingIndex_HHRouteNetworkPoint* OsmAndHHRoutingIndex_HHRouteNetworkPoint::default_instance_ = NULL;
+
+OsmAndHHRoutingIndex_HHRouteNetworkPoint* OsmAndHHRoutingIndex_HHRouteNetworkPoint::New() const {
+  return new OsmAndHHRoutingIndex_HHRouteNetworkPoint;
+}
+
+void OsmAndHHRoutingIndex_HHRouteNetworkPoint::Clear() {
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    id_ = 0;
+    dx_ = 0;
+    dy_ = 0;
+    globalid_ = 0;
+    roadid_ = GOOGLE_LONGLONG(0);
+    roadstartendindex_ = 0;
+    clusterid_ = 0;
+    dualpointid_ = 0;
+  }
+  if (_has_bits_[8 / 32] & (0xffu << (8 % 32))) {
+    dualclusterid_ = 0;
+  }
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+  mutable_unknown_fields()->Clear();
+}
+
+bool OsmAndHHRoutingIndex_HHRouteNetworkPoint::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!(EXPRESSION)) return false
+  ::google::protobuf::uint32 tag;
+  while ((tag = input->ReadTag()) != 0) {
+    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
+      // required int32 id = 1;
+      case 1: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &id_)));
+          set_has_id();
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(16)) goto parse_dx;
+        break;
+      }
+
+      // required sint32 dx = 2;
+      case 2: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
+         parse_dx:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_SINT32>(
+                 input, &dx_)));
+          set_has_dx();
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(24)) goto parse_dy;
+        break;
+      }
+
+      // required sint32 dy = 3;
+      case 3: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
+         parse_dy:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_SINT32>(
+                 input, &dy_)));
+          set_has_dy();
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(32)) goto parse_globalId;
+        break;
+      }
+
+      // required int32 globalId = 4;
+      case 4: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
+         parse_globalId:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &globalid_)));
+          set_has_globalid();
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(40)) goto parse_roadId;
+        break;
+      }
+
+      // required int64 roadId = 5;
+      case 5: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
+         parse_roadId:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int64, ::google::protobuf::internal::WireFormatLite::TYPE_INT64>(
+                 input, &roadid_)));
+          set_has_roadid();
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(48)) goto parse_roadStartEndIndex;
+        break;
+      }
+
+      // required int32 roadStartEndIndex = 6;
+      case 6: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
+         parse_roadStartEndIndex:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &roadstartendindex_)));
+          set_has_roadstartendindex();
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(56)) goto parse_clusterId;
+        break;
+      }
+
+      // optional int32 clusterId = 7;
+      case 7: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
+         parse_clusterId:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &clusterid_)));
+          set_has_clusterid();
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(64)) goto parse_dualPointId;
+        break;
+      }
+
+      // optional int32 dualPointId = 8;
+      case 8: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
+         parse_dualPointId:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &dualpointid_)));
+          set_has_dualpointid();
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(72)) goto parse_dualClusterId;
+        break;
+      }
+
+      // optional int32 dualClusterId = 9;
+      case 9: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
+         parse_dualClusterId:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &dualclusterid_)));
+          set_has_dualclusterid();
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectAtEnd()) return true;
+        break;
+      }
+
+      default: {
+      handle_uninterpreted:
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_END_GROUP) {
+          return true;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+  return true;
+#undef DO_
+}
+
+void OsmAndHHRoutingIndex_HHRouteNetworkPoint::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  // required int32 id = 1;
+  if (has_id()) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(1, this->id(), output);
+  }
+
+  // required sint32 dx = 2;
+  if (has_dx()) {
+    ::google::protobuf::internal::WireFormatLite::WriteSInt32(2, this->dx(), output);
+  }
+
+  // required sint32 dy = 3;
+  if (has_dy()) {
+    ::google::protobuf::internal::WireFormatLite::WriteSInt32(3, this->dy(), output);
+  }
+
+  // required int32 globalId = 4;
+  if (has_globalid()) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(4, this->globalid(), output);
+  }
+
+  // required int64 roadId = 5;
+  if (has_roadid()) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt64(5, this->roadid(), output);
+  }
+
+  // required int32 roadStartEndIndex = 6;
+  if (has_roadstartendindex()) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(6, this->roadstartendindex(), output);
+  }
+
+  // optional int32 clusterId = 7;
+  if (has_clusterid()) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(7, this->clusterid(), output);
+  }
+
+  // optional int32 dualPointId = 8;
+  if (has_dualpointid()) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(8, this->dualpointid(), output);
+  }
+
+  // optional int32 dualClusterId = 9;
+  if (has_dualclusterid()) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(9, this->dualclusterid(), output);
+  }
+
+  if (!unknown_fields().empty()) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        unknown_fields(), output);
+  }
+}
+
+::google::protobuf::uint8* OsmAndHHRoutingIndex_HHRouteNetworkPoint::SerializeWithCachedSizesToArray(
+    ::google::protobuf::uint8* target) const {
+  // required int32 id = 1;
+  if (has_id()) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(1, this->id(), target);
+  }
+
+  // required sint32 dx = 2;
+  if (has_dx()) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteSInt32ToArray(2, this->dx(), target);
+  }
+
+  // required sint32 dy = 3;
+  if (has_dy()) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteSInt32ToArray(3, this->dy(), target);
+  }
+
+  // required int32 globalId = 4;
+  if (has_globalid()) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(4, this->globalid(), target);
+  }
+
+  // required int64 roadId = 5;
+  if (has_roadid()) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt64ToArray(5, this->roadid(), target);
+  }
+
+  // required int32 roadStartEndIndex = 6;
+  if (has_roadstartendindex()) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(6, this->roadstartendindex(), target);
+  }
+
+  // optional int32 clusterId = 7;
+  if (has_clusterid()) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(7, this->clusterid(), target);
+  }
+
+  // optional int32 dualPointId = 8;
+  if (has_dualpointid()) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(8, this->dualpointid(), target);
+  }
+
+  // optional int32 dualClusterId = 9;
+  if (has_dualclusterid()) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(9, this->dualclusterid(), target);
+  }
+
+  if (!unknown_fields().empty()) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        unknown_fields(), target);
+  }
+  return target;
+}
+
+int OsmAndHHRoutingIndex_HHRouteNetworkPoint::ByteSize() const {
+  int total_size = 0;
+
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    // required int32 id = 1;
+    if (has_id()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::Int32Size(
+          this->id());
+    }
+
+    // required sint32 dx = 2;
+    if (has_dx()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::SInt32Size(
+          this->dx());
+    }
+
+    // required sint32 dy = 3;
+    if (has_dy()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::SInt32Size(
+          this->dy());
+    }
+
+    // required int32 globalId = 4;
+    if (has_globalid()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::Int32Size(
+          this->globalid());
+    }
+
+    // required int64 roadId = 5;
+    if (has_roadid()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::Int64Size(
+          this->roadid());
+    }
+
+    // required int32 roadStartEndIndex = 6;
+    if (has_roadstartendindex()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::Int32Size(
+          this->roadstartendindex());
+    }
+
+    // optional int32 clusterId = 7;
+    if (has_clusterid()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::Int32Size(
+          this->clusterid());
+    }
+
+    // optional int32 dualPointId = 8;
+    if (has_dualpointid()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::Int32Size(
+          this->dualpointid());
+    }
+
+  }
+  if (_has_bits_[8 / 32] & (0xffu << (8 % 32))) {
+    // optional int32 dualClusterId = 9;
+    if (has_dualclusterid()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::Int32Size(
+          this->dualclusterid());
+    }
+
+  }
+  if (!unknown_fields().empty()) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        unknown_fields());
+  }
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = total_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  return total_size;
+}
+
+void OsmAndHHRoutingIndex_HHRouteNetworkPoint::MergeFrom(const ::google::protobuf::Message& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  const OsmAndHHRoutingIndex_HHRouteNetworkPoint* source =
+    ::google::protobuf::internal::dynamic_cast_if_available<const OsmAndHHRoutingIndex_HHRouteNetworkPoint*>(
+      &from);
+  if (source == NULL) {
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+    MergeFrom(*source);
+  }
+}
+
+void OsmAndHHRoutingIndex_HHRouteNetworkPoint::MergeFrom(const OsmAndHHRoutingIndex_HHRouteNetworkPoint& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    if (from.has_id()) {
+      set_id(from.id());
+    }
+    if (from.has_dx()) {
+      set_dx(from.dx());
+    }
+    if (from.has_dy()) {
+      set_dy(from.dy());
+    }
+    if (from.has_globalid()) {
+      set_globalid(from.globalid());
+    }
+    if (from.has_roadid()) {
+      set_roadid(from.roadid());
+    }
+    if (from.has_roadstartendindex()) {
+      set_roadstartendindex(from.roadstartendindex());
+    }
+    if (from.has_clusterid()) {
+      set_clusterid(from.clusterid());
+    }
+    if (from.has_dualpointid()) {
+      set_dualpointid(from.dualpointid());
+    }
+  }
+  if (from._has_bits_[8 / 32] & (0xffu << (8 % 32))) {
+    if (from.has_dualclusterid()) {
+      set_dualclusterid(from.dualclusterid());
+    }
+  }
+  mutable_unknown_fields()->MergeFrom(from.unknown_fields());
+}
+
+void OsmAndHHRoutingIndex_HHRouteNetworkPoint::CopyFrom(const ::google::protobuf::Message& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void OsmAndHHRoutingIndex_HHRouteNetworkPoint::CopyFrom(const OsmAndHHRoutingIndex_HHRouteNetworkPoint& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool OsmAndHHRoutingIndex_HHRouteNetworkPoint::IsInitialized() const {
+  if ((_has_bits_[0] & 0x0000003f) != 0x0000003f) return false;
+
+  return true;
+}
+
+void OsmAndHHRoutingIndex_HHRouteNetworkPoint::Swap(OsmAndHHRoutingIndex_HHRouteNetworkPoint* other) {
+  if (other != this) {
+    std::swap(id_, other->id_);
+    std::swap(dx_, other->dx_);
+    std::swap(dy_, other->dy_);
+    std::swap(globalid_, other->globalid_);
+    std::swap(roadid_, other->roadid_);
+    std::swap(roadstartendindex_, other->roadstartendindex_);
+    std::swap(clusterid_, other->clusterid_);
+    std::swap(dualpointid_, other->dualpointid_);
+    std::swap(dualclusterid_, other->dualclusterid_);
+    std::swap(_has_bits_[0], other->_has_bits_[0]);
+    _unknown_fields_.Swap(&other->_unknown_fields_);
+    std::swap(_cached_size_, other->_cached_size_);
+  }
+}
+
+::google::protobuf::Metadata OsmAndHHRoutingIndex_HHRouteNetworkPoint::GetMetadata() const {
+  protobuf_AssignDescriptorsOnce();
+  ::google::protobuf::Metadata metadata;
+  metadata.descriptor = OsmAndHHRoutingIndex_HHRouteNetworkPoint_descriptor_;
+  metadata.reflection = OsmAndHHRoutingIndex_HHRouteNetworkPoint_reflection_;
+  return metadata;
+}
+
+
+// -------------------------------------------------------------------
+
+#ifndef _MSC_VER
+const int OsmAndHHRoutingIndex_HHRouteBlockSegments::kBoxIdFieldNumber;
+const int OsmAndHHRoutingIndex_HHRouteBlockSegments::kIdRangeStartFieldNumber;
+const int OsmAndHHRoutingIndex_HHRouteBlockSegments::kIdRangeLengthFieldNumber;
+const int OsmAndHHRoutingIndex_HHRouteBlockSegments::kPointSegmentsFieldNumber;
+#endif  // !_MSC_VER
+
+OsmAndHHRoutingIndex_HHRouteBlockSegments::OsmAndHHRoutingIndex_HHRouteBlockSegments()
+  : ::google::protobuf::Message() {
+  SharedCtor();
+}
+
+void OsmAndHHRoutingIndex_HHRouteBlockSegments::InitAsDefaultInstance() {
+}
+
+OsmAndHHRoutingIndex_HHRouteBlockSegments::OsmAndHHRoutingIndex_HHRouteBlockSegments(const OsmAndHHRoutingIndex_HHRouteBlockSegments& from)
+  : ::google::protobuf::Message() {
+  SharedCtor();
+  MergeFrom(from);
+}
+
+void OsmAndHHRoutingIndex_HHRouteBlockSegments::SharedCtor() {
+  _cached_size_ = 0;
+  boxid_ = 0;
+  idrangestart_ = 0;
+  idrangelength_ = 0;
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+}
+
+OsmAndHHRoutingIndex_HHRouteBlockSegments::~OsmAndHHRoutingIndex_HHRouteBlockSegments() {
+  SharedDtor();
+}
+
+void OsmAndHHRoutingIndex_HHRouteBlockSegments::SharedDtor() {
+  if (this != default_instance_) {
+  }
+}
+
+void OsmAndHHRoutingIndex_HHRouteBlockSegments::SetCachedSize(int size) const {
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+}
+const ::google::protobuf::Descriptor* OsmAndHHRoutingIndex_HHRouteBlockSegments::descriptor() {
+  protobuf_AssignDescriptorsOnce();
+  return OsmAndHHRoutingIndex_HHRouteBlockSegments_descriptor_;
+}
+
+const OsmAndHHRoutingIndex_HHRouteBlockSegments& OsmAndHHRoutingIndex_HHRouteBlockSegments::default_instance() {
+  if (default_instance_ == NULL) protobuf_AddDesc_OBF_2eproto();
+  return *default_instance_;
+}
+
+OsmAndHHRoutingIndex_HHRouteBlockSegments* OsmAndHHRoutingIndex_HHRouteBlockSegments::default_instance_ = NULL;
+
+OsmAndHHRoutingIndex_HHRouteBlockSegments* OsmAndHHRoutingIndex_HHRouteBlockSegments::New() const {
+  return new OsmAndHHRoutingIndex_HHRouteBlockSegments;
+}
+
+void OsmAndHHRoutingIndex_HHRouteBlockSegments::Clear() {
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    boxid_ = 0;
+    idrangestart_ = 0;
+    idrangelength_ = 0;
+  }
+  pointsegments_.Clear();
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+  mutable_unknown_fields()->Clear();
+}
+
+bool OsmAndHHRoutingIndex_HHRouteBlockSegments::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!(EXPRESSION)) return false
+  ::google::protobuf::uint32 tag;
+  while ((tag = input->ReadTag()) != 0) {
+    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
+      // required int32 boxId = 1;
+      case 1: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &boxid_)));
+          set_has_boxid();
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(16)) goto parse_idRangeStart;
+        break;
+      }
+
+      // required int32 idRangeStart = 2;
+      case 2: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
+         parse_idRangeStart:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &idrangestart_)));
+          set_has_idrangestart();
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(24)) goto parse_idRangeLength;
+        break;
+      }
+
+      // required int32 idRangeLength = 3;
+      case 3: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
+         parse_idRangeLength:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &idrangelength_)));
+          set_has_idrangelength();
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(42)) goto parse_pointSegments;
+        break;
+      }
+
+      // repeated .OsmAnd.OBF.OsmAndHHRoutingIndex.HHRoutePointSegments pointSegments = 5;
+      case 5: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
+         parse_pointSegments:
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessageNoVirtual(
+                input, add_pointsegments()));
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(42)) goto parse_pointSegments;
+        if (input->ExpectAtEnd()) return true;
+        break;
+      }
+
+      default: {
+      handle_uninterpreted:
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_END_GROUP) {
+          return true;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+  return true;
+#undef DO_
+}
+
+void OsmAndHHRoutingIndex_HHRouteBlockSegments::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  // required int32 boxId = 1;
+  if (has_boxid()) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(1, this->boxid(), output);
+  }
+
+  // required int32 idRangeStart = 2;
+  if (has_idrangestart()) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(2, this->idrangestart(), output);
+  }
+
+  // required int32 idRangeLength = 3;
+  if (has_idrangelength()) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(3, this->idrangelength(), output);
+  }
+
+  // repeated .OsmAnd.OBF.OsmAndHHRoutingIndex.HHRoutePointSegments pointSegments = 5;
+  for (int i = 0; i < this->pointsegments_size(); i++) {
+    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
+      5, this->pointsegments(i), output);
+  }
+
+  if (!unknown_fields().empty()) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        unknown_fields(), output);
+  }
+}
+
+::google::protobuf::uint8* OsmAndHHRoutingIndex_HHRouteBlockSegments::SerializeWithCachedSizesToArray(
+    ::google::protobuf::uint8* target) const {
+  // required int32 boxId = 1;
+  if (has_boxid()) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(1, this->boxid(), target);
+  }
+
+  // required int32 idRangeStart = 2;
+  if (has_idrangestart()) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(2, this->idrangestart(), target);
+  }
+
+  // required int32 idRangeLength = 3;
+  if (has_idrangelength()) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(3, this->idrangelength(), target);
+  }
+
+  // repeated .OsmAnd.OBF.OsmAndHHRoutingIndex.HHRoutePointSegments pointSegments = 5;
+  for (int i = 0; i < this->pointsegments_size(); i++) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      WriteMessageNoVirtualToArray(
+        5, this->pointsegments(i), target);
+  }
+
+  if (!unknown_fields().empty()) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        unknown_fields(), target);
+  }
+  return target;
+}
+
+int OsmAndHHRoutingIndex_HHRouteBlockSegments::ByteSize() const {
+  int total_size = 0;
+
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    // required int32 boxId = 1;
+    if (has_boxid()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::Int32Size(
+          this->boxid());
+    }
+
+    // required int32 idRangeStart = 2;
+    if (has_idrangestart()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::Int32Size(
+          this->idrangestart());
+    }
+
+    // required int32 idRangeLength = 3;
+    if (has_idrangelength()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::Int32Size(
+          this->idrangelength());
+    }
+
+  }
+  // repeated .OsmAnd.OBF.OsmAndHHRoutingIndex.HHRoutePointSegments pointSegments = 5;
+  total_size += 1 * this->pointsegments_size();
+  for (int i = 0; i < this->pointsegments_size(); i++) {
+    total_size +=
+      ::google::protobuf::internal::WireFormatLite::MessageSizeNoVirtual(
+        this->pointsegments(i));
+  }
+
+  if (!unknown_fields().empty()) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        unknown_fields());
+  }
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = total_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  return total_size;
+}
+
+void OsmAndHHRoutingIndex_HHRouteBlockSegments::MergeFrom(const ::google::protobuf::Message& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  const OsmAndHHRoutingIndex_HHRouteBlockSegments* source =
+    ::google::protobuf::internal::dynamic_cast_if_available<const OsmAndHHRoutingIndex_HHRouteBlockSegments*>(
+      &from);
+  if (source == NULL) {
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+    MergeFrom(*source);
+  }
+}
+
+void OsmAndHHRoutingIndex_HHRouteBlockSegments::MergeFrom(const OsmAndHHRoutingIndex_HHRouteBlockSegments& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  pointsegments_.MergeFrom(from.pointsegments_);
+  if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    if (from.has_boxid()) {
+      set_boxid(from.boxid());
+    }
+    if (from.has_idrangestart()) {
+      set_idrangestart(from.idrangestart());
+    }
+    if (from.has_idrangelength()) {
+      set_idrangelength(from.idrangelength());
+    }
+  }
+  mutable_unknown_fields()->MergeFrom(from.unknown_fields());
+}
+
+void OsmAndHHRoutingIndex_HHRouteBlockSegments::CopyFrom(const ::google::protobuf::Message& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void OsmAndHHRoutingIndex_HHRouteBlockSegments::CopyFrom(const OsmAndHHRoutingIndex_HHRouteBlockSegments& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool OsmAndHHRoutingIndex_HHRouteBlockSegments::IsInitialized() const {
+  if ((_has_bits_[0] & 0x00000007) != 0x00000007) return false;
+
+  for (int i = 0; i < pointsegments_size(); i++) {
+    if (!this->pointsegments(i).IsInitialized()) return false;
+  }
+  return true;
+}
+
+void OsmAndHHRoutingIndex_HHRouteBlockSegments::Swap(OsmAndHHRoutingIndex_HHRouteBlockSegments* other) {
+  if (other != this) {
+    std::swap(boxid_, other->boxid_);
+    std::swap(idrangestart_, other->idrangestart_);
+    std::swap(idrangelength_, other->idrangelength_);
+    pointsegments_.Swap(&other->pointsegments_);
+    std::swap(_has_bits_[0], other->_has_bits_[0]);
+    _unknown_fields_.Swap(&other->_unknown_fields_);
+    std::swap(_cached_size_, other->_cached_size_);
+  }
+}
+
+::google::protobuf::Metadata OsmAndHHRoutingIndex_HHRouteBlockSegments::GetMetadata() const {
+  protobuf_AssignDescriptorsOnce();
+  ::google::protobuf::Metadata metadata;
+  metadata.descriptor = OsmAndHHRoutingIndex_HHRouteBlockSegments_descriptor_;
+  metadata.reflection = OsmAndHHRoutingIndex_HHRouteBlockSegments_reflection_;
+  return metadata;
+}
+
+
+// -------------------------------------------------------------------
+
+#ifndef _MSC_VER
+const int OsmAndHHRoutingIndex_HHRoutePointSegments::kPointIdFieldNumber;
+const int OsmAndHHRoutingIndex_HHRoutePointSegments::kSegmentsInFieldNumber;
+const int OsmAndHHRoutingIndex_HHRoutePointSegments::kSegmentsOutFieldNumber;
+#endif  // !_MSC_VER
+
+OsmAndHHRoutingIndex_HHRoutePointSegments::OsmAndHHRoutingIndex_HHRoutePointSegments()
+  : ::google::protobuf::Message() {
+  SharedCtor();
+}
+
+void OsmAndHHRoutingIndex_HHRoutePointSegments::InitAsDefaultInstance() {
+}
+
+OsmAndHHRoutingIndex_HHRoutePointSegments::OsmAndHHRoutingIndex_HHRoutePointSegments(const OsmAndHHRoutingIndex_HHRoutePointSegments& from)
+  : ::google::protobuf::Message() {
+  SharedCtor();
+  MergeFrom(from);
+}
+
+void OsmAndHHRoutingIndex_HHRoutePointSegments::SharedCtor() {
+  _cached_size_ = 0;
+  pointid_ = 0;
+  segmentsin_ = const_cast< ::std::string*>(&::google::protobuf::internal::kEmptyString);
+  segmentsout_ = const_cast< ::std::string*>(&::google::protobuf::internal::kEmptyString);
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+}
+
+OsmAndHHRoutingIndex_HHRoutePointSegments::~OsmAndHHRoutingIndex_HHRoutePointSegments() {
+  SharedDtor();
+}
+
+void OsmAndHHRoutingIndex_HHRoutePointSegments::SharedDtor() {
+  if (segmentsin_ != &::google::protobuf::internal::kEmptyString) {
+    delete segmentsin_;
+  }
+  if (segmentsout_ != &::google::protobuf::internal::kEmptyString) {
+    delete segmentsout_;
+  }
+  if (this != default_instance_) {
+  }
+}
+
+void OsmAndHHRoutingIndex_HHRoutePointSegments::SetCachedSize(int size) const {
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+}
+const ::google::protobuf::Descriptor* OsmAndHHRoutingIndex_HHRoutePointSegments::descriptor() {
+  protobuf_AssignDescriptorsOnce();
+  return OsmAndHHRoutingIndex_HHRoutePointSegments_descriptor_;
+}
+
+const OsmAndHHRoutingIndex_HHRoutePointSegments& OsmAndHHRoutingIndex_HHRoutePointSegments::default_instance() {
+  if (default_instance_ == NULL) protobuf_AddDesc_OBF_2eproto();
+  return *default_instance_;
+}
+
+OsmAndHHRoutingIndex_HHRoutePointSegments* OsmAndHHRoutingIndex_HHRoutePointSegments::default_instance_ = NULL;
+
+OsmAndHHRoutingIndex_HHRoutePointSegments* OsmAndHHRoutingIndex_HHRoutePointSegments::New() const {
+  return new OsmAndHHRoutingIndex_HHRoutePointSegments;
+}
+
+void OsmAndHHRoutingIndex_HHRoutePointSegments::Clear() {
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    pointid_ = 0;
+    if (has_segmentsin()) {
+      if (segmentsin_ != &::google::protobuf::internal::kEmptyString) {
+        segmentsin_->clear();
+      }
+    }
+    if (has_segmentsout()) {
+      if (segmentsout_ != &::google::protobuf::internal::kEmptyString) {
+        segmentsout_->clear();
+      }
+    }
+  }
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+  mutable_unknown_fields()->Clear();
+}
+
+bool OsmAndHHRoutingIndex_HHRoutePointSegments::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!(EXPRESSION)) return false
+  ::google::protobuf::uint32 tag;
+  while ((tag = input->ReadTag()) != 0) {
+    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
+      // required int32 pointId = 1;
+      case 1: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &pointid_)));
+          set_has_pointid();
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(18)) goto parse_segmentsIn;
+        break;
+      }
+
+      // required bytes segmentsIn = 2;
+      case 2: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
+         parse_segmentsIn:
+          DO_(::google::protobuf::internal::WireFormatLite::ReadBytes(
+                input, this->mutable_segmentsin()));
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(26)) goto parse_segmentsOut;
+        break;
+      }
+
+      // required bytes segmentsOut = 3;
+      case 3: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
+         parse_segmentsOut:
+          DO_(::google::protobuf::internal::WireFormatLite::ReadBytes(
+                input, this->mutable_segmentsout()));
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectAtEnd()) return true;
+        break;
+      }
+
+      default: {
+      handle_uninterpreted:
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_END_GROUP) {
+          return true;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+  return true;
+#undef DO_
+}
+
+void OsmAndHHRoutingIndex_HHRoutePointSegments::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  // required int32 pointId = 1;
+  if (has_pointid()) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(1, this->pointid(), output);
+  }
+
+  // required bytes segmentsIn = 2;
+  if (has_segmentsin()) {
+    ::google::protobuf::internal::WireFormatLite::WriteBytes(
+      2, this->segmentsin(), output);
+  }
+
+  // required bytes segmentsOut = 3;
+  if (has_segmentsout()) {
+    ::google::protobuf::internal::WireFormatLite::WriteBytes(
+      3, this->segmentsout(), output);
+  }
+
+  if (!unknown_fields().empty()) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        unknown_fields(), output);
+  }
+}
+
+::google::protobuf::uint8* OsmAndHHRoutingIndex_HHRoutePointSegments::SerializeWithCachedSizesToArray(
+    ::google::protobuf::uint8* target) const {
+  // required int32 pointId = 1;
+  if (has_pointid()) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(1, this->pointid(), target);
+  }
+
+  // required bytes segmentsIn = 2;
+  if (has_segmentsin()) {
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteBytesToArray(
+        2, this->segmentsin(), target);
+  }
+
+  // required bytes segmentsOut = 3;
+  if (has_segmentsout()) {
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteBytesToArray(
+        3, this->segmentsout(), target);
+  }
+
+  if (!unknown_fields().empty()) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        unknown_fields(), target);
+  }
+  return target;
+}
+
+int OsmAndHHRoutingIndex_HHRoutePointSegments::ByteSize() const {
+  int total_size = 0;
+
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    // required int32 pointId = 1;
+    if (has_pointid()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::Int32Size(
+          this->pointid());
+    }
+
+    // required bytes segmentsIn = 2;
+    if (has_segmentsin()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::BytesSize(
+          this->segmentsin());
+    }
+
+    // required bytes segmentsOut = 3;
+    if (has_segmentsout()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::BytesSize(
+          this->segmentsout());
+    }
+
+  }
+  if (!unknown_fields().empty()) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        unknown_fields());
+  }
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = total_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  return total_size;
+}
+
+void OsmAndHHRoutingIndex_HHRoutePointSegments::MergeFrom(const ::google::protobuf::Message& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  const OsmAndHHRoutingIndex_HHRoutePointSegments* source =
+    ::google::protobuf::internal::dynamic_cast_if_available<const OsmAndHHRoutingIndex_HHRoutePointSegments*>(
+      &from);
+  if (source == NULL) {
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+    MergeFrom(*source);
+  }
+}
+
+void OsmAndHHRoutingIndex_HHRoutePointSegments::MergeFrom(const OsmAndHHRoutingIndex_HHRoutePointSegments& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    if (from.has_pointid()) {
+      set_pointid(from.pointid());
+    }
+    if (from.has_segmentsin()) {
+      set_segmentsin(from.segmentsin());
+    }
+    if (from.has_segmentsout()) {
+      set_segmentsout(from.segmentsout());
+    }
+  }
+  mutable_unknown_fields()->MergeFrom(from.unknown_fields());
+}
+
+void OsmAndHHRoutingIndex_HHRoutePointSegments::CopyFrom(const ::google::protobuf::Message& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void OsmAndHHRoutingIndex_HHRoutePointSegments::CopyFrom(const OsmAndHHRoutingIndex_HHRoutePointSegments& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool OsmAndHHRoutingIndex_HHRoutePointSegments::IsInitialized() const {
+  if ((_has_bits_[0] & 0x00000007) != 0x00000007) return false;
+
+  return true;
+}
+
+void OsmAndHHRoutingIndex_HHRoutePointSegments::Swap(OsmAndHHRoutingIndex_HHRoutePointSegments* other) {
+  if (other != this) {
+    std::swap(pointid_, other->pointid_);
+    std::swap(segmentsin_, other->segmentsin_);
+    std::swap(segmentsout_, other->segmentsout_);
+    std::swap(_has_bits_[0], other->_has_bits_[0]);
+    _unknown_fields_.Swap(&other->_unknown_fields_);
+    std::swap(_cached_size_, other->_cached_size_);
+  }
+}
+
+::google::protobuf::Metadata OsmAndHHRoutingIndex_HHRoutePointSegments::GetMetadata() const {
+  protobuf_AssignDescriptorsOnce();
+  ::google::protobuf::Metadata metadata;
+  metadata.descriptor = OsmAndHHRoutingIndex_HHRoutePointSegments_descriptor_;
+  metadata.reflection = OsmAndHHRoutingIndex_HHRoutePointSegments_reflection_;
+  return metadata;
+}
+
+
+// -------------------------------------------------------------------
+
+#ifndef _MSC_VER
+const int OsmAndHHRoutingIndex::kEditionFieldNumber;
+const int OsmAndHHRoutingIndex::kProfileFieldNumber;
+const int OsmAndHHRoutingIndex::kPointBoxesFieldNumber;
+const int OsmAndHHRoutingIndex::kPointSegmentsFieldNumber;
+#endif  // !_MSC_VER
+
+OsmAndHHRoutingIndex::OsmAndHHRoutingIndex()
+  : ::google::protobuf::Message() {
+  SharedCtor();
+}
+
+void OsmAndHHRoutingIndex::InitAsDefaultInstance() {
+}
+
+OsmAndHHRoutingIndex::OsmAndHHRoutingIndex(const OsmAndHHRoutingIndex& from)
+  : ::google::protobuf::Message() {
+  SharedCtor();
+  MergeFrom(from);
+}
+
+void OsmAndHHRoutingIndex::SharedCtor() {
+  _cached_size_ = 0;
+  edition_ = GOOGLE_LONGLONG(0);
+  profile_ = const_cast< ::std::string*>(&::google::protobuf::internal::kEmptyString);
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+}
+
+OsmAndHHRoutingIndex::~OsmAndHHRoutingIndex() {
+  SharedDtor();
+}
+
+void OsmAndHHRoutingIndex::SharedDtor() {
+  if (profile_ != &::google::protobuf::internal::kEmptyString) {
+    delete profile_;
+  }
+  if (this != default_instance_) {
+  }
+}
+
+void OsmAndHHRoutingIndex::SetCachedSize(int size) const {
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+}
+const ::google::protobuf::Descriptor* OsmAndHHRoutingIndex::descriptor() {
+  protobuf_AssignDescriptorsOnce();
+  return OsmAndHHRoutingIndex_descriptor_;
+}
+
+const OsmAndHHRoutingIndex& OsmAndHHRoutingIndex::default_instance() {
+  if (default_instance_ == NULL) protobuf_AddDesc_OBF_2eproto();
+  return *default_instance_;
+}
+
+OsmAndHHRoutingIndex* OsmAndHHRoutingIndex::default_instance_ = NULL;
+
+OsmAndHHRoutingIndex* OsmAndHHRoutingIndex::New() const {
+  return new OsmAndHHRoutingIndex;
+}
+
+void OsmAndHHRoutingIndex::Clear() {
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    edition_ = GOOGLE_LONGLONG(0);
+    if (has_profile()) {
+      if (profile_ != &::google::protobuf::internal::kEmptyString) {
+        profile_->clear();
+      }
+    }
+  }
+  pointboxes_.Clear();
+  pointsegments_.Clear();
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+  mutable_unknown_fields()->Clear();
+}
+
+bool OsmAndHHRoutingIndex::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!(EXPRESSION)) return false
+  ::google::protobuf::uint32 tag;
+  while ((tag = input->ReadTag()) != 0) {
+    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
+      // required int64 edition = 1;
+      case 1: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int64, ::google::protobuf::internal::WireFormatLite::TYPE_INT64>(
+                 input, &edition_)));
+          set_has_edition();
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(18)) goto parse_profile;
+        break;
+      }
+
+      // required string profile = 2;
+      case 2: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
+         parse_profile:
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_profile()));
+          ::google::protobuf::internal::WireFormat::VerifyUTF8String(
+            this->profile().data(), this->profile().length(),
+            ::google::protobuf::internal::WireFormat::PARSE);
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(26)) goto parse_pointBoxes;
+        break;
+      }
+
+      // repeated .OsmAnd.OBF.OsmAndHHRoutingIndex.HHRoutePointsBox pointBoxes = 3;
+      case 3: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
+         parse_pointBoxes:
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessageNoVirtual(
+                input, add_pointboxes()));
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(26)) goto parse_pointBoxes;
+        if (input->ExpectTag(34)) goto parse_pointSegments;
+        break;
+      }
+
+      // repeated .OsmAnd.OBF.OsmAndHHRoutingIndex.HHRouteBlockSegments pointSegments = 4;
+      case 4: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
+         parse_pointSegments:
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessageNoVirtual(
+                input, add_pointsegments()));
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(34)) goto parse_pointSegments;
+        if (input->ExpectAtEnd()) return true;
+        break;
+      }
+
+      default: {
+      handle_uninterpreted:
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_END_GROUP) {
+          return true;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+  return true;
+#undef DO_
+}
+
+void OsmAndHHRoutingIndex::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  // required int64 edition = 1;
+  if (has_edition()) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt64(1, this->edition(), output);
+  }
+
+  // required string profile = 2;
+  if (has_profile()) {
+    ::google::protobuf::internal::WireFormat::VerifyUTF8String(
+      this->profile().data(), this->profile().length(),
+      ::google::protobuf::internal::WireFormat::SERIALIZE);
+    ::google::protobuf::internal::WireFormatLite::WriteString(
+      2, this->profile(), output);
+  }
+
+  // repeated .OsmAnd.OBF.OsmAndHHRoutingIndex.HHRoutePointsBox pointBoxes = 3;
+  for (int i = 0; i < this->pointboxes_size(); i++) {
+    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
+      3, this->pointboxes(i), output);
+  }
+
+  // repeated .OsmAnd.OBF.OsmAndHHRoutingIndex.HHRouteBlockSegments pointSegments = 4;
+  for (int i = 0; i < this->pointsegments_size(); i++) {
+    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
+      4, this->pointsegments(i), output);
+  }
+
+  if (!unknown_fields().empty()) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        unknown_fields(), output);
+  }
+}
+
+::google::protobuf::uint8* OsmAndHHRoutingIndex::SerializeWithCachedSizesToArray(
+    ::google::protobuf::uint8* target) const {
+  // required int64 edition = 1;
+  if (has_edition()) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt64ToArray(1, this->edition(), target);
+  }
+
+  // required string profile = 2;
+  if (has_profile()) {
+    ::google::protobuf::internal::WireFormat::VerifyUTF8String(
+      this->profile().data(), this->profile().length(),
+      ::google::protobuf::internal::WireFormat::SERIALIZE);
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        2, this->profile(), target);
+  }
+
+  // repeated .OsmAnd.OBF.OsmAndHHRoutingIndex.HHRoutePointsBox pointBoxes = 3;
+  for (int i = 0; i < this->pointboxes_size(); i++) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      WriteMessageNoVirtualToArray(
+        3, this->pointboxes(i), target);
+  }
+
+  // repeated .OsmAnd.OBF.OsmAndHHRoutingIndex.HHRouteBlockSegments pointSegments = 4;
+  for (int i = 0; i < this->pointsegments_size(); i++) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      WriteMessageNoVirtualToArray(
+        4, this->pointsegments(i), target);
+  }
+
+  if (!unknown_fields().empty()) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        unknown_fields(), target);
+  }
+  return target;
+}
+
+int OsmAndHHRoutingIndex::ByteSize() const {
+  int total_size = 0;
+
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    // required int64 edition = 1;
+    if (has_edition()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::Int64Size(
+          this->edition());
+    }
+
+    // required string profile = 2;
+    if (has_profile()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::StringSize(
+          this->profile());
+    }
+
+  }
+  // repeated .OsmAnd.OBF.OsmAndHHRoutingIndex.HHRoutePointsBox pointBoxes = 3;
+  total_size += 1 * this->pointboxes_size();
+  for (int i = 0; i < this->pointboxes_size(); i++) {
+    total_size +=
+      ::google::protobuf::internal::WireFormatLite::MessageSizeNoVirtual(
+        this->pointboxes(i));
+  }
+
+  // repeated .OsmAnd.OBF.OsmAndHHRoutingIndex.HHRouteBlockSegments pointSegments = 4;
+  total_size += 1 * this->pointsegments_size();
+  for (int i = 0; i < this->pointsegments_size(); i++) {
+    total_size +=
+      ::google::protobuf::internal::WireFormatLite::MessageSizeNoVirtual(
+        this->pointsegments(i));
+  }
+
+  if (!unknown_fields().empty()) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        unknown_fields());
+  }
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = total_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  return total_size;
+}
+
+void OsmAndHHRoutingIndex::MergeFrom(const ::google::protobuf::Message& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  const OsmAndHHRoutingIndex* source =
+    ::google::protobuf::internal::dynamic_cast_if_available<const OsmAndHHRoutingIndex*>(
+      &from);
+  if (source == NULL) {
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+    MergeFrom(*source);
+  }
+}
+
+void OsmAndHHRoutingIndex::MergeFrom(const OsmAndHHRoutingIndex& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  pointboxes_.MergeFrom(from.pointboxes_);
+  pointsegments_.MergeFrom(from.pointsegments_);
+  if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    if (from.has_edition()) {
+      set_edition(from.edition());
+    }
+    if (from.has_profile()) {
+      set_profile(from.profile());
+    }
+  }
+  mutable_unknown_fields()->MergeFrom(from.unknown_fields());
+}
+
+void OsmAndHHRoutingIndex::CopyFrom(const ::google::protobuf::Message& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void OsmAndHHRoutingIndex::CopyFrom(const OsmAndHHRoutingIndex& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool OsmAndHHRoutingIndex::IsInitialized() const {
+  if ((_has_bits_[0] & 0x00000003) != 0x00000003) return false;
+
+  for (int i = 0; i < pointboxes_size(); i++) {
+    if (!this->pointboxes(i).IsInitialized()) return false;
+  }
+  for (int i = 0; i < pointsegments_size(); i++) {
+    if (!this->pointsegments(i).IsInitialized()) return false;
+  }
+  return true;
+}
+
+void OsmAndHHRoutingIndex::Swap(OsmAndHHRoutingIndex* other) {
+  if (other != this) {
+    std::swap(edition_, other->edition_);
+    std::swap(profile_, other->profile_);
+    pointboxes_.Swap(&other->pointboxes_);
+    pointsegments_.Swap(&other->pointsegments_);
+    std::swap(_has_bits_[0], other->_has_bits_[0]);
+    _unknown_fields_.Swap(&other->_unknown_fields_);
+    std::swap(_cached_size_, other->_cached_size_);
+  }
+}
+
+::google::protobuf::Metadata OsmAndHHRoutingIndex::GetMetadata() const {
+  protobuf_AssignDescriptorsOnce();
+  ::google::protobuf::Metadata metadata;
+  metadata.descriptor = OsmAndHHRoutingIndex_descriptor_;
+  metadata.reflection = OsmAndHHRoutingIndex_reflection_;
+  return metadata;
+}
+
+
+// ===================================================================
+
+#ifndef _MSC_VER
+const int OsmAndOwner::kNameFieldNumber;
+const int OsmAndOwner::kResourceFieldNumber;
+const int OsmAndOwner::kDescriptionFieldNumber;
+const int OsmAndOwner::kPluginidFieldNumber;
+#endif  // !_MSC_VER
+
+OsmAndOwner::OsmAndOwner()
+  : ::google::protobuf::Message() {
+  SharedCtor();
+}
+
+void OsmAndOwner::InitAsDefaultInstance() {
+}
+
+OsmAndOwner::OsmAndOwner(const OsmAndOwner& from)
+  : ::google::protobuf::Message() {
+  SharedCtor();
+  MergeFrom(from);
+}
+
+void OsmAndOwner::SharedCtor() {
+  _cached_size_ = 0;
+  name_ = const_cast< ::std::string*>(&::google::protobuf::internal::kEmptyString);
+  resource_ = const_cast< ::std::string*>(&::google::protobuf::internal::kEmptyString);
+  description_ = const_cast< ::std::string*>(&::google::protobuf::internal::kEmptyString);
+  pluginid_ = const_cast< ::std::string*>(&::google::protobuf::internal::kEmptyString);
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+}
+
+OsmAndOwner::~OsmAndOwner() {
+  SharedDtor();
+}
+
+void OsmAndOwner::SharedDtor() {
+  if (name_ != &::google::protobuf::internal::kEmptyString) {
+    delete name_;
+  }
+  if (resource_ != &::google::protobuf::internal::kEmptyString) {
+    delete resource_;
+  }
+  if (description_ != &::google::protobuf::internal::kEmptyString) {
+    delete description_;
+  }
+  if (pluginid_ != &::google::protobuf::internal::kEmptyString) {
+    delete pluginid_;
+  }
+  if (this != default_instance_) {
+  }
+}
+
+void OsmAndOwner::SetCachedSize(int size) const {
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+}
+const ::google::protobuf::Descriptor* OsmAndOwner::descriptor() {
+  protobuf_AssignDescriptorsOnce();
+  return OsmAndOwner_descriptor_;
+}
+
+const OsmAndOwner& OsmAndOwner::default_instance() {
+  if (default_instance_ == NULL) protobuf_AddDesc_OBF_2eproto();
+  return *default_instance_;
+}
+
+OsmAndOwner* OsmAndOwner::default_instance_ = NULL;
+
+OsmAndOwner* OsmAndOwner::New() const {
+  return new OsmAndOwner;
+}
+
+void OsmAndOwner::Clear() {
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    if (has_name()) {
+      if (name_ != &::google::protobuf::internal::kEmptyString) {
+        name_->clear();
+      }
+    }
+    if (has_resource()) {
+      if (resource_ != &::google::protobuf::internal::kEmptyString) {
+        resource_->clear();
+      }
+    }
+    if (has_description()) {
+      if (description_ != &::google::protobuf::internal::kEmptyString) {
+        description_->clear();
+      }
+    }
+    if (has_pluginid()) {
+      if (pluginid_ != &::google::protobuf::internal::kEmptyString) {
+        pluginid_->clear();
+      }
+    }
+  }
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+  mutable_unknown_fields()->Clear();
+}
+
+bool OsmAndOwner::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!(EXPRESSION)) return false
+  ::google::protobuf::uint32 tag;
+  while ((tag = input->ReadTag()) != 0) {
+    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
+      // required string name = 1;
+      case 1: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_name()));
+          ::google::protobuf::internal::WireFormat::VerifyUTF8String(
+            this->name().data(), this->name().length(),
+            ::google::protobuf::internal::WireFormat::PARSE);
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(18)) goto parse_resource;
+        break;
+      }
+
+      // optional string resource = 2;
+      case 2: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
+         parse_resource:
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_resource()));
+          ::google::protobuf::internal::WireFormat::VerifyUTF8String(
+            this->resource().data(), this->resource().length(),
+            ::google::protobuf::internal::WireFormat::PARSE);
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(26)) goto parse_description;
+        break;
+      }
+
+      // optional string description = 3;
+      case 3: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
+         parse_description:
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_description()));
+          ::google::protobuf::internal::WireFormat::VerifyUTF8String(
+            this->description().data(), this->description().length(),
+            ::google::protobuf::internal::WireFormat::PARSE);
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(34)) goto parse_pluginid;
+        break;
+      }
+
+      // optional string pluginid = 4;
+      case 4: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
+         parse_pluginid:
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_pluginid()));
+          ::google::protobuf::internal::WireFormat::VerifyUTF8String(
+            this->pluginid().data(), this->pluginid().length(),
+            ::google::protobuf::internal::WireFormat::PARSE);
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectAtEnd()) return true;
+        break;
+      }
+
+      default: {
+      handle_uninterpreted:
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_END_GROUP) {
+          return true;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+  return true;
+#undef DO_
+}
+
+void OsmAndOwner::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  // required string name = 1;
+  if (has_name()) {
+    ::google::protobuf::internal::WireFormat::VerifyUTF8String(
+      this->name().data(), this->name().length(),
+      ::google::protobuf::internal::WireFormat::SERIALIZE);
+    ::google::protobuf::internal::WireFormatLite::WriteString(
+      1, this->name(), output);
+  }
+
+  // optional string resource = 2;
+  if (has_resource()) {
+    ::google::protobuf::internal::WireFormat::VerifyUTF8String(
+      this->resource().data(), this->resource().length(),
+      ::google::protobuf::internal::WireFormat::SERIALIZE);
+    ::google::protobuf::internal::WireFormatLite::WriteString(
+      2, this->resource(), output);
+  }
+
+  // optional string description = 3;
+  if (has_description()) {
+    ::google::protobuf::internal::WireFormat::VerifyUTF8String(
+      this->description().data(), this->description().length(),
+      ::google::protobuf::internal::WireFormat::SERIALIZE);
+    ::google::protobuf::internal::WireFormatLite::WriteString(
+      3, this->description(), output);
+  }
+
+  // optional string pluginid = 4;
+  if (has_pluginid()) {
+    ::google::protobuf::internal::WireFormat::VerifyUTF8String(
+      this->pluginid().data(), this->pluginid().length(),
+      ::google::protobuf::internal::WireFormat::SERIALIZE);
+    ::google::protobuf::internal::WireFormatLite::WriteString(
+      4, this->pluginid(), output);
+  }
+
+  if (!unknown_fields().empty()) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        unknown_fields(), output);
+  }
+}
+
+::google::protobuf::uint8* OsmAndOwner::SerializeWithCachedSizesToArray(
+    ::google::protobuf::uint8* target) const {
+  // required string name = 1;
+  if (has_name()) {
+    ::google::protobuf::internal::WireFormat::VerifyUTF8String(
+      this->name().data(), this->name().length(),
+      ::google::protobuf::internal::WireFormat::SERIALIZE);
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        1, this->name(), target);
+  }
+
+  // optional string resource = 2;
+  if (has_resource()) {
+    ::google::protobuf::internal::WireFormat::VerifyUTF8String(
+      this->resource().data(), this->resource().length(),
+      ::google::protobuf::internal::WireFormat::SERIALIZE);
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        2, this->resource(), target);
+  }
+
+  // optional string description = 3;
+  if (has_description()) {
+    ::google::protobuf::internal::WireFormat::VerifyUTF8String(
+      this->description().data(), this->description().length(),
+      ::google::protobuf::internal::WireFormat::SERIALIZE);
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        3, this->description(), target);
+  }
+
+  // optional string pluginid = 4;
+  if (has_pluginid()) {
+    ::google::protobuf::internal::WireFormat::VerifyUTF8String(
+      this->pluginid().data(), this->pluginid().length(),
+      ::google::protobuf::internal::WireFormat::SERIALIZE);
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        4, this->pluginid(), target);
+  }
+
+  if (!unknown_fields().empty()) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        unknown_fields(), target);
+  }
+  return target;
+}
+
+int OsmAndOwner::ByteSize() const {
+  int total_size = 0;
+
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    // required string name = 1;
+    if (has_name()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::StringSize(
+          this->name());
+    }
+
+    // optional string resource = 2;
+    if (has_resource()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::StringSize(
+          this->resource());
+    }
+
+    // optional string description = 3;
+    if (has_description()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::StringSize(
+          this->description());
+    }
+
+    // optional string pluginid = 4;
+    if (has_pluginid()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::StringSize(
+          this->pluginid());
+    }
+
+  }
+  if (!unknown_fields().empty()) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        unknown_fields());
+  }
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = total_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  return total_size;
+}
+
+void OsmAndOwner::MergeFrom(const ::google::protobuf::Message& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  const OsmAndOwner* source =
+    ::google::protobuf::internal::dynamic_cast_if_available<const OsmAndOwner*>(
+      &from);
+  if (source == NULL) {
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+    MergeFrom(*source);
+  }
+}
+
+void OsmAndOwner::MergeFrom(const OsmAndOwner& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    if (from.has_name()) {
+      set_name(from.name());
+    }
+    if (from.has_resource()) {
+      set_resource(from.resource());
+    }
+    if (from.has_description()) {
+      set_description(from.description());
+    }
+    if (from.has_pluginid()) {
+      set_pluginid(from.pluginid());
+    }
+  }
+  mutable_unknown_fields()->MergeFrom(from.unknown_fields());
+}
+
+void OsmAndOwner::CopyFrom(const ::google::protobuf::Message& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void OsmAndOwner::CopyFrom(const OsmAndOwner& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool OsmAndOwner::IsInitialized() const {
+  if ((_has_bits_[0] & 0x00000001) != 0x00000001) return false;
+
+  return true;
+}
+
+void OsmAndOwner::Swap(OsmAndOwner* other) {
+  if (other != this) {
+    std::swap(name_, other->name_);
+    std::swap(resource_, other->resource_);
+    std::swap(description_, other->description_);
+    std::swap(pluginid_, other->pluginid_);
+    std::swap(_has_bits_[0], other->_has_bits_[0]);
+    _unknown_fields_.Swap(&other->_unknown_fields_);
+    std::swap(_cached_size_, other->_cached_size_);
+  }
+}
+
+::google::protobuf::Metadata OsmAndOwner::GetMetadata() const {
+  protobuf_AssignDescriptorsOnce();
+  ::google::protobuf::Metadata metadata;
+  metadata.descriptor = OsmAndOwner_descriptor_;
+  metadata.reflection = OsmAndOwner_reflection_;
   return metadata;
 }
 
