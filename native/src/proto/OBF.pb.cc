@@ -1712,7 +1712,7 @@ void protobuf_AddDesc_OBF_2eproto() {
     "(\005\022\023\n\013dualPointId\030\010 \001(\005\022\025\n\rdualClusterId"
     "\030\t \001(\005\022\022\n\nprofileIds\030\n \003(\005\032\360\001\n\024HHRouteBl"
     "ockSegments\022\024\n\014idRangeStart\030\001 \002(\005\022\025\n\ridR"
-    "angeLength\030\002 \002(\005\022\021\n\tprofileId\030\003 \002(\005\022J\n\013i"
+    "angeLength\030\002 \002(\005\022\021\n\tprofileId\030\003 \001(\005\022J\n\013i"
     "nnerBlocks\030\006 \003(\01325.OsmAnd.OBF.OsmAndHHRo"
     "utingIndex.HHRouteBlockSegments\022L\n\rpoint"
     "Segments\030\004 \003(\01325.OsmAnd.OBF.OsmAndHHRout"
@@ -22656,7 +22656,7 @@ bool OsmAndHHRoutingIndex_HHRouteBlockSegments::MergePartialFromCodedStream(
         break;
       }
 
-      // required int32 profileId = 3;
+      // optional int32 profileId = 3;
       case 3: {
         if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
             ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
@@ -22730,7 +22730,7 @@ void OsmAndHHRoutingIndex_HHRouteBlockSegments::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormatLite::WriteInt32(2, this->idrangelength(), output);
   }
 
-  // required int32 profileId = 3;
+  // optional int32 profileId = 3;
   if (has_profileid()) {
     ::google::protobuf::internal::WireFormatLite::WriteInt32(3, this->profileid(), output);
   }
@@ -22765,7 +22765,7 @@ void OsmAndHHRoutingIndex_HHRouteBlockSegments::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(2, this->idrangelength(), target);
   }
 
-  // required int32 profileId = 3;
+  // optional int32 profileId = 3;
   if (has_profileid()) {
     target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(3, this->profileid(), target);
   }
@@ -22809,7 +22809,7 @@ int OsmAndHHRoutingIndex_HHRouteBlockSegments::ByteSize() const {
           this->idrangelength());
     }
 
-    // required int32 profileId = 3;
+    // optional int32 profileId = 3;
     if (has_profileid()) {
       total_size += 1 +
         ::google::protobuf::internal::WireFormatLite::Int32Size(
@@ -22887,7 +22887,7 @@ void OsmAndHHRoutingIndex_HHRouteBlockSegments::CopyFrom(const OsmAndHHRoutingIn
 }
 
 bool OsmAndHHRoutingIndex_HHRouteBlockSegments::IsInitialized() const {
-  if ((_has_bits_[0] & 0x00000007) != 0x00000007) return false;
+  if ((_has_bits_[0] & 0x00000003) != 0x00000003) return false;
 
   for (int i = 0; i < innerblocks_size(); i++) {
     if (!this->innerblocks(i).IsInitialized()) return false;

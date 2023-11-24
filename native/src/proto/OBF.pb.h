@@ -7200,7 +7200,7 @@ class OsmAndHHRoutingIndex_HHRouteBlockSegments : public ::google::protobuf::Mes
   inline ::google::protobuf::int32 idrangelength() const;
   inline void set_idrangelength(::google::protobuf::int32 value);
 
-  // required int32 profileId = 3;
+  // optional int32 profileId = 3;
   inline bool has_profileid() const;
   inline void clear_profileid();
   static const int kProfileIdFieldNumber = 3;
@@ -17063,7 +17063,7 @@ inline void OsmAndHHRoutingIndex_HHRouteBlockSegments::set_idrangelength(::googl
   idrangelength_ = value;
 }
 
-// required int32 profileId = 3;
+// optional int32 profileId = 3;
 inline bool OsmAndHHRoutingIndex_HHRouteBlockSegments::has_profileid() const {
   return (_has_bits_[0] & 0x00000004u) != 0;
 }
