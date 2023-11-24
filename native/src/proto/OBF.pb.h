@@ -7456,17 +7456,14 @@ class OsmAndHHRoutingIndex : public ::google::protobuf::Message {
   inline const ::google::protobuf::RepeatedPtrField< ::std::string>& profileparams() const;
   inline ::google::protobuf::RepeatedPtrField< ::std::string>* mutable_profileparams();
 
-  // repeated .OsmAnd.OBF.OsmAndHHRoutingIndex.HHRoutePointsBox pointBoxes = 5;
-  inline int pointboxes_size() const;
+  // required .OsmAnd.OBF.OsmAndHHRoutingIndex.HHRoutePointsBox pointBoxes = 5;
+  inline bool has_pointboxes() const;
   inline void clear_pointboxes();
   static const int kPointBoxesFieldNumber = 5;
-  inline const ::OsmAnd::OBF::OsmAndHHRoutingIndex_HHRoutePointsBox& pointboxes(int index) const;
-  inline ::OsmAnd::OBF::OsmAndHHRoutingIndex_HHRoutePointsBox* mutable_pointboxes(int index);
-  inline ::OsmAnd::OBF::OsmAndHHRoutingIndex_HHRoutePointsBox* add_pointboxes();
-  inline const ::google::protobuf::RepeatedPtrField< ::OsmAnd::OBF::OsmAndHHRoutingIndex_HHRoutePointsBox >&
-      pointboxes() const;
-  inline ::google::protobuf::RepeatedPtrField< ::OsmAnd::OBF::OsmAndHHRoutingIndex_HHRoutePointsBox >*
-      mutable_pointboxes();
+  inline const ::OsmAnd::OBF::OsmAndHHRoutingIndex_HHRoutePointsBox& pointboxes() const;
+  inline ::OsmAnd::OBF::OsmAndHHRoutingIndex_HHRoutePointsBox* mutable_pointboxes();
+  inline ::OsmAnd::OBF::OsmAndHHRoutingIndex_HHRoutePointsBox* release_pointboxes();
+  inline void set_allocated_pointboxes(::OsmAnd::OBF::OsmAndHHRoutingIndex_HHRoutePointsBox* pointboxes);
 
   // repeated .OsmAnd.OBF.OsmAndHHRoutingIndex.HHRouteBlockSegments pointSegments = 6;
   inline int pointsegments_size() const;
@@ -7486,13 +7483,15 @@ class OsmAndHHRoutingIndex : public ::google::protobuf::Message {
   inline void clear_has_edition();
   inline void set_has_profile();
   inline void clear_has_profile();
+  inline void set_has_pointboxes();
+  inline void clear_has_pointboxes();
 
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
 
   ::google::protobuf::int64 edition_;
   ::std::string* profile_;
   ::google::protobuf::RepeatedPtrField< ::std::string> profileparams_;
-  ::google::protobuf::RepeatedPtrField< ::OsmAnd::OBF::OsmAndHHRoutingIndex_HHRoutePointsBox > pointboxes_;
+  ::OsmAnd::OBF::OsmAndHHRoutingIndex_HHRoutePointsBox* pointboxes_;
   ::google::protobuf::RepeatedPtrField< ::OsmAnd::OBF::OsmAndHHRoutingIndex_HHRouteBlockSegments > pointsegments_;
 
   mutable int _cached_size_;
@@ -17420,29 +17419,42 @@ OsmAndHHRoutingIndex::mutable_profileparams() {
   return &profileparams_;
 }
 
-// repeated .OsmAnd.OBF.OsmAndHHRoutingIndex.HHRoutePointsBox pointBoxes = 5;
-inline int OsmAndHHRoutingIndex::pointboxes_size() const {
-  return pointboxes_.size();
+// required .OsmAnd.OBF.OsmAndHHRoutingIndex.HHRoutePointsBox pointBoxes = 5;
+inline bool OsmAndHHRoutingIndex::has_pointboxes() const {
+  return (_has_bits_[0] & 0x00000008u) != 0;
+}
+inline void OsmAndHHRoutingIndex::set_has_pointboxes() {
+  _has_bits_[0] |= 0x00000008u;
+}
+inline void OsmAndHHRoutingIndex::clear_has_pointboxes() {
+  _has_bits_[0] &= ~0x00000008u;
 }
 inline void OsmAndHHRoutingIndex::clear_pointboxes() {
-  pointboxes_.Clear();
+  if (pointboxes_ != NULL) pointboxes_->::OsmAnd::OBF::OsmAndHHRoutingIndex_HHRoutePointsBox::Clear();
+  clear_has_pointboxes();
 }
-inline const ::OsmAnd::OBF::OsmAndHHRoutingIndex_HHRoutePointsBox& OsmAndHHRoutingIndex::pointboxes(int index) const {
-  return pointboxes_.Get(index);
+inline const ::OsmAnd::OBF::OsmAndHHRoutingIndex_HHRoutePointsBox& OsmAndHHRoutingIndex::pointboxes() const {
+  return pointboxes_ != NULL ? *pointboxes_ : *default_instance_->pointboxes_;
 }
-inline ::OsmAnd::OBF::OsmAndHHRoutingIndex_HHRoutePointsBox* OsmAndHHRoutingIndex::mutable_pointboxes(int index) {
-  return pointboxes_.Mutable(index);
-}
-inline ::OsmAnd::OBF::OsmAndHHRoutingIndex_HHRoutePointsBox* OsmAndHHRoutingIndex::add_pointboxes() {
-  return pointboxes_.Add();
-}
-inline const ::google::protobuf::RepeatedPtrField< ::OsmAnd::OBF::OsmAndHHRoutingIndex_HHRoutePointsBox >&
-OsmAndHHRoutingIndex::pointboxes() const {
+inline ::OsmAnd::OBF::OsmAndHHRoutingIndex_HHRoutePointsBox* OsmAndHHRoutingIndex::mutable_pointboxes() {
+  set_has_pointboxes();
+  if (pointboxes_ == NULL) pointboxes_ = new ::OsmAnd::OBF::OsmAndHHRoutingIndex_HHRoutePointsBox;
   return pointboxes_;
 }
-inline ::google::protobuf::RepeatedPtrField< ::OsmAnd::OBF::OsmAndHHRoutingIndex_HHRoutePointsBox >*
-OsmAndHHRoutingIndex::mutable_pointboxes() {
-  return &pointboxes_;
+inline ::OsmAnd::OBF::OsmAndHHRoutingIndex_HHRoutePointsBox* OsmAndHHRoutingIndex::release_pointboxes() {
+  clear_has_pointboxes();
+  ::OsmAnd::OBF::OsmAndHHRoutingIndex_HHRoutePointsBox* temp = pointboxes_;
+  pointboxes_ = NULL;
+  return temp;
+}
+inline void OsmAndHHRoutingIndex::set_allocated_pointboxes(::OsmAnd::OBF::OsmAndHHRoutingIndex_HHRoutePointsBox* pointboxes) {
+  delete pointboxes_;
+  pointboxes_ = pointboxes;
+  if (pointboxes) {
+    set_has_pointboxes();
+  } else {
+    clear_has_pointboxes();
+  }
 }
 
 // repeated .OsmAnd.OBF.OsmAndHHRoutingIndex.HHRouteBlockSegments pointSegments = 6;
