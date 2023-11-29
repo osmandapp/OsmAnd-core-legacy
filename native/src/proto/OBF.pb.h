@@ -7086,6 +7086,13 @@ class OsmAndHHRoutingIndex_HHRouteNetworkPoint : public ::google::protobuf::Mess
   inline ::google::protobuf::RepeatedField< ::google::protobuf::int32 >*
       mutable_profileids();
 
+  // optional int32 partialInd = 11;
+  inline bool has_partialind() const;
+  inline void clear_partialind();
+  static const int kPartialIndFieldNumber = 11;
+  inline ::google::protobuf::int32 partialind() const;
+  inline void set_partialind(::google::protobuf::int32 value);
+
   // @@protoc_insertion_point(class_scope:OsmAnd.OBF.OsmAndHHRoutingIndex.HHRouteNetworkPoint)
  private:
   inline void set_has_id();
@@ -7106,6 +7113,8 @@ class OsmAndHHRoutingIndex_HHRouteNetworkPoint : public ::google::protobuf::Mess
   inline void clear_has_dualpointid();
   inline void set_has_dualclusterid();
   inline void clear_has_dualclusterid();
+  inline void set_has_partialind();
+  inline void clear_has_partialind();
 
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
 
@@ -7119,9 +7128,10 @@ class OsmAndHHRoutingIndex_HHRouteNetworkPoint : public ::google::protobuf::Mess
   ::google::protobuf::int32 dualpointid_;
   ::google::protobuf::int32 dualclusterid_;
   ::google::protobuf::RepeatedField< ::google::protobuf::int32 > profileids_;
+  ::google::protobuf::int32 partialind_;
 
   mutable int _cached_size_;
-  ::google::protobuf::uint32 _has_bits_[(10 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(11 + 31) / 32];
 
   friend void  protobuf_AddDesc_OBF_2eproto();
   friend void protobuf_AssignDesc_OBF_2eproto();
@@ -17013,6 +17023,28 @@ OsmAndHHRoutingIndex_HHRouteNetworkPoint::profileids() const {
 inline ::google::protobuf::RepeatedField< ::google::protobuf::int32 >*
 OsmAndHHRoutingIndex_HHRouteNetworkPoint::mutable_profileids() {
   return &profileids_;
+}
+
+// optional int32 partialInd = 11;
+inline bool OsmAndHHRoutingIndex_HHRouteNetworkPoint::has_partialind() const {
+  return (_has_bits_[0] & 0x00000400u) != 0;
+}
+inline void OsmAndHHRoutingIndex_HHRouteNetworkPoint::set_has_partialind() {
+  _has_bits_[0] |= 0x00000400u;
+}
+inline void OsmAndHHRoutingIndex_HHRouteNetworkPoint::clear_has_partialind() {
+  _has_bits_[0] &= ~0x00000400u;
+}
+inline void OsmAndHHRoutingIndex_HHRouteNetworkPoint::clear_partialind() {
+  partialind_ = 0;
+  clear_has_partialind();
+}
+inline ::google::protobuf::int32 OsmAndHHRoutingIndex_HHRouteNetworkPoint::partialind() const {
+  return partialind_;
+}
+inline void OsmAndHHRoutingIndex_HHRouteNetworkPoint::set_partialind(::google::protobuf::int32 value) {
+  set_has_partialind();
+  partialind_ = value;
 }
 
 // -------------------------------------------------------------------
