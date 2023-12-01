@@ -58,6 +58,7 @@ struct RoutingConfiguration {
 
     const static int DEFAULT_MEMORY_LIMIT = 256;
     const static int DEVIATION_RADIUS = 3000;
+    constexpr const static double DEFAULT_PENALTY_FOR_REVERSE_DIRECTION = 500;
     MAP_STR_STR attributes;
     quad_tree<SHARED_PTR<DirectionPoint>> directionPoints;
     double directionPointsRadius = 30.0; // 30 m
@@ -66,6 +67,8 @@ struct RoutingConfiguration {
 
     long memoryLimitation;
     float initialDirection;
+    double targetDirection;
+    double PENALTY_FOR_REVERSE_DIRECTION = DEFAULT_PENALTY_FOR_REVERSE_DIRECTION;
 
     int zoomToLoad;
     float heurCoefficient;

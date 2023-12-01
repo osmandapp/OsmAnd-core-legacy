@@ -466,6 +466,14 @@ struct RouteDataObject {
 	inline int getPointsLength() {
 		return (int)pointsX.size();
 	}
+    
+    inline int getPoint31XTile(int i) {
+        return pointsX[i];
+    }
+        
+    inline int getPoint31YTile(int i) {
+        return pointsY[i];
+    }
 	
 	std::vector<uint32_t> getPointTypes(int ind) {
 		if (ind >= pointTypes.size()) {

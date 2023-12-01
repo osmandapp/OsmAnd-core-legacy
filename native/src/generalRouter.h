@@ -491,7 +491,7 @@ class GeneralRouter {
 	/**
 	 * return routing speed in m/s for vehicle for specified road
 	 */
-	double defineRoutingSpeed(const SHARED_PTR<RouteDataObject>& road);
+    double defineRoutingSpeed(const SHARED_PTR<RouteDataObject>& road, bool dir);
 
 	/*
 	 * return transition penalty between different road classes in seconds
@@ -501,12 +501,12 @@ class GeneralRouter {
 	/**
 	 * return real speed in m/s for vehicle for specified road
 	 */
-	double defineVehicleSpeed(const SHARED_PTR<RouteDataObject>& road);
+	double defineVehicleSpeed(const SHARED_PTR<RouteDataObject>& road, bool dir);
 
 	/**
 	 * define priority to multiply the speed for g(x) A*
 	 */
-	double defineSpeedPriority(const SHARED_PTR<RouteDataObject>& road);
+	double defineSpeedPriority(const SHARED_PTR<RouteDataObject>& road, bool dir);
 
 	/**
 	 * define destination priority
@@ -542,8 +542,7 @@ class GeneralRouter {
 	/**
 	 * Calculate turn time
 	 */
-	double calculateTurnTime(const SHARED_PTR<RouteSegment>& segment, int segmentEnd, const SHARED_PTR<RouteSegment>& prev,
-							 int prevSegmentEnd);
+	double calculateTurnTime(const SHARED_PTR<RouteSegment>& segment, const SHARED_PTR<RouteSegment>& prev);
 
 	void printRules();
 

@@ -64,6 +64,14 @@ struct RouteSegment {
 	inline uint16_t getSegmentStart() { return segmentStart; }
 
 	inline uint16_t getSegmentEnd() { return segmentEnd; }
+    
+    inline int getStartPointX() { return road->getPoint31XTile(segmentStart); }
+
+    inline int getStartPointY() { return road->getPoint31YTile(segmentStart); }
+    
+    inline int getEndPointY() { return road->getPoint31YTile(segmentEnd); }
+    
+    inline int getEndPointX() { return road->getPoint31XTile(segmentEnd); }
 
 	inline bool isPositive() { return segmentEnd > segmentStart; }
 

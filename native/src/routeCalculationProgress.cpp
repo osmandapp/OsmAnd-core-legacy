@@ -51,7 +51,9 @@ UNORDERED(map) < string, UNORDERED(map) < string, string >>
 	segms.insert(
 		{"visitedDirectPoints", std::to_string(this->visitedDirectSegments - firstPhase->visitedDirectSegments)});
 	segms.insert({"visitedOppositePoints",
-				  std::to_string(this->visitedOppositeSegments - -firstPhase->visitedOppositeSegments)});
+				  std::to_string(this->visitedOppositeSegments - firstPhase->visitedOppositeSegments)});
+    segms.insert({"finalSegmentsFound",
+            std::to_string(this->finalSegmentsFound -  firstPhase->finalSegmentsFound)});
 	map.insert({"segments", segms});
 
 	UNORDERED(map)<string, string> time;

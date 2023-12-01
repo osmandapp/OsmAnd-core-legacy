@@ -98,6 +98,7 @@ struct RoutingContext {
 	int targetSegmentInd;
 	bool targetTransportStop;
 	bool publicTransport;
+    int dijkstraMode;
 	bool basemap;
 	bool geocoding;
 
