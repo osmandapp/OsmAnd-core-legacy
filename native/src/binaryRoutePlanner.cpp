@@ -66,9 +66,9 @@ static float estimatedDistance(const SHARED_PTR<RouteSegment>& seg, bool rev, co
 }
 
 static double h(RoutingContext* ctx, int begX, int begY, int endX, int endY) {
-    if (ctx->dijkstraMode != 0) {
-        return 0;
-    }
+	if (ctx->dijkstraMode != 0) {
+		return 0;
+	}
 	double distToFinalPoint = squareRootDist(begX, begY, endX, endY);
 	double result = distToFinalPoint / ctx->config->router->getMaxSpeed();
 	if (ctx->precalcRoute != nullptr) {
@@ -1206,6 +1206,7 @@ vector<SHARED_PTR<RouteSegmentResult>> searchRouteInternal(RoutingContext* ctx, 
 		finalSegment = results[0];
 	}
 	vector<SHARED_PTR<RouteSegmentResult>> res = convertFinalSegmentToResults(ctx, finalSegment);
+    ctx->finalRouteSegment = finalSegment;
 	attachConnectedRoads(ctx, res);
 	return res;
 }
