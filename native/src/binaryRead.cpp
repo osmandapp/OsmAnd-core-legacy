@@ -411,7 +411,7 @@ bool RouteDataObject::hasTrafficLightAt(int i) {
 
 void searchRouteSubRegion(int fileInd, std::vector<RouteDataObject*>& list, const SHARED_PTR<RoutingIndex>& routingIndex,
 						  RouteSubregion* sub);
-void searchRouteRegion(CodedInputStream** input, FileInputStream** fis, BinaryMapFile* file, SearchQuery* q,
+void searchRouteRegion(CodedInputStream** input, FileInputStream** fis, BinaryMapFile* file, SearchRequest<MapDataObject>* q,
                        const SHARED_PTR<RoutingIndex>& ind, std::vector<RouteSubregion>& subregions, std::vector<RouteSubregion>& toLoad,
 					   bool geocoding);
 bool readRouteTreeData(CodedInputStream* input, RouteSubregion* s, std::vector<RouteDataObject*>& dataObjects,
@@ -1015,7 +1015,7 @@ bool readStringTable(CodedInputStream* input, std::vector<std::string>& list) {
 static const int ROUTE_SHIFT_COORDINATES = 4;
 static const int MASK_TO_READ = ~((1 << SHIFT_COORDINATES) - 1);
 
-bool acceptTypes(SearchQuery* req, std::vector<tag_value>& types, MapIndex* root) {
+bool acceptTypes(SearchRequest<MapDataObject>* req, std::vector<tag_value>& types, MapIndex* root) {
 	RenderingRuleSearchRequest* r = req->req;
 	for (std::vector<tag_value>::iterator type = types.begin(); type != types.end(); type++) {
 		for (int i = 1; i <= 3; i++) {
@@ -1037,7 +1037,7 @@ bool acceptTypes(SearchQuery* req, std::vector<tag_value>& types, MapIndex* root
 	return false;
 }
 
-MapDataObject* readMapDataObject(CodedInputStream* input, MapTreeBounds* tree, SearchQuery* req, MapIndex* root,
+MapDataObject* readMapDataObject(CodedInputStream* input, MapTreeBounds* tree, SearchRequest<MapDataObject>* req, MapIndex* root,
 								 uint64_t baseId) {
 	uint32_t tag = WireFormatLite::GetTagFieldNumber(input->ReadTag());
 	bool area = (uint32_t)OsmAnd::OBF::MapData::kAreaCoordinatesFieldNumber == tag;
@@ -1345,7 +1345,7 @@ void getIncompleteTransportRoutes(BinaryMapFile* file) {
 }
 
 bool readTransportStopExit(CodedInputStream* input, SHARED_PTR<TransportStopExit>& exit, int cleft, int ctop,
-						   SearchQuery* req, UNORDERED(map) < int32_t, string > &stringTable) {
+						   SearchRequest<MapDataObject>* req, UNORDERED(map) < int32_t, string > &stringTable) {
 	int32_t x = 0;
 	int32_t y = 0;
 
@@ -1384,7 +1384,7 @@ bool readTransportStopExit(CodedInputStream* input, SHARED_PTR<TransportStopExit
 }
 
 bool readTransportStop(int stopOffset, SHARED_PTR<TransportStop>& stop, CodedInputStream* input, int pleft, int pright,
-					   int ptop, int pbottom, SearchQuery* req, UNORDERED(map) < int32_t, string > &stringTable) {
+					   int ptop, int pbottom, SearchRequest<MapDataObject>* req, UNORDERED(map) < int32_t, string > &stringTable) {
 	uint32_t tag = WireFormatLite::GetTagFieldNumber(input->ReadTag());
 	if (OsmAnd::OBF::TransportStop::kDxFieldNumber != tag) {
 		return false;
@@ -1495,7 +1495,7 @@ bool readTransportStop(int stopOffset, SHARED_PTR<TransportStop>& stop, CodedInp
 	}
 }
 
-bool searchTransportTreeBounds(CodedInputStream* input, int pleft, int pright, int ptop, int pbottom, SearchQuery* req,
+bool searchTransportTreeBounds(CodedInputStream* input, int pleft, int pright, int ptop, int pbottom, SearchRequest<MapDataObject>* req,
 							   UNORDERED(map) < int32_t, string > &stringTable) {
 	int init = 0;
 	int lastIndexResult = -1;
@@ -1918,7 +1918,7 @@ void initializeNames(bool onlyDescription, SHARED_PTR<TransportRoute>& dataObjec
 	}
 }
 
-void searchTransportIndex(const SHARED_PTR<TransportIndex>& index, SearchQuery* q, CodedInputStream* input) {
+void searchTransportIndex(const SHARED_PTR<TransportIndex>& index, SearchRequest<MapDataObject>* q, CodedInputStream* input) {
 	if (index->stopsFileLength == 0 || index->right < q->left || index->left > q->right || index->top > q->bottom ||
 		index->bottom < q->top) {
 		return;
@@ -1937,7 +1937,7 @@ void searchTransportIndex(const SHARED_PTR<TransportIndex>& index, SearchQuery* 
 	return;
 }
 
-void searchTransportIndex(SearchQuery* q, BinaryMapFile* file) {
+void searchTransportIndex(SearchRequest<MapDataObject>* q, BinaryMapFile* file) {
 	lseek(file->getRouteFD(), 0, SEEK_SET);
 	FileInputStream input(file->getRouteFD());
 	input.SetCloseOnDelete(false);
@@ -2007,7 +2007,7 @@ void loadTransportRoutes(BinaryMapFile* file, vector<int32_t> filePointers, UNOR
 }
 //----------------------------
 
-bool searchMapTreeBounds(CodedInputStream* input, MapTreeBounds* current, MapTreeBounds* parent, SearchQuery* req,
+bool searchMapTreeBounds(CodedInputStream* input, MapTreeBounds* current, MapTreeBounds* parent, SearchRequest<MapDataObject>* req,
 						 std::vector<MapTreeBounds>* foundSubtrees) {
 	int init = 0;
 	int tag;
@@ -2105,7 +2105,7 @@ bool searchMapTreeBounds(CodedInputStream* input, MapTreeBounds* current, MapTre
 	return true;
 }
 
-bool readMapDataBlocks(CodedInputStream* input, SearchQuery* req, MapTreeBounds* tree, MapIndex* root) {
+bool readMapDataBlocks(CodedInputStream* input, SearchRequest<MapDataObject>* req, MapTreeBounds* tree, MapIndex* root) {
 	uint64_t baseId = 0;
 	int tag;
 	std::vector<MapDataObject*> results;
@@ -2171,7 +2171,7 @@ bool readMapDataBlocks(CodedInputStream* input, SearchQuery* req, MapTreeBounds*
 	return true;
 }
 
-bool checkObjectBounds(SearchQuery* q, MapDataObject* o) {
+bool checkObjectBounds(SearchRequest<MapDataObject>* q, MapDataObject* o) {
 	uint prevCross = 0;
 	for (uint i = 0; i < o->points.size(); i++) {
 		uint cross = 0;
@@ -2195,7 +2195,7 @@ bool sortTreeBounds(const MapTreeBounds& i, const MapTreeBounds& j) {
 	return (i.mapDataBlock < j.mapDataBlock);
 }
 
-void searchMapData(CodedInputStream* input, MapRoot* root, MapIndex* ind, SearchQuery* req) {
+void searchMapData(CodedInputStream* input, MapRoot* root, MapIndex* ind, SearchRequest<MapDataObject>* req) {
 	// search
 	for (std::vector<MapTreeBounds>::iterator i = root->bounds.begin(); i != root->bounds.end(); i++) {
 		if (req->publisher->isCancelled()) {
@@ -2226,7 +2226,7 @@ void searchMapData(CodedInputStream* input, MapRoot* root, MapIndex* ind, Search
 	}
 }
 
-void convertRouteDataObjecToMapObjects(SearchQuery* q, std::vector<RouteDataObject*>& list,
+void convertRouteDataObjecToMapObjects(SearchRequest<MapDataObject>* q, std::vector<RouteDataObject*>& list,
 									   std::vector<FoundMapDataObject>& tempResult, int& renderedState) {
 	std::vector<RouteDataObject*>::iterator rIterator = list.begin();
 	tempResult.reserve((size_t)(list.size() + tempResult.size()));
@@ -2305,7 +2305,7 @@ void checkAndInitRouteRegionRules(int fileInd, const SHARED_PTR<RoutingIndex>& r
 	}
 }
 
-void searchRouteSubregions(SearchQuery* q, std::vector<RouteSubregion>& tempResult, bool basemap, bool geocoding) {
+void searchRouteSubregions(SearchRequest<MapDataObject>* q, std::vector<RouteSubregion>& tempResult, bool basemap, bool geocoding) {
 	vector<BinaryMapFile*>::iterator i = openFiles.begin();
 	for (; i != openFiles.end() && !q->publisher->isCancelled(); i++) {
 		BinaryMapFile* file = *i;
@@ -2334,7 +2334,7 @@ void searchRouteSubregions(SearchQuery* q, std::vector<RouteSubregion>& tempResu
 	}
 }
 
-void readRouteMapObjects(SearchQuery* q, BinaryMapFile* file, vector<RouteSubregion>& found, const SHARED_PTR<RoutingIndex>& routeIndex,
+void readRouteMapObjects(SearchRequest<MapDataObject>* q, BinaryMapFile* file, vector<RouteSubregion>& found, const SHARED_PTR<RoutingIndex>& routeIndex,
 						 std::vector<FoundMapDataObject>& tempResult, int& renderedState) {
 	sort(found.begin(), found.end(), sortRouteRegions);
 	lseek(file->getFD(), 0, SEEK_SET);
@@ -2354,7 +2354,7 @@ void readRouteMapObjects(SearchQuery* q, BinaryMapFile* file, vector<RouteSubreg
 	}
 }
 
-void readRouteDataAsMapObjects(SearchQuery* q, BinaryMapFile* file, std::vector<FoundMapDataObject>& tempResult,
+void readRouteDataAsMapObjects(SearchRequest<MapDataObject>* q, BinaryMapFile* file, std::vector<FoundMapDataObject>& tempResult,
 							   int& renderedState) {
 	//std::vector<SHARED_PTR<RoutingIndex>>::iterator routeIndex = file->routingIndexes.begin();
     for (const auto& routeIndex : file->routingIndexes) {
@@ -2391,7 +2391,7 @@ void readRouteDataAsMapObjects(SearchQuery* q, BinaryMapFile* file, std::vector<
 	}
 }
 
-void readMapObjects(SearchQuery* q, BinaryMapFile* file) {
+void readMapObjects(SearchRequest<MapDataObject>* q, BinaryMapFile* file) {
     for (const auto& mapIndex : file->mapIndexes) {
 		for (std::vector<MapRoot>::iterator mapLevel = mapIndex->levels.begin(); mapLevel != mapIndex->levels.end();
 			 mapLevel++) {
@@ -2439,7 +2439,7 @@ void readMapObjects(SearchQuery* q, BinaryMapFile* file) {
 	}
 }
 
-void readMapObjectsForRendering(SearchQuery* q, std::vector<FoundMapDataObject>& basemapResult,
+void readMapObjectsForRendering(SearchRequest<MapDataObject>* q, std::vector<FoundMapDataObject>& basemapResult,
 								std::vector<FoundMapDataObject>& tempResult, std::vector<FoundMapDataObject>& extResult,
 								std::vector<FoundMapDataObject>& coastLines,
 								std::vector<FoundMapDataObject>& basemapCoastLines, int& count, bool& basemapExists,
@@ -2591,7 +2591,7 @@ void uniq(std::vector<FoundMapDataObject>& r, std::vector<FoundMapDataObject>& u
 	}
 }
 
-ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, std::string msgNothingFound,
+ResultPublisher* searchObjectsForRendering(SearchRequest<MapDataObject>* q, bool skipDuplicates, std::string msgNothingFound,
 										   int& renderedState) {
 	int count = 0;
 	std::vector<FoundMapDataObject> basemapResult;
@@ -2749,7 +2749,7 @@ void initInputForRouteFile(CodedInputStream** inputStream, FileInputStream** fis
 	}
 }
 
-void searchRouteRegion(CodedInputStream** input, FileInputStream** fis, BinaryMapFile* file, SearchQuery* q,
+void searchRouteRegion(CodedInputStream** input, FileInputStream** fis, BinaryMapFile* file, SearchRequest<MapDataObject>* q,
                        const SHARED_PTR<RoutingIndex>& ind, std::vector<RouteSubregion>& subregions, std::vector<RouteSubregion>& toLoad,
 					   bool geocoding) {
 	for (std::vector<RouteSubregion>::iterator subreg = subregions.begin(); subreg != subregions.end(); subreg++) {
@@ -3071,7 +3071,7 @@ void searchRouteSubRegion(int fileInd, std::vector<RouteDataObject*>& list, cons
 	cis.PopLimit(old);
 }
 
-void searchRouteDataForSubRegion(SearchQuery* q, std::vector<RouteDataObject*>& list, RouteSubregion* sub,
+void searchRouteDataForSubRegion(SearchRequest<MapDataObject>* q, std::vector<RouteDataObject*>& list, RouteSubregion* sub,
 								 bool geocoding) {
 	vector<BinaryMapFile*>::iterator i = openFiles.begin();
 	const auto& rs = sub->routingIndex;
@@ -3260,4 +3260,24 @@ BinaryMapFile* initBinaryMapFile(std::string inputName, bool useLive, bool routi
 
 std::vector<BinaryMapFile*> getOpenMapFiles() {
 	return openFiles;
+}
+
+
+
+//public static SearchRequest<Amenity> buildSearchPoiRequest(int x, int y, String nameFilter, int sleft, int sright, int stop, int sbottom, SearchPoiTypeFilter poiTypeFilter, ResultMatcher<Amenity> resultMatcher, ResultMatcher<Amenity> rawDataCollector) {
+    
+
+SearchRequest<MapDataObject> buildSearchPoiRequest(int x, int y, QString nameFilter, int sleft, int sright, int stop, int sbottom) {
+    auto request = SearchRequest<MapDataObject>();
+    request.x = x;
+    request.y = y;
+    request.left = sleft;
+    request.right = sright;
+    request.top = stop;
+    request.bottom = sbottom;
+//    request.poiTypeFilter = poiTypeFilter;
+//    request.resultMatcher = resultMatcher;
+//    request.rawDataCollector = rawDataCollector;
+    request.nameQuery = nameFilter.trimmed();
+    return request;
 }

@@ -66,7 +66,7 @@ void TransportRoutingContext::getTransportStops(int32_t sx, int32_t sy, bool cha
 	loadTime.Pause();
 }
 
-void TransportRoutingContext::buildSearchTransportRequest(SearchQuery *q, int sleft, int sright, int stop, int sbottom,
+void TransportRoutingContext::buildSearchTransportRequest(SearchRequest<MapDataObject> *q, int sleft, int sright, int stop, int sbottom,
 														  int limit, vector<SHARED_PTR<TransportStop>> &stops) {
 	q->transportResults = stops;
 	q->left = sleft >> (31 - TRANSPORT_STOP_ZOOM);
@@ -81,7 +81,7 @@ std::vector<SHARED_PTR<TransportRouteSegment>> TransportRoutingContext::loadTile
 	vector<SHARED_PTR<TransportRouteSegment>> lst;
 	int pz = (31 - cfg->zoomToLoadTiles);
 	vector<SHARED_PTR<TransportStop>> stops;
-	SearchQuery q;
+	SearchRequest<MapDataObject> q;
 	buildSearchTransportRequest(&q, (x << pz), ((x + 1) << pz), (y << pz), ((y + 1) << pz), -1, stops);
 
 	stops = transportStopsReader->readMergedTransportStops(&q);

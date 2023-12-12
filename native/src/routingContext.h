@@ -301,7 +301,7 @@ struct RoutingContext {
 						progress->loadedTiles++;
 					}
 					subregions[j]->setLoaded();
-					SearchQuery q;
+					SearchRequest<MapDataObject> q;
 					vector<RouteDataObject*> res;
 					searchRouteDataForSubRegion(&q, res, &subregions[j]->subregion, geocoding);
 					vector<RouteDataObject*>::iterator i = res.begin();
@@ -341,7 +341,7 @@ struct RoutingContext {
 		int tz = 31 - z;
 		int64_t tileId = (xloc << z) + yloc;
 		if (indexedSubregions.find(tileId) == indexedSubregions.end()) {
-			SearchQuery q((uint32_t)(xloc << tz), (uint32_t)((xloc + 1) << tz), (uint32_t)(yloc << tz),
+			SearchRequest<MapDataObject> q((uint32_t)(xloc << tz), (uint32_t)((xloc + 1) << tz), (uint32_t)(yloc << tz),
 						  (uint32_t)((yloc + 1) << tz));
 			std::vector<RouteSubregion> tempResult;
 			searchRouteSubregions(&q, tempResult, basemap, geocoding);

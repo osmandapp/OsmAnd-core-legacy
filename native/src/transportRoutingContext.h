@@ -4,15 +4,17 @@
 #include "CommonCollections.h"
 #include "ElapsedTimer.h"
 #include "commonOsmAndCore.h"
+#include "binaryRead.h"
 
 class RouteCalculationProgress;
 struct BinaryMapFile;
-struct SearchQuery;
+//class SearchRequest;
 struct TransportRoutingConfiguration;
 struct TransportRouteSegment;
 struct TransportStop;
 struct TransportRoute;
 struct TransportRouteStopsReader;
+//class MapDataObject;
 
 struct TransportRoutingContext {
 	SHARED_PTR<RouteCalculationProgress> calculationProgress;
@@ -61,7 +63,7 @@ struct TransportRoutingContext {
 
 	void calcLatLons();
 	void getTransportStops(int32_t sx, int32_t sy, bool change, vector<SHARED_PTR<TransportRouteSegment>> &res);
-	void buildSearchTransportRequest(SearchQuery *q, int sleft, int sright, int stop, int sbottom, int limit,
+	void buildSearchTransportRequest(SearchRequest<MapDataObject> *q, int sleft, int sright, int stop, int sbottom, int limit,
 									 vector<SHARED_PTR<TransportStop>> &stops);
 	std::vector<SHARED_PTR<TransportRouteSegment>> loadTile(uint32_t x, uint32_t y);
 	void loadTransportSegments(vector<SHARED_PTR<TransportStop>> &stops,

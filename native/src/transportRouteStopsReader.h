@@ -4,9 +4,10 @@
 #include "CommonCollections.h"
 #include "commonOsmAndCore.h"
 // #include <queue> //check
+#include "binaryRead.h"
 
 struct BinaryMapFile;
-struct SearchQuery;
+//struct SearchRequest;
 struct TransportStop;
 struct TransportRoute;
 struct Way;
@@ -21,7 +22,7 @@ struct TransportRouteStopsReader {
 	PT_ROUTE_MAP combinedRoutesCache;
 	UNORDERED(map)<BinaryMapFile*, PT_ROUTE_MAP> routesFilesCache;
 
-	PT_STOPS_SEGMENT readMergedTransportStops(SearchQuery* sr);
+	PT_STOPS_SEGMENT readMergedTransportStops(SearchRequest<MapDataObject>* sr);
 	void mergeTransportStops(PT_ROUTE_MAP& routesToLoad,
 							UNORDERED(map) <int64_t, SHARED_PTR<TransportStop>> &loadedTransportStops,
 							PT_STOPS_SEGMENT &stops);

@@ -18,7 +18,7 @@ TransportRouteStopsReader::TransportRouteStopsReader(vector<BinaryMapFile*>& fil
 	}
 }
 
-vector<SHARED_PTR<TransportStop>> TransportRouteStopsReader::readMergedTransportStops(SearchQuery* q) {
+vector<SHARED_PTR<TransportStop>> TransportRouteStopsReader::readMergedTransportStops(SearchRequest<MapDataObject>* q) {
 	UNORDERED(map)<int64_t, SHARED_PTR<TransportStop>> loadedTransportStops;
 
 	for (auto& it : routesFilesCache) {

@@ -905,38 +905,79 @@ struct ResultPublisher {
 	}
 };
 
-struct SearchQuery {
+template<typename T>
+class ResultMatcher {
+public:
+    bool (*publish)(T);
+    bool (*isCancelled)();
+};
+
+template<typename T>
+class SearchRequest {
+public:
 	RenderingRuleSearchRequest* req;
-	int left;
-	int right;
-	int top;
-	int bottom;
+    
+    int ZOOM_TO_SEARCH_POI = 16;
+    //private List<T> searchResults = new ArrayList<T>();
+    //bool land = false;
+    //bool ocean = false;
+    
+    ResultMatcher<T> resultMatcher;
+    ResultMatcher<T> rawDataCollector;
+    //private ResultMatcher<T> resultMatcher;
+    //private ResultMatcher<T> rawDataCollector;
+    
+    // 31 zoom tiles
+    // common variables
+    int x = 0;
+    int y = 0;
+    int left = 0;
+    int right = 0;
+    int top = 0;
+    int bottom = 0;
+    uint zoom = 15;
+    int limit = -1;
+    
+    // search on the path
+    // stores tile of 16 index and pairs (even length always) of points intersecting tile
+    //TLongObjectHashMap<List<Location>> tiles = null;
+    double radius = -1;
+    
+    QString nameQuery = nullptr;
+    OsmAnd::StringMatcherMode matcherMode = OsmAnd::StringMatcherMode::CHECK_STARTS_FROM_SPACE;
+    //SearchFilter searchFilter = null;
+    //SearchPoiTypeFilter poiTypeFilter = null;
+    
+    // cache information
+    coordinates cacheCoordinates;
+    vector<int32_t> cacheTypes;
+    vector<int64_t> cacheIdsA;
+    vector<int64_t> cacheIdsB;
+    
+    //MapObjectStat stat = new MapObjectStat();
+    
+    // TRACE INFO
+    bool log = true;
+    uint numberOfVisitedObjects = 0;
+    uint numberOfAcceptedObjects = 0;
+    uint numberOfReadSubtrees = 0;
+    uint numberOfAcceptedSubtrees = 0;
+    bool interrupted = false;
+    
+    
 	int oceanLeft;
 	int oceanRight;
 	int oceanTop;
 	int oceanBottom;
-	uint zoom;
-	ResultPublisher* publisher;
-
-	coordinates cacheCoordinates;
+	
 	uint ocean;
 	uint oceanTiles;
-
-	uint numberOfVisitedObjects;
-	uint numberOfAcceptedObjects;
-	uint numberOfReadSubtrees;
-	uint numberOfAcceptedSubtrees;
-
-	int limit;
+    
+    ResultPublisher* publisher;
 
 	vector<SHARED_PTR<TransportStop>> transportResults;
 
-	// cache information
-	vector<int32_t> cacheTypes;
-	vector<int64_t> cacheIdsA;
-	vector<int64_t> cacheIdsB;
-
-	SearchQuery(int l, int r, int t, int b, RenderingRuleSearchRequest* req, ResultPublisher* publisher)
+	SearchRequest<T>(int l, int r, int t, int b, RenderingRuleSearchRequest* req, ResultPublisher* publisher)
 		: req(req), left(l), right(r), top(t), bottom(b), publisher(publisher) {
 		numberOfAcceptedObjects = numberOfVisitedObjects = 0;
 		numberOfAcceptedSubtrees = numberOfReadSubtrees = 0;
@@ -944,10 +985,10 @@ struct SearchQuery {
 		ocean = 0;
 		limit = -1;
 	}
-	SearchQuery(int l, int r, int t, int b) : left(l), right(r), top(t), bottom(b) {
+	SearchRequest<T>(int l, int r, int t, int b) : left(l), right(r), top(t), bottom(b) {
 	}
 
-	SearchQuery() {
+	SearchRequest<T>() {
 		numberOfAcceptedObjects = numberOfVisitedObjects = 0;
 		numberOfAcceptedSubtrees = numberOfReadSubtrees = 0;
 		oceanTiles = 0;
@@ -958,21 +999,30 @@ struct SearchQuery {
 	bool publish(MapDataObject* obj, MapIndex* ind, int8_t zoom) {
 		return publisher->publish(FoundMapDataObject(obj, ind, zoom));
 	}
+    
+//    public boolean publish(T obj) {
+//        if (this.resultMatcher != null && !this.resultMatcher.publish(obj)) {
+//            return false;
+//        } else {
+//            this.searchResults.add(obj);
+//            return true;
+//        }
+//    }
 };
 
 std::vector<BinaryMapFile*> getOpenMapFiles();
 
-void searchTransportIndex(SearchQuery* q, BinaryMapFile* file);
+void searchTransportIndex(SearchRequest<MapDataObject>* q, BinaryMapFile* file);
 
 void loadTransportRoutes(BinaryMapFile* file, vector<int32_t> filePointers, UNORDERED(map) < int64_t,
 						 SHARED_PTR<TransportRoute> > &result);
 
-void searchRouteSubregions(SearchQuery* q, std::vector<RouteSubregion>& tempResult, bool basemap, bool geocoding);
+void searchRouteSubregions(SearchRequest<MapDataObject>* q, std::vector<RouteSubregion>& tempResult, bool basemap, bool geocoding);
 
-void searchRouteDataForSubRegion(SearchQuery* q, std::vector<RouteDataObject*>& list, RouteSubregion* sub,
+void searchRouteDataForSubRegion(SearchRequest<MapDataObject>* q, std::vector<RouteDataObject*>& list, RouteSubregion* sub,
 								 bool geocoding);
 
-ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, std::string msgNothingFound,
+ResultPublisher* searchObjectsForRendering(SearchRequest<MapDataObject>* q, bool skipDuplicates, std::string msgNothingFound,
 										   int& renderedState);
 
 BinaryMapFile* initBinaryMapFile(std::string inputName, bool useLive, bool routingOnly);
@@ -982,5 +1032,7 @@ bool initMapFilesFromCache(std::string inputName);
 bool closeBinaryMapFile(std::string inputName);
 
 void getIncompleteTransportRoutes(BinaryMapFile* file);
+
+SearchRequest<MapDataObject> buildSearchPoiRequest(int x, int y, QString nameFilter, int sleft, int sright, int stop, int sbottom);
 
 #endif
