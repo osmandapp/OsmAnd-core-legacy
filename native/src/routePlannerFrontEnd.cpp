@@ -821,6 +821,7 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 		ctx->calculationProgressFirstPhase =  ctx->progress->capture(ctx->progress);
 	}
 
+    // TODO remove this block same as in Java (always apply addSegment) - for iOS routing (test with Ivan)
 	if (intermediatesEmpty) {
 		ctx->startX = startX;
 		ctx->startY = startY;

@@ -67,8 +67,8 @@ struct RoutingConfiguration {
 
     long memoryLimitation;
     float initialDirection;
-    double targetDirection;
-    double PENALTY_FOR_REVERSE_DIRECTION = DEFAULT_PENALTY_FOR_REVERSE_DIRECTION;
+    double targetDirection; // TODO pass it in getRoutingContext java_wrap.cpp (for HH)
+    double PENALTY_FOR_REVERSE_DIRECTION = DEFAULT_PENALTY_FOR_REVERSE_DIRECTION; // TODO pass it for HH
 
     int zoomToLoad;
     float heurCoefficient;

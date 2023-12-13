@@ -155,6 +155,12 @@ float calculatePreciseStartTime(const RoutingContext* ctx, int projX, int projY,
 	return dist;
 }
 
+// equalize with Java's `ctx.config.initialDirection == null`
+// see NativeLibrary.java runNativeRouting() to find the reason
+bool isDirectionJavaNull(float direction) {
+    float javaNullDirection = -2 * (float) M_PI;
+    return direction == javaNullDirection || direction == 0.0;
+}
 
 SHARED_PTR<RouteSegment> initEdgeSegment(RoutingContext* ctx, SHARED_PTR<RouteSegmentPoint>& pnt, bool originalDir, SEGMENTS_QUEUE& graphSegments, bool reverseSearchWay) {
 	if (!pnt) {
@@ -185,7 +191,7 @@ SHARED_PTR<RouteSegment> initEdgeSegment(RoutingContext* ctx, SHARED_PTR<RouteSe
 		// TODO
 		return nullptr;
 	}
-	if (!originalDir && !ctx->config->initialDirection && ctx->config->PENALTY_FOR_REVERSE_DIRECTION < 0) {
+	if (!originalDir && isDirectionJavaNull(ctx->config->initialDirection) && ctx->config->PENALTY_FOR_REVERSE_DIRECTION < 0) {
 		// special case for single side spread point-dijkstra
 		return nullptr;
 	}
@@ -193,8 +199,9 @@ SHARED_PTR<RouteSegment> initEdgeSegment(RoutingContext* ctx, SHARED_PTR<RouteSe
 	float dist = -calculatePreciseStartTime(ctx, pnt->preciseX, pnt->preciseY, seg);
 	// full segment length will be added on first visit
 	seg->distanceFromStart = dist;
-	
-	if ((!reverseSearchWay && ctx->config->initialDirection) || (reverseSearchWay && ctx->config->targetDirection)) {
+
+	if ((!reverseSearchWay && !isDirectionJavaNull(ctx->config->initialDirection))
+    	 || (reverseSearchWay && !isDirectionJavaNull(ctx->config->targetDirection))) {
 		// for start : f(start) = g(start) + h(start) = 0 + h(start) = h(start)
 		// mark here as positive for further check
 		double plusDir = seg->getRoad()->directionRoute(seg->getSegmentStart(), seg->isPositive());
