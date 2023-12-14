@@ -185,7 +185,7 @@ SHARED_PTR<RouteSegment> initEdgeSegment(RoutingContext* ctx, SHARED_PTR<RouteSe
 		// TODO
 		return nullptr;
 	}
-	if (!originalDir && !ctx->config->initialDirection && ctx->config->PENALTY_FOR_REVERSE_DIRECTION < 0) {
+	if (!originalDir && ctx->config->initialDirection == ctx->config->NO_DIRECTION && ctx->config->PENALTY_FOR_REVERSE_DIRECTION < 0) {
 		// special case for single side spread point-dijkstra
 		return nullptr;
 	}
@@ -193,8 +193,9 @@ SHARED_PTR<RouteSegment> initEdgeSegment(RoutingContext* ctx, SHARED_PTR<RouteSe
 	float dist = -calculatePreciseStartTime(ctx, pnt->preciseX, pnt->preciseY, seg);
 	// full segment length will be added on first visit
 	seg->distanceFromStart = dist;
-	
-	if ((!reverseSearchWay && ctx->config->initialDirection) || (reverseSearchWay && ctx->config->targetDirection)) {
+
+	if ((!reverseSearchWay && ctx->config->initialDirection != ctx->config->NO_DIRECTION) ||
+	        (reverseSearchWay && ctx->config->targetDirection != ctx->config->NO_DIRECTION)) {
 		// for start : f(start) = g(start) + h(start) = 0 + h(start) = h(start)
 		// mark here as positive for further check
 		double plusDir = seg->getRoad()->directionRoute(seg->getSegmentStart(), seg->isPositive());
