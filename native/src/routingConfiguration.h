@@ -55,14 +55,13 @@ struct DirectionPoint {
     }
 };
 
-#define NO_DIRECTION_RAD ((float)(-2 * M_PI)) // see NativeLibrary.java runNativeRouting() for ==null check
+#define NO_DIRECTION ((float)(-2 * M_PI)) // see NativeLibrary.java runNativeRouting() for ==null check
 
 struct RoutingConfiguration {
     const static int DEFAULT_MEMORY_LIMIT = 256;
     const static int DEVIATION_RADIUS = 3000;
 
     constexpr const static double DEFAULT_PENALTY_FOR_REVERSE_DIRECTION = 500;
-    const float NO_DIRECTION = NO_DIRECTION_RAD; // to compare with initialDirection / targetDirection
 
     MAP_STR_STR attributes;
     quad_tree<SHARED_PTR<DirectionPoint>> directionPoints;
@@ -71,8 +70,8 @@ struct RoutingConfiguration {
     SHARED_PTR<GeneralRouter> router;
 
     long memoryLimitation;
-    float initialDirection = NO_DIRECTION_RAD;
-    float targetDirection = NO_DIRECTION_RAD;
+    float initialDirection = NO_DIRECTION;
+    float targetDirection = NO_DIRECTION;
     double PENALTY_FOR_REVERSE_DIRECTION = DEFAULT_PENALTY_FOR_REVERSE_DIRECTION;
 
     int zoomToLoad;
@@ -96,7 +95,7 @@ struct RoutingConfiguration {
     float recalculateDistance;
     time_t routeCalculationTime = 0;
 
-    RoutingConfiguration(float initDirection = NO_DIRECTION_RAD, int memLimit = DEFAULT_MEMORY_LIMIT) : router(new GeneralRouter()), memoryLimitation(memLimit), initialDirection(initDirection), zoomToLoad(16), heurCoefficient(1), planRoadDirection(0), routerName(""), recalculateDistance(20000.0f) {
+    RoutingConfiguration(float initDirection = NO_DIRECTION, int memLimit = DEFAULT_MEMORY_LIMIT) : router(new GeneralRouter()), memoryLimitation(memLimit), initialDirection(initDirection), zoomToLoad(16), heurCoefficient(1), planRoadDirection(0), routerName(""), recalculateDistance(20000.0f) {
     }
 
     string getAttribute(SHARED_PTR<GeneralRouter> router, string propertyName) {
@@ -134,7 +133,7 @@ public:
     }
     
     SHARED_PTR<RoutingConfiguration> build(string router, int memoryLimitMB, MAP_STR_STR& params) {
-        return build(router, NO_DIRECTION_RAD, memoryLimitMB, params);
+        return build(router, NO_DIRECTION, memoryLimitMB, params);
     }
     
     SHARED_PTR<RoutingConfiguration> build(string router, float direction, long memoryLimitMB, MAP_STR_STR& params) {

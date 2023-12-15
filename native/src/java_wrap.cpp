@@ -21,7 +21,7 @@
 #include "transportRouteSegment.h"
 #include "transportRoutingConfiguration.h"
 #include "transportRoutingContext.h"
-#include "routingConfiguration.h" // NO_DIRECTION_RAD
+//#include "routingConfiguration.h"
 //#include "routeSegmentResult.h"
 //#include "routeSegment.h"
 //#include "routeCalculationProgress.h"
@@ -1697,7 +1697,7 @@ extern "C" JNIEXPORT jboolean JNICALL Java_net_osmand_NativeLibrary_nativeNeedRe
 	ienv->GetIntArrayRegion(jcoordinatesX, jsize{0}, size, &coordinatesX[0]);
 	ienv->GetIntArrayRegion(jcoordinatesY, jsize{0}, size, &coordinatesY[0]);
 	jobject progress = ienv->GetObjectField(jCtx, jfield_RoutingContext_calculationProgress);
-	RoutingContext* c = getRoutingContext(ienv, jCtx, NO_DIRECTION_RAD, false, progress);
+	RoutingContext* c = getRoutingContext(ienv, jCtx, NO_DIRECTION, false, progress);
 	SHARED_PTR<RoutePlannerFrontEnd> rpfe = shared_ptr<RoutePlannerFrontEnd>(new RoutePlannerFrontEnd());
 	bool res = rpfe->needRequestPrivateAccessRouting(std::make_shared<RoutingContext>(c), coordinatesX, coordinatesY);
 	ienv->DeleteLocalRef(progress);
@@ -1719,7 +1719,7 @@ extern "C" JNIEXPORT jobject JNICALL Java_net_osmand_NativeLibrary_nativeSearchG
 		ienv->DeleteLocalRef(jGpxPoint);
 	}
 	jobject progress = ienv->GetObjectField(jCtx, jfield_RoutingContext_calculationProgress);
-	RoutingContext* c = getRoutingContext(ienv, jCtx, NO_DIRECTION_RAD, false, progress);
+	RoutingContext* c = getRoutingContext(ienv, jCtx, NO_DIRECTION, false, progress);
 	SHARED_PTR<GpxRouteApproximation> r = shared_ptr<GpxRouteApproximation>(new GpxRouteApproximation(c));
 	SHARED_PTR<RoutePlannerFrontEnd> rpfe = shared_ptr<RoutePlannerFrontEnd>(new RoutePlannerFrontEnd());
 	rpfe->searchGpxRoute(r, gpxPoints);
