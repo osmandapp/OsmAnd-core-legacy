@@ -470,11 +470,19 @@ struct RouteDataObject {
     inline int getPoint31XTile(int i) {
         return pointsX[i];
     }
-        
+
+    inline int getPoint31XTile(int s, int e) {
+        return pointsX[s] / 2 + pointsX[e] / 2;
+    }
+
     inline int getPoint31YTile(int i) {
         return pointsY[i];
     }
-	
+
+    inline int getPoint31YTile(int s, int e) {
+        return pointsY[s] / 2 + pointsY[e] / 2;
+    }
+
 	std::vector<uint32_t> getPointTypes(int ind) {
 		if (ind >= pointTypes.size()) {
 			return {};
