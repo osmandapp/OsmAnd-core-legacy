@@ -109,7 +109,7 @@ typedef UNORDERED(map)<int64_t, SHARED_PTR<RouteSegment>> VISITED_MAP;
 typedef priority_queue<SHARED_PTR<RouteSegmentCost>, vector<SHARED_PTR<RouteSegmentCost>>, SegmentsComparator> SEGMENTS_QUEUE;
 void processRouteSegment(RoutingContext* ctx, bool reverseWaySearch, SEGMENTS_QUEUE& graphSegments,
 						 VISITED_MAP& visitedSegments, const SHARED_PTR<RouteSegment>& segment, VISITED_MAP& oppositeSegments,
-						 SHARED_PTR<VISITED_MAP>& boundaries, bool direction);
+						 const SHARED_PTR<VISITED_MAP>& boundaries, bool direction);
 
 SHARED_PTR<RouteSegment> processIntersections(RoutingContext* ctx, SEGMENTS_QUEUE& graphSegments,
 											  VISITED_MAP& visitedSegments, const SHARED_PTR<RouteSegment>& currentSegment,
@@ -290,7 +290,7 @@ bool containsKey(VISITED_MAP& visited, int64_t routePointId) { return visited.fi
  * return list of segments
  */
 vector<SHARED_PTR<RouteSegment>> searchRouteInternal(RoutingContext* ctx, SHARED_PTR<RouteSegmentPoint>& start,
-											 SHARED_PTR<RouteSegmentPoint>& end, bool leftSideNavigation, SHARED_PTR<VISITED_MAP>& boundaries) {
+											 SHARED_PTR<RouteSegmentPoint>& end, bool leftSideNavigation, const SHARED_PTR<VISITED_MAP>& boundaries) {
 	// FIXME intermediate points
 	// measure time
 
@@ -513,7 +513,7 @@ SHARED_PTR<RouteSegment> getParentDiffId(SHARED_PTR<RouteSegment> s) {
 
 bool checkIfOppositeSegmentWasVisited(RoutingContext* ctx, bool reverseWaySearch, SEGMENTS_QUEUE& graphSegments,
 									  const SHARED_PTR<RouteSegment>& currentSegment, VISITED_MAP& oppositeSegments,
-									  SHARED_PTR<VISITED_MAP>& boundaries) {
+									  const SHARED_PTR<VISITED_MAP>& boundaries) {
 	// check inverse direction for opposite
 	int64_t currPoint = calculateRoutePointInternalId(currentSegment->getRoad(), currentSegment->getSegmentEnd(),
 													  currentSegment->getSegmentStart());
@@ -584,7 +584,7 @@ double calculateRouteSegmentTime(RoutingContext* ctx, bool reverseWaySearch, SHA
 
 void processRouteSegment(RoutingContext* ctx, bool reverseWaySearch, SEGMENTS_QUEUE& graphSegments,
 						 VISITED_MAP& visitedSegments, const SHARED_PTR<RouteSegment>& startSegment,
-						 VISITED_MAP& oppositeSegments, SHARED_PTR<VISITED_MAP>& boundaries, bool doNotAddIntersections) {
+						 VISITED_MAP& oppositeSegments, const SHARED_PTR<VISITED_MAP>& boundaries, bool doNotAddIntersections) {
 	SHARED_PTR<RouteDataObject> road = startSegment->getRoad();
 	//	bool directionAllowed = true;
 	// Go through all point of the way and find ways to continue
@@ -1205,7 +1205,7 @@ vector<SHARED_PTR<RouteSegmentResult>> searchRouteInternal(RoutingContext* ctx, 
 	} else {
 		// OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "End point was found %lld [Native]", end->road->id / 64);
 	}
-	SHARED_PTR<VISITED_MAP> boundaries = nullptr;
+	const SHARED_PTR<VISITED_MAP> boundaries = nullptr;
 	vector<SHARED_PTR<RouteSegment>> results = searchRouteInternal(ctx, start, end, leftSideNavigation, boundaries);
 	SHARED_PTR<RouteSegment> finalSegment = nullptr;
 	if (results.size() > 0) {
