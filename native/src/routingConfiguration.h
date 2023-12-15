@@ -55,7 +55,7 @@ struct DirectionPoint {
     }
 };
 
-#define NO_DIRECTION ((float)(-2 * M_PI)) // see NativeLibrary.java runNativeRouting() for ==null check
+#define NO_DIRECTION ((float)(-2 * M_PI)) // -360 degrees in RADIANS for no-direction rule (Java uses ==null instead)
 
 struct RoutingConfiguration {
     const static int DEFAULT_MEMORY_LIMIT = 256;
