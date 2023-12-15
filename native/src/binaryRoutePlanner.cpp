@@ -517,16 +517,16 @@ bool checkIfOppositeSegmentWasVisited(RoutingContext* ctx, bool reverseWaySearch
 	// check inverse direction for opposite
 	int64_t currPoint = calculateRoutePointInternalId(currentSegment->getRoad(), currentSegment->getSegmentEnd(),
 													  currentSegment->getSegmentStart());
-    if (boundaries) {
-        if(ctx->dijkstraMode == 0) {
-            if (containsKey(*boundaries, currPoint)) {
-                return true;
-            }
-        } else {
-            // limit by boundaries for dijkstra mode
-            oppositeSegments = *boundaries;
-        }
-    }
+	if (boundaries) {
+		if(ctx->dijkstraMode == 0) {
+			if (containsKey(*boundaries, currPoint)) {
+				return true;
+			}
+		} else {
+			// limit by boundaries for dijkstra mode
+			oppositeSegments = *boundaries; // TODO: is it copied here?
+		}
+	}
 	const auto opIt = oppositeSegments.find(currPoint);
 	if (opIt != oppositeSegments.end() && opIt->second) {
 		SHARED_PTR<RouteSegment> opposite = opIt->second;
