@@ -136,7 +136,7 @@ double squareRootDist31(int x1, int y1, int x2, int y2) {
 
 // 14 precision, gives 10x speedup, 0.02% error
 double getTileWidth(int y31) {
-	static UNORDERED(map)<int, double> DIST_CACHE; // cache (static)
+	static UNORDERED(map)<int, double> DIST_CACHE; // cache (static) TODO location: global (heap) or local (static-heap)
 	const int PRECISION_ZOOM = 14; // 16 doesn't fit into tile int
 
 	double y = y31 / 1.0 / (1 << (31 - PRECISION_ZOOM));

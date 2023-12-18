@@ -358,10 +358,10 @@ struct RouteDataObject {
 	inline string getDestinationName(string& lang, bool translit, bool direction) {
 		if (!names.empty()) {
 			// Issue #3181: Parse destination keys in this order:
-			//			  destination:lang:XX:forward/backward
-			//			  destination:forward/backward
-			//			  destination:lang:XX
-			//			  destination
+			//              destination:lang:XX:forward/backward
+			//              destination:forward/backward
+			//              destination:lang:XX
+			//              destination
 
 			string destinationTagLangFB = "destination:lang:XX";
 			if (!lang.empty()) {
