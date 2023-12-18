@@ -957,7 +957,7 @@ SHARED_PTR<RouteSegmentPoint> findRouteSegment(int px, int py, RoutingContext* c
 				int pry = p.second;
 				double currentsDist = squareDist31TileMetric(prx, pry, px, py);
 				if (!road || currentsDist < road->dist) {
-					road = std::make_shared<RouteSegmentPoint>(r, j, currentsDist);
+					road = std::make_shared<RouteSegmentPoint>(r, j - 1, j, currentsDist);
 					road->preciseX = prx;
 					road->preciseY = pry;
 				}
@@ -985,7 +985,7 @@ SHARED_PTR<RouteSegmentPoint> findRouteSegment(int px, int py, RoutingContext* c
 		if (ctx->publicTransport) {
 			vector<SHARED_PTR<RouteSegmentPoint>>::iterator it = list.begin();
 			for (; it != list.end(); it++) {
-				if (transportStop && (*it)->dist > 100) {
+				if (transportStop && (*it)->dist > GPS_POSSIBLE_ERROR * GPS_POSSIBLE_ERROR) {
 					break;
 				}
 				bool platform = (*it)->road->platform();

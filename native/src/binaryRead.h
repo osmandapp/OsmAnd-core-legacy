@@ -69,7 +69,7 @@ struct RouteSubregion {
 	uint32_t top;
 	uint32_t bottom;
 	std::vector<RouteSubregion> subregions;
-    SHARED_PTR<RoutingIndex> routingIndex;
+	SHARED_PTR<RoutingIndex> routingIndex;
 
 	RouteSubregion(const SHARED_PTR<RoutingIndex>& ind) : length(0), filePointer(0), mapDataBlock(0), routingIndex(ind) {
 	}
@@ -130,7 +130,7 @@ struct RoutingIndex : BinaryPartIndex {
 	void completeRouteEncodingRules();
 
 	uint32_t findOrCreateRouteType(const std::string& tag, const std::string& value);
-    
+
 	uint32_t searchRouteEncodingRule(const std::string& tag, const std::string& value);
 
 	RouteTypeRule& quickGetEncodingRule(uint32_t id) {
@@ -143,7 +143,7 @@ struct RouteDataObject {
 	const static uint64_t RESTRICTION_MASK = 7;
 	const static int HEIGHT_UNDEFINED = -80000;
 
-    SHARED_PTR<RoutingIndex> region;
+	SHARED_PTR<RoutingIndex> region;
 	std::vector<uint32_t> types;
 	std::vector<uint32_t> pointsX;
 	std::vector<uint32_t> pointsY;
@@ -155,16 +155,16 @@ struct RouteDataObject {
 	std::vector<double> heightDistanceArray;
 	int64_t id;
 
-    void setPointTypes(int pntInd, std::vector<uint32_t> array) {
-        if (pointTypes.size() <= pntInd) {
-            std::vector<std::vector<uint32_t>> npointTypes(pntInd + 1);
-            for (int k = 0; k < pointTypes.size(); k++) {
-                npointTypes[k] = pointTypes[k];
-            }
-            pointTypes = npointTypes;
-        }
-        pointTypes[pntInd] = array;
-    }
+	void setPointTypes(int pntInd, std::vector<uint32_t> array) {
+		if (pointTypes.size() <= pntInd) {
+			std::vector<std::vector<uint32_t>> npointTypes(pntInd + 1);
+			for (int k = 0; k < pointTypes.size(); k++) {
+				npointTypes[k] = pointTypes[k];
+			}
+			pointTypes = npointTypes;
+		}
+		pointTypes[pntInd] = array;
+	}
 
 	UNORDERED(map)<int, std::string> names;
 	vector<pair<uint32_t, uint32_t>> namesIds;
@@ -343,18 +343,18 @@ struct RouteDataObject {
 
    #ifdef _IOS_BUILD
 	inline string transliterate(const string& s) {
-        QString transliterateName = OsmAnd::ICU::transliterateToLatin(QString::fromStdString(s));
-        return transliterateName.toStdString();
+		QString transliterateName = OsmAnd::ICU::transliterateToLatin(QString::fromStdString(s));
+		return transliterateName.toStdString();
 	}
    #endif
-    
+
    #ifndef _IOS_BUILD
    inline string transliterate(const string& s) {
-       return s;
+	   return s;
    }
    #endif
-    
-    
+
+
 	inline string getDestinationName(string& lang, bool translit, bool direction) {
 		if (!names.empty()) {
 			// Issue #3181: Parse destination keys in this order:
@@ -466,22 +466,30 @@ struct RouteDataObject {
 	inline int getPointsLength() {
 		return (int)pointsX.size();
 	}
-    
-    inline int getPoint31XTile(int i) {
-        return pointsX[i];
-    }
-        
-    inline int getPoint31YTile(int i) {
-        return pointsY[i];
-    }
-	
+
+	inline int getPoint31XTile(int i) {
+		return pointsX[i];
+	}
+
+	inline int getPoint31XTile(int s, int e) {
+		return pointsX[s] / 2 + pointsX[e] / 2;
+	}
+
+	inline int getPoint31YTile(int i) {
+		return pointsY[i];
+	}
+
+	inline int getPoint31YTile(int s, int e) {
+		return pointsY[s] / 2 + pointsY[e] / 2;
+	}
+
 	std::vector<uint32_t> getPointTypes(int ind) {
 		if (ind >= pointTypes.size()) {
 			return {};
 		}
 		return pointTypes[ind];
 	}
-	
+
 	void insert(int pos, int x31, int y31) {
 		pointsX.insert(pointsX.begin() + pos, x31);
 		pointsY.insert(pointsY.begin() + pos, y31);
@@ -500,7 +508,7 @@ struct RouteDataObject {
 	bool platform();
 
 	bool roundabout();
-	
+
 	bool hasTrafficLightAt(int i);
 
 	double simplifyDistance(int x, int y, int px, int py) {
@@ -805,7 +813,7 @@ struct BinaryMapFile {
 
 	int openFile() {
 #if defined(_WIN32)
-		int fileDescriptor = open(inputName.c_str(), O_RDONLY | O_BINARY);		
+		int fileDescriptor = open(inputName.c_str(), O_RDONLY | O_BINARY);
 #else
 		int fileDescriptor = open(inputName.c_str(), O_RDONLY);
 #endif
