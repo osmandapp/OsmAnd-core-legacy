@@ -985,12 +985,12 @@ SHARED_PTR<RouteSegmentPoint> findRouteSegment(int px, int py, RoutingContext* c
 				bool platform = (*it)->road->platform();
 				if (transportStop && platform) {
 					ps = *it;
-					list.erase(it);
+					list.erase(it); // TODO why no erase in Java?
 					break;
 				}
 				if (!transportStop && !platform) {
 					ps = *it;
-					list.erase(it);
+					list.erase(it); // TODO why no erase in Java?
 					break;
 				}
 			}
@@ -998,7 +998,7 @@ SHARED_PTR<RouteSegmentPoint> findRouteSegment(int px, int py, RoutingContext* c
 		}
 		if (ps == nullptr) {
 			ps = list[0];
-			list.erase(list.begin());
+//			list.erase(list.begin()); // avoid it, no erase in Java
 		}
 		ps->others = list;
 		return ps;
