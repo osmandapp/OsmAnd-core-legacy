@@ -56,59 +56,6 @@ double dabs(double d) {
 const uint precisionPower = 10;
 const uint precisionDiv = 1 << (31 - precisionPower);
 
-//double coefficientsY[1 << precisionPower];
-//bool initializeYArray = false;
-//double old_convert31YToMeters(int y1, int y2, int x) {
-//	if (!initializeYArray) {
-//		coefficientsY[0] = 0;
-//		for (uint i = 0; i < (1 << precisionPower) - 1; i++) {
-//			coefficientsY[i + 1] =
-//				coefficientsY[i] + measuredDist31(0, i << (31 - precisionPower), 0, ((i + 1) << (31 - precisionPower)));
-//		}
-//		initializeYArray = true;
-//	}
-//	uint div1 = y1 / precisionDiv;
-//	uint mod1 = y1 % precisionDiv;
-//	uint div2 = y2 / precisionDiv;
-//	uint mod2 = y2 % precisionDiv;
-//	double h1;
-//		if(div1 + 1 >= sizeof(coefficientsY)/sizeof(*coefficientsY)) {
-//			h1 = coefficientsY[div1] + mod1 / ((double)precisionDiv) * (coefficientsY[div1] - coefficientsY[div1 - 1]);
-//		} else {
-//			h1 = coefficientsY[div1] + mod1 / ((double)precisionDiv) * (coefficientsY[div1 + 1] - coefficientsY[div1]);
-//		}
-//		double h2 ;
-//		if(div2 + 1 >= sizeof(coefficientsY)/sizeof(*coefficientsY)) {
-//			h2 = coefficientsY[div2] + mod2 / ((double)precisionDiv) * (coefficientsY[div2] - coefficientsY[div2 - 1]);
-//		} else {
-//			h2 = coefficientsY[div2] + mod2 / ((double)precisionDiv) * (coefficientsY[div2 + 1] - coefficientsY[div2]);
-//		}
-//	double res = h1 - h2;
-//	// OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "ind %f != %f", res,  measuredDist31(x, y1, x, y2));
-//	return res;
-//}
-
-//double coefficientsX[1 << precisionPower];
-//bool initializeXArray = false;
-//double old_convert31XToMeters(int x1, int x2, int y) {
-//	if (!initializeXArray) {
-//		for (uint i = 0; i < (1 << precisionPower); i++) {
-//			coefficientsX[i] = 0;
-//		}
-//		initializeXArray = true;
-//	}
-//	int ind = y / precisionDiv;
-//	if (coefficientsX[ind] == 0) {
-//		double md = measuredDist31(x1, y, x2, y);
-//		if (md < 10 || x1 == x2) {
-//			return md;
-//		}
-//		coefficientsX[ind] = md / dabs((double)x1 - (double)x2);
-//	}
-//	// translate into meters
-//	return ((double)x1 - x2) * coefficientsX[ind];
-//}
-
 double scalarMultiplication(double xA, double yA, double xB, double yB, double xC, double yC) {
 	// Scalar multiplication between (AB, AC)
 	return (xB - xA) * (xC - xA) + (yB - yA) * (yC - yA);
@@ -141,46 +88,6 @@ std::pair<double, double> getProjection(double lat, double lon, double fromLat, 
 	}
 	return std::pair<double, double>(prlat, prlon);
 }
-
-//std::pair<int, int> old_getProjectionPoint(int px, int py, int xA, int yA, int xB, int yB) {
-//	double mDist = measuredDist31(xA, yA, xB, yB);
-//	int prx = xA;
-//	int pry = yA;
-//	double projection = calculateProjection31TileMetric(xA, yA, xB, yB, px, py);
-//	if (projection < 0) {
-//		prx = xA;
-//		pry = yA;
-//	} else if (projection >= mDist * mDist) {
-//		prx = xB;
-//		pry = yB;
-//	} else {
-//		double c = projection / (mDist * mDist);
-//		prx = (int)((double)xA + ((double)xB - xA) * c);
-//		pry = (int)((double)yA + ((double)yB - yA) * c);
-//	}
-//	return std::pair<int, int>(prx, pry);
-//}
-
-//double old_calculateProjection31TileMetric(int xA, int yA, int xB, int yB, int xC, int yC) {
-//	// Scalar multiplication between (AB, AC)
-//	double multiple = convert31XToMeters(xB, xA, yA) * convert31XToMeters(xC, xA, yA) +
-//					  convert31YToMeters(yB, yA, xA) * convert31YToMeters(yC, yA, xA);
-//	return multiple;
-//}
-
-//double old_squareDist31TileMetric(int x1, int y1, int x2, int y2) {
-//	// translate into meters
-//	double dy = convert31YToMeters(y1, y2, x1);
-//	double dx = convert31XToMeters(x1, x2, y1);
-//	return dx * dx + dy * dy;
-//}
-
-//double old_squareRootDist31(int x1, int y1, int x2, int y2) {
-//	// translate into meters
-//	double dy = convert31YToMeters(y1, y2, x1);
-//	double dx = convert31XToMeters(x1, x2, y1);
-//	return sqrt(dx * dx + dy * dy);
-//}
 
 std::pair<int, int> getProjectionPoint(int px, int py, int st31x, int st31y, int end31x, int end31y) {
 	// st31x, st31y - A, end31x, end31y - B, px, py - C
