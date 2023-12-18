@@ -217,40 +217,40 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 				break;
 			}
 			sgms.clear();
-            if (segment->getDepth() < ctx->cfg->maxNumberOfChanges + 1) {
-                ctx->getTransportStops(stop->x31, stop->y31, true, sgms);
-                ctx->visitedStops++;
-                for (SHARED_PTR<TransportRouteSegment>& sgm : sgms) {
-                    if (ctx->calculationProgress != nullptr && ctx->calculationProgress->isCancelled()) {
-                        return;
-                    }
-                    if (segment->wasVisited(sgm)) {
-                        continue;
-                    }
-                    if (ctx->visitedSegments[sgm->getId()] != nullptr) {
-                        continue;
-                    }
-                    SHARED_PTR<TransportRouteSegment> nextSegment = make_shared<TransportRouteSegment>(sgm);
-                    nextSegment->parentRoute = segment;
-                    nextSegment->parentStop = ind;
-                    nextSegment->walkDist =
-                    getDistance(nextSegment->getLocationLat(), nextSegment->getLocationLon(), stop->lat, stop->lon);
-                    nextSegment->parentTravelTime = travelTime;
-                    nextSegment->parentTravelDist = travelDist;
-                    double walkTime = nextSegment->walkDist / ctx->cfg->walkSpeed + ctx->cfg->getChangeTime() +
-                    ctx->cfg->getBoardingTime();
-                    nextSegment->distFromStart = segment->distFromStart + travelTime + walkTime;
-                    if (ctx->cfg->useSchedule) {
-                        int tm = (sgm->departureTime - ctx->cfg->scheduleTimeOfDay) * 10;
-                        if (tm >= nextSegment->distFromStart) {
-                            nextSegment->distFromStart = tm;
-                            queue.push(nextSegment);
-                        }
-                    } else {
-                        queue.push(nextSegment);
-                    }
-                }
-            }
+			if (segment->getDepth() < ctx->cfg->maxNumberOfChanges + 1) {
+				ctx->getTransportStops(stop->x31, stop->y31, true, sgms);
+				ctx->visitedStops++;
+				for (SHARED_PTR<TransportRouteSegment>& sgm : sgms) {
+					if (ctx->calculationProgress != nullptr && ctx->calculationProgress->isCancelled()) {
+						return;
+					}
+					if (segment->wasVisited(sgm)) {
+						continue;
+					}
+					if (ctx->visitedSegments[sgm->getId()] != nullptr) {
+						continue;
+					}
+					SHARED_PTR<TransportRouteSegment> nextSegment = make_shared<TransportRouteSegment>(sgm);
+					nextSegment->parentRoute = segment;
+					nextSegment->parentStop = ind;
+					nextSegment->walkDist =
+					getDistance(nextSegment->getLocationLat(), nextSegment->getLocationLon(), stop->lat, stop->lon);
+					nextSegment->parentTravelTime = travelTime;
+					nextSegment->parentTravelDist = travelDist;
+					double walkTime = nextSegment->walkDist / ctx->cfg->walkSpeed + ctx->cfg->getChangeTime() +
+					ctx->cfg->getBoardingTime();
+					nextSegment->distFromStart = segment->distFromStart + travelTime + walkTime;
+					if (ctx->cfg->useSchedule) {
+						int tm = (sgm->departureTime - ctx->cfg->scheduleTimeOfDay) * 10;
+						if (tm >= nextSegment->distFromStart) {
+							nextSegment->distFromStart = tm;
+							queue.push(nextSegment);
+						}
+					} else {
+						queue.push(nextSegment);
+					}
+				}
+			}
 			SHARED_PTR<TransportRouteSegment> finalSegment = nullptr;
 			if (endSegments.find(segmentId) != endSegments.end()) {
 				finalSegment = endSegments[segmentId];
