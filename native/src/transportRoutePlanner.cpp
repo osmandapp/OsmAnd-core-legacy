@@ -227,7 +227,7 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 					if (segment->wasVisited(sgm)) {
 						continue;
 					}
-					if (ctx->visitedSegments[sgm->getId()] != nullptr) {
+					if (ctx->visitedSegments.find(sgm->getId()) != ctx->visitedSegments.end()) {
 						continue;
 					}
 					SHARED_PTR<TransportRouteSegment> nextSegment = make_shared<TransportRouteSegment>(sgm);
