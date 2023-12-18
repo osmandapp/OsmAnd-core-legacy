@@ -979,7 +979,7 @@ SHARED_PTR<RouteSegmentPoint> findRouteSegment(int px, int py, RoutingContext* c
 		if (ctx->publicTransport) {
 			vector<SHARED_PTR<RouteSegmentPoint>>::iterator it = list.begin();
 			for (; it != list.end(); it++) {
-				if (transportStop && (*it)->dist > 100) { // TODO check > (GPS_POSSIBLE_ERROR * GPS_POSSIBLE_ERROR) ???
+				if (transportStop && (*it)->dist > GPS_POSSIBLE_ERROR * GPS_POSSIBLE_ERROR) {
 					break;
 				}
 				bool platform = (*it)->road->platform();
@@ -998,7 +998,7 @@ SHARED_PTR<RouteSegmentPoint> findRouteSegment(int px, int py, RoutingContext* c
 		}
 		if (ps == nullptr) {
 			ps = list[0];
-//			list.erase(list.begin()); // avoid it, no erase in Java
+//			list.erase(list.begin()); // TODO avoid it, no erase in Java - list becomes different Java/C++
 		}
 		ps->others = list;
 		return ps;
