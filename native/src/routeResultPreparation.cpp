@@ -2006,6 +2006,7 @@ void prepareTurnResults(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResul
     ignorePrecedingStraightsOnSameIntersection(ctx->leftSideNavigation, result);
     justifyUTurns(ctx->leftSideNavigation, result);
     avoidKeepForThroughMoving(result);
+    removeMuteGoAhead(result);
     addTurnInfoDescriptions(result);
 }
 
