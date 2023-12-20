@@ -1981,6 +1981,21 @@ void avoidKeepForThroughMoving(vector<SHARED_PTR<RouteSegmentResult> >& result) 
     }
 }
 
+void removeMuteGoAhead(vector<SHARED_PTR<RouteSegmentResult> >& result) {
+    for (int i = 0; i < result.size(); i++) {
+        auto & curr = result[i];
+        auto & turnType = curr->turnType;
+        if (!turnType || !turnType->goAhead() || !turnType->isSkipToSpeak()) {
+            continue;
+        }
+        int cnt = turnType->countTurnTypeDirections(TurnType::C, true);
+        int cntAll = turnType->countTurnTypeDirections(TurnType::C, false);
+        if (cnt > 0 && cnt == cntAll && cnt >= 2) {
+            curr->turnType = nullptr;
+        }
+    }
+}
+
 void prepareTurnResults(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResult> >& result) {
     for (int i = 0; i < result.size(); i ++) {
         const auto& turnType = getTurnInfo(result, i, ctx->leftSideNavigation);
