@@ -1554,6 +1554,11 @@ void parseRouteConfiguration(JNIEnv* ienv, SHARED_PTR<RoutingConfiguration> rCon
 	rConfig->router->heightObstacles = ienv->GetBooleanField(router, jfield_GeneralRouter_heightObstacles);
 	rConfig->router->shortestRoute = ienv->GetBooleanField(router, jfield_GeneralRouter_shortestRoute);
 
+	// `maxVehicleSpeed` is required to get correct vehicle speed with defineVehicleSpeed()
+	// It could set by GeneralRouter.build() but actually that constructor is never called
+	// Therefore, `maxVehicleSpeed` is set here, with other variables from Java objects
+	rConfig->router->maxVehicleSpeed = rConfig->router->maxSpeed;
+
 	// Map<String, String> attributes; // Attributes are not sync not used for calculation
 	// Map<String, RoutingParameter> parameters;  // not used for calculation
 	// Map<String, Integer> universalRules; // dynamically managed
@@ -1848,6 +1853,7 @@ void parseTransportRoutingConfiguration(JNIEnv* ienv, shared_ptr<TransportRoutin
 	rConfig->router->minSpeed = ienv->GetFloatField(router, jfield_GeneralRouter_minSpeed);
 	rConfig->router->defaultSpeed = ienv->GetFloatField(router, jfield_GeneralRouter_defaultSpeed);
 	rConfig->router->maxSpeed = ienv->GetFloatField(router, jfield_GeneralRouter_maxSpeed);
+	rConfig->router->maxVehicleSpeed = rConfig->router->maxSpeed;
 
 	jobjectArray objectAttributes = (jobjectArray)ienv->GetObjectField(router, jfield_GeneralRouter_objectAttributes);
 	for (int i = 0; i < ienv->GetArrayLength(objectAttributes); i++) {
