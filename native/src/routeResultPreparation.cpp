@@ -1985,12 +1985,13 @@ void removeMuteGoAhead(vector<SHARED_PTR<RouteSegmentResult> >& result) {
     for (int i = 0; i < result.size(); i++) {
         auto & curr = result[i];
         auto & turnType = curr->turnType;
-        if (!turnType || !turnType->goAhead() || !turnType->isSkipToSpeak()) {
+        if (!turnType || !turnType->goAhead() || !turnType->isSkipToSpeak() || 
+                turnType->getLanes().empty()) {
             continue;
         }
         int cnt = turnType->countTurnTypeDirections(TurnType::C, true);
         int cntAll = turnType->countTurnTypeDirections(TurnType::C, false);
-        if (cnt > 0 && cnt == cntAll && cnt >= 2) {
+        if (cnt > 0 && cnt == cntAll && cnt >= 2 && (turnType->getLanes().size() - cnt) <= 1) {
             curr->turnType = nullptr;
         }
     }
