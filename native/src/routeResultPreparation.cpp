@@ -14,6 +14,8 @@ const float UNMATCHED_TURN_DEGREE_MINIMUM = 45;
 const float SPLIT_TURN_DEGREE_NOT_STRAIGHT = 100;
 const float TURN_SLIGHT_DEGREE = 5;
 
+const int TurnType::TURNS_ORDER[9] = {TU, TSHL, TL, TSLL, C, TSLR, TR, TSHR, TRU};
+
 struct RoadSplitStructure {
     bool keepLeft = false;
     bool keepRight = false;
