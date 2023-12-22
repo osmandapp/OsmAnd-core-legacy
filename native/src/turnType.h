@@ -19,8 +19,9 @@ struct TurnType {
     const static int OFFR = 12; // Off route //$NON-NLS-1$
     const static int RNDB = 13; // Roundabout
     const static int RNLB = 14; // Roundabout left
-    constexpr const static int TURNS_ORDER[9] = {TU, TSHL, TL, TSLL, C, TSLR, TR, TSHR, TRU};
-    
+    const static int TURNS_ORDER[9]; // initialized in routeResultPreparation.cpp
+//    constexpr const static int TURNS_ORDER[9] = {TU, TSHL, TL, TSLL, C, TSLR, TR, TSHR, TRU}; // wrong in C++11
+
 private:
     int value;
     int exitOut;
@@ -278,7 +279,7 @@ public:
     int countTurnTypeDirections(int type, bool onlyActive);
     
     static int getPrev(int turn) {        
-        for (int i = sizeof(TURNS_ORDER) - 1; i >= 0; i--) {
+        for (int i = sizeof(TURNS_ORDER) / sizeof(TURNS_ORDER[0]) - 1; i >= 0; i--) {
             int t = TURNS_ORDER[i];
             if (t == turn && i > 0) {
                 return TURNS_ORDER[i - 1];
@@ -288,9 +289,9 @@ public:
     }
     
     static int getNext(int turn) {
-        for (int i = 0; i < sizeof(TURNS_ORDER); i++) {
+        for (int i = 0; i < sizeof(TURNS_ORDER) / sizeof(TURNS_ORDER[0]); i++) {
             int t = TURNS_ORDER[i];
-            if (t == turn && i + 1 < sizeof(TURNS_ORDER)) {
+            if (t == turn && i + 1 < sizeof(TURNS_ORDER) / sizeof(TURNS_ORDER[0])) {
                 return TURNS_ORDER[i + 1];
             }
         }
