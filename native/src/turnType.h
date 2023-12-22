@@ -19,8 +19,9 @@ struct TurnType {
     const static int OFFR = 12; // Off route //$NON-NLS-1$
     const static int RNDB = 13; // Roundabout
     const static int RNLB = 14; // Roundabout left
-    constexpr const static int TURNS_ORDER[9] = {TU, TSHL, TL, TSLL, C, TSLR, TR, TSHR, TRU};
-    
+    const static int TURNS_ORDER[9]; // initialized in routeResultPreparation.cpp
+//    constexpr const static int TURNS_ORDER[9] = {TU, TSHL, TL, TSLL, C, TSLR, TR, TSHR, TRU}; // wrong in C++11
+
 private:
     int value;
     int exitOut;
