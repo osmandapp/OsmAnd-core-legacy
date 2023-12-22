@@ -310,7 +310,7 @@ void calculateTimeSpeed(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResul
                 obstacle = 0;
             }
             distOnRoadToPass += d / speed + obstacle;
-            
+
             //for Naismith/Scarf
             if (useNaismithRule) {
                 int heightIndex = 2 * j + 1;
