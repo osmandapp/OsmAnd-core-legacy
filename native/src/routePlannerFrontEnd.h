@@ -3,6 +3,8 @@
 #include "CommonCollections.h"
 #include "commonOsmAndCore.h"
 #include "routingContext.h"
+#include "hhRouteDataStructure.h"
+#include "hhRoutePlanner.h"
 
 struct RouteSegmentResult;
 struct RouteSegmentPoint;
@@ -39,6 +41,11 @@ typedef std::function<bool(const std::shared_ptr<GpxRouteApproximation>& approxi
 class RoutePlannerFrontEnd {
     
     bool useSmartRouteRecalculation;
+    
+    bool TRACE_ROUTING = false;
+    bool USE_HH_ROUTING = false;
+    bool USE_ONLY_HH_ROUTING = false;
+    SHARED_PTR<HHRoutingConfig> HH_ROUTING_CONFIG;
     
 public:
     
@@ -94,6 +101,7 @@ private:
 	bool pointCloseEnough(SHARED_PTR<GpxRouteApproximation>& gctx, SHARED_PTR<GpxPoint>& ipoint,
 	                      vector<SHARED_PTR<RouteSegmentResult>>& res);
 	void makeSegmentPointPrecise(SHARED_PTR<RouteSegmentResult>& routeSegmentResult, double lat, double lon, bool st);
+    SHARED_PTR<HHNetworkRouteRes> calculateHHRoute(HHRoutePlanner & routePlanner, SHARED_PTR<RoutingContext> ctx, int startX, int startY, int endX, int endY, double dir);
 };
 
 #endif /*_OSMAND_ROUTE_PLANNER_FRONT_END_H*/

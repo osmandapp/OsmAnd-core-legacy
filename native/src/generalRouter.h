@@ -100,9 +100,28 @@ static GeneralRouterProfile parseGeneralRouterProfile(string profile, GeneralRou
 		return GeneralRouterProfile::PUBLIC_TRANSPORT;
 	} else if ("horsebackriding" == to_lowercase(profile)) {
 		return GeneralRouterProfile::HORSEBACKRIDING;
+    } else if ("boat" == to_lowercase(profile)) {
+        return GeneralRouterProfile::BOAT;
 	} else {
 		return def;
 	}
+}
+
+static std::string profileToString(GeneralRouterProfile prof) {
+    switch(prof) {
+        case GeneralRouterProfile::CAR:
+            return "car";
+        case GeneralRouterProfile::PEDESTRIAN:
+            return "pedestrian";
+        case GeneralRouterProfile::BICYCLE:
+            return "bicycle";
+        case GeneralRouterProfile::BOAT:
+            return "boat";
+        case GeneralRouterProfile::PUBLIC_TRANSPORT:
+            return "public_transport";
+        default:
+            return "";
+    }
 }
 
 enum class RoutingParameterType { NUMERIC, BOOLEAN, SYMBOLIC };
@@ -354,6 +373,7 @@ class GeneralRouter {
 	vector<RoutingParameter> parametersList;
 	UNORDERED(map)<string, RoutingParameter> parameters;
 	MAP_STR_INT universalRules;
+	MAP_STR_STR parameterValues;
 	vector<tag_value> universalRulesById;
 	UNORDERED(map)<string, dynbitset> tagRuleMask;
 	vector<double> ruleToValue;	 // Object TODO;
@@ -543,6 +563,12 @@ class GeneralRouter {
 	 * Calculate turn time
 	 */
 	double calculateTurnTime(const SHARED_PTR<RouteSegment>& segment, const SHARED_PTR<RouteSegment>& prev);
+    
+    MAP_STR_STR getParameterValues() {
+        return parameterValues;        
+    }
+    
+    std::vector<std::string> serializeParameterValues(MAP_STR_STR vls);
 
 	void printRules();
 

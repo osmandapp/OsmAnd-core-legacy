@@ -87,6 +87,7 @@ enum PART_INDEXES {
 	ADDRESS_INDEX,
 	TRANSPORT_INDEX,
 	ROUTING_INDEX,
+    HH_INDEX
 };
 
 struct BinaryPartIndex {
@@ -136,6 +137,58 @@ struct RoutingIndex : BinaryPartIndex {
 	RouteTypeRule& quickGetEncodingRule(uint32_t id) {
 		return routeEncodingRules[id];
 	}
+};
+
+struct HHRoutePointsBox {
+    int32_t length;
+    int32_t filePointer;
+    int32_t left, right, bottom, top;
+    bool init;
+    
+    HHRoutePointsBox(): length(0), filePointer(0), left(0), right(0), bottom(0), top(0), init(false) {
+    }
+
+    /*QuadRect getLatLonBox() {
+        QuadRect q = new QuadRect();
+        q.left = MapUtils.get31LongitudeX(left);
+        q.right = MapUtils.get31LongitudeX(right);
+        q.top = MapUtils.get31LatitudeY(top);
+        q.bottom = MapUtils.get31LatitudeY(bottom);
+        return q;
+    }*/
+
+    bool contains(int x, int y) {
+        return x >= left && x <= right && y >= top && y <= bottom;
+    }
+};
+
+//HHRouteRegion
+struct HHRouteIndex : BinaryPartIndex {
+    uint64_t edition;
+    std::string profile;
+    std::vector<std::string> profileParams;
+    SHARED_PTR<HHRoutePointsBox> top;
+    
+    HHRouteIndex() : BinaryPartIndex(HH_INDEX), edition(0), profile("") {
+    }
+    
+    // not stored in cache
+    //std::vector<HHRouteBlockSegments> segments;
+
+        /*std::string getPartName() {
+            return "Highway routing";
+        }
+
+        int getFieldNumber() {
+            return OsmandOdb.OsmAndStructure.HHROUTINGINDEX_FIELD_NUMBER;
+        }
+
+        QuadRect getLatLonBbox() {
+            if(top == null) {
+                return new QuadRect();
+            }
+            return top.getLatLonBox();
+        }*/
 };
 
 struct RouteDataObject {
@@ -801,11 +854,13 @@ struct BinaryMapFile {
 	std::vector<SHARED_PTR<RoutingIndex>> routingIndexes;
 	std::vector<SHARED_PTR<TransportIndex>> transportIndexes;
 	std::vector<SHARED_PTR<BinaryPartIndex>> indexes;
+    std::vector<SHARED_PTR<HHRouteIndex>> hhIndexes;
 	UNORDERED(map)<uint64_t, shared_ptr<IncompleteTransportRoute>> incompleteTransportRoutes;
 	bool incompleteLoaded = false;
 	int fd = -1;
 	int routefd = -1;
 	int geocodingfd = -1;
+    int hhfd = -1;
 	bool basemap;
 	bool external;
 	bool roadOnly;
@@ -846,6 +901,13 @@ struct BinaryMapFile {
 		}
 		return geocodingfd;
 	}
+    
+    int getHhFD() {
+        if (hhfd <= 0) {
+            hhfd = openFile();
+        }
+        return hhfd;
+    }
 
 	bool isBasemap() {
 		return basemap;
@@ -998,5 +1060,9 @@ bool initMapFilesFromCache(std::string inputName);
 bool closeBinaryMapFile(std::string inputName);
 
 void getIncompleteTransportRoutes(BinaryMapFile* file);
+
+struct NetworkDBPoint;
+void initHHPoints(BinaryMapFile* file, SHARED_PTR<HHRouteIndex> reg, short mapId,
+                                                                UNORDERED_map<int64_t, SHARED_PTR<NetworkDBPoint>> & resPoints);
 
 #endif

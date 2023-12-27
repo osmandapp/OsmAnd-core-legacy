@@ -1,0 +1,443 @@
+#ifndef _OSMAND_HH_ROUTE_DATA_STRUCTURE_H
+#define _OSMAND_HH_ROUTE_DATA_STRUCTURE_H
+
+#include "CommonCollections.h"
+#include "routeCalcResult.h"
+#include "routingContext.h"
+#include "NetworkDBPointRouteInfo.h"
+#include <set>
+#include <queue>
+
+struct HHRoutingConfig
+{
+	float HEURISTIC_COEFFICIENT = 0; // A* - 1, Dijkstra - 0
+	float DIJKSTRA_DIRECTION = 0; // 0 - 2 directions, 1 - positive, -1 - reverse
+			
+	SHARED_PTR<double> INITIAL_DIRECTION;
+	static const int CALCULATE_ALL_DETAILED = 3;
+			
+			
+	bool ROUTE_LAST_MILE = false;
+	bool ROUTE_ALL_SEGMENTS = false;
+	bool ROUTE_ALL_ALT_SEGMENTS = false;
+	bool PRELOAD_SEGMENTS = false;
+			
+	bool CALC_ALTERNATIVES = false;
+	bool USE_GC_MORE_OFTEN = false;
+	// TODO 3.1 HHRoutePlanner Alternative routes - could use distributions like 50% route (2 alt), 25%/75% route (1 alt)
+	double ALT_EXCLUDE_RAD_MULT = 0.3; // radius multiplier to exclude points
+	double ALT_EXCLUDE_RAD_MULT_IN = 3; // skip some points to speed up calculation
+	double ALT_NON_UNIQUENESS = 0.7; // 0.7 - 30% of points must be unique
+			
+	double MAX_COST;
+	int MAX_DEPTH = -1; // max depth to go to
+	int MAX_SETTLE_POINTS = -1; // max points to settle
+			
+	bool USE_CH;
+	bool USE_CH_SHORTCUTS;
+
+	bool USE_MIDPOINT;
+	int MIDPOINT_ERROR = 3;
+	int MIDPOINT_MAX_DEPTH = 20 + MIDPOINT_ERROR;
+	
+	HHRoutingConfig() {}
+	
+	static SHARED_PTR<HHRoutingConfig> dijkstra(int direction) {
+		auto df = std::make_shared<HHRoutingConfig>();
+		df->HEURISTIC_COEFFICIENT = 0;
+		df->DIJKSTRA_DIRECTION = direction;
+		return df;
+	}
+			
+	static SHARED_PTR<HHRoutingConfig> astar(int direction) {
+		auto df = std::make_shared<HHRoutingConfig>();
+		df->HEURISTIC_COEFFICIENT = 1;
+		df->DIJKSTRA_DIRECTION = direction;
+		return df;
+	}
+			
+	static SHARED_PTR<HHRoutingConfig> ch() {
+		auto df = std::make_shared<HHRoutingConfig>();
+		df->HEURISTIC_COEFFICIENT = 0;
+		df->USE_CH = true;
+		df->USE_CH_SHORTCUTS = true;
+		df->DIJKSTRA_DIRECTION = 0;
+		return df;
+	}
+			
+	static SHARED_PTR<HHRoutingConfig> midPoints(bool astar, int dir) {
+		auto df = std::make_shared<HHRoutingConfig>();
+		df->HEURISTIC_COEFFICIENT = astar ? 1 : 0;
+		df->USE_MIDPOINT = true;
+		df->DIJKSTRA_DIRECTION = dir;
+		return df;
+	}
+	
+	void preloadSegments() {
+		PRELOAD_SEGMENTS = true;
+	}
+			
+	void calcAlternative() {
+        CALC_ALTERNATIVES = true;
+	}
+			
+	void calcDetailed(int segments) {
+        ROUTE_LAST_MILE = true;
+        ROUTE_ALL_SEGMENTS = segments >= 1;
+		ROUTE_ALL_ALT_SEGMENTS = segments >= 2;
+    }
+			
+	void useShortcuts() {
+        USE_CH_SHORTCUTS = true;
+    }
+			
+	void gc() {
+        USE_GC_MORE_OFTEN = true;
+    }
+			
+    void maxCost(double cost) {
+		MAX_COST = cost;
+    }
+			
+    void maxDepth(int depth) {
+		MAX_DEPTH = depth;
+    }
+			
+    void maxSettlePoints(int maxPoints) {
+        MAX_SETTLE_POINTS = maxPoints;
+    }
+};
+
+struct NetworkDBPoint {
+    SHARED_PTR<NetworkDBPoint> dualPoint;
+    int index;
+    int clusterId;
+    int fileId;
+    short mapId;
+            
+    int64_t roadId;
+    short start;
+    short end;
+    int startX;
+    int startY;
+    int endX;
+    int endY;
+    bool rtExclude;
+    
+    SHARED_PTR<NetworkDBPointRouteInfo> rtRev;
+    SHARED_PTR<NetworkDBPointRouteInfo> rtPos;
+    
+    void clearRouting() {
+        rtExclude = false;
+        rtPos = nullptr;
+        rtRev = nullptr;
+    }
+    
+    SHARED_PTR<NetworkDBPointRouteInfo> rt(bool rev) {
+        if (rev) {
+            if (rtRev == nullptr) {
+                rtRev = std::make_shared<NetworkDBPointRouteInfo>();
+            }
+            return rtRev;
+        } else {
+            if (rtPos == nullptr) {
+                rtPos = std::make_shared<NetworkDBPointRouteInfo>();
+            }
+            return rtPos;
+        }
+    }
+};
+
+struct NetworkDBSegment {
+    const bool direction;
+    const NetworkDBPoint start;
+    const NetworkDBPoint end;
+    const bool shortcut;
+    const double dist;
+    //List<LatLon> geom;
+    
+    NetworkDBSegment(NetworkDBPoint start, NetworkDBPoint end, double dist, bool direction, bool shortcut):
+        direction(direction), start(start), end(end), shortcut(shortcut), dist(dist) {
+    }
+    
+    /*public List<LatLon> getGeometry() {
+        if (geom == null) {
+            geom = new ArrayList<LatLon>();
+        }
+        return geom;
+    }
+    
+    @Override
+    public String toString() {
+        return String.format("Segment %s -> %s [%.2f] %s", start, end, dist, shortcut ? "sh" : "bs");
+    }*/
+};
+
+struct HHNetworkSegmentRes {
+    NetworkDBSegment segment;
+    std::vector<SHARED_PTR<RouteSegmentResult>> list;
+    double rtTimeDetailed;
+    double rtTimeHHSegments;
+    
+    HHNetworkSegmentRes(NetworkDBSegment s): segment(s) {
+    }
+};
+
+struct RoutingStats {
+    int firstRouteVisitedVertices = 0;
+    int visitedVertices = 0;
+    int uniqueVisitedVertices = 0;
+    int addedVertices = 0;
+
+    double loadPointsTime = 0;
+    int loadEdgesCnt;
+    double loadEdgesTime = 0;
+    double altRoutingTime;
+    double routingTime = 0;
+    double searchPointsTime = 0;
+    double addQueueTime = 0;
+    double pollQueueTime = 0;
+    double prepTime = 0;
+};
+
+struct HHNetworkRouteRes : public RouteCalcResult {
+    RoutingStats stats;
+    std::vector<SHARED_PTR<HHNetworkSegmentRes>> segments;
+    std::vector<SHARED_PTR<HHNetworkRouteRes>> altRoutes;
+    std::set<int64_t> uniquePoints;
+    
+    HHNetworkRouteRes(): RouteCalcResult() {        
+    }
+    
+    HHNetworkRouteRes(std::string error): RouteCalcResult(error) {
+    }
+    
+    double getHHRoutingTime() {
+        double d = 0;
+        for (auto & r : segments) {
+            d += r->rtTimeHHSegments;
+        }
+        return d;
+    }
+    
+    double getHHRoutingDetailed() {
+        double d = 0;
+        for (auto & r : segments) {
+            d += r->rtTimeDetailed;
+        }
+        return d;
+    }
+
+    void append(SHARED_PTR<HHNetworkRouteRes> res) {
+        if (!res || !res->error.empty()) {
+            error = "Can't build a route with intermediate point";
+        } else {
+            detailed.insert(detailed.end(), res->detailed.begin(), res->detailed.end());
+            segments.insert(segments.end(), res->segments.begin(), res->segments.end());
+            altRoutes.clear();
+            uniquePoints.clear();
+        }
+    }    
+};
+
+struct HHRouteRegionPointsCtx {
+    short id;
+    SHARED_PTR<HHRouteIndex> fileRegion;
+    BinaryMapFile* file;
+    int32_t routingProfile = 0;
+    SHARED_PTR<UNORDERED_map<int64_t, SHARED_PTR<NetworkDBPoint>>> pntsByFileId;
+    
+    HHRouteRegionPointsCtx(short id): id(id), fileRegion(nullptr), file(nullptr) {
+    }
+    
+    HHRouteRegionPointsCtx(short id, SHARED_PTR<HHRouteIndex> fileRegion, BinaryMapFile* file, int rProf) {
+        this->id = id;
+        this->fileRegion = fileRegion;
+        this->file = file;
+        if (routingProfile >= 0) {
+            routingProfile = rProf;
+        }
+    }
+    
+    int32_t getRoutingProfile() {
+        return routingProfile;
+    }
+    
+    SHARED_PTR<HHRouteIndex> getFileRegion() {
+        return fileRegion;
+    }
+    
+    
+    SHARED_PTR<NetworkDBPoint> getPoint(int pntFileId) {
+        auto pos = pntsByFileId->find(pntFileId);
+        if (pos != pntsByFileId->end()) {
+            return pos->second;
+        }
+        return nullptr;
+    }
+};
+
+struct NetworkDBPointCost {
+    SHARED_PTR<NetworkDBPoint> point;
+    const double cost;
+    const bool rev;
+    
+    NetworkDBPointCost(SHARED_PTR<NetworkDBPoint> p, double cost, bool rev): point(p), cost(cost), rev(rev) {
+    }
+    
+};
+
+struct HHPointComparator : public std::function<bool(SHARED_PTR<NetworkDBPointCost>&, SHARED_PTR<NetworkDBPointCost>&)> {
+    bool operator()(const SHARED_PTR<NetworkDBPointCost>& o1, const SHARED_PTR<NetworkDBPointCost>& o2) {
+        if (o1->cost > o2->cost) {
+            return true;
+        }
+        return false;
+    }
+};
+
+typedef priority_queue<SHARED_PTR<NetworkDBPointCost>, vector<SHARED_PTR<NetworkDBPointCost>>, HHPointComparator> HH_QUEUE;
+
+struct HHRoutingContext {
+    bool USE_GLOBAL_QUEUE = false;
+    
+    SHARED_PTR<RoutingContext> rctx;
+    std::vector<SHARED_PTR<HHRouteRegionPointsCtx>> regions;
+    RoutingStats stats;
+    SHARED_PTR<HHRoutingConfig> config;
+    int32_t startX;
+    int32_t startY;
+    int32_t endY;
+    int32_t endX;
+    bool initialized;
+    
+    std::vector<NetworkDBPoint> queueAdded;
+    std::vector<NetworkDBPoint> visited;
+    std::vector<NetworkDBPoint> visitedRev;
+    
+    UNORDERED_map<int64_t, SHARED_PTR<NetworkDBPoint>> pointsById;
+    UNORDERED_map<int64_t, SHARED_PTR<NetworkDBPoint>> pointsByGeo;
+    
+    HHRoutingContext() {
+        queueGlobal = createQueue();
+        queuePos = createQueue();
+        queueRev = createQueue();
+        initialized = false;
+    }
+    
+    SHARED_PTR<HH_QUEUE> createQueue() {
+        HHPointComparator comparator;
+        SHARED_PTR<HH_QUEUE> queue = std::make_shared<HH_QUEUE>(comparator);
+        return queue;
+    }
+    
+    SHARED_PTR<HH_QUEUE> queue(bool rev) {
+        return USE_GLOBAL_QUEUE ? queueGlobal : (rev ? queueRev : queuePos);
+    }
+    
+    void clearVisited() {
+        queue(true).reset();
+        queue(false).reset();
+        for (auto & p : queueAdded) {
+            p.clearRouting();
+        }
+        queueAdded.clear();
+        visited.clear();
+        visitedRev.clear();
+    }
+    
+    UNORDERED_map<int64_t, SHARED_PTR<NetworkDBPoint>> loadNetworkPoints() {
+        UNORDERED_map<int64_t, SHARED_PTR<NetworkDBPoint>> points;
+        for (auto & r : regions) {
+            if (r->file != nullptr) {
+                initHHPoints(r->file, r->fileRegion, r->id, points);
+            }
+        }
+        //TLongObjectHashMap<T> points = new TLongObjectHashMap<>();
+        /*for (auto & r : regions) {
+            if (r->file != nullptr) {
+                points.putAll(r.file.initHHPoints(r.fileRegion, r.id, pointClass));
+            }
+        }*/
+        return points;
+    }
+    
+    std::string getRoutingInfo() {
+        std::string b;
+        for (auto & r : regions) {
+            if(b.length() > 0) {
+                b.append(", ");
+            }
+            if (r->fileRegion != nullptr) {
+                b.append(/*r->file.getFile().getName() + " " + */r->fileRegion->profile + " [" +
+                        r->fileRegion->profileParams.at(r->routingProfile) + "]");
+            } else {
+                b.append("unknown");
+            }
+        }
+        return b;
+    }
+    
+private:
+    SHARED_PTR<HH_QUEUE> queueGlobal;
+    SHARED_PTR<HH_QUEUE> queuePos;
+    SHARED_PTR<HH_QUEUE> queueRev;
+};
+
+struct HHRouteRegionsGroup {
+    std::vector<SHARED_PTR<HHRouteIndex>> regions;
+    std::vector<BinaryMapFile*> readers;
+    const long edition;
+    const std::string profileParams;
+    
+    int extraParam = 0;
+    int matchParam = 0;
+    bool containsStartEnd;
+    
+    HHRouteRegionsGroup(): edition(-1), profileParams() {
+    }
+    
+    HHRouteRegionsGroup(long edition, std::string params): edition(edition), profileParams(params) {
+    }
+    
+   void appendToGroups(SHARED_PTR<HHRouteIndex> r, BinaryMapFile* rdr, std::vector<SHARED_PTR<HHRouteRegionsGroup>> groups) {
+        for (std::string & params : r->profileParams) {
+            SHARED_PTR<HHRouteRegionsGroup> matchGroup = nullptr;
+            for (auto & g : groups) {
+                if (g->edition == r->edition && params == g->profileParams) {
+                    matchGroup = g;
+                    break;
+                }
+            }
+            if (matchGroup == nullptr) {
+                matchGroup = std::make_shared<HHRouteRegionsGroup>(r->edition, params);
+                groups.push_back(matchGroup);
+            }
+            matchGroup->regions.push_back(r);
+            matchGroup->readers.push_back(rdr);
+        }
+    }
+
+    bool contains(int x, int y) {
+        bool contains = false;
+        for (auto & r : regions) {
+            if (r->top->contains(x, y)) {
+                contains = true;
+                break;
+            }
+        }
+        return contains;
+    }
+};
+
+struct HHRouteBlockSegments {
+    int idRangeStart;
+    int idRangeLength;
+    int profileId;
+    int length;
+    int filePointer;
+    
+    std::vector<HHRouteBlockSegments> sublist;
+};
+
+#endif /*_OSMAND_HH_ROUTE_DATA_STRUCTURE_H*/
