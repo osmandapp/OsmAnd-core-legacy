@@ -5,6 +5,7 @@
 #include "hhRoutePlanner.h"
 #include "CommonCollections.h"
 #include "Logging.h"
+#include "routePlannerFrontEnd.cpp"
 
 HHRoutePlanner::HHRoutePlanner(SHARED_PTR<RoutingContext> ctx) {
     std::vector<SHARED_PTR<HHRouteRegionPointsCtx>> regions;
@@ -13,7 +14,7 @@ HHRoutePlanner::HHRoutePlanner(SHARED_PTR<RoutingContext> ctx) {
 }
 
 SHARED_PTR<HHRoutingConfig> HHRoutePlanner::prepareDefaultRoutingConfig(SHARED_PTR<HHRoutingConfig> c) {
-    if (!c) {
+    if (c == nullptr) {
         c = HHRoutingConfig::astar(0);
         // test data for debug swap
         // c = HHRoutingConfig::dijkstra(0);
@@ -186,17 +187,25 @@ SHARED_PTR<HHRoutingContext> HHRoutePlanner::initHCtx(SHARED_PTR<HHRoutingConfig
 }
 
 HHNetworkRouteRes HHRoutePlanner::runRouting(int startX, int startY, int endX, int endY, SHARED_PTR<HHRoutingConfig> config) {
-    /*long startTime = System.nanoTime();
+    OsmAnd::ElapsedTimer timer;
+    timer.Start();
+    //timer.GetElapsedMs();
     config = prepareDefaultRoutingConfig(config);
-    HHRoutingContext hctx = initHCtx(config, start, end);
-    if (hctx == null) {
-        return new HHNetworkRouteRes("Files for hh routing were not initialized. Route couldn't be calculated.");
+    SHARED_PTR<HHRoutingContext> hctx = initHCtx(config, startX, startY, endX, endY);
+    if (hctx == nullptr) {
+        HHNetworkRouteRes res("Files for hh routing were not initialized. Route couldn't be calculated.");
+        return res;
     }
-            if (hctx.config.USE_GC_MORE_OFTEN) {
-                printGCInformation();
-            }
-            
-            System.out.println(config.toString(start, end));
+    OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Routing %.5f %.5f -> %.5f %.5f (HC %d, dir %d)",
+                      get31LatitudeY(startY), get31LongitudeX(startX),
+                      get31LatitudeY(endY), get31LongitudeX(endX),
+                      (int) config->HEURISTIC_COEFFICIENT, (int) config->DIJKSTRA_DIRECTION);
+    //TLongObjectHashMap<T> stPoints = new TLongObjectHashMap<>(), endPoints = new TLongObjectHashMap<>();
+    //findFirstLastSegments(hctx, start, end, stPoints, endPoints);
+    
+    
+    /*
+     
             TLongObjectHashMap<T> stPoints = new TLongObjectHashMap<>(), endPoints = new TLongObjectHashMap<>();
             findFirstLastSegments(hctx, start, end, stPoints, endPoints);
 
@@ -275,6 +284,93 @@ HHNetworkRouteRes HHRoutePlanner::runRouting(int startX, int startY, int endX, i
                     hctx.stats.addQueueTime, hctx.stats.pollQueueTime, hctx.stats.prepTime);
             printGCInformation();*/
     return route;
+}
+
+void HHRoutePlanner::findFirstLastSegments(SHARED_PTR<HHRoutingContext> hctx, int startX, int startY, int endX, int endY,
+                                           UNORDERED_map<int64_t, std::vector<NetworkDBPoint *>> stPoints,
+                                           UNORDERED_map<int64_t, std::vector<NetworkDBPoint *>> endPoints) {
+    OsmAnd::ElapsedTimer timer;
+    timer.Start();
+    OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Finding first / last segments...");
+    auto planner = std::shared_ptr<RoutePlannerFrontEnd>();
+    int startReiterate = -1, endReiterate = -1;
+    bool found = false;
+    SHARED_PTR<RouteSegmentPoint> startPnt = findRouteSegment(startX, startY, hctx->rctx.get(), false);
+    SHARED_PTR<RouteSegmentPoint> endPnt = findRouteSegment(endX, endY, hctx->rctx.get(), false);
+    auto & stOthers = startPnt->others;
+    auto & endOthers = endPnt->others;
+    while (!found) {
+        if (startReiterate + endReiterate >= hctx->config->MAX_START_END_REITERATIONS) {
+            break;
+        }
+        UNORDERED_map<int64_t, std::vector<NetworkDBPoint *>>::iterator it;
+        for (it = stPoints.begin(); it != stPoints.end(); it++) {
+            for (auto & p : it->second) {
+                p->clearRouting();
+            }
+        }
+        stPoints.clear();
+        for (it = endPoints.begin(); it != endPoints.end(); it++) {
+            for (auto & p : it->second) {
+                p->clearRouting();
+            }
+        }
+        endPoints.clear();
+        //TODO need copy here???
+        auto & startP = startPnt;
+        if (startReiterate >= 0) {
+            if (startReiterate < stOthers.size()) {
+                startP = stOthers.at(startReiterate);
+            } else {
+                break;
+            }
+        }
+        auto & endP = endPnt;
+        if (endReiterate >= 0) {
+            //Java if (endOthers != null ...)
+            if (endReiterate < endOthers.size()) {
+                endP = endOthers.at(endReiterate);
+            } else {
+                break;
+            }
+        }
+        double prev = hctx->rctx->config->initialDirection;
+        hctx->rctx->config->initialDirection = hctx->config->INITIAL_DIRECTION;
+        hctx->boundaries.insert(std::pair<int64_t, SHARED_PTR<RouteSegment>>(calcRPId(endP, endP->getSegmentEnd(), endP->getSegmentStart()), nullptr));
+        hctx->boundaries.insert(std::pair<int64_t, SHARED_PTR<RouteSegment>>(calcRPId(endP, endP->getSegmentStart(), endP->getSegmentEnd()), nullptr));
+        //initStart(hctx, startP, false, stPoints);
+        hctx->rctx->config->initialDirection = prev;
+        if (stPoints.empty()) {
+            LatLon l = startP->getPreciseLatLon();
+            auto & r = startP->road;
+            OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Reiterate with next start point: %d (%.5f %.5f): %d %s",
+                              startP->segmentStart, l.lat, l.lon, r->getId() / 64, r->getName().c_str());
+            startReiterate++;
+            found = false;
+            continue;
+        }
+
+//        hctx->boundaries.remove(calcRPId(endP, endP.getSegmentEnd(), endP.getSegmentStart()));
+//        hctx->boundaries.remove(calcRPId(endP, endP.getSegmentStart(), endP.getSegmentEnd()));
+//        if (stPoints.containsKey(PNT_SHORT_ROUTE_START_END)) {
+//            endPoints.put(PNT_SHORT_ROUTE_START_END, stPoints.get(PNT_SHORT_ROUTE_START_END));
+//        }
+//        initStart(hctx, endP, true, endPoints);
+//        if (endPoints.isEmpty()) {
+//            System.out.println("Reiterate with next end point: " + endP);
+//            endReiterate++;
+//            found = false;
+//            continue;
+//        }
+//        found = true;
+        
+    }
+    //hctx.stats.searchPointsTime = (System.nanoTime() - time) / 1e6;
+    //System.out.printf("Finding first / last segments...%.2f ms\n", hctx.stats.searchPointsTime);
+}
+
+int64_t HHRoutePlanner::calcRPId(SHARED_PTR<RouteSegmentPoint> p, int pntId, int nextPntId) {
+    return calculateRoutePointInternalId(p->getRoad()->getId(), pntId, nextPntId);
 }
 
 #endif /*_OSMAND_HH_ROUTE_PLANNER_CPP*/

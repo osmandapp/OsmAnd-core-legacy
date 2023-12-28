@@ -976,7 +976,7 @@ SHARED_PTR<HHNetworkRouteRes> RoutePlannerFrontEnd::calculateHHRoute(HHRoutePlan
                                                                      int startX, int startY, int endX, int endY, double dir) {
     try {
         auto cfg = routePlanner.prepareDefaultRoutingConfig(HH_ROUTING_CONFIG);
-        cfg->INITIAL_DIRECTION = std::make_shared<double>(dir);
+        cfg->INITIAL_DIRECTION = dir;
         //HHNetworkRouteRes res = routePlanner.runRouting(start, end, cfg);
         //if (res != null && res.error == null) {
         //    makeStartEndPointsPrecise(res, start, end, new ArrayList<LatLon>());

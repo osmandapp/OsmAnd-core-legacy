@@ -32,6 +32,10 @@ private:
     SHARED_PTR<HHRouteRegionsGroup> hhRouteRegionGroup;
     UNORDERED_map<int64_t, std::vector<NetworkDBPoint *>> groupByClusters( UNORDERED_map<int64_t, NetworkDBPoint *> pointsById, bool out);
     int64_t calculateRoutePointInternalId(int64_t id, int32_t pntId, int32_t nextPntId);
+    void findFirstLastSegments(SHARED_PTR<HHRoutingContext> hctx, int startX, int startY, int endX, int endY,
+                               UNORDERED_map<int64_t, std::vector<NetworkDBPoint *>> stPoints,
+                               UNORDERED_map<int64_t, std::vector<NetworkDBPoint *>> endPoints);
+    int64_t calcRPId(SHARED_PTR<RouteSegmentPoint> p, int pntId, int nextPntId);
 };
 
 #endif /*_OSMAND_HH_ROUTE_PLANNER_H*/

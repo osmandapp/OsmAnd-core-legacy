@@ -13,9 +13,10 @@ struct HHRoutingConfig
 	float HEURISTIC_COEFFICIENT = 0; // A* - 1, Dijkstra - 0
 	float DIJKSTRA_DIRECTION = 0; // 0 - 2 directions, 1 - positive, -1 - reverse
 			
-	SHARED_PTR<double> INITIAL_DIRECTION;
+	double INITIAL_DIRECTION;
 	static const int CALCULATE_ALL_DETAILED = 3;
-			
+    
+    int MAX_START_END_REITERATIONS = 50;
 			
 	bool ROUTE_LAST_MILE = false;
 	bool ROUTE_ALL_SEGMENTS = false;
