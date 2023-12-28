@@ -109,6 +109,35 @@ SHARED_PTR<HHRoutingContext> HHRoutePlanner::selectBestRoutingFiles(int startX, 
     return initNewContext(hctx->rctx, regions);
 }
 
+UNORDERED_map<int64_t, std::vector<NetworkDBPoint *>> HHRoutePlanner::groupByClusters( UNORDERED_map<int64_t, NetworkDBPoint *> pointsById, bool out) {
+    UNORDERED_map<int64_t, std::vector<NetworkDBPoint *>> res;
+    UNORDERED_map<int64_t, NetworkDBPoint *>::iterator it;
+    for (it = pointsById.begin(); it != pointsById.end(); it++) {
+        NetworkDBPoint * p = it->second;
+        int cid = out ? p->clusterId : p->dualPoint->clusterId;
+        if (res.find(cid) == res.end()) {
+            std::vector<NetworkDBPoint *> v;
+            res.insert(std::pair<int64_t, std::vector<NetworkDBPoint *>>(cid, v));
+        }
+        res.find(cid)->second.push_back(p);
+    }
+    
+    UNORDERED_map<int64_t, std::vector<NetworkDBPoint *>>::iterator it2;
+    for (it2 = res.begin(); it2 != res.end(); it++) {
+        auto & l = it2->second;
+        //TODO check Integer.compare
+        std::sort(l.begin(), l.end(), [](const NetworkDBPoint * lhs, const NetworkDBPoint * rhs) {
+            return lhs->index > rhs->index;
+        });
+    }
+    return res;
+}
+
+int64_t HHRoutePlanner::calculateRoutePointInternalId(int64_t id, int32_t pntId, int32_t nextPntId) {
+    int32_t positive = nextPntId - pntId;
+    return (id << ROUTE_POINTS) + (pntId << 1) + (positive > 0 ? 1 : 0);
+}
+
 SHARED_PTR<HHRoutingContext> HHRoutePlanner::initHCtx(SHARED_PTR<HHRoutingConfig> c, int startX, int startY, int endX, int endY) {
     SHARED_PTR<HHRoutingContext> hctx = cacheHctx;
     if (hctx->regions.size() != 1) {
@@ -130,40 +159,29 @@ SHARED_PTR<HHRoutingContext> HHRoutePlanner::initHCtx(SHARED_PTR<HHRoutingConfig
         return hctx;
     }
             
-    std::time_t time = std::time(0);
+    OsmAnd::ElapsedTimer timer;
+    timer.Start();
     OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Loading points... ");
     hctx->pointsById = hctx->loadNetworkPoints();
-    /*hctx->boundaries = new TLongObjectHashMap<RouteSegment>();
-    hctx->pointsByGeo = new TLongObjectHashMap<T>();
-    hctx.stats.loadPointsTime = (System.nanoTime() - time) / 1e6;
-    //System.out.printf(" %,d - %.2fms\n", hctx.pointsById.size(), hctx.stats.loadPointsTime);
-    /*if (c.PRELOAD_SEGMENTS) {
-        time = System.nanoTime();
-        //System.out.printf("Loading segments...");
-        int cntEdges = hctx.loadNetworkSegments(hctx.pointsById.valueCollection());
-        hctx.stats.loadEdgesTime = (System.nanoTime() - time) / 1e6;
-        //System.out.printf(" %,d - %.2fms\n", cntEdges, hctx.stats.loadEdgesTime);
-        hctx.stats.loadEdgesCnt = cntEdges;
-    } else {
-                for (NetworkDBPoint p : hctx.pointsById.valueCollection()) {
-                    p.markSegmentsNotLoaded();
-                }
-            }
-            hctx.clusterOutPoints = groupByClusters(hctx.pointsById, true);
-            hctx.clusterInPoints  = groupByClusters(hctx.pointsById, false);
-            for (T pnt : hctx.pointsById.valueCollection()) {
-                long pos = calculateRoutePointInternalId(pnt.roadId, pnt.start, pnt.end);
-                LatLon latlon = pnt.getPoint();
-                hctx.pointsRect.registerObject(latlon.getLatitude(), latlon.getLongitude(), pnt);
-                if (pos != pnt.getGeoPntId()) {
-                    throw new IllegalStateException(pnt + " " + pos + " != "+ pnt.getGeoPntId());
-                }
-                hctx.boundaries.put(pos, null);
-                hctx.pointsByGeo.put(pos, pnt);
-                hctx.regions.get(pnt.mapId).pntsByFileId.put(pnt.fileId, pnt);
-            }
-            hctx.pointsRect.printStatsDistribution("Points distributed");
-            hctx.initialized = true;*/
+    hctx->stats.loadPointsTime = timer.GetElapsedMs();
+    OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, " %d - %.2fms\n", hctx->pointsById.size(), hctx->stats.loadPointsTime);
+    UNORDERED_map<int64_t, NetworkDBPoint *>::iterator it;
+    for (it = hctx->pointsById.begin(); it != hctx->pointsById.end(); it++) {
+        it->second->markSegmentsNotLoaded();
+    }
+    hctx->clusterOutPoints = groupByClusters(hctx->pointsById, true);
+    hctx->clusterInPoints  = groupByClusters(hctx->pointsById, false);
+    for (it = hctx->pointsById.begin(); it != hctx->pointsById.end(); it++) {
+        NetworkDBPoint * pnt = it->second;
+        int64_t pos = calculateRoutePointInternalId(pnt->roadId, pnt->start, pnt->end);
+        LatLon latlon = pnt->getPoint();
+        hctx->pointsRect.registerObject(latlon.lat, latlon.lon, pnt);
+        hctx->boundaries.insert(std::pair<int64_t, SHARED_PTR<RouteSegment>>(pos, nullptr));
+        hctx->pointsByGeo.insert(std::pair<int64_t, NetworkDBPoint *>(pos, pnt));
+        hctx->regions[pnt->mapId]->pntsByFileId.insert(std::pair<int64_t, NetworkDBPoint *>(pnt->fileId, pnt));
+    }
+    hctx->pointsRect.printStatsDistribution("Points distributed");
+    hctx->initialized = true;
     return hctx;
 }
 

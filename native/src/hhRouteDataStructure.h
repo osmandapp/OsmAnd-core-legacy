@@ -108,8 +108,9 @@ struct HHRoutingConfig
     }
 };
 
+struct NetworkDBSegment;
 struct NetworkDBPoint {
-    SHARED_PTR<NetworkDBPoint> dualPoint;
+    NetworkDBPoint * dualPoint;
     int index;
     int clusterId;
     int fileId;
@@ -126,6 +127,8 @@ struct NetworkDBPoint {
     
     SHARED_PTR<NetworkDBPointRouteInfo> rtRev;
     SHARED_PTR<NetworkDBPointRouteInfo> rtPos;
+    std::vector<NetworkDBSegment> connected;
+    std::vector<NetworkDBSegment> connectedReverse;
     
     void clearRouting() {
         rtExclude = false;
@@ -145,6 +148,16 @@ struct NetworkDBPoint {
             }
             return rtPos;
         }
+    }
+    
+    void markSegmentsNotLoaded() {
+        connected.clear();
+        connectedReverse.clear();
+    }
+    
+    LatLon getPoint() {
+        LatLon l(get31LatitudeY(startY / 2 + endY / 2), get31LongitudeX(startX / 2 + endX / 2));
+        return l;
     }
 };
 
@@ -245,7 +258,7 @@ struct HHRouteRegionPointsCtx {
     SHARED_PTR<HHRouteIndex> fileRegion;
     BinaryMapFile* file;
     int32_t routingProfile = 0;
-    SHARED_PTR<UNORDERED_map<int64_t, SHARED_PTR<NetworkDBPoint>>> pntsByFileId;
+    UNORDERED_map<int64_t, NetworkDBPoint *> pntsByFileId;
     
     HHRouteRegionPointsCtx(short id): id(id), fileRegion(nullptr), file(nullptr) {
     }
@@ -268,9 +281,9 @@ struct HHRouteRegionPointsCtx {
     }
     
     
-    SHARED_PTR<NetworkDBPoint> getPoint(int pntFileId) {
-        auto pos = pntsByFileId->find(pntFileId);
-        if (pos != pntsByFileId->end()) {
+    NetworkDBPoint * getPoint(int pntFileId) {
+        auto pos = pntsByFileId.find(pntFileId);
+        if (pos != pntsByFileId.end()) {
             return pos->second;
         }
         return nullptr;
@@ -287,12 +300,67 @@ struct NetworkDBPointCost {
     
 };
 
+//TODO check Double.compare
 struct HHPointComparator : public std::function<bool(SHARED_PTR<NetworkDBPointCost>&, SHARED_PTR<NetworkDBPointCost>&)> {
     bool operator()(const SHARED_PTR<NetworkDBPointCost>& o1, const SHARED_PTR<NetworkDBPointCost>& o2) {
         if (o1->cost > o2->cost) {
             return true;
         }
         return false;
+    }
+};
+
+struct DataTileManager {
+    const int zoom;
+    UNORDERED_map<int64_t, std::vector<NetworkDBPoint *>> objects;
+    
+    DataTileManager(): zoom(15) {
+    }
+    
+    DataTileManager(int z): zoom(z) {
+    }
+    
+    int64_t registerObject(double latitude, double longitude, NetworkDBPoint * object) {
+        int64_t tile = evaluateTile(latitude, longitude);
+        return addObject(object, tile);
+    }
+    
+    void printStatsDistribution(std::string name) {
+        int min = -1, max = -1, total = 0;
+        UNORDERED_map<int64_t, std::vector<NetworkDBPoint *>>::iterator it;
+        for (it = objects.begin(); it != objects.end(); it++) {
+            auto & l = it->second;
+            if (min == -1) {
+                max = min = (int) l.size();
+            } else {
+                min = std::min(min, (int) l.size());
+                max = std::max(max, (int) l.size());
+            }
+            total += l.size();
+        }
+        OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "%s tiles stores %d in %d tiles. Tile size min %d, max %d, avg %.2f.\n ",
+                          name.c_str(), total, objects.size(), min, max, total / (objects.size() + 0.1));
+    }
+    
+private:
+    int64_t evTile(int32_t tileX, int32_t tileY) {
+        return ((int64_t) (tileX) << zoom) + tileY;
+    }
+    
+    int64_t evaluateTile(double latitude, double longitude) {
+        int tileX = (int) getTileNumberX(zoom, longitude);
+        int tileY = (int) getTileNumberY(zoom, latitude);
+        return evTile(tileX, tileY);
+    }
+    
+    int64_t addObject(NetworkDBPoint * object, int64_t tile) {
+        auto it = objects.find(tile);
+        if (it == objects.end()) {
+            std::vector<NetworkDBPoint *> v;
+            objects.insert(std::pair<int64_t, std::vector<NetworkDBPoint *>>(tile, v));
+        }
+        objects[tile].push_back(object);
+        return tile;
     }
 };
 
@@ -315,10 +383,15 @@ struct HHRoutingContext {
     std::vector<NetworkDBPoint> visited;
     std::vector<NetworkDBPoint> visitedRev;
     
-    UNORDERED_map<int64_t, SHARED_PTR<NetworkDBPoint>> pointsById;
-    UNORDERED_map<int64_t, SHARED_PTR<NetworkDBPoint>> pointsByGeo;
+    UNORDERED_map<int64_t, NetworkDBPoint *> pointsById;
+    UNORDERED_map<int64_t, NetworkDBPoint *> pointsByGeo;
+    UNORDERED_map<int64_t, SHARED_PTR<RouteSegment>> boundaries;
+    UNORDERED_map<int64_t, std::vector<NetworkDBPoint *>> clusterInPoints;
+    UNORDERED_map<int64_t, std::vector<NetworkDBPoint *>> clusterOutPoints;
     
-    HHRoutingContext() {
+    DataTileManager pointsRect;
+    
+    HHRoutingContext(): pointsRect(11) {
         queueGlobal = createQueue();
         queuePos = createQueue();
         queueRev = createQueue();
@@ -346,19 +419,13 @@ struct HHRoutingContext {
         visitedRev.clear();
     }
     
-    UNORDERED_map<int64_t, SHARED_PTR<NetworkDBPoint>> loadNetworkPoints() {
-        UNORDERED_map<int64_t, SHARED_PTR<NetworkDBPoint>> points;
+    UNORDERED_map<int64_t, NetworkDBPoint *> loadNetworkPoints() {
+        UNORDERED_map<int64_t, NetworkDBPoint *> points;
         for (auto & r : regions) {
             if (r->file != nullptr) {
                 initHHPoints(r->file, r->fileRegion, r->id, points);
             }
         }
-        //TLongObjectHashMap<T> points = new TLongObjectHashMap<>();
-        /*for (auto & r : regions) {
-            if (r->file != nullptr) {
-                points.putAll(r.file.initHHPoints(r.fileRegion, r.id, pointClass));
-            }
-        }*/
         return points;
     }
     
@@ -428,16 +495,6 @@ struct HHRouteRegionsGroup {
         }
         return contains;
     }
-};
-
-struct HHRouteBlockSegments {
-    int idRangeStart;
-    int idRangeLength;
-    int profileId;
-    int length;
-    int filePointer;
-    
-    std::vector<HHRouteBlockSegments> sublist;
 };
 
 #endif /*_OSMAND_HH_ROUTE_DATA_STRUCTURE_H*/
