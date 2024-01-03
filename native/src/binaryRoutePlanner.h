@@ -20,7 +20,7 @@ struct RouteSegmentResult;
 struct RouteSegmentPoint;
 struct RouteSegment;
 
-typedef UNORDERED(map)<int64_t, SHARED_PTR<RouteSegment> > VISITED_MAP;
+typedef UNORDERED_map<int64_t, SHARED_PTR<RouteSegment> > VISITED_MAP;
 
 // typedef std::pair<int, std::pair<string, string> > ROUTE_TRIPLE;
 
@@ -28,9 +28,15 @@ SHARED_PTR<RouteSegmentPoint> findRouteSegment(int px, int py, RoutingContext* c
 											   int64_t roadId = -1, int segmentInd = 0);
 
 vector<SHARED_PTR<RouteSegmentResult> > searchRouteInternal(RoutingContext* ctx, bool leftSideNavigation);
+vector<SHARED_PTR<RouteSegment>> searchRouteInternal(RoutingContext* ctx, SHARED_PTR<RouteSegmentPoint> start,
+                                                     SHARED_PTR<RouteSegmentPoint> end, const SHARED_PTR<VISITED_MAP> boundaries);
 
 bool checkMovementAllowed(RoutingContext* ctx, bool reverseWaySearch, const SHARED_PTR<RouteSegment>& segment);
 bool containsKey(VISITED_MAP& visited, int64_t routePointId);
 SHARED_PTR<RouteSegment> createNull();
+float calculatePreciseStartTime(const RoutingContext* ctx, int projX, int projY, const SHARED_PTR<RouteSegment>& seg);
+class GeneralRouter;
+float calcRoutingSegmentTimeOnlyDist(const SHARED_PTR<GeneralRouter>& router, const SHARED_PTR<RouteSegment>& segment);
+vector<SHARED_PTR<RouteSegmentResult>> convertFinalSegmentToResults(RoutingContext* ctx, const SHARED_PTR<RouteSegment>& finalSegment);
 
 #endif /*_OSMAND_BINARY_ROUTE_PLANNER_H*/

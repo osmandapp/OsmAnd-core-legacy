@@ -94,6 +94,9 @@ struct RoutingConfiguration {
     // 1.5 Recalculate distance help
     float recalculateDistance;
     time_t routeCalculationTime = 0;
+    
+    // 1.7 Maximum visited segments
+    int MAX_VISITED = -1;
 
     RoutingConfiguration(float initDirection = NO_DIRECTION, int memLimit = DEFAULT_MEMORY_LIMIT) : router(new GeneralRouter()), memoryLimitation(memLimit), initialDirection(initDirection), zoomToLoad(16), heurCoefficient(1), planRoadDirection(0), routerName(""), recalculateDistance(20000.0f) {
     }

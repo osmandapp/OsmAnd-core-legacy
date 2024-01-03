@@ -7,23 +7,23 @@
 struct NetworkDBPoint;
 
 struct NetworkDBPointRouteInfo {
-    SHARED_PTR<NetworkDBPoint> rtRouteToPoint;
+    NetworkDBPoint * rtRouteToPoint;
     bool rtVisited;
     double rtDistanceFromStart;
     int rtDepth = -1; // possibly not needed (used 1)
     double rtDistanceToEnd; // possibly not needed (used 1)
     double rtCost;
-    FinalRouteSegment rtDetailedRoute;
+    SHARED_PTR<RouteSegment> rtDetailedRoute;
     
-    NetworkDBPointRouteInfo(): rtDetailedRoute(nullptr, 0, 0) {
+    NetworkDBPointRouteInfo(): rtDetailedRoute() {
     }
     
     int getDepth(bool rev);
     
     //TODO shared_ptr ??
-    void setDetailedParentRt(FinalRouteSegment & r);
+    void setDetailedParentRt(SHARED_PTR<RouteSegment> r);
     
-    void setCostParentRt(bool rev, double cost, SHARED_PTR<NetworkDBPoint> point, double segmentDist);
+    void setCostParentRt(bool rev, double cost, NetworkDBPoint * point, double segmentDist);
 };
 
 #endif

@@ -12,15 +12,15 @@ int NetworkDBPointRouteInfo::getDepth(bool rev) {
     return 0;
 }
 
-void NetworkDBPointRouteInfo::setDetailedParentRt(FinalRouteSegment & r) {
-    double segmentDist = r.getDistanceFromStart();
+void NetworkDBPointRouteInfo::setDetailedParentRt(SHARED_PTR<RouteSegment> r) {
+    double segmentDist = r->getDistanceFromStart();
     rtRouteToPoint = nullptr;
     rtCost = rtDistanceToEnd + segmentDist;
     rtDetailedRoute = r;
     rtDistanceFromStart = segmentDist;
 }
 
-void NetworkDBPointRouteInfo::setCostParentRt(bool rev, double cost, SHARED_PTR<NetworkDBPoint> point, double segmentDist) {
+void NetworkDBPointRouteInfo::setCostParentRt(bool rev, double cost, NetworkDBPoint * point, double segmentDist) {
     rtCost = cost;
     //TODO check memory leak
     rtRouteToPoint = point;

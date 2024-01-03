@@ -40,6 +40,7 @@ struct HHRoutingConfig
 	bool USE_MIDPOINT;
 	int MIDPOINT_ERROR = 3;
 	int MIDPOINT_MAX_DEPTH = 20 + MIDPOINT_ERROR;
+    double MAX_TIME_REITERATION_MS = 60000;
 	
 	HHRoutingConfig() {}
 	
@@ -112,7 +113,7 @@ struct HHRoutingConfig
 struct NetworkDBSegment;
 struct NetworkDBPoint {
     NetworkDBPoint * dualPoint;
-    int index;
+    int64_t index;
     int clusterId;
     int fileId;
     short mapId;
@@ -128,8 +129,8 @@ struct NetworkDBPoint {
     
     SHARED_PTR<NetworkDBPointRouteInfo> rtRev;
     SHARED_PTR<NetworkDBPointRouteInfo> rtPos;
-    std::vector<NetworkDBSegment> connected;
-    std::vector<NetworkDBSegment> connectedReverse;
+    std::vector<NetworkDBSegment *> connected;
+    std::vector<NetworkDBSegment *> connectedReverse;
     
     void clearRouting() {
         rtExclude = false;
@@ -160,17 +161,51 @@ struct NetworkDBPoint {
         LatLon l(get31LatitudeY(startY / 2 + endY / 2), get31LongitudeX(startX / 2 + endX / 2));
         return l;
     }
+    
+    void setCostParentRt(bool reverse, double cost, NetworkDBPoint * point, double segmentDist) {
+        rt(reverse)->setCostParentRt(reverse, cost, point, segmentDist);
+    }
+    
+    int midX() {
+        return startX / 2 + endX / 2;
+    }
+            
+    int midY() {
+        return startY / 2 + endY/ 2;
+    }
+    
+    void setDistanceToEnd(bool rev, double segmentDist) {
+        rt(rev)->rtDistanceToEnd = segmentDist;
+    }
+    
+    void setDetailedParentRt(bool rev, SHARED_PTR<RouteSegment> r) {
+        rt(rev)->setDetailedParentRt(r);
+    }
+    
+    NetworkDBSegment * getSegment(NetworkDBPoint * target, bool dir);
+    
+    bool operator == (const NetworkDBPoint & that) const {
+        if (index != that.index || clusterId != that.clusterId || fileId != that.fileId || mapId != that.mapId ||
+            roadId != that.roadId || start != that.start || end != that.end || startX != that.startX ||
+            endX != that.endX || endY != that.endY || rtExclude != that.rtExclude) {
+            return false;
+        }
+        if (dualPoint != that.dualPoint) {
+            return false;
+        }
+        return true;
+    }
 };
 
 struct NetworkDBSegment {
     const bool direction;
-    const NetworkDBPoint start;
-    const NetworkDBPoint end;
+    const NetworkDBPoint * start;
+    const NetworkDBPoint * end;
     const bool shortcut;
     const double dist;
     //List<LatLon> geom;
     
-    NetworkDBSegment(NetworkDBPoint start, NetworkDBPoint end, double dist, bool direction, bool shortcut):
+    NetworkDBSegment(NetworkDBPoint * start, NetworkDBPoint * end, double dist, bool direction, bool shortcut):
         direction(direction), start(start), end(end), shortcut(shortcut), dist(dist) {
     }
     
@@ -188,12 +223,12 @@ struct NetworkDBSegment {
 };
 
 struct HHNetworkSegmentRes {
-    NetworkDBSegment segment;
+    NetworkDBSegment * segment;
     std::vector<SHARED_PTR<RouteSegmentResult>> list;
     double rtTimeDetailed;
     double rtTimeHHSegments;
     
-    HHNetworkSegmentRes(NetworkDBSegment s): segment(s) {
+    HHNetworkSegmentRes(NetworkDBSegment * s): segment(s) {
     }
 };
 
@@ -216,7 +251,7 @@ struct RoutingStats {
 
 struct HHNetworkRouteRes : public RouteCalcResult {
     RoutingStats stats;
-    std::vector<SHARED_PTR<HHNetworkSegmentRes>> segments;
+    std::vector<HHNetworkSegmentRes> segments;
     std::vector<SHARED_PTR<HHNetworkRouteRes>> altRoutes;
     std::set<int64_t> uniquePoints;
     
@@ -229,7 +264,7 @@ struct HHNetworkRouteRes : public RouteCalcResult {
     double getHHRoutingTime() {
         double d = 0;
         for (auto & r : segments) {
-            d += r->rtTimeHHSegments;
+            d += r.rtTimeHHSegments;
         }
         return d;
     }
@@ -237,7 +272,7 @@ struct HHNetworkRouteRes : public RouteCalcResult {
     double getHHRoutingDetailed() {
         double d = 0;
         for (auto & r : segments) {
-            d += r->rtTimeDetailed;
+            d += r.rtTimeDetailed;
         }
         return d;
     }
@@ -343,6 +378,8 @@ struct DataTileManager {
                           name.c_str(), total, objects.size(), min, max, total / (objects.size() + 0.1));
     }
     
+    std::vector<NetworkDBPoint *> getClosestObjects(double latitude, double longitude, double radius);
+    
 private:
     int64_t evTile(int32_t tileX, int32_t tileY) {
         return ((int64_t) (tileX) << zoom) + tileY;
@@ -363,6 +400,26 @@ private:
         objects[tile].push_back(object);
         return tile;
     }
+    
+    bool isEmpty() {
+        return getObjectsCount() == 0;
+    }
+    
+    int getObjectsCount() {
+        int x = 0;
+        UNORDERED_map<int64_t, std::vector<NetworkDBPoint *>>::iterator it;
+        for (it = objects.begin(); it != objects.end(); it++) {
+            x += it->second.size();
+        }
+        return x;
+    }
+    
+    void putObjects(int64_t t, std::vector<NetworkDBPoint *> & r) {
+        auto it = objects.find(t);
+        if (it != objects.end()) {
+            r.insert(r.end(), it->second.begin(), it->second.end());
+        }
+    }
 };
 
 typedef priority_queue<SHARED_PTR<NetworkDBPointCost>, vector<SHARED_PTR<NetworkDBPointCost>>, HHPointComparator> HH_QUEUE;
@@ -380,9 +437,9 @@ struct HHRoutingContext {
     int32_t endX;
     bool initialized;
     
-    std::vector<NetworkDBPoint> queueAdded;
-    std::vector<NetworkDBPoint> visited;
-    std::vector<NetworkDBPoint> visitedRev;
+    std::vector<NetworkDBPoint *> queueAdded;
+    std::vector<NetworkDBPoint *> visited;
+    std::vector<NetworkDBPoint *> visitedRev;
     
     UNORDERED_map<int64_t, NetworkDBPoint *> pointsById;
     UNORDERED_map<int64_t, NetworkDBPoint *> pointsByGeo;
@@ -413,12 +470,14 @@ struct HHRoutingContext {
         queue(true).reset();
         queue(false).reset();
         for (auto & p : queueAdded) {
-            p.clearRouting();
+            p->clearRouting();
         }
         queueAdded.clear();
         visited.clear();
         visitedRev.clear();
     }
+    
+    void clearVisited(UNORDERED_map<int64_t, NetworkDBPoint *> & stPoints, UNORDERED_map<int64_t, NetworkDBPoint *> & endPoints);
     
     UNORDERED_map<int64_t, NetworkDBPoint *> loadNetworkPoints() {
         UNORDERED_map<int64_t, NetworkDBPoint *> points;

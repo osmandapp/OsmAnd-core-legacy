@@ -289,8 +289,8 @@ bool containsKey(VISITED_MAP& visited, int64_t routePointId) { return visited.fi
  * Calculate route between start.segmentEnd and end.segmentStart (using A* algorithm)
  * return list of segments
  */
-vector<SHARED_PTR<RouteSegment>> searchRouteInternal(RoutingContext* ctx, SHARED_PTR<RouteSegmentPoint>& start,
-											 SHARED_PTR<RouteSegmentPoint>& end, bool leftSideNavigation, const SHARED_PTR<VISITED_MAP>& boundaries) {
+vector<SHARED_PTR<RouteSegment>> searchRouteInternal(RoutingContext* ctx, SHARED_PTR<RouteSegmentPoint> start,
+											 SHARED_PTR<RouteSegmentPoint> end, const SHARED_PTR<VISITED_MAP> boundaries) {
 	// FIXME intermediate points
 	// measure time
 
@@ -1207,7 +1207,7 @@ vector<SHARED_PTR<RouteSegmentResult>> searchRouteInternal(RoutingContext* ctx, 
 		// OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "End point was found %lld [Native]", end->road->id / 64);
 	}
 	const SHARED_PTR<VISITED_MAP> boundaries = nullptr;
-	vector<SHARED_PTR<RouteSegment>> results = searchRouteInternal(ctx, start, end, leftSideNavigation, boundaries);
+	vector<SHARED_PTR<RouteSegment>> results = searchRouteInternal(ctx, start, end, boundaries);
 	SHARED_PTR<RouteSegment> finalSegment = nullptr;
 	if (results.size() > 0) {
 		finalSegment = results[0];

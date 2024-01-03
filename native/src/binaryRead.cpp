@@ -805,7 +805,7 @@ NetworkDBPoint * readPoint(CodedInputStream* input, short mapId,
                 pnt->endY = pnt->startY = value + dy;
                 break;
             case OsmAnd::OBF::OsmAndHHRoutingIndex::HHRouteNetworkPoint::kGlobalIdFieldNumber:
-                WireFormatLite::ReadPrimitive<int32_t, WireFormatLite::TYPE_INT32>(input, &pnt->index);
+                WireFormatLite::ReadPrimitive<int64_t, WireFormatLite::TYPE_INT64>(input, &pnt->index);
                 break;
             case OsmAnd::OBF::OsmAndHHRoutingIndex::HHRouteNetworkPoint::kRoadIdFieldNumber:
                 WireFormatLite::ReadPrimitive<int64_t, WireFormatLite::TYPE_INT64>(input, &pnt->roadId);

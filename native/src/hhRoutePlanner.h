@@ -5,6 +5,8 @@
 #include "hhRouteDataStructure.h"
 #include "routingContext.h"
 
+typedef UNORDERED_map<int64_t, std::vector<NetworkDBPoint *>> MAP_VECTORS_NETWORK_DB_POINTS;
+
 class HHRoutePlanner {
         
 public:
@@ -24,18 +26,25 @@ public:
     HHNetworkRouteRes runRouting(int startX, int startY, int endX, int endY, SHARED_PTR<HHRoutingConfig> config);
     
 private:
+    double distanceToEnd(SHARED_PTR<HHRoutingContext> hctx, bool reverse, NetworkDBPoint * nextPoint);
+    int64_t calcRPId(SHARED_PTR<RouteSegmentPoint> p, int pntId, int nextPntId);
+    int64_t calculateRoutePointInternalId(int64_t id, int32_t pntId, int32_t nextPntId);
+    int64_t calculateRoutePointInternalId(SHARED_PTR<RouteDataObject> road, int32_t pntId, int32_t nextPntId);
+    int64_t calcUniDirRoutePointInternalId(SHARED_PTR<RouteSegmentPoint> segm);
+    std::string toString(GeneralRouterProfile grp);
     SHARED_PTR<HHRoutingContext> cacheHctx;
     SHARED_PTR<HHRoutingContext> initHCtx(SHARED_PTR<HHRoutingConfig> c, int startX, int startY, int endX, int endY);
     SHARED_PTR<HHRoutingContext> initNewContext(SHARED_PTR<RoutingContext> ctx, std::vector<SHARED_PTR<HHRouteRegionPointsCtx>> regions);
     SHARED_PTR<HHRoutingContext> selectBestRoutingFiles(int startX, int startY, int endX, int endY, SHARED_PTR<HHRoutingContext> hctx);
-    std::string toString(GeneralRouterProfile grp);
     SHARED_PTR<HHRouteRegionsGroup> hhRouteRegionGroup;
-    UNORDERED_map<int64_t, std::vector<NetworkDBPoint *>> groupByClusters( UNORDERED_map<int64_t, NetworkDBPoint *> pointsById, bool out);
-    int64_t calculateRoutePointInternalId(int64_t id, int32_t pntId, int32_t nextPntId);
     void findFirstLastSegments(SHARED_PTR<HHRoutingContext> hctx, int startX, int startY, int endX, int endY,
-                               UNORDERED_map<int64_t, std::vector<NetworkDBPoint *>> stPoints,
-                               UNORDERED_map<int64_t, std::vector<NetworkDBPoint *>> endPoints);
-    int64_t calcRPId(SHARED_PTR<RouteSegmentPoint> p, int pntId, int nextPntId);
+                               UNORDERED_map<int64_t, NetworkDBPoint *> stPoints,
+                               UNORDERED_map<int64_t, NetworkDBPoint *> endPoints);
+    MAP_VECTORS_NETWORK_DB_POINTS groupByClusters(UNORDERED_map<int64_t, NetworkDBPoint *> pointsById, bool out);
+    UNORDERED_map<int64_t, NetworkDBPoint *> initStart(SHARED_PTR<HHRoutingContext> hctx, SHARED_PTR<RouteSegmentPoint> s,
+                                            bool reverse, UNORDERED_map<int64_t, NetworkDBPoint *> & pnts);
+    HHNetworkRouteRes * createRouteSegmentFromFinalPoint(SHARED_PTR<HHRoutingContext> hctx, NetworkDBPoint * pnt);
+
 };
 
 #endif /*_OSMAND_HH_ROUTE_PLANNER_H*/
