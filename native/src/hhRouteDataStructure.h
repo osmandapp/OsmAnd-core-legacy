@@ -16,6 +16,8 @@ struct HHRoutingConfig
 	double INITIAL_DIRECTION;
 	static const int CALCULATE_ALL_DETAILED = 3;
     
+    int FULL_DIJKSTRA_NETWORK_RECALC = 10;
+    double MAX_INC_COST_CF = 1.25;
     int MAX_START_END_REITERATIONS = 50;
 			
 	bool ROUTE_LAST_MILE = false;
@@ -182,7 +184,27 @@ struct NetworkDBPoint {
         rt(rev)->setDetailedParentRt(r);
     }
     
-    NetworkDBSegment * getSegment(NetworkDBPoint * target, bool dir);
+    NetworkDBSegment * getSegment(const NetworkDBPoint * target, bool dir) const;
+    
+    std::vector<NetworkDBSegment *> conn(bool rev) {
+        return rev ? connectedReverse : connected;
+    }
+    
+    void connectedSet(bool rev, std::vector<NetworkDBSegment *> l) {
+        if (rev) {
+            connectedReverse = l;
+            } else {
+                connected = l;
+            }
+    }
+    
+    int chInd() {
+        return 0;
+    }
+    
+    int midPntDepth() {
+        return 0;
+    }
     
     bool operator == (const NetworkDBPoint & that) const {
         if (index != that.index || clusterId != that.clusterId || fileId != that.fileId || mapId != that.mapId ||
@@ -199,10 +221,10 @@ struct NetworkDBPoint {
 
 struct NetworkDBSegment {
     const bool direction;
-    const NetworkDBPoint * start;
-    const NetworkDBPoint * end;
+    NetworkDBPoint * start;
+    NetworkDBPoint * end;
     const bool shortcut;
-    const double dist;
+    double dist;
     //List<LatLon> geom;
     
     NetworkDBSegment(NetworkDBPoint * start, NetworkDBPoint * end, double dist, bool direction, bool shortcut):
@@ -252,7 +274,7 @@ struct RoutingStats {
 struct HHNetworkRouteRes : public RouteCalcResult {
     RoutingStats stats;
     std::vector<HHNetworkSegmentRes> segments;
-    std::vector<SHARED_PTR<HHNetworkRouteRes>> altRoutes;
+    std::vector<HHNetworkRouteRes *> altRoutes;
     std::set<int64_t> uniquePoints;
     
     HHNetworkRouteRes(): RouteCalcResult() {        
@@ -327,11 +349,11 @@ struct HHRouteRegionPointsCtx {
 };
 
 struct NetworkDBPointCost {
-    SHARED_PTR<NetworkDBPoint> point;
+    NetworkDBPoint * point;
     const double cost;
     const bool rev;
     
-    NetworkDBPointCost(SHARED_PTR<NetworkDBPoint> p, double cost, bool rev): point(p), cost(cost), rev(rev) {
+    NetworkDBPointCost(NetworkDBPoint * p, double cost, bool rev): point(p), cost(cost), rev(rev) {
     }
     
 };
@@ -456,6 +478,8 @@ struct HHRoutingContext {
         initialized = false;
     }
     
+    //TODO add destructor
+    
     SHARED_PTR<HH_QUEUE> createQueue() {
         HHPointComparator comparator;
         SHARED_PTR<HH_QUEUE> queue = std::make_shared<HH_QUEUE>(comparator);
@@ -503,6 +527,37 @@ struct HHRoutingContext {
             }
         }
         return b;
+    }
+    
+    std::vector<NetworkDBPoint *> getIncomingPoints(NetworkDBPoint * point) {
+        auto it = clusterInPoints.find(point->clusterId);
+        return it->second;
+    }
+    
+    std::vector<NetworkDBPoint *> getOutgoingPoints(NetworkDBPoint * point) {
+        auto it = clusterOutPoints.find(point->clusterId);
+        return it->second;
+    }
+    
+    static bool checkId(int id, HHRouteBlockSegments * s) {
+        return s->idRangeStart <= id && s->idRangeStart + s->idRangeLength > id;
+    }
+    
+    int32_t loadNetworkSegmentPoint(NetworkDBPoint * point, bool reverse) {
+        if (point->conn(reverse).size() > 0) {
+            return 0;
+        }
+        short mapId = point->mapId;
+        if (mapId < regions.size()) {
+            SHARED_PTR<HHRouteRegionPointsCtx> & r = regions[mapId];
+            SHARED_PTR<HHRouteIndex> & fileRegion = r->fileRegion;
+            for (auto * s : fileRegion->segments) {
+                if (s->profileId == r->getRoutingProfile() && checkId(point->fileId, s)) {
+                    return ::loadNetworkSegmentPoint(this, r, s, point->fileId);
+                }
+            }
+        }
+        return 0;
     }
     
 private:

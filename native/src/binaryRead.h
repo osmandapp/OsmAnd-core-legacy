@@ -169,7 +169,13 @@ struct HHRouteBlockSegments {
     uint32_t length;
     int filePointer;
     
-    std::vector<HHRouteBlockSegments> sublist;
+    ~HHRouteBlockSegments() {
+        for (auto & s : sublist) {
+            delete s;
+        }
+    }
+    
+    std::vector<HHRouteBlockSegments *> sublist;
 };
 
 struct HHRouteIndex : BinaryPartIndex {
@@ -182,8 +188,14 @@ struct HHRouteIndex : BinaryPartIndex {
     HHRouteIndex() : BinaryPartIndex(HH_INDEX), edition(0), profile("") {
     }
     
+    ~HHRouteIndex() {
+        for (auto & s : segments) {
+            delete s;
+        }
+    }
+    
     // not stored in cache
-    std::vector<HHRouteBlockSegments> segments;
+    std::vector<HHRouteBlockSegments *> segments;
 
         /*std::string getPartName() {
             return "Highway routing";
@@ -1072,6 +1084,8 @@ bool closeBinaryMapFile(std::string inputName);
 void getIncompleteTransportRoutes(BinaryMapFile* file);
 
 struct NetworkDBPoint;
+struct HHRoutingContext;
+struct HHRouteRegionPointsCtx;
 void initHHPoints(BinaryMapFile* file, SHARED_PTR<HHRouteIndex> reg, short mapId, UNORDERED_map<int64_t, NetworkDBPoint *> & resPoints);
-
+int loadNetworkSegmentPoint(HHRoutingContext * ctx, SHARED_PTR<HHRouteRegionPointsCtx> regCtx, HHRouteBlockSegments * block, int searchInd);
 #endif
