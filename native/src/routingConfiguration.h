@@ -71,7 +71,7 @@ struct RoutingConfiguration {
     long memoryLimitation;
     float initialDirection = NO_DIRECTION;
     float targetDirection = NO_DIRECTION;
-	double penaltyForReverseDirection = DEFAULT_PENALTY_FOR_REVERSE_DIRECTION; // -1 means reverse is forbidden
+    double penaltyForReverseDirection = DEFAULT_PENALTY_FOR_REVERSE_DIRECTION; // -1 means reverse is forbidden
 
     int zoomToLoad;
     float heurCoefficient;
