@@ -185,7 +185,7 @@ SHARED_PTR<RouteSegment> initEdgeSegment(RoutingContext* ctx, SHARED_PTR<RouteSe
 		// TODO
 		return nullptr;
 	}
-	if (!originalDir && ctx->config->initialDirection == NO_DIRECTION && ctx->config->PENALTY_FOR_REVERSE_DIRECTION < 0) {
+	if (!originalDir && ctx->config->initialDirection == NO_DIRECTION && ctx->config->penaltyForReverseDirection < 0) {
 		// special case for single side spread point-dijkstra
 		return nullptr;
 	}
@@ -201,7 +201,7 @@ SHARED_PTR<RouteSegment> initEdgeSegment(RoutingContext* ctx, SHARED_PTR<RouteSe
 		double plusDir = seg->getRoad()->directionRoute(seg->getSegmentStart(), seg->isPositive());
 		double diff = plusDir - (reverseSearchWay ? ctx->config->targetDirection : ctx->config->initialDirection);
 		if (abs(alignAngleDifference(diff - M_PI)) <= M_PI / 3) {
-			seg->distanceFromStart += ctx->config->PENALTY_FOR_REVERSE_DIRECTION;
+			seg->distanceFromStart += ctx->config->penaltyForReverseDirection;
 		}
 	}
 	if (checkMovementAllowed(ctx, reverseSearchWay, seg)) {

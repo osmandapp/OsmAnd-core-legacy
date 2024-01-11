@@ -55,13 +55,12 @@ struct DirectionPoint {
     }
 };
 
+#define DEFAULT_PENALTY_FOR_REVERSE_DIRECTION 60 // if no penaltyForReverseDirection in xml
 #define NO_DIRECTION ((float)(-2 * M_PI)) // -360 degrees in RADIANS for no-direction rule (Java uses ==null instead)
 
 struct RoutingConfiguration {
     const static int DEFAULT_MEMORY_LIMIT = 256;
     const static int DEVIATION_RADIUS = 3000;
-
-    constexpr const static double DEFAULT_PENALTY_FOR_REVERSE_DIRECTION = 500;
 
     MAP_STR_STR attributes;
     quad_tree<SHARED_PTR<DirectionPoint>> directionPoints;
@@ -72,7 +71,7 @@ struct RoutingConfiguration {
     long memoryLimitation;
     float initialDirection = NO_DIRECTION;
     float targetDirection = NO_DIRECTION;
-    double PENALTY_FOR_REVERSE_DIRECTION = DEFAULT_PENALTY_FOR_REVERSE_DIRECTION;
+    double penaltyForReverseDirection = DEFAULT_PENALTY_FOR_REVERSE_DIRECTION; // -1 means reverse is forbidden
 
     int zoomToLoad;
     float heurCoefficient;
@@ -113,6 +112,7 @@ struct RoutingConfiguration {
         minStepApproximation = parseFloat(getAttribute(router, "minStepApproximation"), 100);
         maxStepApproximation = parseFloat(getAttribute(router, "maxStepApproximation"), 3000);
         smoothenPointsNoRoute = parseFloat(getAttribute(router, "smoothenPointsNoRoute"), 5);
+        penaltyForReverseDirection = parseFloat(getAttribute(router, "penaltyForReverseDirection"), DEFAULT_PENALTY_FOR_REVERSE_DIRECTION);
         // don't use file limitations?
         memoryLimitation = (int)parseFloat(getAttribute(router, "nativeMemoryLimitInMB"), memoryLimitation);
         zoomToLoad = (int)parseFloat(getAttribute(router, "zoomToLoadTiles"), 16);
