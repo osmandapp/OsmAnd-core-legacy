@@ -28,7 +28,9 @@ public:
     
 private:
     double distanceToEnd(SHARED_PTR<HHRoutingContext> hctx, bool reverse, NetworkDBPoint * nextPoint);
+    double smallestSegmentCost(SHARED_PTR<HHRoutingContext> hctx, NetworkDBPoint * st, NetworkDBPoint * end);
     bool retrieveSegmentsGeometry(SHARED_PTR<HHRoutingContext> hctx, HHNetworkRouteRes * route, bool routeSegments);
+    bool retainAll(std::set<int64_t> & d, const std::set<int64_t> & s);
     int64_t calcRPId(SHARED_PTR<RouteSegmentPoint> p, int pntId, int nextPntId);
     int64_t calcRPId(SHARED_PTR<RouteSegment> p, int pntId, int nextPntId);
     int64_t calculateRoutePointInternalId(int64_t id, int32_t pntId, int32_t nextPntId);
@@ -51,15 +53,18 @@ private:
     HHNetworkRouteRes * createRouteSegmentFromFinalPoint(SHARED_PTR<HHRoutingContext> hctx, NetworkDBPoint * pnt);
     std::vector<SHARED_PTR<RouteSegment>> runDetailedRouting(SHARED_PTR<HHRoutingContext> hctx, const NetworkDBPoint * startS, const NetworkDBPoint * endS, bool useBoundaries);
     
+    NetworkDBPoint * runRoutingWithInitQueue(SHARED_PTR<HHRoutingContext> hctx);
+    NetworkDBPoint * scanFinalPoint(NetworkDBPoint * finalPoint, std::vector<NetworkDBPoint *> lt);
     NetworkDBPoint * runRoutingPointsToPoints(SHARED_PTR<HHRoutingContext> hctx,
                                               UNORDERED_map<int64_t, NetworkDBPoint *> stPoints,
                                               UNORDERED_map<int64_t, NetworkDBPoint *> endPoints);
     void addPointToQueue(SHARED_PTR<HHRoutingContext> hctx, SHARED_PTR<HH_QUEUE> queue, bool reverse,
                          NetworkDBPoint * point, NetworkDBPoint * parent, double segmentDist, double cost);
-    NetworkDBPoint * runRoutingWithInitQueue(SHARED_PTR<HHRoutingContext> hctx);
     void addConnectedToQueue(SHARED_PTR<HHRoutingContext> hctx, SHARED_PTR<HH_QUEUE> queue, NetworkDBPoint * point, bool reverse);
-    double smallestSegmentCost(SHARED_PTR<HHRoutingContext> hctx, NetworkDBPoint * st, NetworkDBPoint * end);
-    NetworkDBPoint * scanFinalPoint(NetworkDBPoint * finalPoint, std::vector<NetworkDBPoint *> lt);
+    void printPoint(NetworkDBPoint * p, bool rev);
+    void calcAlternativeRoute(SHARED_PTR<HHRoutingContext> hctx, HHNetworkRouteRes * route,
+                              UNORDERED_map<int64_t, NetworkDBPoint *> stPoints, UNORDERED_map<int64_t, NetworkDBPoint *> endPoints);
+    
 };
 
 #endif /*_OSMAND_HH_ROUTE_PLANNER_H*/

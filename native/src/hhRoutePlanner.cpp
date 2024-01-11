@@ -227,7 +227,7 @@ HHNetworkRouteRes HHRoutePlanner::runRouting(int startX, int startY, int endX, i
     while (route == nullptr) {
         OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Routing...");
         long time = timer.GetElapsedMs();
-        NetworkDBPoint * finalPnt = nullptr;//runRoutingPointsToPoints(hctx, stPoints, endPoints);
+        NetworkDBPoint * finalPnt = runRoutingPointsToPoints(hctx, stPoints, endPoints);
         route = createRouteSegmentFromFinalPoint(hctx, finalPnt);
         time = (timer.GetElapsedMs() - time);
         OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "%d segments, cost %.2f, %.2f ms\n", route->segments.size(), route->getHHRoutingTime(), time);
@@ -252,7 +252,7 @@ HHNetworkRouteRes HHRoutePlanner::runRouting(int startX, int startY, int endX, i
     if (hctx->config->CALC_ALTERNATIVES) {
         OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Alternative routes...");
         long time = timer.GetElapsedMs();
-        //calcAlternativeRoute(hctx, route, stPoints, endPoints);
+        calcAlternativeRoute(hctx, route, stPoints, endPoints);
         hctx->stats.altRoutingTime += timer.GetElapsedMs() - time;
         hctx->stats.routingTime += hctx->stats.altRoutingTime;
         OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "%d %.2f ms\n", route->altRoutes.size(), hctx->stats.altRoutingTime);
@@ -288,10 +288,10 @@ HHNetworkRouteRes HHRoutePlanner::runRouting(int startX, int startY, int endX, i
     OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Calculate turns...");
     
     if (hctx->config->ROUTE_ALL_SEGMENTS/* && route.detailed != null*/) {
-        //route->detailed = rrp.prepareResult(hctx->rctx, route->detailed).detailed;
+        route->detailed = prepareResult(hctx->rctx.get(), route->detailed);
     }
     OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "%.2f ms\n", timer.GetElapsedMs() - time);
-    //RouteResultPreparation.printResults(hctx.rctx, start, end, route.detailed);
+    printResults(hctx->rctx.get(), startX, startY, endX, endY, route->detailed);
     OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
                       "Routing finished all %.1f ms: last mile %.1f ms, load data %.1f ms (%,d edges), routing %.1f ms (queue  - %.1f add ms + %.1f poll ms), prep result %.1f ms\n",
                       timer.GetElapsedMs(), hctx->stats.searchPointsTime, hctx->stats.loadEdgesTime + hctx->stats.loadPointsTime,
@@ -465,7 +465,7 @@ UNORDERED_map<int64_t, NetworkDBPoint *> HHRoutePlanner::initStart(SHARED_PTR<HH
                             reverse ? o->getSegmentEnd() : o->getSegmentStart(),
                             reverse ? o->getSegmentStart() : o->getSegmentEnd());
             if (set.insert(pntId).second) {
-                NetworkDBPoint * pnt = new NetworkDBPoint();
+                NetworkDBPoint * pnt = hctx->createNetworkDBPoint();
                 auto it = hctx->pointsByGeo.find(pntId);
                 if (it == hctx->pointsByGeo.end()) {
                     it = pnts.find(PNT_SHORT_ROUTE_START_END);
@@ -612,14 +612,14 @@ void HHRoutePlanner::recalculateNetworkCluster(SHARED_PTR<HHRoutingContext> hctx
                     c->dist = routeTime;
                 } else {
                     //TODO check deletion of pointer
-                    start->connected.push_back(new NetworkDBSegment(start, p, routeTime, true, false));
+                    start->connected.push_back(hctx->createNetworkDBSegment(start, p, routeTime, true, false));
                 }
                 NetworkDBSegment * co = p->getSegment(start, false);
                 if (co != nullptr) {
                     co->dist = routeTime;
                 } else if (p->connectedReverse.size() > 0) {
                     //TODO check deletion of pointer
-                    p->connectedReverse.push_back(new NetworkDBSegment(start, p, routeTime, false, false));
+                    p->connectedReverse.push_back(hctx->createNetworkDBSegment(start, p, routeTime, false, false));
                 }
             }
         }
@@ -851,6 +851,301 @@ void HHRoutePlanner::addConnectedToQueue(SHARED_PTR<HHRoutingContext> hctx, SHAR
         if ((exCost == 0 && !nextPoint->rt(reverse)->rtVisited) || cost < exCost) {
             addPointToQueue(hctx, queue, reverse, nextPoint, point, connected->dist, cost);
         }
+    }
+}
+
+NetworkDBPoint * HHRoutePlanner::runRoutingPointsToPoints(SHARED_PTR<HHRoutingContext> hctx,
+                                                          UNORDERED_map<int64_t, NetworkDBPoint *> stPoints,
+                                                          UNORDERED_map<int64_t, NetworkDBPoint *> endPoints) {
+    UNORDERED_map<int64_t, NetworkDBPoint *>::iterator it;
+    for (it = stPoints.begin(); it != stPoints.end(); it++) {
+        NetworkDBPoint * start = it->second;
+        if (start->rtExclude) {
+            continue;
+        }
+        double cost = start->rt(false)->rtCost;
+        addPointToQueue(hctx, hctx->queue(false), false, start, nullptr, start->rt(false)->rtDistanceFromStart,
+                        cost <= 0 ? MINIMAL_COST : cost);
+    }
+    for (it = endPoints.begin(); it != endPoints.end(); it++) {
+        NetworkDBPoint * end = it->second;
+        if (end->rtExclude) {
+            continue;
+        }
+        double cost = end->rt(true)->rtCost;
+        addPointToQueue(hctx, hctx->queue(true), true, end, nullptr, end->rt(true)->rtDistanceFromStart,
+                        cost <= 0 ? MINIMAL_COST : cost);
+    }
+    NetworkDBPoint * t = runRoutingWithInitQueue(hctx);
+    return t;
+}
+
+NetworkDBPoint * HHRoutePlanner::runRoutingWithInitQueue(SHARED_PTR<HHRoutingContext> hctx) {
+    float DIR_CONFIG = hctx->config->DIJKSTRA_DIRECTION;
+    while (true) {
+        SHARED_PTR<HH_QUEUE> queue;
+        if (hctx->USE_GLOBAL_QUEUE) {
+            queue = hctx->queue(false);
+            if (queue->empty()) {
+                break;
+            }
+        } else {
+            SHARED_PTR<HH_QUEUE> pos = hctx->queue(false);
+            SHARED_PTR<HH_QUEUE> rev = hctx->queue(true);
+            if (hctx->config->DIJKSTRA_DIRECTION == 0 || (!rev->empty() && !pos->empty())) {
+                if (rev->empty() || pos->empty()) {
+                    break;
+                }
+                queue = pos->top()->cost < rev->top()->cost ? pos : rev;
+            } else {
+                queue = hctx->config->DIJKSTRA_DIRECTION > 0 ? pos : rev;
+                if (queue->empty()) {
+                    break;
+                }
+            }
+        }
+        OsmAnd::ElapsedTimer timer;
+        timer.Start();
+        SHARED_PTR<NetworkDBPointCost> pointCost = queue->top();
+        queue->pop();
+        NetworkDBPoint * point = pointCost->point;
+        bool rev = pointCost->rev;
+        hctx->stats.pollQueueTime += timer.GetElapsedMs();
+        hctx->stats.visitedVertices++;
+        if (point->rt(!rev)->rtVisited) {
+            if (hctx->stats.firstRouteVisitedVertices == 0) {
+                hctx->stats.firstRouteVisitedVertices = hctx->stats.visitedVertices;
+                if (DIR_CONFIG == 0 && hctx->config->HEURISTIC_COEFFICIENT != 0) {
+                    // focus on 1 direction as it slightly faster
+                    DIR_CONFIG = rev ? -1 : 1;
+                }
+            }
+            if (hctx->config->HEURISTIC_COEFFICIENT == 0 && hctx->config->DIJKSTRA_DIRECTION == 0) {
+                // Valid only HC=0, Dijkstra as we run Many-to-Many - Test( Lat 49.12691 Lon 9.213685 -> Lat 49.155483 Lon 9.2140045)
+                NetworkDBPoint * finalPoint = point;
+                finalPoint = scanFinalPoint(finalPoint, hctx->visited);
+                finalPoint = scanFinalPoint(finalPoint, hctx->visitedRev);
+                return finalPoint;
+            } else {
+                double rcost = point->rt(true)->rtDistanceFromStart + point->rt(false)->rtDistanceFromStart;
+                if (rcost <= pointCost->cost) {
+                    // Universal condition to stop: works for any algorithm - cost equals to route length
+                    return point;
+                } else {
+                    queue->push(std::make_shared<NetworkDBPointCost>(point, rcost, rev));
+                    point->markVisited(rev);
+                    continue;
+                }
+            }
+        }
+        if (point->rt(rev)->rtVisited) {
+            continue;
+        }
+        hctx->stats.uniqueVisitedVertices++;
+        point->markVisited(rev);
+        hctx->visited.push_back(point);
+        (rev ? hctx->visited : hctx->visitedRev).push_back(point);
+        printPoint(point, rev);
+        if (hctx->config->MAX_COST > 0 && pointCost->cost > hctx->config->MAX_COST) {
+            break;
+        }
+        if (hctx->config->MAX_SETTLE_POINTS > 0 && (rev ? hctx->visitedRev : hctx->visited).size() > hctx->config->MAX_SETTLE_POINTS) {
+            break;
+        }
+        
+        bool directionAllowed = (DIR_CONFIG <= 0 && rev) || (DIR_CONFIG >= 0 && !rev);
+        if (directionAllowed) {
+            addConnectedToQueue(hctx, queue, point, rev);
+        }
+    }
+    return nullptr;
+}
+
+void HHRoutePlanner::printPoint(NetworkDBPoint * p, bool rev) {
+    if (DEBUG_VERBOSE_LEVEL > 1) {
+        int64_t pind = 0;
+        int64_t pchInd = 0;
+        if (p->rt(rev)->rtRouteToPoint != nullptr) {
+            pind = p->rt(rev)->rtRouteToPoint->index;
+            pchInd = p->rt(rev)->rtRouteToPoint->chInd();
+        }
+        OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
+                          "Visit Point %s %d [%d] (from %d [%d]) (cost %.1f s) %.5f/%.5f - %d\n",
+                          rev ? "<-" : "->", p->index, p->chInd(), pind, pchInd, p->rt(rev)->rtCost,
+                          get31LatitudeY(p->startY), get31LongitudeX(p->startX), p->roadId / 64);
+    }
+}
+
+void HHRoutePlanner::calcAlternativeRoute(SHARED_PTR<HHRoutingContext> hctx, HHNetworkRouteRes * route,
+                                          UNORDERED_map<int64_t, NetworkDBPoint *> stPoints, UNORDERED_map<int64_t, NetworkDBPoint *> endPoints) {
+    std::vector<NetworkDBPoint *> exclude;
+    HHNetworkRouteRes * rt = route;
+    // distances between all points and start/end
+    std::vector<NetworkDBPoint *> points;
+    for (int i = 0; i < route->segments.size(); i++) {
+        NetworkDBSegment * s = route->segments.at(i).segment;
+        if (s == nullptr) {
+            continue;
+        }
+        if(points.size() == 0) {
+            points.push_back(s->start);
+        }
+        points.push_back(s->end);
+    }
+    double * distances = new double[points.size()];
+    NetworkDBPoint * prev = nullptr;
+    for (int i = 0; i < sizeof(distances); i++) {
+        NetworkDBPoint * pnt = points.at(i);
+        if (i == 0) {
+            distances[i] = squareRootDist31(hctx->startX, hctx->startY, pnt->midX(), pnt->midY());
+        } else if (i == sizeof(distances) - 1) {
+            distances[i] = squareRootDist31(hctx->endX, hctx->endY, pnt->midX(), pnt->midY());
+        } else {
+            distances[i] = squareRootDist31(prev->midX(), prev->midY(), pnt->midX(), pnt->midY());
+        }
+        prev = pnt;
+    }
+    
+    // calculate min(cumPos, cumNeg) distance
+    double * cdistPos = new double[sizeof(distances)];
+    double * cdistNeg = new double[sizeof(distances)];
+    for (int i = 0; i < sizeof(distances); i++) {
+        if(i == 0) {
+            cdistPos[0] = distances[i];
+            cdistNeg[sizeof(distances) - 1] = distances[sizeof(distances)- 1];
+        } else {
+            cdistPos[i] = cdistPos[i - 1] + distances[i];
+            cdistNeg[sizeof(distances) - i - 1] = cdistNeg[sizeof(distances) - i] + distances[sizeof(distances) - i - 1];
+        }
+    }
+    double * minDistance = new double[sizeof(distances)];
+    bool * useToSkip = new bool[sizeof(distances)];
+    int altPoints = 0;
+    for (int i = 0; i < sizeof(distances); i++) {
+        minDistance[i] = std::min(cdistNeg[i], cdistPos[i]) * hctx->config->ALT_EXCLUDE_RAD_MULT;
+        bool coveredByPrevious = false;
+        for (int j = 0; j < i; j++) {
+            if (useToSkip[j] && cdistPos[i] - cdistPos[j] < minDistance[j] * hctx->config->ALT_EXCLUDE_RAD_MULT_IN) {
+                coveredByPrevious = true;
+                break;
+            }
+        }
+        if(!coveredByPrevious) {
+            useToSkip[i] = true;
+            altPoints ++;
+        } else {
+            minDistance[i] = 0; // for printing purpose
+        }
+    }
+    if (DEBUG_VERBOSE_LEVEL >= 1) {
+        std::string s = "[";
+        for (int i = 0; i < sizeof(minDistance); i++) {
+            if (i > 0) {
+                s += ", ";
+            }
+            s += to_string(minDistance[i]);
+        }
+        s += "]";
+        OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Selected %d points for alternatives %s\n", altPoints, s.c_str());
+    }
+    for (int i = 0; i < sizeof(distances); i++) {
+        if (!useToSkip[i]) {
+            continue;
+        }
+        hctx->clearVisited(stPoints, endPoints);
+        for (NetworkDBPoint * pnt : exclude) {
+            pnt->rtExclude = false;
+        }
+        exclude.clear();
+        
+        LatLon pnt = points.at(i)->getPoint();
+        //std::vector<NetworkDBPoint *> getClosestObjects(double latitude, double longitude, double radius);
+        std::vector<NetworkDBPoint *> objs = hctx->pointsRect.getClosestObjects(pnt.lat, pnt.lon, minDistance[i]);
+        for (NetworkDBPoint * p : objs) {
+            LatLon pCoords = p->getPoint();
+            if (getDistance(pCoords.lat, pCoords.lon, pnt.lat, pnt.lon) <= minDistance[i]) {
+                exclude.push_back(p);
+                p->rtExclude = true;
+            }
+        }
+        
+        NetworkDBPoint * finalPnt = runRoutingPointsToPoints(hctx, stPoints, endPoints);
+        if (finalPnt != nullptr) {
+            double cost = (finalPnt->rt(false)->rtDistanceFromStart + finalPnt->rt(true)->rtDistanceFromStart);
+            if (DEBUG_VERBOSE_LEVEL == 1) {
+                OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Alternative route cost: %.2f", cost);
+            }
+            rt = createRouteSegmentFromFinalPoint(hctx, finalPnt);
+            route->altRoutes.push_back(rt);
+        } else {
+            break;
+        }
+    }
+    
+    std::sort(route->altRoutes.begin(), route->altRoutes.end(), [](HHNetworkRouteRes * o1, HHNetworkRouteRes * o2) {
+        return o1->getHHRoutingTime() > o2->getHHRoutingTime();
+    });
+    
+    int size = (int) route->altRoutes.size();
+    if (size > 0) {
+        for(int k = 0; k < route->altRoutes.size(); ) {
+            HHNetworkRouteRes * altR = route->altRoutes.at(k);
+            bool unique = true;
+            for (int j = 0; j <= k; j++) {
+                HHNetworkRouteRes * cmp = j == k ? route : route->altRoutes.at(j);
+                std::set<int64_t> cp = altR->uniquePoints;
+                retainAll(cp, cmp->uniquePoints);                
+                if (cp.size() >= hctx->config->ALT_NON_UNIQUENESS * altR->uniquePoints.size()) {
+                    unique = false;
+                    break;
+                }
+            }
+            if (unique) {
+                k++;
+            } else {
+                route->altRoutes.erase(route->altRoutes.begin() + k);
+            }
+        }
+        if (route->altRoutes.size() > 0) {
+            OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
+                              "Cost %.2f - %.2f [%d unique / %d]...",
+                              route->altRoutes.at(0)->getHHRoutingTime(),
+                              route->altRoutes.at(route->altRoutes.size() - 1)->getHHRoutingTime(),
+                              route->altRoutes.size(), size);
+        }
+        int ind = DEBUG_ALT_ROUTE_SELECTION % (route->altRoutes.size() + 1);
+        if (ind > 0) {
+            HHNetworkRouteRes * rts = route->altRoutes.at(ind - 1);
+            OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "%d select %.2f ", DEBUG_ALT_ROUTE_SELECTION, rts->getHHRoutingTime());
+            route->detailed = rts->detailed;
+            route->segments = rts->segments;
+            std::vector<HHNetworkRouteRes *> r;
+            r.push_back(rts);
+            route->altRoutes = r;
+        }
+    }
+    
+    for (NetworkDBPoint * pnt : exclude) {
+        pnt->rtExclude = false;
+    }
+}
+
+bool HHRoutePlanner::retainAll(std::set<int64_t> & source, const std::set<int64_t> & other) {
+    if (source == other) {
+        return false;
+    } else {
+        bool modified = false;
+        std::set<int64_t>::iterator iter = source.begin();
+        while (iter != source.end()) {
+            int64_t value = *iter;
+            auto it = other.find(value);
+            if (it == other.end()) {
+                source.erase(iter);
+                modified = true;
+            }
+            iter++;
+        }
+        return modified;
     }
 }
 

@@ -128,11 +128,16 @@ struct NetworkDBPoint {
     int endX;
     int endY;
     bool rtExclude;
+    bool incomplete;
     
     SHARED_PTR<NetworkDBPointRouteInfo> rtRev;
     SHARED_PTR<NetworkDBPointRouteInfo> rtPos;
     std::vector<NetworkDBSegment *> connected;
     std::vector<NetworkDBSegment *> connectedReverse;
+    
+    ~NetworkDBPoint() {
+        //all NetworkDBPoint * stored and delete in HHRoutingContext
+    }
     
     void clearRouting() {
         rtExclude = false;
@@ -206,6 +211,10 @@ struct NetworkDBPoint {
         return 0;
     }
     
+    void markVisited(bool rev) {
+        rt(rev)->rtVisited = true;
+    }
+    
     bool operator == (const NetworkDBPoint & that) const {
         if (index != that.index || clusterId != that.clusterId || fileId != that.fileId || mapId != that.mapId ||
             roadId != that.roadId || start != that.start || end != that.end || startX != that.startX ||
@@ -226,6 +235,10 @@ struct NetworkDBSegment {
     const bool shortcut;
     double dist;
     //List<LatLon> geom;
+    
+    ~NetworkDBSegment() {
+        //all NetworkDBSegment * are stored and delete in HHRoutingContext
+    }
     
     NetworkDBSegment(NetworkDBPoint * start, NetworkDBPoint * end, double dist, bool direction, bool shortcut):
         direction(direction), start(start), end(end), shortcut(shortcut), dist(dist) {
@@ -469,6 +482,9 @@ struct HHRoutingContext {
     UNORDERED_map<int64_t, std::vector<NetworkDBPoint *>> clusterInPoints;
     UNORDERED_map<int64_t, std::vector<NetworkDBPoint *>> clusterOutPoints;
     
+    std::vector<NetworkDBSegment *> cacheAllNetworkDBSegment;
+    std::vector<NetworkDBPoint *> cacheAllNetworkDBPoint;
+    
     DataTileManager pointsRect;
     
     HHRoutingContext(): pointsRect(11) {
@@ -478,7 +494,15 @@ struct HHRoutingContext {
         initialized = false;
     }
     
-    //TODO add destructor
+    ~HHRoutingContext() {
+        //TODO check call of destructor
+        for (NetworkDBSegment * s : cacheAllNetworkDBSegment) {
+            delete s;
+        }
+        for (NetworkDBPoint * p : cacheAllNetworkDBPoint) {
+            delete p;
+        }
+    }
     
     SHARED_PTR<HH_QUEUE> createQueue() {
         HHPointComparator comparator;
@@ -504,10 +528,20 @@ struct HHRoutingContext {
     void clearVisited(UNORDERED_map<int64_t, NetworkDBPoint *> & stPoints, UNORDERED_map<int64_t, NetworkDBPoint *> & endPoints);
     
     UNORDERED_map<int64_t, NetworkDBPoint *> loadNetworkPoints() {
-        UNORDERED_map<int64_t, NetworkDBPoint *> points;
+        UNORDERED_map<int64_t, NetworkDBPoint *> pnts;
         for (auto & r : regions) {
             if (r->file != nullptr) {
-                initHHPoints(r->file, r->fileRegion, r->id, points);
+                initHHPoints(r->file, r->fileRegion, this, r->id, pnts);
+            }
+        }
+        UNORDERED_map<int64_t, NetworkDBPoint *> points;
+        for (auto it = pnts.begin(); it != pnts.end(); it++) {
+            auto * pnt = it->second;
+            if (!pnt->incomplete) {
+                auto f = points.find(it->first);
+                if (f == points.end()) {
+                    points.insert(std::pair<int64_t, NetworkDBPoint *>(it->first, it->second));
+                }
             }
         }
         return points;
@@ -558,6 +592,18 @@ struct HHRoutingContext {
             }
         }
         return 0;
+    }
+    
+    NetworkDBSegment * createNetworkDBSegment(NetworkDBPoint * start, NetworkDBPoint * end, double dist, bool direction, bool shortcut) {
+        NetworkDBSegment * ns = new NetworkDBSegment(start, end, dist, direction, shortcut);
+        cacheAllNetworkDBSegment.push_back(ns);
+        return ns;
+    }
+    
+    NetworkDBPoint * createNetworkDBPoint() {
+        NetworkDBPoint * np = new NetworkDBPoint();
+        cacheAllNetworkDBPoint.push_back(np);
+        return np;
     }
     
 private:

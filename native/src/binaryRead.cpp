@@ -767,8 +767,11 @@ bool readRoutingIndex(CodedInputStream* input, const SHARED_PTR<RoutingIndex>& r
 	return true;
 }
 
-NetworkDBPoint * readPoint(CodedInputStream* input, short mapId,
+NetworkDBPoint * readPoint(CodedInputStream* input, HHRoutingContext * hctx, short mapId,
                                      UNORDERED_map<int64_t, NetworkDBPoint *> & mp, int dx, int dy) {
+    if (hctx == nullptr) {
+        return nullptr;
+    }
     uint32_t tag;
     int32_t len = 0;
     int32_t value;
@@ -776,7 +779,7 @@ NetworkDBPoint * readPoint(CodedInputStream* input, short mapId,
     UNORDERED_map<int64_t, NetworkDBPoint *>::iterator it;
     WireFormatLite::ReadPrimitive<int32_t, WireFormatLite::TYPE_INT32>(input, &len);
     int oldLimit = input->PushLimit(len);
-    NetworkDBPoint * pnt = new NetworkDBPoint();
+    NetworkDBPoint * pnt = hctx->createNetworkDBPoint();
     pnt->mapId = mapId;
     while ((tag = input->ReadTag()) != 0) {
         switch (WireFormatLite::GetTagFieldNumber(tag)) {
@@ -818,6 +821,11 @@ NetworkDBPoint * readPoint(CodedInputStream* input, short mapId,
             case OsmAnd::OBF::OsmAndHHRoutingIndex::HHRouteNetworkPoint::kClusterIdFieldNumber:
                 WireFormatLite::ReadPrimitive<int32_t, WireFormatLite::TYPE_INT32>(input, &pnt->clusterId);
                 break;
+            case OsmAnd::OBF::OsmAndHHRoutingIndex::HHRouteNetworkPoint::kPartialIndFieldNumber:
+                int partial;
+                WireFormatLite::ReadPrimitive<int32_t, WireFormatLite::TYPE_INT32>(input, &partial);
+                pnt->incomplete = partial > 0;
+                break;
             case OsmAnd::OBF::OsmAndHHRoutingIndex::HHRouteNetworkPoint::kDualPointIdFieldNumber:
                 WireFormatLite::ReadPrimitive<int32_t, WireFormatLite::TYPE_INT32>(input, &dualIdPoint);
                 break;
@@ -832,7 +840,7 @@ NetworkDBPoint * readPoint(CodedInputStream* input, short mapId,
     return nullptr;
 }
 
-SHARED_PTR<HHRoutePointsBox> readPointBox(CodedInputStream* input, const SHARED_PTR<HHRouteIndex>& hhIndex, bool withoutPoint,
+SHARED_PTR<HHRoutePointsBox> readPointBox(CodedInputStream* input, const SHARED_PTR<HHRouteIndex>& hhIndex, HHRoutingContext * hctx,
                                           short mapId, UNORDERED_map<int64_t, NetworkDBPoint *> & mp,
                                           const SHARED_PTR<HHRoutePointsBox>& parent) {
     SHARED_PTR<HHRoutePointsBox> box = make_shared<HHRoutePointsBox>();
@@ -866,19 +874,19 @@ SHARED_PTR<HHRoutePointsBox> readPointBox(CodedInputStream* input, const SHARED_
                 box->left = right + (parent ? parent->left : 0);
                 break;
             case OsmAnd::OBF::OsmAndHHRoutingIndex_HHRoutePointsBox::kBoxesFieldNumber:
-                if (withoutPoint) {
+                if (hctx == nullptr) {
                     //input->Seek(hhIndex->filePointer + hhIndex->length);
                     input->Seek(input->BytesUntilLimit());
                 } else {
-                    readPointBox(input, hhIndex, withoutPoint, mapId, mp, parent);
+                    readPointBox(input, hhIndex, hctx, mapId, mp, parent);
                 }
                 break;
             case OsmAnd::OBF::OsmAndHHRoutingIndex_HHRoutePointsBox::kPointsFieldNumber:
-                if (withoutPoint) {
+                if (hctx == nullptr) {
                     //input->Seek(hhIndex->filePointer + hhIndex->length);
                     input->Seek(input->BytesUntilLimit());
                 } else {
-                    readPoint(input, mapId, mp, box->left, box->top);
+                    readPoint(input, hctx, mapId, mp, box->left, box->top);
                 }
                 break;
             default: {
@@ -912,7 +920,7 @@ bool readHHIndex(CodedInputStream* input, const SHARED_PTR<HHRouteIndex>& hhInde
                 hhIndex->profileParams.push_back(value);
                 break;
             case OsmAnd::OBF::OsmAndHHRoutingIndex::kPointBoxesFieldNumber:
-                hhIndex->top = readPointBox(input, hhIndex, true, 0, mp, nullptr);
+                hhIndex->top = readPointBox(input, hhIndex, nullptr, 0, mp, nullptr);
                 break;
             case OsmAnd::OBF::OsmAndHHRoutingIndex::kPointSegmentsFieldNumber:
                 input->Seek(input->BytesUntilLimit());
@@ -962,7 +970,7 @@ bool readRegionSegmentHeader(CodedInputStream* input, HHRouteBlockSegments * blo
     return true;
 }
 
-void initHHPoints(BinaryMapFile* file, SHARED_PTR<HHRouteIndex> reg,
+void initHHPoints(BinaryMapFile* file, SHARED_PTR<HHRouteIndex> reg, HHRoutingContext * hctx,
                   short mapId, UNORDERED_map<int64_t, NetworkDBPoint *> & resPoints) {
     lseek(file->getHhFD(), 0, SEEK_SET);
     FileInputStream stream(file->getHhFD());
@@ -978,7 +986,7 @@ void initHHPoints(BinaryMapFile* file, SHARED_PTR<HHRouteIndex> reg,
                 input->PopLimit(oldLimit);
                 return;
             case OsmAnd::OBF::OsmAndHHRoutingIndex::kPointBoxesFieldNumber:
-                readPointBox(input, reg, false, mapId, resPoints, nullptr);
+                readPointBox(input, reg, hctx, mapId, resPoints, nullptr);
                 break;
             case OsmAnd::OBF::OsmAndHHRoutingIndex::kPointSegmentsFieldNumber: {
                 HHRouteBlockSegments * seg = new HHRouteBlockSegments();
@@ -996,7 +1004,7 @@ void initHHPoints(BinaryMapFile* file, SHARED_PTR<HHRouteIndex> reg,
 
 std::vector<NetworkDBSegment *> parseSegments(std::vector<int32_t> pointSegments, std::vector<NetworkDBPoint *> lst, NetworkDBPoint * pnt, bool out)  {
     std::vector<NetworkDBSegment *> l;
-    if (pointSegments.size() == 0) {
+    if (pointSegments.size() == 0 || pnt->incomplete) {
         return l;
     }
     

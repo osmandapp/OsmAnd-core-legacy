@@ -1086,6 +1086,6 @@ void getIncompleteTransportRoutes(BinaryMapFile* file);
 struct NetworkDBPoint;
 struct HHRoutingContext;
 struct HHRouteRegionPointsCtx;
-void initHHPoints(BinaryMapFile* file, SHARED_PTR<HHRouteIndex> reg, short mapId, UNORDERED_map<int64_t, NetworkDBPoint *> & resPoints);
+void initHHPoints(BinaryMapFile* file, SHARED_PTR<HHRouteIndex> reg, HHRoutingContext * ctx, short mapId, UNORDERED_map<int64_t, NetworkDBPoint *> & resPoints);
 int loadNetworkSegmentPoint(HHRoutingContext * ctx, SHARED_PTR<HHRouteRegionPointsCtx> regCtx, HHRouteBlockSegments * block, int searchInd);
 #endif
