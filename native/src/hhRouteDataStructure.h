@@ -123,10 +123,10 @@ struct NetworkDBPoint {
     int64_t roadId;
     short start;
     short end;
-    int startX;
-    int startY;
-    int endX;
-    int endY;
+    uint32_t startX;
+    uint32_t startY;
+    uint32_t endX;
+    uint32_t endY;
     bool rtExclude;
     bool incomplete;
     
@@ -312,7 +312,7 @@ struct HHNetworkRouteRes : public RouteCalcResult {
         return d;
     }
 
-    void append(SHARED_PTR<HHNetworkRouteRes> res) {
+    void append(HHNetworkRouteRes * res) {
         if (!res || !res->error.empty()) {
             error = "Can't build a route with intermediate point";
         } else {
@@ -604,6 +604,13 @@ struct HHRoutingContext {
         NetworkDBPoint * np = new NetworkDBPoint();
         cacheAllNetworkDBPoint.push_back(np);
         return np;
+    }
+    
+    void unloadAllConnections() {
+        for (auto it = pointsById.begin(); it != pointsById.end(); it++) {
+            NetworkDBPoint * p = it->second;
+            p->markSegmentsNotLoaded();
+        }
     }
     
 private:

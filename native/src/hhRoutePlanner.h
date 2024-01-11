@@ -18,13 +18,13 @@ public:
     bool ASSERT_AND_CORRECT_DIST_SMALLER = true;
     
     constexpr static const double MINIMAL_COST = 0.01;
-    static const int PNT_SHORT_ROUTE_START_END = -1000;
-    static const int MAX_POINTS_CLUSTER_ROUTING = 150000;
-    static const int ROUTE_POINTS = 11;
+    static const int PNT_SHORT_ROUTE_START_END;
+    static const int MAX_POINTS_CLUSTER_ROUTING;
+    static const int ROUTE_POINTS;
     constexpr static const double MAX_INC_COST_CORR = 10.0;
     
     SHARED_PTR<HHRoutingConfig> prepareDefaultRoutingConfig(SHARED_PTR<HHRoutingConfig> c);
-    HHNetworkRouteRes runRouting(int startX, int startY, int endX, int endY, SHARED_PTR<HHRoutingConfig> config);
+    HHNetworkRouteRes * runRouting(int startX, int startY, int endX, int endY, SHARED_PTR<HHRoutingConfig> config);
     
 private:
     double distanceToEnd(SHARED_PTR<HHRoutingContext> hctx, bool reverse, NetworkDBPoint * nextPoint);
@@ -51,6 +51,7 @@ private:
     UNORDERED_map<int64_t, NetworkDBPoint *> initStart(SHARED_PTR<HHRoutingContext> hctx, SHARED_PTR<RouteSegmentPoint> s,
                                             bool reverse, UNORDERED_map<int64_t, NetworkDBPoint *> & pnts);
     HHNetworkRouteRes * createRouteSegmentFromFinalPoint(SHARED_PTR<HHRoutingContext> hctx, NetworkDBPoint * pnt);
+    HHNetworkRouteRes * prepareRouteResults(SHARED_PTR<HHRoutingContext> hctx, HHNetworkRouteRes * route, int startX, int startY, int endX, int endY);
     std::vector<SHARED_PTR<RouteSegment>> runDetailedRouting(SHARED_PTR<HHRoutingContext> hctx, const NetworkDBPoint * startS, const NetworkDBPoint * endS, bool useBoundaries);
     
     NetworkDBPoint * runRoutingWithInitQueue(SHARED_PTR<HHRoutingContext> hctx);

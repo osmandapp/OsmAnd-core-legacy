@@ -5,7 +5,13 @@
 #include "hhRoutePlanner.h"
 #include "CommonCollections.h"
 #include "Logging.h"
-#include "routePlannerFrontEnd.cpp"
+#include "routePlannerFrontEnd.h"
+#include "routeResultPreparation.h"
+#include "binaryRoutePlanner.h"
+
+const int HHRoutePlanner::PNT_SHORT_ROUTE_START_END = -1000;
+const int HHRoutePlanner::MAX_POINTS_CLUSTER_ROUTING = 150000;
+const int HHRoutePlanner::ROUTE_POINTS = 11;
 
 HHRoutePlanner::HHRoutePlanner(SHARED_PTR<RoutingContext> ctx) {
     std::vector<SHARED_PTR<HHRouteRegionPointsCtx>> regions;
@@ -202,14 +208,13 @@ SHARED_PTR<HHRoutingContext> HHRoutePlanner::initHCtx(SHARED_PTR<HHRoutingConfig
     return hctx;
 }
 
-//TODO how to store HHNetworkRouteRes shared_ptr or pointer ?
-HHNetworkRouteRes HHRoutePlanner::runRouting(int startX, int startY, int endX, int endY, SHARED_PTR<HHRoutingConfig> config) {
+HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX, int endY, SHARED_PTR<HHRoutingConfig> config) {
     OsmAnd::ElapsedTimer timer;
     timer.Start();
     config = prepareDefaultRoutingConfig(config);
     SHARED_PTR<HHRoutingContext> hctx = initHCtx(config, startX, startY, endX, endY);
     if (hctx == nullptr) {
-        HHNetworkRouteRes res("Files for hh routing were not initialized. Route couldn't be calculated.");
+        HHNetworkRouteRes * res = new HHNetworkRouteRes("Files for hh routing were not initialized. Route couldn't be calculated.");
         return res;
     }
     if (hctx->config->USE_GC_MORE_OFTEN) {
@@ -240,7 +245,7 @@ HHNetworkRouteRes HHRoutePlanner::runRouting(int startX, int startY, int endX, i
         hctx->stats.routingTime += time;
         if (recalc) {
             if (hctx->stats.prepTime + hctx->stats.routingTime > hctx->config->MAX_TIME_REITERATION_MS) {
-                HHNetworkRouteRes res("Too many route recalculations (maps are outdated).");
+                HHNetworkRouteRes * res = new HHNetworkRouteRes("Too many route recalculations (maps are outdated).");
                 return res;
             }
             hctx->clearVisited(stPoints, endPoints);
@@ -264,12 +269,12 @@ HHNetworkRouteRes HHRoutePlanner::runRouting(int startX, int startY, int endX, i
     }
     
     if (hctx->config->USE_GC_MORE_OFTEN) {
-        //hctx->unloadAllConnections();
+        hctx->unloadAllConnections();
         //printGCInformation();
     }
     
     long time = timer.GetElapsedMs();
-    //prepareRouteResults(hctx, route, start, end, rrp);
+    prepareRouteResults(hctx, route, startX, startY, endX, endY);
     hctx->stats.prepTime += timer.GetElapsedMs() - time;
     OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "%.2f ms\n", hctx->stats.prepTime);
     if (DEBUG_VERBOSE_LEVEL >= 1) {
@@ -297,7 +302,61 @@ HHNetworkRouteRes HHRoutePlanner::runRouting(int startX, int startY, int endX, i
                       timer.GetElapsedMs(), hctx->stats.searchPointsTime, hctx->stats.loadEdgesTime + hctx->stats.loadPointsTime,
                       hctx->stats.loadEdgesCnt, hctx->stats.routingTime, hctx->stats.addQueueTime, hctx->stats.pollQueueTime, hctx->stats.prepTime);
     //printGCInformation();
-    return *route;
+    return route;
+}
+
+HHNetworkRouteRes * HHRoutePlanner::prepareRouteResults(SHARED_PTR<HHRoutingContext> hctx, HHNetworkRouteRes * route, int startX, int startY, int endX, int endY) {
+    hctx->rctx->conditionalTime = 0;
+    route->stats = hctx->stats;
+    SHARED_PTR<RouteSegmentResult> straightLine = nullptr;
+    for(int routeSegmentInd = 0; routeSegmentInd < route->segments.size(); routeSegmentInd++ ) {
+        HHNetworkSegmentRes routeSegment = route->segments.at(routeSegmentInd);
+        NetworkDBSegment * s = routeSegment.segment;
+        if (routeSegment.list.size() > 0) {
+            if (straightLine != nullptr) {
+                route->detailed.push_back(straightLine);
+                straightLine = nullptr;
+            }
+            if (routeSegmentInd > 0) {
+                SHARED_PTR<RouteSegmentResult> p = routeSegment.list.at(0);
+                if (abs(p->getStartPointIndex() - p->getEndPointIndex()) <= 1) {
+                    routeSegment.list.erase(routeSegment.list.begin() + 0);
+                } else {
+                    p->setStartPointIndex(p->getStartPointIndex() + (p->isForwardDirection() ? +1 : -1));
+                }
+            }
+            route->detailed.insert(route->detailed.end(), routeSegment.list.begin(), routeSegment.list.end());
+        } else {
+            auto reg = std::make_shared<RoutingIndex>();
+            reg->initRouteEncodingRule(0, "highway", "unmatched");
+            auto rdo = make_shared<RouteDataObject>(reg);
+            rdo->types = { 0 };
+            rdo->pointsX = { s->start->startX, s->end->startX };
+            rdo->pointsY = { s->start->startY, s->end->startY };
+            auto sh = make_shared<RouteDataObject>(reg);
+            sh->types = { 0 };
+            sh->pointsX = { s->end->startX, s->end->endX };
+            sh->pointsY = { s->end->startY, s->end->endY };
+            straightLine = make_shared<RouteSegmentResult>(sh, 0, 1);
+            route->detailed.push_back(make_shared<RouteSegmentResult>(rdo, 0, 1));
+        }
+        hctx->rctx->conditionalTime += routeSegment.rtTimeDetailed;
+        if (DEBUG_VERBOSE_LEVEL >= 1) {
+            int segments = (int) routeSegment.list.size();
+            if (s == nullptr) {
+                OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
+                                  "First / last segment - %d segments, %.2fs \n",
+                                  segments, routeSegment.rtTimeDetailed);
+            } else {
+                OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
+                                  "\nRoute %d [%d] -> %d [%d] %s - hh dist %.2f s, detail %.2f s (%.1f%%) segments %d ( end %.5f/%.5f - %d ) ",
+                                  s->start->index, s->start->chInd(), s->end->index, s->end->chInd(), s->shortcut ? "sh" : "bs",
+                                  s->dist, routeSegment.rtTimeDetailed, 100 * (1 - routeSegment.rtTimeDetailed / s->dist),
+                                  segments, get31LatitudeY(s->end->startY), get31LongitudeX(s->end->startX), s->end->roadId / 64);
+                }
+            }
+        }
+    return route;
 }
 
 void HHRoutePlanner::findFirstLastSegments(SHARED_PTR<HHRoutingContext> hctx, int startX, int startY, int endX, int endY,

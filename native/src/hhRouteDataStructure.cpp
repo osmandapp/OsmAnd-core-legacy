@@ -1,7 +1,7 @@
 #ifndef _OSMAND_HH_ROUTE_DATA_STRUCTURE_CPP
 #define _OSMAND_HH_ROUTE_DATA_STRUCTURE_CPP
 
-#include "common.cpp"
+#include "commonOsmAndCore.h"
 #include "hhRouteDataStructure.h"
 
 std::vector<NetworkDBPoint *> DataTileManager::getClosestObjects(double latitude, double longitude, double radius) {

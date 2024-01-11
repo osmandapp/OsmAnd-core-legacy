@@ -798,10 +798,10 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 	}
 	if (USE_HH_ROUTING || USE_ONLY_HH_ROUTING) {
         HHRoutePlanner routePlanner(ctx);
-        SHARED_PTR<HHNetworkRouteRes> r;
+        HHNetworkRouteRes * r;
         double dir = ctx->config->initialDirection ;
         for (int i = 0; i < targetsX.size(); i++) {
-            SHARED_PTR<HHNetworkRouteRes> res = calculateHHRoute(routePlanner, ctx,
+            HHNetworkRouteRes * res = calculateHHRoute(routePlanner, ctx,
                                                                  i == 0 ? startX : targetsX.at(i - 1),
                                                                  i == 0 ? startY : targetsY.at(i - 1),
                                                                  targetsX.at(i), targetsY.at(i), dir);
@@ -818,8 +818,8 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
             }
         }
 		if ((r && r->isCorrect()) || USE_ONLY_HH_ROUTING) {
-            //TODO
-            //return r;
+            //TODO what to return ?
+            return r->detailed;
 		}
     }
 	double maxDistance = measuredDist31(startX, startY, endX, endY);
@@ -972,22 +972,22 @@ std::vector<SHARED_PTR<GpxPoint>> RoutePlannerFrontEnd::generateGpxPoints(SHARED
 	return gpxPoints;
 }
 
-SHARED_PTR<HHNetworkRouteRes> RoutePlannerFrontEnd::calculateHHRoute(HHRoutePlanner & routePlanner, SHARED_PTR<RoutingContext> ctx,
+HHNetworkRouteRes * RoutePlannerFrontEnd::calculateHHRoute(HHRoutePlanner & routePlanner, SHARED_PTR<RoutingContext> ctx,
                                                                      int startX, int startY, int endX, int endY, double dir) {
     try {
         auto cfg = routePlanner.prepareDefaultRoutingConfig(HH_ROUTING_CONFIG);
         cfg->INITIAL_DIRECTION = dir;
-        //HHNetworkRouteRes res = routePlanner.runRouting(start, end, cfg);
-        //if (res != null && res.error == null) {
-        //    makeStartEndPointsPrecise(res, start, end, new ArrayList<LatLon>());
-        //    return res;
-        //}
+        HHNetworkRouteRes * res = routePlanner.runRouting(startX, startY, endX, endY, cfg);
+        if (res != nullptr && res->error == "") {
+            makeStartEndPointsPrecise(res->detailed, startX, startY, endX, endY, {}, {});
+            return res;
+        }
     } catch (const std::exception e) {
         OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, e.what());
         if (USE_ONLY_HH_ROUTING) {
             std::string ex = "Error during routing calculation : ";
             ex += e.what();
-            auto res = std::make_shared<HHNetworkRouteRes>(ex);
+            auto * res = new HHNetworkRouteRes(ex);
             return res;
         }
     }

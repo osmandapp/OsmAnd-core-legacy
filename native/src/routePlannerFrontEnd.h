@@ -101,7 +101,7 @@ private:
 	bool pointCloseEnough(SHARED_PTR<GpxRouteApproximation>& gctx, SHARED_PTR<GpxPoint>& ipoint,
 	                      vector<SHARED_PTR<RouteSegmentResult>>& res);
 	void makeSegmentPointPrecise(SHARED_PTR<RouteSegmentResult>& routeSegmentResult, double lat, double lon, bool st);
-    SHARED_PTR<HHNetworkRouteRes> calculateHHRoute(HHRoutePlanner & routePlanner, SHARED_PTR<RoutingContext> ctx, int startX, int startY, int endX, int endY, double dir);
+    HHNetworkRouteRes * calculateHHRoute(HHRoutePlanner & routePlanner, SHARED_PTR<RoutingContext> ctx, int startX, int startY, int endX, int endY, double dir);
 };
 
 #endif /*_OSMAND_ROUTE_PLANNER_FRONT_END_H*/
