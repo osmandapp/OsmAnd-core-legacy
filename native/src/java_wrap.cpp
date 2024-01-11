@@ -511,6 +511,7 @@ jfieldID jfield_RoutingConfiguration_minPointApproximation = NULL;
 jfieldID jfield_RoutingConfiguration_minStepApproximation = NULL;
 jfieldID jfield_RoutingConfiguration_maxStepApproximation = NULL;
 jfieldID jfield_RoutingConfiguration_smoothenPointsNoRoute = NULL;
+jfieldID jfield_RoutingConfiguration_penaltyForReverseDirection = NULL;
 jfieldID jfield_RoutingConfiguration_ZOOM_TO_LOAD_TILES = NULL;
 jfieldID jfield_RoutingConfiguration_planRoadDirection = NULL;
 jfieldID jfield_RoutingConfiguration_routeCalculationTime = NULL;
@@ -531,6 +532,7 @@ jfieldID jfield_GeneralRouter_slightTurn = NULL;
 jfieldID jfield_GeneralRouter_minSpeed = NULL;
 jfieldID jfield_GeneralRouter_defaultSpeed = NULL;
 jfieldID jfield_GeneralRouter_maxSpeed = NULL;
+jfieldID jfield_GeneralRouter_maxVehicleSpeed = NULL;
 jfieldID jfield_GeneralRouter_heightObstacles = NULL;
 jfieldID jfield_GeneralRouter_shortestRoute = NULL;
 jfieldID jfield_GeneralRouter_objectAttributes = NULL;
@@ -924,6 +926,8 @@ void loadJniRenderingContext(JNIEnv* env) {
 		getFid(env, jclass_RoutingConfiguration, "maxStepApproximation", "F");
 	jfield_RoutingConfiguration_smoothenPointsNoRoute =
 		getFid(env, jclass_RoutingConfiguration, "smoothenPointsNoRoute", "F");
+	jfield_RoutingConfiguration_penaltyForReverseDirection =
+		getFid(env, jclass_RoutingConfiguration, "penaltyForReverseDirection", "D");
 	jfield_RoutingConfiguration_ZOOM_TO_LOAD_TILES =
 		getFid(env, jclass_RoutingConfiguration, "ZOOM_TO_LOAD_TILES", "I");
 	jfield_RoutingConfiguration_planRoadDirection = getFid(env, jclass_RoutingConfiguration, "planRoadDirection", "I");
@@ -950,6 +954,7 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jfield_GeneralRouter_minSpeed = getFid(env, jclass_GeneralRouter, "minSpeed", "F");
 	jfield_GeneralRouter_defaultSpeed = getFid(env, jclass_GeneralRouter, "defaultSpeed", "F");
 	jfield_GeneralRouter_maxSpeed = getFid(env, jclass_GeneralRouter, "maxSpeed", "F");
+	jfield_GeneralRouter_maxVehicleSpeed = getFid(env, jclass_GeneralRouter, "maxVehicleSpeed", "F");
 	jfield_GeneralRouter_heightObstacles = getFid(env, jclass_GeneralRouter, "heightObstacles", "Z");
 	jfield_GeneralRouter_shortestRoute = getFid(env, jclass_GeneralRouter, "shortestRoute", "Z");
 	jfield_GeneralRouter_objectAttributes = getFid(env, jclass_GeneralRouter, "objectAttributes",
@@ -1536,6 +1541,7 @@ void parseRouteConfiguration(JNIEnv* ienv, SHARED_PTR<RoutingConfiguration> rCon
 	rConfig->minStepApproximation = ienv->GetFloatField(jRouteConfig, jfield_RoutingConfiguration_minStepApproximation);
 	rConfig->maxStepApproximation = ienv->GetFloatField(jRouteConfig, jfield_RoutingConfiguration_maxStepApproximation);
 	rConfig->smoothenPointsNoRoute = ienv->GetFloatField(jRouteConfig, jfield_RoutingConfiguration_smoothenPointsNoRoute);
+	rConfig->penaltyForReverseDirection = ienv->GetDoubleField(jRouteConfig, jfield_RoutingConfiguration_penaltyForReverseDirection);
 	rConfig->zoomToLoad = ienv->GetIntField(jRouteConfig, jfield_RoutingConfiguration_ZOOM_TO_LOAD_TILES);
 	rConfig->routeCalculationTime =
 		ienv->GetLongField(jRouteConfig, jfield_RoutingConfiguration_routeCalculationTime) / 1000;
@@ -1551,6 +1557,7 @@ void parseRouteConfiguration(JNIEnv* ienv, SHARED_PTR<RoutingConfiguration> rCon
 	rConfig->router->minSpeed = ienv->GetFloatField(router, jfield_GeneralRouter_minSpeed);
 	rConfig->router->defaultSpeed = ienv->GetFloatField(router, jfield_GeneralRouter_defaultSpeed);
 	rConfig->router->maxSpeed = ienv->GetFloatField(router, jfield_GeneralRouter_maxSpeed);
+	rConfig->router->maxVehicleSpeed = ienv->GetFloatField(router, jfield_GeneralRouter_maxVehicleSpeed);
 	rConfig->router->heightObstacles = ienv->GetBooleanField(router, jfield_GeneralRouter_heightObstacles);
 	rConfig->router->shortestRoute = ienv->GetBooleanField(router, jfield_GeneralRouter_shortestRoute);
 
@@ -1848,6 +1855,7 @@ void parseTransportRoutingConfiguration(JNIEnv* ienv, shared_ptr<TransportRoutin
 	rConfig->router->minSpeed = ienv->GetFloatField(router, jfield_GeneralRouter_minSpeed);
 	rConfig->router->defaultSpeed = ienv->GetFloatField(router, jfield_GeneralRouter_defaultSpeed);
 	rConfig->router->maxSpeed = ienv->GetFloatField(router, jfield_GeneralRouter_maxSpeed);
+	rConfig->router->maxVehicleSpeed = ienv->GetFloatField(router, jfield_GeneralRouter_maxVehicleSpeed);
 
 	jobjectArray objectAttributes = (jobjectArray)ienv->GetObjectField(router, jfield_GeneralRouter_objectAttributes);
 	for (int i = 0; i < ienv->GetArrayLength(objectAttributes); i++) {
