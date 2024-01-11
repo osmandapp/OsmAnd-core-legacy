@@ -432,11 +432,11 @@ UNORDERED_map<int64_t, NetworkDBPoint *> HHRoutePlanner::initStart(SHARED_PTR<HH
         if (hctx->rctx->config->initialDirection != NO_DIRECTION) {
             double diff = s->getRoad()->directionRoute(s->getSegmentStart(), s->isPositive()) - hctx->rctx->config->initialDirection;
             if (std::abs(alignAngleDifference(diff - M_PI)) <= M_PI / 3) {
-                plusCost += hctx->rctx->config->PENALTY_FOR_REVERSE_DIRECTION;
+                plusCost += hctx->rctx->config->penaltyForReverseDirection;
             }
             diff = s->getRoad()->directionRoute(s->getSegmentEnd(), !s->isPositive()) - hctx->rctx->config->initialDirection;
             if (std::abs(alignAngleDifference(diff - M_PI)) <= M_PI / 3) {
-                negCost += hctx->rctx->config->PENALTY_FOR_REVERSE_DIRECTION;
+                negCost += hctx->rctx->config->penaltyForReverseDirection;
             }
         }
         finitePnt->setDistanceToEnd(reverse, distanceToEnd(hctx, reverse, finitePnt));
@@ -726,8 +726,8 @@ std::vector<SHARED_PTR<RouteSegment>> HHRoutePlanner::runDetailedRouting(SHARED_
                           endS->index, endS->roadId, endS->roadId/64, endS->start, endS->end);
         return f;
     }
-    double oldP = hctx->rctx->config->PENALTY_FOR_REVERSE_DIRECTION;
-    hctx->rctx->config->PENALTY_FOR_REVERSE_DIRECTION = RoutingConfiguration::DEFAULT_PENALTY_FOR_REVERSE_DIRECTION * 4;
+    double oldP = hctx->rctx->config->penaltyForReverseDirection;
+    hctx->rctx->config->penaltyForReverseDirection *= 4;
     hctx->rctx->config->initialDirection = start->getRoad()->directionRoute(start->getSegmentStart(), start->isPositive());
     hctx->rctx->config->targetDirection = end->getRoad()->directionRoute(end->getSegmentEnd(), !end->isPositive());
     hctx->rctx->config->MAX_VISITED = useBoundaries ? -1 : MAX_POINTS_CLUSTER_ROUTING * 2;
@@ -752,7 +752,7 @@ std::vector<SHARED_PTR<RouteSegment>> HHRoutePlanner::runDetailedRouting(SHARED_
     // clean up
     hctx->rctx->config->initialDirection = NO_DIRECTION;
     hctx->rctx->config->targetDirection = NO_DIRECTION;
-    hctx->rctx->config->PENALTY_FOR_REVERSE_DIRECTION = oldP;
+    hctx->rctx->config->penaltyForReverseDirection = oldP;
     return f;
 }
 
