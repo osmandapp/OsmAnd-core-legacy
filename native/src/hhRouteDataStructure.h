@@ -537,11 +537,9 @@ struct HHRoutingContext {
         UNORDERED_map<int64_t, NetworkDBPoint *> points;
         for (auto it = pnts.begin(); it != pnts.end(); it++) {
             auto * pnt = it->second;
-            if (!pnt->incomplete) {
-                auto f = points.find(it->first);
-                if (f == points.end()) {
-                    points.insert(std::pair<int64_t, NetworkDBPoint *>(it->first, it->second));
-                }
+            auto f = points.find(it->first);
+            if (!pnt->incomplete || f == points.end()) {
+                points.insert(std::pair<int64_t, NetworkDBPoint *>(it->first, it->second));
             }
         }
         return points;
@@ -635,7 +633,7 @@ struct HHRouteRegionsGroup {
     HHRouteRegionsGroup(long edition, std::string params): edition(edition), profileParams(params) {
     }
     
-   void appendToGroups(SHARED_PTR<HHRouteIndex> r, BinaryMapFile* rdr, std::vector<SHARED_PTR<HHRouteRegionsGroup>> groups) {
+   void appendToGroups(SHARED_PTR<HHRouteIndex> r, BinaryMapFile* rdr, std::vector<SHARED_PTR<HHRouteRegionsGroup>> & groups) {
         for (std::string & params : r->profileParams) {
             SHARED_PTR<HHRouteRegionsGroup> matchGroup = nullptr;
             for (auto & g : groups) {

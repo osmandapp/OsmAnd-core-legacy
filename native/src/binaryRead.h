@@ -140,7 +140,7 @@ struct RoutingIndex : BinaryPartIndex {
 };
 
 struct HHRoutePointsBox {
-    int32_t length;
+    uint32_t length;
     int32_t filePointer;
     int32_t left, right, bottom, top;
     bool init;
