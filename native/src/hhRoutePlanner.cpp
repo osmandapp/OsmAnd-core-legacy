@@ -305,11 +305,11 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
 }
 
 HHNetworkRouteRes * HHRoutePlanner::prepareRouteResults(SHARED_PTR<HHRoutingContext> hctx, HHNetworkRouteRes * route, int startX, int startY, int endX, int endY) {
-    hctx->rctx->conditionalTime = 0;
+    hctx->rctx->progress->routingCalculatedTime = 0;
     route->stats = hctx->stats;
     SHARED_PTR<RouteSegmentResult> straightLine = nullptr;
     for(int routeSegmentInd = 0; routeSegmentInd < route->segments.size(); routeSegmentInd++ ) {
-        HHNetworkSegmentRes routeSegment = route->segments.at(routeSegmentInd);
+        HHNetworkSegmentRes & routeSegment = route->segments[routeSegmentInd];
         NetworkDBSegment * s = routeSegment.segment;
         if (routeSegment.list.size() > 0) {
             if (straightLine != nullptr) {
@@ -339,7 +339,9 @@ HHNetworkRouteRes * HHRoutePlanner::prepareRouteResults(SHARED_PTR<HHRoutingCont
             straightLine = make_shared<RouteSegmentResult>(sh, 0, 1);
             route->detailed.push_back(make_shared<RouteSegmentResult>(rdo, 0, 1));
         }
-        hctx->rctx->conditionalTime += routeSegment.rtTimeDetailed;
+        
+        hctx->rctx->progress->routingCalculatedTime += routeSegment.rtTimeDetailed;
+        
         if (DEBUG_VERBOSE_LEVEL >= 1) {
             int segments = (int) routeSegment.list.size();
             if (s == nullptr) {
@@ -513,8 +515,7 @@ UNORDERED_map<int64_t, NetworkDBPoint *> HHRoutePlanner::initStart(SHARED_PTR<HH
     hctx->rctx->config->heurCoefficient = 0; // dijkstra
     hctx->rctx->unloadAllData(); // needed for proper multidijsktra work
     hctx->rctx->progress = std::make_shared<RouteCalculationProgress>();
-    const SHARED_PTR<VISITED_MAP> boundaries = std::make_shared<VISITED_MAP>(hctx->boundaries);
-    std::vector<SHARED_PTR<RouteSegment>> frs = searchRouteInternal(hctx->rctx.get(), reverse ? nullptr : s, reverse ? s : nullptr, boundaries);
+    std::vector<SHARED_PTR<RouteSegment>> frs = searchRouteInternal(hctx->rctx.get(), reverse ? nullptr : s, reverse ? s : nullptr, hctx->boundaries, {});
     hctx->rctx->config->MAX_VISITED = -1;
     //OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, hctx.rctx.calculationProgress.getInfo(null));
     if (!frs.empty()) {
@@ -596,8 +597,8 @@ HHNetworkRouteRes * HHRoutePlanner::createRouteSegmentFromFinalPoint(SHARED_PTR<
             NetworkDBPoint * nextPnt = itPnt->rt(true)->rtRouteToPoint;
             NetworkDBSegment * segment = nextPnt->getSegment(itPnt, false);
             HHNetworkSegmentRes res(segment);
-            route->segments.push_back(res);
             res.rtTimeDetailed = res.rtTimeHHSegments = segment->dist;
+            route->segments.push_back(res);
             itPnt = nextPnt;
             route->uniquePoints.insert(itPnt->index);
             //TODO check deletion of pointer NetworkDBSegment * segment in the end of calculation
@@ -615,8 +616,8 @@ HHNetworkRouteRes * HHRoutePlanner::createRouteSegmentFromFinalPoint(SHARED_PTR<
             NetworkDBPoint * nextPnt = itPnt->rt(false)->rtRouteToPoint;
             NetworkDBSegment * segment = nextPnt->getSegment(itPnt, true);
             HHNetworkSegmentRes res(segment);
-            route->segments.push_back(res);
             res.rtTimeDetailed = res.rtTimeHHSegments = segment->dist;
+            route->segments.push_back(res);
             itPnt = nextPnt;
             route->uniquePoints.insert(itPnt->index);
             //TODO check deletion of pointer NetworkDBSegment * segment in the end of calculation
@@ -642,10 +643,9 @@ void HHRoutePlanner::recalculateNetworkCluster(SHARED_PTR<HHRoutingContext> hctx
     hctx->rctx->progress = std::make_shared<RouteCalculationProgress>();
     hctx->rctx->config->MAX_VISITED = MAX_POINTS_CLUSTER_ROUTING * 2;
     int64_t ps = calcRPId(s, s->getSegmentStart(), s->getSegmentEnd());
-    //TODO ExcludeTLongObjectMap
-    SHARED_PTR<VISITED_MAP> bounds = nullptr;
-    //ExcludeTLongObjectMap<RouteSegment> bounds = new ExcludeTLongObjectMap<>(hctx.boundaries, ps);
-    auto frs = searchRouteInternal(hctx->rctx.get(), s, nullptr, bounds);
+    int64_t ps2 = calcRPId(s, s->getSegmentEnd(), s->getSegmentStart());
+    std::vector<int64_t> excludedKeys = {ps, ps2};
+    auto frs = searchRouteInternal(hctx->rctx.get(), s, nullptr, hctx->boundaries, excludedKeys);
     hctx->rctx->config->MAX_VISITED = -1;
     UNORDERED_map<int64_t, SHARED_PTR<RouteSegment>> resUnique;
     if (frs.size() > 0) {
@@ -701,7 +701,7 @@ void HHRoutePlanner::recalculateNetworkCluster(SHARED_PTR<HHRoutingContext> hctx
 
 bool HHRoutePlanner::retrieveSegmentsGeometry(SHARED_PTR<HHRoutingContext> hctx, HHNetworkRouteRes * route, bool routeSegments) {
     for (int i = 0; i < route->segments.size(); i++) {
-        HHNetworkSegmentRes s = route->segments.at(i);
+        HHNetworkSegmentRes & s = route->segments[i];
         if (s.segment == nullptr) {
             // start / end points
             if(i > 0 && i < route->segments.size() -1 ) {
@@ -754,13 +754,13 @@ SHARED_PTR<RouteSegmentPoint> HHRoutePlanner::loadPoint(SHARED_PTR<RoutingContex
     SHARED_PTR<RouteSegment> seg = nullptr;
     for (auto & s : segments) {
         if (s) {
+            seg = s;
             if (s->getRoad()->getId() == pnt->roadId && s->getSegmentStart() == pnt->start) {
                 if (s->getSegmentEnd() != pnt->end) {
                     s = s->initRouteSegment(s, !s->isPositive());
                 }
                 break;
             }
-            seg = s;
         }
     }
     if (seg == nullptr || seg->getSegmentStart() != pnt->start || seg->getSegmentEnd() != pnt->end || seg->getRoad()->getId() != pnt->roadId) {
@@ -793,14 +793,14 @@ std::vector<SHARED_PTR<RouteSegment>> HHRoutePlanner::runDetailedRouting(SHARED_
     hctx->rctx->config->targetDirection = end->getRoad()->directionRoute(end->getSegmentEnd(), !end->isPositive());
     hctx->rctx->config->MAX_VISITED = useBoundaries ? -1 : MAX_POINTS_CLUSTER_ROUTING * 2;
     // boundaries help to reduce max visited (helpful for long ferries)
-    SHARED_PTR<VISITED_MAP> bounds = nullptr;
     if (useBoundaries) {
         int64_t ps = calcRPId(start, start->getSegmentEnd(), start->getSegmentStart());
         int64_t pe = calcRPId(end, end->getSegmentStart(), end->getSegmentEnd());
-        //TODO separate class ExcludeBounds !!!
-        //bounds = new ExcludeTLongObjectMap<>(hctx.boundaries, ps, pe);
+        std::vector<int64_t> excludedKeys = {ps, pe};
+        f = searchRouteInternal(hctx->rctx.get(), start, end, hctx->boundaries, excludedKeys);
+    } else {
+        f = searchRouteInternal(hctx->rctx.get(), start, end, {}, {});
     }
-    f = searchRouteInternal(hctx->rctx.get(), start, end, bounds);
     if (f.size() == 0) {
         OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
                           "No route found between %d %.5f %.5f Road (%d) name ('%s') -> %d %.5f %.5f Road (%d) name ('%s') \n",
