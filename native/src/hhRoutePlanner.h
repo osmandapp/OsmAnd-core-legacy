@@ -12,7 +12,7 @@ class HHRoutePlanner {
 public:
     HHRoutePlanner(SHARED_PTR<RoutingContext> ctx);
     
-    int DEBUG_VERBOSE_LEVEL = 0;
+    int DEBUG_VERBOSE_LEVEL = 2;
     int DEBUG_ALT_ROUTE_SELECTION = -1;
     bool ASSERT_COST_INCREASING = false;
     bool ASSERT_AND_CORRECT_DIST_SMALLER = true;
@@ -44,8 +44,8 @@ private:
     SHARED_PTR<RouteSegmentPoint> loadPoint(SHARED_PTR<RoutingContext> ctx, const NetworkDBPoint * pnt);
     SHARED_PTR<HHRouteRegionsGroup> hhRouteRegionGroup;
     void findFirstLastSegments(SHARED_PTR<HHRoutingContext> hctx, int startX, int startY, int endX, int endY,
-                               UNORDERED_map<int64_t, NetworkDBPoint *> stPoints,
-                               UNORDERED_map<int64_t, NetworkDBPoint *> endPoints);
+                               UNORDERED_map<int64_t, NetworkDBPoint *> & stPoints,
+                               UNORDERED_map<int64_t, NetworkDBPoint *> & endPoints);
     void recalculateNetworkCluster(SHARED_PTR<HHRoutingContext> hctx, NetworkDBPoint * start);
     MAP_VECTORS_NETWORK_DB_POINTS groupByClusters(UNORDERED_map<int64_t, NetworkDBPoint *> pointsById, bool out);
     UNORDERED_map<int64_t, NetworkDBPoint *> initStart(SHARED_PTR<HHRoutingContext> hctx, SHARED_PTR<RouteSegmentPoint> s,

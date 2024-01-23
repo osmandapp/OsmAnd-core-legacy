@@ -27,14 +27,28 @@ static double squareRootDist(int x1, int y1, int x2, int y2) {
 }
 
 void printRoad(const char* prefix, RouteSegment* segment) {
+    if (!segment) {
+        return;
+    }
 	const auto& parentRoute = segment->getParentRoute();
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "%s Road id=%lld ind=%d->%d ds=%f es=%f pend=%d parent=%lld",
-					  prefix, segment->getRoad()->id / 64, segment->getSegmentStart(), segment->getSegmentEnd(),
+    string name = segment->getRoad()->getName();
+    if (!name.empty()) {
+        name = ", name ('" + name +"')";
+    }
+    string parent = "";
+    if (parentRoute != nullptr && parentRoute->road != nullptr) {
+        parent = "parent=Road (" + to_string(parentRoute->getRoad()->id / 64) + ")";
+        string lang = "";
+        string parentName = parentRoute->getRoad()->getName(lang, false);
+        if (!parentName.empty()) {
+            parent = parent + ", name ('" + parentName + "')";
+        }
+    }
+	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "%s Road (%lld) %s ind=%d->%d ds=%f es=%f pend=%d %s",
+					  prefix, segment->getRoad()->id / 64, name.c_str(), segment->getSegmentStart(), segment->getSegmentEnd(),
 					  segment->distanceFromStart, segment->distanceToEnd,
 					  parentRoute != nullptr ? parentRoute->segmentEnd : 0,
-					  parentRoute != nullptr && parentRoute->road != nullptr
-						  ? parentRoute->getRoad()->id / 64
-						  : 0);
+					  parent.c_str());
 }
 
 void printRoad(const char* prefix, const SHARED_PTR<RouteSegment>& segment) { printRoad(prefix, segment.get()); }
@@ -334,14 +348,18 @@ vector<SHARED_PTR<RouteSegment>> searchRouteInternal(RoutingContext* ctx, SHARED
 		// Memory management
 		// ctx.memoryOverhead = (visitedDirectSegments.size() + visitedOppositeSegments.size()) * STANDARD_ROAD_VISITED_OVERHEAD +
 		//					  (graphDirectSegments.size() + graphReverseSegments.size()) * STANDARD_ROAD_IN_QUEUE_OVERHEAD;
+        long visitedCnt = (start ? visitedDirectSegments.size() : 0) + (end ? visitedOppositeSegments.size() : 0);
 		if (TRACE_ROUTING) {
 			printRoad(forwardSearch ? "F>" : "B>", segment);
 		}
+        if (ctx->config->MAX_VISITED > 0 && visitedCnt > ctx->config->MAX_VISITED) {
+            break;
+        }
 		bool skipSegment = false;
 		if (segment->isFinalSegment) {
-			if (TRACE_ROUTING) {
-				OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "Final segment found");
-			}
+            if (TRACE_ROUTING) {
+                printRoad(" >>FINAL segment: ", segment);
+            }
 			result.push_back(segment);
 			if (ctx->dijkstraMode != 0) {
 				skipSegment = true;
@@ -518,18 +536,12 @@ bool checkIfOppositeSegmentWasVisited(RoutingContext* ctx, bool reverseWaySearch
 	int64_t currPoint = calculateRoutePointInternalId(currentSegment->getRoad(), currentSegment->getSegmentEnd(),
 													  currentSegment->getSegmentStart());
 	VISITED_MAP *oppositeSegmentsPtr = &oppositeSegments;
-	if (boundaries) {
-		if(ctx->dijkstraMode == 0) {
-			if (containsKey(*(boundaries.get()), currPoint)) {
-				return true;
-			}
-		} else {
-			// limit by boundaries for dijkstra mode
-			oppositeSegmentsPtr = boundaries.get();
-		}
-	}
+    if (boundaries && ctx->dijkstraMode != 0) {
+        // limit by boundaries for dijkstra mode
+        oppositeSegmentsPtr = boundaries.get();
+    }
 	const auto opIt = oppositeSegmentsPtr->find(currPoint);
-	if (opIt != oppositeSegmentsPtr->end() && opIt->second) {
+	if (opIt != oppositeSegmentsPtr->end()) {
 		SHARED_PTR<RouteSegment> opposite = opIt->second;
 		SHARED_PTR<RouteSegment> curParent = getParentDiffId(currentSegment);
 		SHARED_PTR<RouteSegment> oppParent = getParentDiffId(opposite);
@@ -552,7 +564,10 @@ bool checkIfOppositeSegmentWasVisited(RoutingContext* ctx, bool reverseWaySearch
 			SHARED_PTR<RouteSegmentCost> rsc = make_shared<RouteSegmentCost>(frs, ctx);
 			graphSegments.push(rsc);
 			if (TRACE_ROUTING) {
-				printRoad("  >> Final segment : ", frs);
+                string prefix = reverseWaySearch ? "B" : "F";
+                prefix += "  " + to_string(currentSegment->getSegmentEnd());
+                prefix += ">> Final segment : ";
+				printRoad(prefix.c_str(), frs);
 			}
 			if (ctx->progress.get()) {
 				ctx->progress->finalSegmentsFound++;

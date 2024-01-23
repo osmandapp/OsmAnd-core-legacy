@@ -484,6 +484,7 @@ struct HHRoutingContext {
     
     std::vector<NetworkDBSegment *> cacheAllNetworkDBSegment;
     std::vector<NetworkDBPoint *> cacheAllNetworkDBPoint;
+    std::vector<HHRouteBlockSegments *> cacheAllHHRouteBlockSegments;
     
     DataTileManager pointsRect;
     
@@ -500,6 +501,9 @@ struct HHRoutingContext {
             delete s;
         }
         for (NetworkDBPoint * p : cacheAllNetworkDBPoint) {
+            delete p;
+        }
+        for (HHRouteBlockSegments * p : cacheAllHHRouteBlockSegments) {
             delete p;
         }
     }
@@ -567,7 +571,7 @@ struct HHRoutingContext {
     }
     
     std::vector<NetworkDBPoint *> getOutgoingPoints(NetworkDBPoint * point) {
-        auto it = clusterOutPoints.find(point->clusterId);
+        auto it = clusterOutPoints.find(point->dualPoint->clusterId);
         return it->second;
     }
     
@@ -601,6 +605,12 @@ struct HHRoutingContext {
     NetworkDBPoint * createNetworkDBPoint() {
         NetworkDBPoint * np = new NetworkDBPoint();
         cacheAllNetworkDBPoint.push_back(np);
+        return np;
+    }
+    
+    HHRouteBlockSegments * createHHRouteBlockSegments() {
+        HHRouteBlockSegments * np = new HHRouteBlockSegments();
+        cacheAllHHRouteBlockSegments.push_back(np);
         return np;
     }
     

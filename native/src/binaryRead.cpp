@@ -944,7 +944,8 @@ bool readRegionSegmentHeader(CodedInputStream* input, HHRouteBlockSegments * blo
     block->filePointer = input->TotalBytesRead();
     int oldLimit = input->PushLimit(block->length);
     uint32_t tag;
-    while ((tag = input->ReadTag()) != 0) {
+    while (true) {
+        tag = input->ReadTag();
         switch (WireFormatLite::GetTagFieldNumber(tag)) {
             case 0:
                 input->PopLimit(oldLimit);
@@ -995,7 +996,7 @@ void initHHPoints(BinaryMapFile* file, SHARED_PTR<HHRouteIndex> reg, HHRoutingCo
                 readPointBox(input, reg, hctx, mapId, resPoints, nullptr);
                 break;
             case OsmAnd::OBF::OsmAndHHRoutingIndex::kPointSegmentsFieldNumber: {
-                HHRouteBlockSegments * seg = new HHRouteBlockSegments();
+                HHRouteBlockSegments * seg = hctx->createHHRouteBlockSegments();
                 if (readRegionSegmentHeader(input, seg)) {
                     reg->segments.push_back(seg);
                 }
@@ -1038,12 +1039,13 @@ std::vector<NetworkDBSegment *> parseSegments(std::vector<int32_t> pointSegments
 void setSegments(CodedInputStream * input, HHRoutingContext * ctx, NetworkDBPoint * point) {
     uint32_t size;
     input->ReadVarint32(&size);
-    int old = input->PushLimit(size);
+    int oldLimit = input->PushLimit(size);
     std::vector<int32_t> segmentsIn;
     std::vector<int32_t> segmentsOut;
     bool loop = true;
     int x;
-    while (loop) {
+    int old;
+    do {
         uint32_t t = input->ReadTag();
         switch (WireFormatLite::GetTagFieldNumber(t)) {
             case 0:
@@ -1070,42 +1072,35 @@ void setSegments(CodedInputStream * input, HHRoutingContext * ctx, NetworkDBPoin
             default:
                 skipUnknownFields(input, t);
         }
-    }
+    } while (loop);
+    
+    input->PopLimit(oldLimit);
     
     point->connectedSet(true, parseSegments(segmentsIn, ctx->getIncomingPoints(point), point, false));
     point->connectedSet(false, parseSegments(segmentsOut, ctx->getOutgoingPoints(point), point, true));
 }
 
-int loadNetworkSegmentPoint(HHRoutingContext * ctx, SHARED_PTR<HHRouteRegionPointsCtx> regCtx, HHRouteBlockSegments * block, int searchInd) {
+int loadNetworkSegmentPoint(CodedInputStream * input, HHRoutingContext * ctx, SHARED_PTR<HHRouteRegionPointsCtx> regCtx, HHRouteBlockSegments * block, int searchInd) {
     if (block->sublist.size() > 0) {
         for (auto * s : block->sublist) {
             if (HHRoutingContext::checkId(searchInd, s)) {
-                return loadNetworkSegmentPoint(ctx, regCtx, s, searchInd);
+                return loadNetworkSegmentPoint(input, ctx, regCtx, s, searchInd);
             }
         }
         return 0;
     }
-    
-    auto & file = regCtx->file;
-    auto & reg = regCtx->fileRegion;
-    
-    lseek(file->getHhFD(), 0, SEEK_SET);
-    FileInputStream stream(file->getHhFD());
-    stream.SetCloseOnDelete(false);
-    CodedInputStream * input = new CodedInputStream(&stream);
-    input->SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
-    input->Seek(reg->filePointer);
     if (input->TotalBytesRead() != block->filePointer) {
         input->Seek(block->filePointer);
     }
     int oldLimit = input->PushLimit(block->length);
-    
     uint32_t tag;
     int loaded = 0;
     int ind = 0;
-    while ((tag = input->ReadTag()) != 0) {
+    while (true) {
+        tag = input->ReadTag();
         switch (WireFormatLite::GetTagFieldNumber(tag)) {
             case 0:
+                input->PopLimit(oldLimit);
                 return loaded;
             case OsmAnd::OBF::OsmAndHHRoutingIndex_HHRouteBlockSegments::kIdRangeLengthFieldNumber:
                 WireFormatLite::ReadPrimitive<int32_t, WireFormatLite::TYPE_INT32>(input, &block->idRangeLength);
@@ -1121,16 +1116,22 @@ int loadNetworkSegmentPoint(HHRoutingContext * ctx, SHARED_PTR<HHRouteRegionPoin
                     input->Skip(input->BytesUntilLimit());
                 } else {
                     // read all sublist
+                    //TODO add pointer creation to HHRoutingContext
                     HHRouteBlockSegments * child = new HHRouteBlockSegments();
                     readInt(input, &child->length);
                     child->filePointer = input->TotalBytesRead();
                     int olLimit = input->PushLimit(child->length);
-                    loaded += loadNetworkSegmentPoint(ctx, regCtx, child, searchInd);
+//                    OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
+//                                      "BLOCK I:%d %d/%d - %d - %d %d",
+//                                      block->filePointer, block->idRangeStart, block->idRangeLength, block->sublist.size(), child->length, child->filePointer);
+//                    if (block->filePointer == 567577913 && child->filePointer == 567581188) {
+//                        OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "---");
+//                    }
+                    loaded += loadNetworkSegmentPoint(input, ctx, regCtx, child, searchInd);
                     input->PopLimit(olLimit);
                     block->sublist.push_back(child);
                 }
                 break;
-            
             case OsmAnd::OBF::OsmAndHHRoutingIndex_HHRouteBlockSegments::kPointSegmentsFieldNumber:
                 if (!HHRoutingContext::checkId(searchInd, block)) {
                     input->Skip(input->BytesUntilLimit());
@@ -1142,7 +1143,7 @@ int loadNetworkSegmentPoint(HHRoutingContext * ctx, SHARED_PTR<HHRouteRegionPoin
                         setSegments(input, ctx, point);
                         loaded += point->conn(true).size() + point->conn(false).size();
                     }
-                    }
+                }
                 break;
             default:
                 skipUnknownFields(input, tag);
@@ -1150,7 +1151,20 @@ int loadNetworkSegmentPoint(HHRoutingContext * ctx, SHARED_PTR<HHRouteRegionPoin
         }
     }
     input->PopLimit(oldLimit);
-    return loaded;
+    return 0;
+}
+
+int loadNetworkSegmentPoint(HHRoutingContext * ctx, SHARED_PTR<HHRouteRegionPointsCtx> regCtx, HHRouteBlockSegments * block, int searchInd) {
+    auto & file = regCtx->file;
+    auto & reg = regCtx->fileRegion;
+    
+    lseek(file->getHhFD(), 0, SEEK_SET);
+    FileInputStream stream(file->getHhFD());
+    stream.SetCloseOnDelete(false);
+    CodedInputStream * input = new CodedInputStream(&stream);
+    input->SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
+    input->Seek(reg->filePointer);//????????
+    return loadNetworkSegmentPoint(input, ctx, regCtx, block, searchInd);
 }
 
 bool readTransportBounds(CodedInputStream* input, TransportIndex* ind) {

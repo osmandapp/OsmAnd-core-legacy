@@ -130,12 +130,10 @@ MAP_VECTORS_NETWORK_DB_POINTS HHRoutePlanner::groupByClusters( UNORDERED_map<int
         res.find(cid)->second.push_back(p);
     }
     
-    MAP_VECTORS_NETWORK_DB_POINTS::iterator it2;
-    for (it2 = res.begin(); it2 != res.end(); it++) {
-        auto & l = it2->second;
-        //TODO check Integer.compare
+    for (auto iterator = res.begin(); iterator != res.end(); ++iterator) {
+        auto & l = iterator->second;
         std::sort(l.begin(), l.end(), [](const NetworkDBPoint * lhs, const NetworkDBPoint * rhs) {
-            return lhs->index > rhs->index;
+            return lhs->index < rhs->index;
         });
     }
     return res;
@@ -175,7 +173,7 @@ SHARED_PTR<HHRoutingContext> HHRoutePlanner::initHCtx(SHARED_PTR<HHRoutingConfig
     hctx->startX = startX;
     hctx->startY = startY;
     hctx->endX = endX;
-    hctx->endX = endY;
+    hctx->endY = endY;
 
     hctx->clearVisited();
     if (hctx->initialized) {
@@ -226,10 +224,11 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
                       (int) config->HEURISTIC_COEFFICIENT, (int) config->DIJKSTRA_DIRECTION);
     UNORDERED_map<int64_t, NetworkDBPoint *> stPoints;
     UNORDERED_map<int64_t, NetworkDBPoint *> endPoints;
+    hctx->rctx->progress = std::make_shared<RouteCalculationProgress>();
     findFirstLastSegments(hctx, startX, startY, endX, endY, stPoints, endPoints);
     //RouteResultPreparation rrp;
     HHNetworkRouteRes * route = nullptr;
-    while (route == nullptr) {
+    do {
         OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Routing...");
         long time = timer.GetElapsedMs();
         NetworkDBPoint * finalPnt = runRoutingPointsToPoints(hctx, stPoints, endPoints);
@@ -252,7 +251,7 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
             delete route;
             route = nullptr;
         }
-    }
+    } while (route == nullptr);
     
     if (hctx->config->CALC_ALTERNATIVES) {
         OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Alternative routes...");
@@ -360,19 +359,21 @@ HHNetworkRouteRes * HHRoutePlanner::prepareRouteResults(SHARED_PTR<HHRoutingCont
 }
 
 void HHRoutePlanner::findFirstLastSegments(SHARED_PTR<HHRoutingContext> hctx, int startX, int startY, int endX, int endY,
-                                           UNORDERED_map<int64_t, NetworkDBPoint *> stPoints,
-                                           UNORDERED_map<int64_t, NetworkDBPoint *> endPoints) {
+                                           UNORDERED_map<int64_t, NetworkDBPoint *> & stPoints,
+                                           UNORDERED_map<int64_t, NetworkDBPoint *> & endPoints) {
     OsmAnd::ElapsedTimer timer;
     timer.Start();
     OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Finding first / last segments...");
     auto planner = std::shared_ptr<RoutePlannerFrontEnd>();
     int startReiterate = -1, endReiterate = -1;
     bool found = false;
+    hctx->rctx->progress->cancelled = false;
     SHARED_PTR<RouteSegmentPoint> startPnt = findRouteSegment(startX, startY, hctx->rctx.get(), false);
+    hctx->rctx->progress->cancelled = false;
     SHARED_PTR<RouteSegmentPoint> endPnt = findRouteSegment(endX, endY, hctx->rctx.get(), false);
     auto & stOthers = startPnt->others;
     auto & endOthers = endPnt->others;
-    while (!found) {
+    do {
         if (startReiterate + endReiterate >= hctx->config->MAX_START_END_REITERATIONS) {
             break;
         }
@@ -385,8 +386,7 @@ void HHRoutePlanner::findFirstLastSegments(SHARED_PTR<HHRoutingContext> hctx, in
             it->second->clearRouting();
         }
         endPoints.clear();
-        //TODO need copy here???
-        auto & startP = startPnt;
+        auto startP = startPnt;//copy
         if (startReiterate >= 0) {
             if (startReiterate < stOthers.size()) {
                 startP = stOthers.at(startReiterate);
@@ -394,7 +394,7 @@ void HHRoutePlanner::findFirstLastSegments(SHARED_PTR<HHRoutingContext> hctx, in
                 break;
             }
         }
-        auto & endP = endPnt;
+        auto endP = endPnt;//copy
         if (endReiterate >= 0) {
             //Java if (endOthers != null ...)
             if (endReiterate < endOthers.size()) {
@@ -435,9 +435,9 @@ void HHRoutePlanner::findFirstLastSegments(SHARED_PTR<HHRoutingContext> hctx, in
             continue;
         }
         found = true;
-    }
+    } while (!found);
     hctx->stats.searchPointsTime = timer.GetElapsedMs();
-    OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Finding first / last segments...%.2f ms\n", hctx->stats.searchPointsTime);
+    OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Finding first (%d) / last (%d) segments...%.2f ms\n", stPoints.size(), endPoints.size(), hctx->stats.searchPointsTime);
     timer.Disable();
 }
 
@@ -484,8 +484,9 @@ UNORDERED_map<int64_t, NetworkDBPoint *> HHRoutePlanner::initStart(SHARED_PTR<HH
     if (uniDirRouteIntId == -1) {
         return pnts;
     }
-    NetworkDBPoint * finitePnt = hctx->pointsByGeo.at(uniDirRouteIntId);
-    if (finitePnt != nullptr) {
+    auto findIt = hctx->pointsByGeo.find(uniDirRouteIntId);
+    if (findIt != hctx->pointsByGeo.end()) {
+        NetworkDBPoint * finitePnt = findIt->second;
         // start / end point is directly on a network point
         double plusCost = 0, negCost = 0;
         if (hctx->rctx->config->initialDirection != NO_DIRECTION) {
@@ -511,7 +512,7 @@ UNORDERED_map<int64_t, NetworkDBPoint *> HHRoutePlanner::initStart(SHARED_PTR<HH
     hctx->rctx->config->planRoadDirection = reverse ? -1 : 1;
     hctx->rctx->config->heurCoefficient = 0; // dijkstra
     hctx->rctx->unloadAllData(); // needed for proper multidijsktra work
-    //hctx->rctx->calculationProgress = new RouteCalculationProgress();
+    hctx->rctx->progress = std::make_shared<RouteCalculationProgress>();
     const SHARED_PTR<VISITED_MAP> boundaries = std::make_shared<VISITED_MAP>(hctx->boundaries);
     std::vector<SHARED_PTR<RouteSegment>> frs = searchRouteInternal(hctx->rctx.get(), reverse ? nullptr : s, reverse ? s : nullptr, boundaries);
     hctx->rctx->config->MAX_VISITED = -1;
@@ -524,14 +525,14 @@ UNORDERED_map<int64_t, NetworkDBPoint *> HHRoutePlanner::initStart(SHARED_PTR<HH
                             reverse ? o->getSegmentEnd() : o->getSegmentStart(),
                             reverse ? o->getSegmentStart() : o->getSegmentEnd());
             if (set.insert(pntId).second) {
-                NetworkDBPoint * pnt = hctx->createNetworkDBPoint();
+                NetworkDBPoint * pnt;
                 auto it = hctx->pointsByGeo.find(pntId);
                 if (it == hctx->pointsByGeo.end()) {
                     it = pnts.find(PNT_SHORT_ROUTE_START_END);
                     if (it != pnts.end()) {
                         continue;
                     }
-                    
+                    pnt = hctx->createNetworkDBPoint();
                     pnt->index = PNT_SHORT_ROUTE_START_END;
                     pnt->roadId = o->getRoad()->getId();
                     pnt->start = o->getSegmentStart();
@@ -544,6 +545,7 @@ UNORDERED_map<int64_t, NetworkDBPoint *> HHRoutePlanner::initStart(SHARED_PTR<HH
                     int preciseX = reverse? hctx->startX : hctx->endX;
                     o->distanceFromStart += calculatePreciseStartTime(hctx->rctx.get(), preciseX, preciseY, o);
                 } else {
+                    pnt = it->second;
                     o->distanceFromStart += calcRoutingSegmentTimeOnlyDist(hctx->rctx->config->router, o) / 2;
                 }
                 if (pnt->rt(reverse)->rtCost != 0) {
@@ -637,7 +639,7 @@ void HHRoutePlanner::recalculateNetworkCluster(SHARED_PTR<HHRoutingContext> hctx
     // SPEEDUP: Speed up by just clearing visited
     hctx->rctx->unloadAllData(); // needed for proper multidijsktra work
     SHARED_PTR<RouteSegmentPoint> s = loadPoint(hctx->rctx, start);
-    //hctx->rctx->calculationProgress = new RouteCalculationProgress();
+    hctx->rctx->progress = std::make_shared<RouteCalculationProgress>();
     hctx->rctx->config->MAX_VISITED = MAX_POINTS_CLUSTER_ROUTING * 2;
     int64_t ps = calcRPId(s, s->getSegmentStart(), s->getSegmentEnd());
     //TODO ExcludeTLongObjectMap
@@ -676,7 +678,7 @@ void HHRoutePlanner::recalculateNetworkCluster(SHARED_PTR<HHRoutingContext> hctx
                 NetworkDBSegment * co = p->getSegment(start, false);
                 if (co != nullptr) {
                     co->dist = routeTime;
-                } else if (p->connectedReverse.size() > 0) {
+                } else {
                     //TODO check deletion of pointer
                     p->connectedReverse.push_back(hctx->createNetworkDBSegment(start, p, routeTime, false, false));
                 }
@@ -1029,7 +1031,7 @@ void HHRoutePlanner::printPoint(NetworkDBPoint * p, bool rev) {
             pchInd = p->rt(rev)->rtRouteToPoint->chInd();
         }
         OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
-                          "Visit Point %s %d [%d] (from %d [%d]) (cost %.1f s) %.5f/%.5f - %d\n",
+                          "Visit Point %s %d [%d] (from %d [%d]) (cost %.1f s) %.5f/%.5f - %d",
                           rev ? "<-" : "->", p->index, p->chInd(), pind, pchInd, p->rt(rev)->rtCost,
                           get31LatitudeY(p->startY), get31LongitudeX(p->startX), p->roadId / 64);
     }
