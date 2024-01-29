@@ -24,6 +24,16 @@ if(CMAKE_TARGET_CPU_ARCH STREQUAL "arm")
         	"${UPSTREAM}/arm/filter_neon_intrinsics.c"
         )
 endif()
+
+if(CMAKE_TARGET_CPU_ARCH_FAMILY STREQUAL "arm64")
+	set(target_arch_specific_sources "${target_arch_specific_sources}"
+		"${UPSTREAM}/arm/arm_init.c"
+		"${UPSTREAM}/arm/filter_neon_intrinsics.c"
+		"${UPSTREAM}/arm/filter_neon.S"
+		"${UPSTREAM}/arm/palette_neon_intrinsics.c"
+	)
+endif()
+
 if(CMAKE_COMPILER_FAMILY STREQUAL "gcc" OR CMAKE_COMPILER_FAMILY STREQUAL "clang")
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
 endif()
