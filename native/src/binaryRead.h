@@ -370,9 +370,9 @@ struct RouteDataObject {
 
 			int highestPriorityNameKey = -1;
 			int highestPriority = numeric_limits<int>::max();
-			for (int nameKey : nameKeys) {
-                        for (const auto& entry : names) {
-                                int nameKey = entry.first;
+			
+			for (const auto& entry : names) {
+				int nameKey = entry.first;
 				if (region->routeEncodingRules.size() > nameKey) {
 					string tag = region->routeEncodingRules[nameKey].getTag();
 					auto priority = tagPriorities.find(tag);
