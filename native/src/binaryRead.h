@@ -355,19 +355,8 @@ struct RouteDataObject {
    #endif
 
 	inline string getDestinationName(string& lang, bool translit, bool direction) {
-		if (!names.empty()) {
-			// Issue #3181: Parse destination keys in this order:
-			//              destination:lang:XX:forward/backward
-			//              destination:forward/backward
-			//              destination:lang:XX
-			//              destination
-			
-			vector<int> nameKeys;
-			for (const auto& entry : names) {
-				nameKeys.push_back(entry.first);
-			}
-
-			unordered_map<string, int> tagPriorities;
+		if (!names.empty()) {			
+			map<string, int> tagPriorities;
 			string directionStr = direction ? "forward" : "backward";
 			int tagPriority = 1;
 			if (!lang.empty()) {
@@ -382,6 +371,8 @@ struct RouteDataObject {
 			int highestPriorityNameKey = -1;
 			int highestPriority = numeric_limits<int>::max();
 			for (int nameKey : nameKeys) {
+                        for (const auto& entry : names) {
+                                int nameKey = entry.first;
 				if (region->routeEncodingRules.size() > nameKey) {
 					string tag = region->routeEncodingRules[nameKey].getTag();
 					auto priority = tagPriorities.find(tag);
