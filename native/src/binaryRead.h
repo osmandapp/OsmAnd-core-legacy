@@ -148,14 +148,10 @@ struct HHRoutePointsBox {
     HHRoutePointsBox(): length(0), filePointer(0), left(0), right(0), bottom(0), top(0), init(false) {
     }
 
-    /*QuadRect getLatLonBox() {
-        QuadRect q = new QuadRect();
-        q.left = MapUtils.get31LongitudeX(left);
-        q.right = MapUtils.get31LongitudeX(right);
-        q.top = MapUtils.get31LatitudeY(top);
-        q.bottom = MapUtils.get31LatitudeY(bottom);
-        return q;
-    }*/
+    SkRect getSkRect() {
+        SkRect qr = SkRect::MakeLTRB(left, top, right, bottom);
+        return qr;
+    }
 
     bool contains(int x, int y) {
         return x >= left && x <= right && y >= top && y <= bottom;
@@ -184,33 +180,51 @@ struct HHRouteIndex : BinaryPartIndex {
     std::string profile;
     std::vector<std::string> profileParams;
     SHARED_PTR<HHRoutePointsBox> top;
+    // not stored in cache
+    std::vector<HHRouteBlockSegments *> segments;
+    SkRect * rect;
     
-    HHRouteIndex() : BinaryPartIndex(HH_INDEX), edition(0), profile("") {
+    HHRouteIndex() : BinaryPartIndex(HH_INDEX), edition(0), profile(""), rect(nullptr) {
     }
     
     ~HHRouteIndex() {
         for (auto & s : segments) {
             delete s;
         }
+        delete rect;
     }
     
-    // not stored in cache
-    std::vector<HHRouteBlockSegments *> segments;
-
-        /*std::string getPartName() {
-            return "Highway routing";
-        }
-
-        int getFieldNumber() {
-            return OsmandOdb.OsmAndStructure.HHROUTINGINDEX_FIELD_NUMBER;
-        }
-
-        QuadRect getLatLonBbox() {
-            if(top == null) {
-                return new QuadRect();
+    SkRect * getSkRect() {
+        if (rect == nullptr) {
+            if (!top) {
+                rect = new SkRect();
+            } else {
+                rect = new SkRect(top->getSkRect());
             }
-            return top.getLatLonBox();
-        }*/
+        }
+        return rect;
+    }
+    
+    double intersectionArea(SkRect b) {
+        if (rect == nullptr) {
+            rect = getSkRect();
+        }
+        double xleft = std::max(std::min(rect->left(), rect->right()), std::min(b.left(), b.right()));
+        double xright = std::min(std::max(rect->left(), rect->right()), std::max(b.left(), b.right()));
+        double ytop = std::max(std::min(rect->top(), rect->bottom()), std::min(b.top(), b.bottom()));
+        double ybottom = std::min(std::max(rect->top(), rect->bottom()), std::max(b.top(), b.bottom()));
+        if (xright <= xleft || ybottom <= ytop) {
+            return 0;
+        }
+        double intersectionArea = (xright - xleft) * (ybottom - ytop);
+        return intersectionArea;
+    }
+    
+    HHRouteBlockSegments * createHHRouteBlockSegments() {
+        // all segments stored in std::vector<HHRouteBlockSegments *> segments
+        HHRouteBlockSegments * np = new HHRouteBlockSegments();
+        return np;
+    }
 };
 
 struct RouteDataObject {

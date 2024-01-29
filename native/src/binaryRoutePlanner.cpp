@@ -436,9 +436,26 @@ vector<SHARED_PTR<RouteSegment>> searchRouteInternal(RoutingContext* ctx, SHARED
 		}
 		
 		if (ctx->planRouteIn2Directions()) {
-			if (graphDirectSegments.empty() || graphReverseSegments.empty()) {
-				// can't proceed - so no route
-				break;
+            // initial iteration make in 2 directions
+            if (visitedDirectSegments.empty() && !graphDirectSegments.empty()) {
+                forwardSearch = true;
+            } else if (visitedOppositeSegments.empty() && !graphReverseSegments.empty()) {
+                forwardSearch = false;
+            } else if (graphDirectSegments.empty() || graphReverseSegments.empty()) {
+                // can't proceed any more - check if final already exist
+                graphSegments = graphDirectSegments.empty() ? &graphReverseSegments : &graphDirectSegments;
+                if (result.empty()) {
+                    while (!graphSegments->empty()) {
+                        SHARED_PTR<RouteSegmentCost> pc = graphSegments->top();
+                        SHARED_PTR<RouteSegment> segment = cst->segment;
+                        graphSegments->pop();
+                        if (segment->isFinalSegment) {
+                            result.push_back(segment);
+                            break;
+                        }
+                    }
+                }
+                return result;
 			} else {
 				SHARED_PTR<RouteSegment> fw = graphDirectSegments.top()->segment;
 				SHARED_PTR<RouteSegment> bw = graphReverseSegments.top()->segment;
@@ -535,17 +552,16 @@ bool checkIfOppositeSegmentWasVisited(RoutingContext* ctx, bool reverseWaySearch
 	// check inverse direction for opposite
 	int64_t currPoint = calculateRoutePointInternalId(currentSegment->getRoad(), currentSegment->getSegmentEnd(),
 													  currentSegment->getSegmentStart());
-    if (std::find(excludedKeys.begin(), excludedKeys.end(), currPoint) != excludedKeys.end()) {
-        //ExcludeTLongObjectMap
-        return false;
-    }
 	const VISITED_MAP * oppositeSegmentsPtr = &oppositeSegments;
+    bool containsExcludedKeys = std::find(excludedKeys.begin(), excludedKeys.end(), currPoint) != excludedKeys.end();
+    bool ignoreExcludedKeys = true;
     if (boundaries.size() > 0 && ctx->dijkstraMode != 0) {
         // limit by boundaries for dijkstra mode
         oppositeSegmentsPtr = &boundaries;
+        ignoreExcludedKeys = false;
     }
 	const auto opIt = oppositeSegmentsPtr->find(currPoint);
-	if (opIt != oppositeSegmentsPtr->end()) {
+	if (opIt != oppositeSegmentsPtr->end() && (!containsExcludedKeys || ignoreExcludedKeys)) {
 		SHARED_PTR<RouteSegment> opposite = opIt->second;
 		SHARED_PTR<RouteSegment> curParent = getParentDiffId(currentSegment);
 		SHARED_PTR<RouteSegment> oppParent = getParentDiffId(opposite);
@@ -579,6 +595,12 @@ bool checkIfOppositeSegmentWasVisited(RoutingContext* ctx, bool reverseWaySearch
 			return true;
 		}
 	}
+    if (boundaries.size() > 0 && ctx->dijkstraMode == 0
+        && boundaries.find(currPoint) != boundaries.end()
+        && !containsExcludedKeys) {
+        // limit search by boundaries
+        return true;
+    }
 	return false;
 }
 

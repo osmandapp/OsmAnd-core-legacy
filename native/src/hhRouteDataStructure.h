@@ -484,7 +484,6 @@ struct HHRoutingContext {
     
     std::vector<NetworkDBSegment *> cacheAllNetworkDBSegment;
     std::vector<NetworkDBPoint *> cacheAllNetworkDBPoint;
-    std::vector<HHRouteBlockSegments *> cacheAllHHRouteBlockSegments;
     
     DataTileManager pointsRect;
     
@@ -496,14 +495,10 @@ struct HHRoutingContext {
     }
     
     ~HHRoutingContext() {
-        //TODO check call of destructor
         for (NetworkDBSegment * s : cacheAllNetworkDBSegment) {
             delete s;
         }
         for (NetworkDBPoint * p : cacheAllNetworkDBPoint) {
-            delete p;
-        }
-        for (HHRouteBlockSegments * p : cacheAllHHRouteBlockSegments) {
             delete p;
         }
     }
@@ -556,7 +551,7 @@ struct HHRoutingContext {
                 b.append(", ");
             }
             if (r->fileRegion != nullptr) {
-                b.append(/*r->file.getFile().getName() + " " + */r->fileRegion->profile + " [" +
+                b.append(r->file->inputName + " " + r->fileRegion->profile + " [" +
                         r->fileRegion->profileParams.at(r->routingProfile) + "]");
             } else {
                 b.append("unknown");
@@ -608,18 +603,14 @@ struct HHRoutingContext {
         return np;
     }
     
-    HHRouteBlockSegments * createHHRouteBlockSegments() {
-        HHRouteBlockSegments * np = new HHRouteBlockSegments();
-        cacheAllHHRouteBlockSegments.push_back(np);
-        return np;
-    }
-    
     void unloadAllConnections() {
         for (auto it = pointsById.begin(); it != pointsById.end(); it++) {
             NetworkDBPoint * p = it->second;
             p->markSegmentsNotLoaded();
         }
     }
+    
+    double distanceToEnd(bool reverse, NetworkDBPoint * nextPoint);
     
 private:
     SHARED_PTR<HH_QUEUE> queueGlobal;
@@ -636,6 +627,7 @@ struct HHRouteRegionsGroup {
     int extraParam = 0;
     int matchParam = 0;
     bool containsStartEnd;
+    double sumIntersects;
     
     HHRouteRegionsGroup(): edition(-1), profileParams() {
     }
@@ -643,7 +635,7 @@ struct HHRouteRegionsGroup {
     HHRouteRegionsGroup(long edition, std::string params): edition(edition), profileParams(params) {
     }
     
-   void appendToGroups(SHARED_PTR<HHRouteIndex> r, BinaryMapFile* rdr, std::vector<SHARED_PTR<HHRouteRegionsGroup>> & groups) {
+   void appendToGroups(SHARED_PTR<HHRouteIndex> r, BinaryMapFile* rdr, std::vector<SHARED_PTR<HHRouteRegionsGroup>> & groups, double iou) {
         for (std::string & params : r->profileParams) {
             SHARED_PTR<HHRouteRegionsGroup> matchGroup = nullptr;
             for (auto & g : groups) {
@@ -658,14 +650,38 @@ struct HHRouteRegionsGroup {
             }
             matchGroup->regions.push_back(r);
             matchGroup->readers.push_back(rdr);
+            matchGroup->sumIntersects += iou;
         }
     }
-
-    bool contains(int x, int y) {
+    
+    bool contains(int x31, int y31, SHARED_PTR<HHRoutingContext> hctx) {
+        int zoomToLoad = 14;
+        int x = x31 >> zoomToLoad;
+        int y = y31 >> zoomToLoad;
         bool contains = false;
-        for (auto & r : regions) {
-            if (r->top->contains(x, y)) {
-                contains = true;
+        SearchQuery request((uint32_t)(x << zoomToLoad), (uint32_t)((x + 1) << zoomToLoad), (uint32_t)(y << zoomToLoad), (uint32_t)((y + 1) << zoomToLoad));
+        std::set<string> checked;
+        for (int i = 0; i < regions.size(); i++) {
+            BinaryMapFile * rd = readers.at(i);
+            if (rd->routingIndexes.size() > 0) {
+                for (auto & reg : rd->routingIndexes) {
+                    if (checked.find(reg->name) != checked.end()) {
+                        continue;
+                    }
+                    checked.insert(reg->name);
+                    std::vector<RouteSubregion> res;
+                    searchRouteSubregions(&request, res, hctx->rctx->basemap, hctx->rctx->geocoding);
+                    if (!res.empty()) {
+                        contains = true;
+                    }
+                }
+            } else {
+                auto & reg = regions.at(i);
+                if (reg->top->contains(x, y)) {
+                    contains = true;
+                }
+            }
+            if (contains) {
                 break;
             }
         }

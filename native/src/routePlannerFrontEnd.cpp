@@ -798,13 +798,14 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 	}
 	if (USE_HH_ROUTING || USE_ONLY_HH_ROUTING) {
         HHRoutePlanner routePlanner(ctx);
-        HHNetworkRouteRes * r;
+        HHNetworkRouteRes * res;
+        HHNetworkRouteRes * r = nullptr;
         double dir = ctx->config->initialDirection ;
         for (int i = 0; i < targetsX.size(); i++) {
-            HHNetworkRouteRes * res = calculateHHRoute(routePlanner, ctx,
-                                                                 i == 0 ? startX : targetsX.at(i - 1),
-                                                                 i == 0 ? startY : targetsY.at(i - 1),
-                                                                 targetsX.at(i), targetsY.at(i), dir);
+            res = calculateHHRoute(routePlanner, ctx,
+                                   i == 0 ? startX : targetsX.at(i - 1),
+                                   i == 0 ? startY : targetsY.at(i - 1),
+                                   targetsX.at(i), targetsY.at(i), dir);
             if (!r) {
                 r = res;
             } else {
@@ -818,7 +819,6 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
             }
         }
 		if ((r && r->isCorrect()) || USE_ONLY_HH_ROUTING) {
-            //TODO what to return ?
             return r->detailed;
 		}
     }

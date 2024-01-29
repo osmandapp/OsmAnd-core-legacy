@@ -996,9 +996,11 @@ void initHHPoints(BinaryMapFile* file, SHARED_PTR<HHRouteIndex> reg, HHRoutingCo
                 readPointBox(input, reg, hctx, mapId, resPoints, nullptr);
                 break;
             case OsmAnd::OBF::OsmAndHHRoutingIndex::kPointSegmentsFieldNumber: {
-                HHRouteBlockSegments * seg = hctx->createHHRouteBlockSegments();
+                HHRouteBlockSegments * seg = reg->createHHRouteBlockSegments();
                 if (readRegionSegmentHeader(input, seg)) {
                     reg->segments.push_back(seg);
+                } else {
+                    delete seg;
                 }
                 break;
             }
@@ -1009,7 +1011,7 @@ void initHHPoints(BinaryMapFile* file, SHARED_PTR<HHRouteIndex> reg, HHRoutingCo
     }
 }
 
-std::vector<NetworkDBSegment *> parseSegments(std::vector<int32_t> pointSegments, std::vector<NetworkDBPoint *> lst, NetworkDBPoint * pnt, bool out)  {
+std::vector<NetworkDBSegment *> parseSegments(HHRoutingContext * ctx, std::vector<int32_t> pointSegments, std::vector<NetworkDBPoint *> lst, NetworkDBPoint * pnt, bool out)  {
     std::vector<NetworkDBSegment *> l;
     if (pointSegments.size() == 0 || pnt->incomplete) {
         return l;
@@ -1030,7 +1032,7 @@ std::vector<NetworkDBSegment *> parseSegments(std::vector<int32_t> pointSegments
         double dist = d / 10.0;
         NetworkDBPoint * start = out ? pnt : lst.at(i);
         NetworkDBPoint * end = out ? lst.at(i) : pnt;
-        NetworkDBSegment * seg = new NetworkDBSegment(start, end, dist, out, false);
+        NetworkDBSegment * seg = ctx->createNetworkDBSegment(start, end, dist, out, false);
         l.push_back(seg);
     }
     return l;
@@ -1076,8 +1078,8 @@ void setSegments(CodedInputStream * input, HHRoutingContext * ctx, NetworkDBPoin
     
     input->PopLimit(oldLimit);
     
-    point->connectedSet(true, parseSegments(segmentsIn, ctx->getIncomingPoints(point), point, false));
-    point->connectedSet(false, parseSegments(segmentsOut, ctx->getOutgoingPoints(point), point, true));
+    point->connectedSet(true, parseSegments(ctx, segmentsIn, ctx->getIncomingPoints(point), point, false));
+    point->connectedSet(false, parseSegments(ctx, segmentsOut, ctx->getOutgoingPoints(point), point, true));
 }
 
 int loadNetworkSegmentPoint(CodedInputStream * input, HHRoutingContext * ctx, SHARED_PTR<HHRouteRegionPointsCtx> regCtx, HHRouteBlockSegments * block, int searchInd) {
@@ -1116,17 +1118,13 @@ int loadNetworkSegmentPoint(CodedInputStream * input, HHRoutingContext * ctx, SH
                     input->Skip(input->BytesUntilLimit());
                 } else {
                     // read all sublist
-                    //TODO add pointer creation to HHRoutingContext
-                    HHRouteBlockSegments * child = new HHRouteBlockSegments();
+                    HHRouteBlockSegments * child = regCtx->fileRegion->createHHRouteBlockSegments();
                     readInt(input, &child->length);
                     child->filePointer = input->TotalBytesRead();
                     int olLimit = input->PushLimit(child->length);
 //                    OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
 //                                      "BLOCK I:%d %d/%d - %d - %d %d",
 //                                      block->filePointer, block->idRangeStart, block->idRangeLength, block->sublist.size(), child->length, child->filePointer);
-//                    if (block->filePointer == 567577913 && child->filePointer == 567581188) {
-//                        OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "---");
-//                    }
                     loaded += loadNetworkSegmentPoint(input, ctx, regCtx, child, searchInd);
                     input->PopLimit(olLimit);
                     block->sublist.push_back(child);

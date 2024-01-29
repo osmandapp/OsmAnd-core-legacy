@@ -57,21 +57,37 @@ void HHRoutingContext::clearVisited(UNORDERED_map<int64_t, NetworkDBPoint *> & s
     queue(true).reset();
     queue(false).reset();
     for (NetworkDBPoint * p : queueAdded) {
-        auto & rev = p->rt(false)->rtDetailedRoute;
-        auto & pos = p->rt(true)->rtDetailedRoute;
+        auto & pos = p->rt(false)->rtDetailedRoute;
+        auto & rev = p->rt(true)->rtDetailedRoute;
         p->clearRouting();
         auto itS = stPoints.find(p->index);
         auto itE = endPoints.find(p->index);
-        if (itS != stPoints.end()) {
-            p->setDetailedParentRt(false, rev);
-        } else if (itE != endPoints.end()) {
-            p->setDetailedParentRt(true, pos);
+        if (itS != stPoints.end() && pos) {
+            p->setDistanceToEnd(false, distanceToEnd(false, p));
+            p->setDetailedParentRt(false, pos);
+        } else if (itE != endPoints.end() && rev) {
+            p->setDistanceToEnd(true, distanceToEnd(true, p));
+            p->setDetailedParentRt(true, rev);
         }
         //TODO ask Victor is need to destroy NetworkDBPoint * here ?
     }
     queueAdded.clear();
     visited.clear();
     visitedRev.clear();
+}
+
+double HHRoutingContext::distanceToEnd(bool reverse, NetworkDBPoint * nextPoint) {
+    if (config->HEURISTIC_COEFFICIENT > 0) {
+        double distanceToEnd = nextPoint->rt(reverse)->rtDistanceToEnd;
+        if (distanceToEnd == 0) {
+            double dist = squareRootDist31(reverse ? startX : endX, reverse ? startY : endY,
+                                           nextPoint->midX(), nextPoint->midY());
+            distanceToEnd = config->HEURISTIC_COEFFICIENT * dist / rctx->config->router->getMaxSpeed();
+            nextPoint->setDistanceToEnd(reverse, distanceToEnd);
+        }
+        return distanceToEnd;
+    }
+    return 0;
 }
 
 #endif /*_OSMAND_HH_ROUTE_DATA_STRUCTURE_CPP*/
