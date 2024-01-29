@@ -192,6 +192,22 @@ if(CMAKE_TARGET_OS STREQUAL "linux")
 		${FONTCONFIG_LIBRARY}
 	)
 endif()
+
+if(CMAKE_TARGET_OS STREQUAL "darwin")
+   	find_library(CORE_FOUNDATION_LIBRARY CoreFoundation)
+        find_library(CORE_TEXT_LIBRARY CoreText)
+        find_library(CORE_GRAPHICS_LIBRARY CoreGraphics)
+        find_library(FONTCONFIG_LIBRARY fontconfig)
+        target_link_libraries(skia_osmand LINK_PUBLIC
+                pthread
+                ${FONTCONFIG_LIBRARY}
+                "${CORE_FOUNDATION_LIBRARY}/CoreFoundation.tbd"
+                "${CORE_TEXT_LIBRARY}/CoreText.tbd"
+                "${CORE_GRAPHICS_LIBRARY}/CoreGraphics.tbd"
+
+        )
+endif()
+
 if(CMAKE_TARGET_OS STREQUAL "windows")
 	target_link_libraries(skia_osmand LINK_PUBLIC
 		usp10
