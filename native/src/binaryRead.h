@@ -353,51 +353,38 @@ struct RouteDataObject {
        return s;
    }
    #endif
-    
-    
+
 	inline string getDestinationName(string& lang, bool translit, bool direction) {
-		if (!names.empty()) {
-			// Issue #3181: Parse destination keys in this order:
-			//              destination:lang:XX:forward/backward
-			//              destination:forward/backward
-			//              destination:lang:XX
-			//              destination
-
-			string destinationTagLangFB = "destination:lang:XX";
+		if (!names.empty()) {			
+			map<string, int> tagPriorities;
+			string directionStr = direction ? "forward" : "backward";
+			int tagPriority = 1;
 			if (!lang.empty()) {
-				destinationTagLangFB = (direction == true) ? "destination:lang:" + lang + ":forward"
-														   : "destination:lang:" + lang + ":backward";
+				tagPriorities["destination:lang:" + lang + ":" + directionStr] = tagPriority++;
 			}
-			string destinationTagFB = (direction == true) ? "destination:forward" : "destination:backward";
-			string destinationTagLang = "destination:lang:XX";
+			tagPriorities["destination:" + directionStr] = tagPriority++;
 			if (!lang.empty()) {
-				destinationTagLang = "destination:lang:" + lang;
+				tagPriorities["destination:lang:" + lang] = tagPriority++;
 			}
-			string destinationTagDefault = "destination";
-			string destinationDefault = "";
+			tagPriorities["destination"] = tagPriority;
 
-			for (auto it = names.begin(); it != names.end(); ++it) {
-				int k = it->first;
-				if (it->second.empty()) {
-					continue;
-				}
-				if (region->routeEncodingRules.size() > k) {
-					if (!lang.empty() && destinationTagLangFB == region->routeEncodingRules[k].getTag()) {
-						return translit ? transliterate(names[k]) : names[k];
-					}
-					if (destinationTagFB == region->routeEncodingRules[k].getTag()) {
-						return translit ? transliterate(names[k]) : names[k];
-					}
-					if (!lang.empty() && destinationTagLang == region->routeEncodingRules[k].getTag()) {
-						return translit ? transliterate(names[k]) : names[k];
-					}
-					if (destinationTagDefault == region->routeEncodingRules[k].getTag()) {
-						destinationDefault = names[k];
+			int highestPriorityNameKey = -1;
+			int highestPriority = numeric_limits<int>::max();
+			for (int nameKey : nameKeys) {
+                        for (const auto& entry : names) {
+                                int nameKey = entry.first;
+				if (region->routeEncodingRules.size() > nameKey) {
+					string tag = region->routeEncodingRules[nameKey].getTag();
+					auto priority = tagPriorities.find(tag);
+					if (priority != tagPriorities.end() && priority->second < highestPriority) {
+						highestPriority = priority->second;
+						highestPriorityNameKey = nameKey;
 					}
 				}
 			}
-			if (!destinationDefault.empty()) {
-				return translit ? transliterate(destinationDefault) : destinationDefault;
+			if (highestPriorityNameKey > 0) {
+				string name = names[highestPriorityNameKey];
+				return translit ? transliterate(name) : name;
 			}
 		}
 		return "";
