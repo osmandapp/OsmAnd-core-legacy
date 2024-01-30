@@ -527,18 +527,22 @@ struct HHRoutingContext {
     void clearVisited(UNORDERED_map<int64_t, NetworkDBPoint *> & stPoints, UNORDERED_map<int64_t, NetworkDBPoint *> & endPoints);
     
     UNORDERED_map<int64_t, NetworkDBPoint *> loadNetworkPoints() {
-        UNORDERED_map<int64_t, NetworkDBPoint *> pnts;
+
+        UNORDERED_map<int64_t, NetworkDBPoint *> points;
         for (auto & r : regions) {
             if (r->file != nullptr) {
+                UNORDERED_map<int64_t, NetworkDBPoint *> pnts;
                 initHHPoints(r->file, r->fileRegion, this, r->id, pnts);
-            }
-        }
-        UNORDERED_map<int64_t, NetworkDBPoint *> points;
-        for (auto it = pnts.begin(); it != pnts.end(); it++) {
-            auto * pnt = it->second;
-            auto f = points.find(it->first);
-            if (!pnt->incomplete || f == points.end()) {
-                points.insert(std::pair<int64_t, NetworkDBPoint *>(it->first, it->second));
+                
+                for (auto it = pnts.begin(); it != pnts.end(); it++) {
+                    auto * pnt = it->second;
+                    auto f = points.find(it->first);
+                    if (!pnt->incomplete && f != points.end()) {
+                        f->second = it->second;
+                    } else if (!pnt->incomplete || f == points.end()) {
+                        points.insert(std::pair<int64_t, NetworkDBPoint *>(it->first, it->second));
+                    }
+                }
             }
         }
         return points;

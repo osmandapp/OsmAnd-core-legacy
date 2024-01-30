@@ -1161,7 +1161,7 @@ int loadNetworkSegmentPoint(HHRoutingContext * ctx, SHARED_PTR<HHRouteRegionPoin
     stream.SetCloseOnDelete(false);
     CodedInputStream * input = new CodedInputStream(&stream);
     input->SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
-    input->Seek(reg->filePointer);//????????
+    input->Seek(reg->filePointer);
     return loadNetworkSegmentPoint(input, ctx, regCtx, block, searchInd);
 }
 
