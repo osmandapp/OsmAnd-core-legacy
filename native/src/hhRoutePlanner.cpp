@@ -210,9 +210,6 @@ SHARED_PTR<HHRoutingContext> HHRoutePlanner::initHCtx(SHARED_PTR<HHRoutingConfig
         hctx->pointsRect.registerObject(latlon.lat, latlon.lon, pnt);
         hctx->boundaries.insert(std::pair<int64_t, SHARED_PTR<RouteSegment>>(pos, nullptr));
         hctx->pointsByGeo.insert(std::pair<int64_t, NetworkDBPoint *>(pos, pnt));
-        if (pnt->index == 3162890) {
-            OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "sss");
-        }
         hctx->regions[pnt->mapId]->pntsByFileId.insert(std::pair<int64_t, NetworkDBPoint *>(pnt->fileId, pnt));
     }
     hctx->pointsRect.printStatsDistribution("Points distributed");
@@ -741,9 +738,6 @@ bool HHRoutePlanner::retrieveSegmentsGeometry(SHARED_PTR<HHRoutingContext> hctx,
             if (progress->isCancelled()) {
                 return false;
             }
-            if (i == 24) {
-                OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "OOO");
-            }
             std::vector<SHARED_PTR<RouteSegment>> f = runDetailedRouting(hctx, s.segment->start, s.segment->end, true);
             if (f.size() == 0) {
                 bool full = hctx->config->FULL_DIJKSTRA_NETWORK_RECALC-- > 0;
@@ -902,9 +896,6 @@ void HHRoutePlanner::addConnectedToQueue(SHARED_PTR<HHRoutingContext> hctx, SHAR
     }
     OsmAnd::ElapsedTimer timer;
     timer.Start();
-    if (point->index == 3161776) {
-        OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "KKKKK");
-    }
     int cnt = hctx->loadNetworkSegmentPoint(point, reverse);
     hctx->stats.loadEdgesCnt += cnt;
     hctx->stats.loadEdgesTime += timer.GetElapsedMs();
@@ -983,7 +974,6 @@ NetworkDBPoint * HHRoutePlanner::runRoutingPointsToPoints(SHARED_PTR<HHRoutingCo
 NetworkDBPoint * HHRoutePlanner::runRoutingWithInitQueue(SHARED_PTR<HHRoutingContext> hctx) {
     float DIR_CONFIG = hctx->config->DIJKSTRA_DIRECTION;
     SHARED_PTR<RouteCalculationProgress> progress = hctx->rctx == nullptr ? nullptr : hctx->rctx->progress;
-    int cnt = 0;
     while (true) {
         SHARED_PTR<HH_QUEUE> queue;
         if (hctx->USE_GLOBAL_QUEUE) {
@@ -1061,10 +1051,6 @@ NetworkDBPoint * HHRoutePlanner::runRoutingWithInitQueue(SHARED_PTR<HHRoutingCon
         bool directionAllowed = (DIR_CONFIG <= 0 && rev) || (DIR_CONFIG >= 0 && !rev);
         if (directionAllowed) {
             addConnectedToQueue(hctx, queue, point, rev);
-        }
-        cnt++;
-        if (cnt == 1000) {
-            OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "STOP");
         }
     }
     return nullptr;
