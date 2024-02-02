@@ -10,7 +10,7 @@ typedef UNORDERED_map<int64_t, std::vector<NetworkDBPoint *>> MAP_VECTORS_NETWOR
 class HHRoutePlanner {
         
 public:
-    HHRoutePlanner(SHARED_PTR<RoutingContext> ctx);
+    HHRoutePlanner(RoutingContext * ctx);
     
     int DEBUG_VERBOSE_LEVEL = 1;
     int DEBUG_ALT_ROUTE_SELECTION = -1;
@@ -23,8 +23,8 @@ public:
     static const int ROUTE_POINTS;
     constexpr static const double MAX_INC_COST_CORR = 10.0;
     
-    SHARED_PTR<HHRoutingConfig> prepareDefaultRoutingConfig(SHARED_PTR<HHRoutingConfig> c);
-    HHNetworkRouteRes * runRouting(int startX, int startY, int endX, int endY, SHARED_PTR<HHRoutingConfig> config);
+    HHRoutingConfig * prepareDefaultRoutingConfig(HHRoutingConfig * c);
+    HHNetworkRouteRes * runRouting(int startX, int startY, int endX, int endY, HHRoutingConfig * config);
     
 private:
     double smallestSegmentCost(SHARED_PTR<HHRoutingContext> hctx, NetworkDBPoint * st, NetworkDBPoint * end);
@@ -37,10 +37,10 @@ private:
     int64_t calcUniDirRoutePointInternalId(SHARED_PTR<RouteSegmentPoint> segm);
     std::string toString(GeneralRouterProfile grp);
     SHARED_PTR<HHRoutingContext> currentCtx;
-    SHARED_PTR<HHRoutingContext> initHCtx(SHARED_PTR<HHRoutingConfig> c, int startX, int startY, int endX, int endY);
-    SHARED_PTR<HHRoutingContext> initNewContext(SHARED_PTR<RoutingContext> ctx, std::vector<SHARED_PTR<HHRouteRegionPointsCtx>> regions);
+    SHARED_PTR<HHRoutingContext> initHCtx(HHRoutingConfig * c, int startX, int startY, int endX, int endY);
+    SHARED_PTR<HHRoutingContext> initNewContext(RoutingContext * ctx, std::vector<SHARED_PTR<HHRouteRegionPointsCtx>> regions);
     SHARED_PTR<HHRoutingContext> selectBestRoutingFiles(int startX, int startY, int endX, int endY, SHARED_PTR<HHRoutingContext> hctx);
-    SHARED_PTR<RouteSegmentPoint> loadPoint(SHARED_PTR<RoutingContext> ctx, const NetworkDBPoint * pnt);
+    SHARED_PTR<RouteSegmentPoint> loadPoint(RoutingContext * ctx, const NetworkDBPoint * pnt);
     SHARED_PTR<HHRouteRegionsGroup> hhRouteRegionGroup;
     void findFirstLastSegments(SHARED_PTR<HHRoutingContext> hctx, int startX, int startY, int endX, int endY,
                                UNORDERED_map<int64_t, NetworkDBPoint *> & stPoints,

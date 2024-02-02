@@ -46,22 +46,22 @@ struct HHRoutingConfig
 	
 	HHRoutingConfig() {}
 	
-	static SHARED_PTR<HHRoutingConfig> dijkstra(int direction) {
-		auto df = std::make_shared<HHRoutingConfig>();
+	static HHRoutingConfig * dijkstra(int direction) {
+		auto df = new HHRoutingConfig();
 		df->HEURISTIC_COEFFICIENT = 0;
 		df->DIJKSTRA_DIRECTION = direction;
 		return df;
 	}
 			
-	static SHARED_PTR<HHRoutingConfig> astar(int direction) {
-		auto df = std::make_shared<HHRoutingConfig>();
+	static HHRoutingConfig * astar(int direction) {
+		auto df = new HHRoutingConfig();
 		df->HEURISTIC_COEFFICIENT = 1;
 		df->DIJKSTRA_DIRECTION = direction;
 		return df;
 	}
 			
-	static SHARED_PTR<HHRoutingConfig> ch() {
-		auto df = std::make_shared<HHRoutingConfig>();
+	static HHRoutingConfig * ch() {
+		auto df = new HHRoutingConfig();
 		df->HEURISTIC_COEFFICIENT = 0;
 		df->USE_CH = true;
 		df->USE_CH_SHORTCUTS = true;
@@ -69,8 +69,8 @@ struct HHRoutingConfig
 		return df;
 	}
 			
-	static SHARED_PTR<HHRoutingConfig> midPoints(bool astar, int dir) {
-		auto df = std::make_shared<HHRoutingConfig>();
+	static HHRoutingConfig * midPoints(bool astar, int dir) {
+		auto df = new HHRoutingConfig();
 		df->HEURISTIC_COEFFICIENT = astar ? 1 : 0;
 		df->USE_MIDPOINT = true;
 		df->DIJKSTRA_DIRECTION = dir;
@@ -325,7 +325,7 @@ struct HHNetworkRouteRes : public RouteCalcResult {
 };
 
 struct HHRouteRegionPointsCtx {
-    short id;
+    short id = 0;
     SHARED_PTR<HHRouteIndex> fileRegion;
     BinaryMapFile* file;
     int32_t routingProfile = 0;
@@ -462,10 +462,10 @@ typedef priority_queue<SHARED_PTR<NetworkDBPointCost>, vector<SHARED_PTR<Network
 struct HHRoutingContext {
     bool USE_GLOBAL_QUEUE = false;
     
-    SHARED_PTR<RoutingContext> rctx;
+    RoutingContext * rctx;
     std::vector<SHARED_PTR<HHRouteRegionPointsCtx>> regions;
     RoutingStats stats;
-    SHARED_PTR<HHRoutingConfig> config;
+    HHRoutingConfig * config;
     int32_t startX;
     int32_t startY;
     int32_t endY;
@@ -625,18 +625,18 @@ private:
 struct HHRouteRegionsGroup {
     std::vector<SHARED_PTR<HHRouteIndex>> regions;
     std::vector<BinaryMapFile*> readers;
-    const long edition;
+    const uint64_t edition;
     const std::string profileParams;
     
     int extraParam = 0;
     int matchParam = 0;
-    bool containsStartEnd;
-    double sumIntersects;
+    bool containsStartEnd = false;
+    double sumIntersects = 0;
     
-    HHRouteRegionsGroup(): edition(-1), profileParams() {
+    HHRouteRegionsGroup(): edition(-1), profileParams("") {
     }
     
-    HHRouteRegionsGroup(long edition, std::string params): edition(edition), profileParams(params) {
+    HHRouteRegionsGroup(uint64_t edition, std::string params): edition(edition), profileParams(params) {
     }
     
    void appendToGroups(SHARED_PTR<HHRouteIndex> r, BinaryMapFile* rdr, std::vector<SHARED_PTR<HHRouteRegionsGroup>> & groups, double iou) {

@@ -21,11 +21,7 @@
 #include "transportRouteSegment.h"
 #include "transportRoutingConfiguration.h"
 #include "transportRoutingContext.h"
-//#include "routingConfiguration.h"
-//#include "routeSegmentResult.h"
-//#include "routeSegment.h"
-//#include "routeCalculationProgress.h"
-//#include "precalculatedRouteDirection.h"
+#include "hhRouteDataStructure.h"
 #include "Logging.h"
 
 JavaVM* globalJVM = NULL;
@@ -426,6 +422,8 @@ jfieldID jfield_RoutingContext_startSegmentInd = NULL;
 jfieldID jfield_RoutingContext_startTransportStop = NULL;
 jfieldID jfield_RoutingContext_targetX = NULL;
 jfieldID jfield_RoutingContext_targetY = NULL;
+jfieldID jfield_RoutingContext_intermediatesX = NULL;
+jfieldID jfield_RoutingContext_intermediatesY = NULL;
 jfieldID jfield_RoutingContext_targetRoadId = NULL;
 jfieldID jfield_RoutingContext_targetSegmentInd = NULL;
 jfieldID jfield_RoutingContext_targetTransportStop = NULL;
@@ -711,6 +709,21 @@ jmethodID jmethod_GpxRouteApproximationResult_init;
 jmethodID jmethod_GpxRouteApproximationResult_addFinalPoint;
 jmethodID jmethod_GpxRouteApproximationResult_addResultSegment;
 
+jclass jclass_HHRoutingConfig = NULL;
+jfieldID jfield_HHRoutingConfig_HEURISTIC_COEFFICIENT = NULL;
+jfieldID jfield_HHRoutingConfig_DIJKSTRA_DIRECTION = NULL;
+jfieldID jfield_HHRoutingConfig_ROUTE_LAST_MILE = NULL;
+jfieldID jfield_HHRoutingConfig_ROUTE_ALL_SEGMENTS = NULL;
+jfieldID jfield_HHRoutingConfig_ROUTE_ALL_ALT_SEGMENTS = NULL;
+jfieldID jfield_HHRoutingConfig_PRELOAD_SEGMENTS = NULL;
+jfieldID jfield_HHRoutingConfig_CALC_ALTERNATIVES = NULL;
+jfieldID jfield_HHRoutingConfig_MAX_COST = NULL;
+jfieldID jfield_HHRoutingConfig_MAX_DEPTH = NULL;
+jfieldID jfield_HHRoutingConfig_MAX_SETTLE_POINTS = NULL;
+jfieldID jfield_HHRoutingConfig_USE_CH = NULL;
+jfieldID jfield_HHRoutingConfig_USE_CH_SHORTCUTS = NULL;
+jfieldID jfield_HHRoutingConfig_USE_MIDPOINT = NULL;
+
 void loadJniRenderingContext(JNIEnv* env) {
 	jclass_NativeTransportRoutingResult = findGlobalClass(env, "net/osmand/router/NativeTransportRoutingResult");
 	jfield_NativeTransportRoutingResult_segments = getFid(env, jclass_NativeTransportRoutingResult, "segments",
@@ -807,6 +820,8 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jfield_RoutingContext_startTransportStop = getFid(env, jclass_RoutingContext, "startTransportStop", "Z");
 	jfield_RoutingContext_targetX = getFid(env, jclass_RoutingContext, "targetX", "I");
 	jfield_RoutingContext_targetY = getFid(env, jclass_RoutingContext, "targetY", "I");
+	jfield_RoutingContext_intermediatesX = getFid(env, jclass_RoutingContext, "intermediatesX", "[I");
+	jfield_RoutingContext_intermediatesY = getFid(env, jclass_RoutingContext, "intermediatesY", "[I");
 	jfield_RoutingContext_targetRoadId = getFid(env, jclass_RoutingContext, "targetRoadId", "J");
 	jfield_RoutingContext_targetSegmentInd = getFid(env, jclass_RoutingContext, "targetSegmentInd", "I");
 	jfield_RoutingContext_targetTransportStop = getFid(env, jclass_RoutingContext, "targetTransportStop", "Z");
@@ -1115,6 +1130,21 @@ void loadJniRenderingContext(JNIEnv* env) {
 						 "(Lnet/osmand/NativeLibrary$NativeGpxPointApproximation;)V");
 	jmethod_GpxRouteApproximationResult_addResultSegment = env->GetMethodID(
 		jclass_GpxRouteApproximationResult, "addResultSegment", "(Lnet/osmand/router/RouteSegmentResult;)V");
+
+	jclass_HHRoutingConfig = findGlobalClass(env, "net/osmand/router/HHRouteDataStructure$HHRoutingConfig");
+	jfield_HHRoutingConfig_HEURISTIC_COEFFICIENT = getFid(env, jclass_HHRoutingConfig, "HEURISTIC_COEFFICIENT", "F");
+	jfield_HHRoutingConfig_DIJKSTRA_DIRECTION = getFid(env, jclass_HHRoutingConfig, "DIJKSTRA_DIRECTION", "F");
+	jfield_HHRoutingConfig_ROUTE_LAST_MILE = getFid(env, jclass_HHRoutingConfig, "ROUTE_LAST_MILE", "Z");
+	jfield_HHRoutingConfig_ROUTE_ALL_SEGMENTS = getFid(env, jclass_HHRoutingConfig, "ROUTE_ALL_SEGMENTS", "Z");
+	jfield_HHRoutingConfig_ROUTE_ALL_ALT_SEGMENTS = getFid(env, jclass_HHRoutingConfig, "ROUTE_ALL_ALT_SEGMENTS", "Z");
+	jfield_HHRoutingConfig_PRELOAD_SEGMENTS = getFid(env, jclass_HHRoutingConfig, "PRELOAD_SEGMENTS", "Z");
+	jfield_HHRoutingConfig_CALC_ALTERNATIVES = getFid(env, jclass_HHRoutingConfig, "CALC_ALTERNATIVES", "Z");
+	jfield_HHRoutingConfig_MAX_COST = getFid(env, jclass_HHRoutingConfig, "MAX_COST", "D");
+	jfield_HHRoutingConfig_MAX_DEPTH = getFid(env, jclass_HHRoutingConfig, "MAX_DEPTH", "I");
+	jfield_HHRoutingConfig_MAX_SETTLE_POINTS = getFid(env, jclass_HHRoutingConfig, "MAX_SETTLE_POINTS", "I");
+	jfield_HHRoutingConfig_USE_CH = getFid(env, jclass_HHRoutingConfig, "USE_CH", "Z");
+	jfield_HHRoutingConfig_USE_CH_SHORTCUTS = getFid(env, jclass_HHRoutingConfig, "USE_CH_SHORTCUTS", "Z");
+	jfield_HHRoutingConfig_USE_MIDPOINT = getFid(env, jclass_HHRoutingConfig, "USE_MIDPOINT", "Z");		
 }
 
 void pullFromJavaRenderingContext(JNIEnv* env, jobject jrc, JNIRenderingContext* rc) {
@@ -1681,6 +1711,22 @@ RoutingContext* getRoutingContext(JNIEnv* ienv, jobject jCtx, jfloat initDirecti
 	c->startTransportStop = ienv->GetBooleanField(jCtx, jfield_RoutingContext_startTransportStop);
 	c->targetX = ienv->GetIntField(jCtx, jfield_RoutingContext_targetX);
 	c->targetY = ienv->GetIntField(jCtx, jfield_RoutingContext_targetY);
+	jintArray intermediateX = (jintArray)ienv->GetObjectField(jCtx, jfield_RoutingContext_intermediatesX);
+	jintArray intermediateY = (jintArray)ienv->GetObjectField(jCtx, jfield_RoutingContext_intermediatesY);
+	// jsize sizeX = ienv->GetArrayLength(intermediateX);
+	// jsize sizeY = ienv->GetArrayLength(intermediateY);
+	// ienv->GetIntArrayRegion(intermediateX, jsize{0}, sizeX, &c->intermediatesX[0]);
+	// ienv->GetIntArrayRegion(intermediateY, jsize{0}, sizeY, &c->intermediatesY[0]);
+	jint* intermediateXF = (jint*)ienv->GetIntArrayElements(intermediateX, NULL);
+	jint* intermediateYF = (jint*)ienv->GetIntArrayElements(intermediateY, NULL);
+	for (int k = 0; k < ienv->GetArrayLength(intermediateX); k++) {
+		int x = intermediateXF[k];
+		int y = intermediateYF[k];
+		c->intermediatesX.push_back(x);
+		c->intermediatesY.push_back(y);
+	}
+	ienv->ReleaseIntArrayElements(intermediateY, intermediateYF, 0);
+	ienv->ReleaseIntArrayElements(intermediateX, intermediateXF, 0);
 	c->targetRoadId = ienv->GetLongField(jCtx, jfield_RoutingContext_targetRoadId);
 	c->targetSegmentInd = ienv->GetIntField(jCtx, jfield_RoutingContext_targetSegmentInd);
 	jmethodID getOrdinalValueMethod = ienv->GetMethodID(jclass_RouteCalculationMode, "ordinal", "()I");
@@ -1693,6 +1739,27 @@ RoutingContext* getRoutingContext(JNIEnv* ienv, jobject jCtx, jfloat initDirecti
 	c->setConditionalTime(c->config->routeCalculationTime);
 	c->publicTransport = ienv->GetBooleanField(jCtx, jfield_RoutingContext_publicTransport);
 	ienv->DeleteLocalRef(jRouteConfig);
+	return c;
+}
+
+HHRoutingConfig * getHHRoutingConfig(JNIEnv* ienv, jobject jHHConf) {
+	if (ienv->IsSameObject(jHHConf, NULL)) {
+		return nullptr;
+	}
+	HHRoutingConfig * c = new HHRoutingConfig();
+	c->HEURISTIC_COEFFICIENT = ienv->GetFloatField(jHHConf, jfield_HHRoutingConfig_HEURISTIC_COEFFICIENT);
+	c->DIJKSTRA_DIRECTION = ienv->GetFloatField(jHHConf, jfield_HHRoutingConfig_DIJKSTRA_DIRECTION);
+	c->ROUTE_LAST_MILE = ienv->GetBooleanField(jHHConf, jfield_HHRoutingConfig_ROUTE_LAST_MILE);
+	c->ROUTE_ALL_SEGMENTS = ienv->GetBooleanField(jHHConf, jfield_HHRoutingConfig_ROUTE_ALL_SEGMENTS);
+	c->ROUTE_ALL_ALT_SEGMENTS = ienv->GetBooleanField(jHHConf, jfield_HHRoutingConfig_ROUTE_ALL_ALT_SEGMENTS);
+	c->PRELOAD_SEGMENTS = ienv->GetBooleanField(jHHConf, jfield_HHRoutingConfig_PRELOAD_SEGMENTS);
+	c->CALC_ALTERNATIVES = ienv->GetBooleanField(jHHConf, jfield_HHRoutingConfig_CALC_ALTERNATIVES);
+	c->MAX_COST = ienv->GetDoubleField(jHHConf, jfield_HHRoutingConfig_MAX_COST);
+	c->MAX_DEPTH = ienv->GetIntField(jHHConf, jfield_HHRoutingConfig_MAX_DEPTH);
+	c->MAX_SETTLE_POINTS = ienv->GetIntField(jHHConf, jfield_HHRoutingConfig_MAX_SETTLE_POINTS);
+	c->USE_CH = ienv->GetBooleanField(jHHConf, jfield_HHRoutingConfig_USE_CH);
+	c->USE_CH_SHORTCUTS = ienv->GetBooleanField(jHHConf, jfield_HHRoutingConfig_USE_CH_SHORTCUTS);
+	c->USE_MIDPOINT = ienv->GetBooleanField(jHHConf,  jfield_HHRoutingConfig_USE_MIDPOINT);
 	return c;
 }
 
@@ -1753,14 +1820,24 @@ extern "C" JNIEXPORT jobject JNICALL Java_net_osmand_NativeLibrary_nativeSearchG
 }
 
 extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_nativeRouting(
-	JNIEnv* ienv, jobject obj, jobject jCtx, jfloat initDirection, jobjectArray regions, bool basemap) {
+	JNIEnv* ienv, jobject obj, jobject jCtx, jobject jHHConfig, jfloat initDirection, jobjectArray regions, bool basemap) {
 	jobject precalculatedRoute = ienv->GetObjectField(jCtx, jfield_RoutingContext_precalculatedRouteDirection);
 	jobject progress = ienv->GetObjectField(jCtx, jfield_RoutingContext_calculationProgress);
 
 	RoutingContext* c = getRoutingContext(ienv, jCtx, initDirection, basemap, progress);
 
 	parsePrecalculatedRoute(ienv, c, precalculatedRoute);
-	vector<SHARED_PTR<RouteSegmentResult>> r = searchRouteInternal(c, false);
+
+	vector<SHARED_PTR<RouteSegmentResult>> r;
+	HHRoutingConfig * hhConfig = getHHRoutingConfig(ienv, jHHConfig);
+	if (hhConfig) {
+		//HH routing
+		RoutePlannerFrontEnd rpfe(hhConfig);
+		r = rpfe.searchHHRoute(c);
+	} else {
+		r = searchRouteInternal(c, false);
+	}
+
 	UNORDERED(map)<int64_t, int> indexes;
 	for (int t = 0; t < ienv->GetArrayLength(regions); t++) {
 		jobject oreg = ienv->GetObjectArrayElement(regions, t);
@@ -1818,6 +1895,10 @@ extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_nativeRo
 	if (c != NULL && !ienv->GetBooleanField(jCtx, jfield_RoutingContext_keepNativeRoutingContext)) {
 		ienv->SetLongField(jCtx, jfield_RoutingContext_nativeRoutingContext, 0);
 		delete c;
+	}
+	if (hhConfig) {
+		delete hhConfig;
+		hhConfig = NULL;
 	}
 	return res;
 }

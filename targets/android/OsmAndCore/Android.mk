@@ -70,7 +70,10 @@ LOCAL_SRC_FILES := \
 	$(OSMAND_CORE_RELATIVE)/src/turnType.cpp \
 	$(OSMAND_CORE_RELATIVE)/src/proto/osmand_index.pb.cc \
 	$(OSMAND_CORE_RELATIVE)/src/java_wrap.cpp \
-	$(OSMAND_CORE_RELATIVE)/src/routeCalculationProgress.cpp
+	$(OSMAND_CORE_RELATIVE)/src/routeCalculationProgress.cpp \
+	$(OSMAND_CORE_RELATIVE)/src/hhRouteDataStructure.cpp \
+	$(OSMAND_CORE_RELATIVE)/src/hhRoutePlanner.cpp \
+	$(OSMAND_CORE_RELATIVE)/src/NetworkDBPointRouteInfo.cpp
 	
 ifdef OSMAND_PROFILE_NATIVE_OPERATIONS
 	LOCAL_CFLAGS += \

@@ -15,7 +15,7 @@ struct NetworkDBPointRouteInfo {
     double rtCost;
     SHARED_PTR<RouteSegment> rtDetailedRoute;
     
-    NetworkDBPointRouteInfo(): rtDetailedRoute() {
+    NetworkDBPointRouteInfo(): rtRouteToPoint(nullptr), rtVisited(false), rtDistanceFromStart(0), rtDistanceToEnd(0), rtCost(0), rtDetailedRoute() {
     }
     
     int getDepth(bool rev);

@@ -3650,6 +3650,25 @@ BinaryMapFile* initBinaryMapFile(std::string inputName, bool useLive, bool routi
 			mapFile->routingIndexes.push_back(mi);
 			mapFile->indexes.push_back(mapFile->routingIndexes.back());
 		}
+        
+        for (int i = 0; i < fo->hhroutingindex_size() && !mapFile->liveMap; i++) {
+            auto mi = std::make_shared<HHRouteIndex>();
+            OsmAnd::OBF::HHRoutingPart mp = fo->hhroutingindex(i);
+            mi->filePointer = mp.offset();
+            mi->length = mp.size();
+            mi->edition = mp.edition();
+            mi->profile = mp.profile();
+            for (int j = 0; j < mp.profileparams_size(); j++) {
+                mi->profileParams.push_back(mp.profileparams(j));
+            }
+            mi->top = std::make_shared<HHRoutePointsBox>();
+            mi->top->bottom = mp.bottom();
+            mi->top->right = mp.right();
+            mi->top->left = mp.left();
+            mi->top->top = mp.top();
+            mapFile->hhIndexes.push_back(mi);
+            mapFile->indexes.push_back(mapFile->hhIndexes.back());
+        }
 		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "Native file initialized from cache: %s %d ms",
 						  inputName.c_str(), timer.GetElapsedMs());
 	} else {

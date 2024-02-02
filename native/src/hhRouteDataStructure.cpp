@@ -42,7 +42,7 @@ std::vector<NetworkDBPoint *> DataTileManager::getClosestObjects(double latitude
 }
 
 NetworkDBSegment * NetworkDBPoint::getSegment(const NetworkDBPoint * target, bool dir) const {
-    auto & l = (dir ? connected : connectedReverse);
+    std::vector<NetworkDBSegment *> l = (dir ? connected : connectedReverse);
     for (NetworkDBSegment * s : l) {
         if (dir && s->end == target) {
             return s;
