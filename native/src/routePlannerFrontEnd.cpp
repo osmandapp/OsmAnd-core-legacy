@@ -1006,19 +1006,20 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchHHRoute(Routi
         if (!ctx->progress) {
             ctx->progress = std::make_shared<RouteCalculationProgress>();
         }
-        vector<int> targetsX = {ctx->targetX};
-        vector<int> targetsY = {ctx->targetY};
+        vector<int> targetsX;
+        vector<int> targetsY;
         bool intermediatesEmpty = ctx->intermediatesX.empty();
         if (!intermediatesEmpty) {
             targetsX.insert(targetsX.end(), ctx->intermediatesX.begin(), ctx->intermediatesX.end());
             targetsY.insert(targetsY.end(), ctx->intermediatesY.begin(), ctx->intermediatesY.end());
         }
+        targetsX.push_back(ctx->targetX);
+        targetsY.push_back(ctx->targetY);
         HHRoutePlanner routePlanner(ctx);
-        HHNetworkRouteRes * res;
         HHNetworkRouteRes * r = nullptr;
         double dir = ctx->config->initialDirection ;
         for (int i = 0; i < targetsX.size(); i++) {
-            res = calculateHHRoute(routePlanner, i == 0 ? ctx->startX : targetsX.at(i - 1),
+            HHNetworkRouteRes * res = calculateHHRoute(routePlanner, i == 0 ? ctx->startX : targetsX.at(i - 1),
                                    i == 0 ? ctx->startY : targetsY.at(i - 1),
                                    targetsX.at(i), targetsY.at(i), dir);
             if (!r) {
