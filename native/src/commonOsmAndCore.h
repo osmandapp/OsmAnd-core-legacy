@@ -8,8 +8,8 @@
 #include <string>
 #include <vector>
 
-#include "Internal.h"
 #include "CommonCollections.h"
+#include "Internal.h"
 
 // M_PI is no longer part of math.h/cmath by standart, but some GCC's define them
 #define _USE_MATH_DEFINES
@@ -350,6 +350,44 @@ class MapDataObject {
 		}
 		return 0;
 	}
+};
+
+struct RenderableObject {
+	MapDataObject* obj;
+
+	// general
+	int64_t id;
+	std::string type;
+	std::vector<std::pair<int, int>> points;
+	std::vector<tag_value> types;
+	std::vector<tag_value> additionalTypes;
+	bool visible = false;
+
+	// points
+	std::string mainIcon;
+	std::vector<std::string> additionalIcons;
+	std::string shield;
+	double iconX;
+	double iconY;
+	int iconOrder;
+	int iconSize;
+
+	// text
+	std::string text;
+	int textSize;
+	int textOnPath;
+	
+	RenderableObject(MapDataObject* _obj) : obj(_obj) {
+		if (obj) {
+			id = obj->id;
+			points = obj->points;
+			types = obj->types;
+			additionalTypes = obj->additionalTypes;
+		} else {
+			id = 0;
+		}
+	}
+	std::string toJson() const;
 };
 
 struct FoundMapDataObject {

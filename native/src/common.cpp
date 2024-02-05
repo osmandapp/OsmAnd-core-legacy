@@ -1,6 +1,7 @@
 #include "CommonCollections.h"
 #include "Logging.h"
 #include "commonOsmAndCore.h"
+#include "json.hpp"
 
 #if defined(_WIN32)
 //#	include <windows.h>
@@ -507,4 +508,54 @@ void trimspec(std::string &text) {
 			return;
 		}
 	}
+}
+
+std::string RenderableObject::toJson() const {
+	json::JSON j;
+	// general
+	j["id"] = id;
+	j["type"] = type;
+	j["points"] = json::Array();
+	for (const auto& p : points) {
+		json::JSON point = json::Array();
+		point.append(get31LatitudeY(p.first));
+		point.append(get31LongitudeX(p.second));
+		j["points"].append(point);
+	}
+
+	j["types"] = json::Array();
+	for (const auto& t : types) {
+		json::JSON type;
+		type["tag"] = t.first;
+		type["value"] = t.second;
+		j["types"].append(type);
+	}
+
+	j["additionalTypes"] = json::Array();
+	for (const auto& at : additionalTypes) {
+		json::JSON additionalType;
+		additionalType["tag"] = at.first;
+		additionalType["value"] = at.second;
+		j["additionalTypes"].append(additionalType);
+	}
+
+	// points
+	j["mainIcon"] = mainIcon;
+	j["additionalIcons"] = json::Array();
+	for (const auto& icon : additionalIcons) {
+		j["additionalIcons"].append(icon);
+	}
+
+	j["shield"] = shield;
+	j["iconX"] = iconX;
+	j["iconY"] = iconY;
+	j["iconOrder"] = iconOrder;
+	j["iconSize"] = iconSize;
+
+	// text
+	j["text"] = text;
+	j["textSize"] = textSize;
+	j["textOnPath"] = textOnPath;
+
+	return j.dump();
 }
