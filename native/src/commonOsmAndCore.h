@@ -356,19 +356,13 @@ struct RenderableObject {
 	MapDataObject* obj;
 
 	// general
-	int64_t id;
 	std::string type;
-	std::vector<std::pair<int, int>> points;
-	std::vector<tag_value> types;
-	std::vector<tag_value> additionalTypes;
 	bool visible = false;
 
 	// points
 	std::string mainIcon;
 	std::vector<std::string> additionalIcons;
 	std::string shield;
-	double iconX;
-	double iconY;
 	int iconOrder;
 	int iconSize;
 
@@ -378,15 +372,24 @@ struct RenderableObject {
 	int textOnPath;
 	
 	RenderableObject(MapDataObject* _obj) : obj(_obj) {
-		if (obj) {
-			id = obj->id;
-			points = obj->points;
-			types = obj->types;
-			additionalTypes = obj->additionalTypes;
-		} else {
-			id = 0;
-		}
 	}
+
+	int64_t getId() const {
+		return obj ? obj->id : -1;
+	}
+
+	const std::vector<std::pair<int, int>> getPoints() const {
+		return obj ? obj->points : std::vector<std::pair<int, int>>{};
+	}
+
+	const std::vector<tag_value> getTypes() const {
+		return obj ? obj->types : std::vector<tag_value>{};
+	}
+
+	const std::vector<tag_value> getAdditionalTypes() const {
+		return obj ? obj->additionalTypes : std::vector<tag_value>{};
+	}
+
 	std::string toJson() const;
 };
 

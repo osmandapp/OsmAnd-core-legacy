@@ -513,10 +513,11 @@ void trimspec(std::string &text) {
 std::string RenderableObject::toJson() const {
 	json::JSON j;
 	// general
-	j["id"] = id;
+	j["id"] = getId();
 	j["type"] = type;
 	j["points"] = json::Array();
-	for (const auto& p : points) {
+	
+	for (const auto& p : getPoints()) {
 		json::JSON point = json::Array();
 		point.append(get31LatitudeY(p.first));
 		point.append(get31LongitudeX(p.second));
@@ -524,7 +525,7 @@ std::string RenderableObject::toJson() const {
 	}
 
 	j["types"] = json::Array();
-	for (const auto& t : types) {
+	for (const auto& t : getTypes()) {
 		json::JSON type;
 		type["tag"] = t.first;
 		type["value"] = t.second;
@@ -532,7 +533,7 @@ std::string RenderableObject::toJson() const {
 	}
 
 	j["additionalTypes"] = json::Array();
-	for (const auto& at : additionalTypes) {
+	for (const auto& at : getAdditionalTypes()) {
 		json::JSON additionalType;
 		additionalType["tag"] = at.first;
 		additionalType["value"] = at.second;
@@ -547,8 +548,6 @@ std::string RenderableObject::toJson() const {
 	}
 
 	j["shield"] = shield;
-	j["iconX"] = iconX;
-	j["iconY"] = iconY;
 	j["iconOrder"] = iconOrder;
 	j["iconSize"] = iconSize;
 

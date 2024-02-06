@@ -17,7 +17,6 @@
 #include <time.h>
 
 #include <algorithm>
-#include <iostream>
 #include <set>
 #include <vector>
 
@@ -728,7 +727,7 @@ static sk_sp<SkTypeface> sBoldTypeface = nullptr;
 static sk_sp<SkTypeface> sBoldItalicTypeface = nullptr;
 
 void drawTextOverCanvas(RenderingContext* rc, RenderingRuleSearchRequest* req, SkCanvas* cv,
-						std::unordered_map<int64_t, RenderableObject*>& renderableObjects) {
+						std::unordered_map<int64_t, std::unique_ptr<RenderableObject>>& renderableObjects) {
 	SkRect r = SkRect::MakeLTRB(0, 0, rc->getWidth(), rc->getHeight());
 	r.inset(-rc->getDensityValue(25), -rc->getDensityValue(25));
 	quad_tree<SHARED_PTR<TextDrawInfo>> boundsIntersect(r, 4, 0.6);
@@ -813,7 +812,7 @@ void drawTextOverCanvas(RenderingContext* rc, RenderingRuleSearchRequest* req, S
 			// draw text
 			auto it = renderableObjects.find(textDrawInfo->object.id);
 			if (it != renderableObjects.end()) {
-				RenderableObject* rObj = it->second;
+				auto& rObj = it->second;
 				if (rObj != nullptr && textDrawInfo->text != "") {
 					rObj->visible = true;
 					rObj->text = textDrawInfo->text;
