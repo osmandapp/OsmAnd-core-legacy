@@ -1038,12 +1038,10 @@ std::vector<NetworkDBSegment *> parseSegments(HHRoutingContext * ctx, std::vecto
     return l;
 }
 
-void setSegments(CodedInputStream * input, HHRoutingContext * ctx, NetworkDBPoint * point) {
+void setSegments(CodedInputStream * input, HHRoutingContext * ctx, std::vector<int32_t> & segmentsIn, std::vector<int32_t> & segmentsOut) {
     uint32_t size;
     input->ReadVarint32(&size);
     int oldLimit = input->PushLimit(size);
-    std::vector<int32_t> segmentsIn;
-    std::vector<int32_t> segmentsOut;
     bool loop = true;
     int x;
     int old;
@@ -1077,9 +1075,6 @@ void setSegments(CodedInputStream * input, HHRoutingContext * ctx, NetworkDBPoin
     } while (loop);
     
     input->PopLimit(oldLimit);
-    
-    point->connectedSet(true, parseSegments(ctx, segmentsIn, ctx->getIncomingPoints(point), point, false));
-    point->connectedSet(false, parseSegments(ctx, segmentsOut, ctx->getOutgoingPoints(point), point, true));
 }
 
 int loadNetworkSegmentPoint(CodedInputStream * input, HHRoutingContext * ctx, SHARED_PTR<HHRouteRegionPointsCtx> regCtx, HHRouteBlockSegments * block, int searchInd) {
@@ -1136,9 +1131,13 @@ int loadNetworkSegmentPoint(CodedInputStream * input, HHRoutingContext * ctx, SH
                 } else {
                     int pntFileId = (ind++) + block->idRangeStart;
                     NetworkDBPoint * point = regCtx->getPoint(pntFileId);
+                    std::vector<int32_t> segmentsIn;
+                    std::vector<int32_t> segmentsOut;
+                    setSegments(input, ctx, segmentsIn, segmentsOut);
                     if (point != nullptr) {
                         // not used from this file
-                        setSegments(input, ctx, point);
+                        point->connectedSet(true, parseSegments(ctx, segmentsIn, ctx->getIncomingPoints(point), point, false));
+                        point->connectedSet(false, parseSegments(ctx, segmentsOut, ctx->getOutgoingPoints(point), point, true));
                         loaded += point->conn(true).size() + point->conn(false).size();
                     }
                 }
