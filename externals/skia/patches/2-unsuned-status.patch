@@ -1,0 +1,11 @@
+--- upstream.patched/third_party/externals/harfbuzz/src/hb-coretext_copy.cc	2024-01-29 11:01:59
++++ upstream.patched/third_party/externals/harfbuzz/src/hb-coretext.cc	2024-01-29 11:10:35
+@@ -859,7 +859,7 @@ resize_and_retry:
+     DEBUG_MSG (CORETEXT, nullptr, "Num runs: %d", num_runs);
+ 
+     buffer->len = 0;
+-    uint32_t status_and = ~0, status_or = 0;
++    HB_UNUSED uint32_t status_and = ~0, status_or = 0;
+     CGFloat advances_so_far = 0;
+     /* For right-to-left runs, CoreText returns the glyphs positioned such that
+      * any trailing whitespace is to the left of (0,0).  Adjust coordinate system

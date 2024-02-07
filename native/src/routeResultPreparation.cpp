@@ -541,6 +541,9 @@ RoadSplitStructure calculateRoadSplitStructure(SHARED_PTR<RouteSegmentResult>& p
                         rs.leftLanesInfo.push_back(turnLanesAttachedRoad);
                     }
                 }
+                for (int i = 0; i < lanes; i++) {
+                    rs.attachedAngles.push_back(deviation);
+                }
                 rs.speak = rs.speak || rsSpeakPriority <= speakPriority;
             } else {
                 if (attachedOnTheRight) {
@@ -550,7 +553,6 @@ RoadSplitStructure calculateRoadSplitStructure(SHARED_PTR<RouteSegmentResult>& p
                 }
             }
         }
-        rs.attachedAngles.push_back(deviation);
     }
     return rs;
 }
@@ -801,9 +803,14 @@ vector<int> createCombinedTurnTypeForSingleLane(RoadSplitStructure & rs, double 
     bool allStraight = rs.allAreStraight();
     vector<int> lanes(1);
     int extraLanes = 0;
+    double prevAngle = NAN;
     //iterate from left to right turns
     for (int i = size - 1; i >= 0; i--) {
         double angle = rs.attachedAngles[i];
+        if (!isnan(prevAngle) && angle == prevAngle) {
+            continue;
+        }
+        prevAngle = angle;
         int turn;
         if (allStraight) {
             //create fork intersection
@@ -834,18 +841,18 @@ vector<int> createCombinedTurnTypeForSingleLane(RoadSplitStructure & rs, double 
 SHARED_PTR<TurnType> createSimpleKeepLeftRightTurn(bool leftSide, SHARED_PTR<RouteSegmentResult>& prevSegm,
                                                  SHARED_PTR<RouteSegmentResult>& currentSegm, RoadSplitStructure& rs) {
     double deviation = degreesDiff(prevSegm->getBearingEnd(), currentSegm->getBearingBegin());
-    bool makeSlightTurn = abs(deviation) > TURN_SLIGHT_DEGREE && (!isMotorway(prevSegm) || !isMotorway(currentSegm));
+    bool makeSlightTurn = abs(deviation) > TURN_SLIGHT_DEGREE;
     SHARED_PTR<TurnType> t = nullptr;
-    int laneType = TurnType::C;
+    int mainLaneType = TurnType::C;
     if (rs.keepLeft && rs.keepRight) {
         t = TurnType::ptrValueOf(TurnType::C, leftSide);
     } else if (rs.keepLeft || rs.keepRight) {
         if (deviation < -TURN_SLIGHT_DEGREE && makeSlightTurn) {
             t = TurnType::ptrValueOf(TurnType::TSLR, leftSide);
-            laneType = TurnType::TSLR;
+            mainLaneType = TurnType::TSLR;
         } else if (deviation > TURN_SLIGHT_DEGREE && makeSlightTurn) {
             t = TurnType::ptrValueOf(TurnType::TSLL, leftSide);
-            laneType = TurnType::TSLL;
+            mainLaneType = TurnType::TSLL;
         } else {
             t = TurnType::ptrValueOf(rs.keepLeft ? TurnType::KL : TurnType::KR, leftSide);
         }
@@ -855,36 +862,46 @@ SHARED_PTR<TurnType> createSimpleKeepLeftRightTurn(bool leftSide, SHARED_PTR<Rou
     int currentLanesCount = countLanesMinOne(currentSegm);
     int prevLanesCount = countLanesMinOne(prevSegm);
     bool oneLane = currentLanesCount == 1 && prevLanesCount == 1;
-    int ls = currentLanesCount + rs.leftLanes + rs.rightLanes;
-    vector<int> lanes(ls);
+    vector<int> lanes(prevLanesCount);
     if (oneLane) {
         lanes = createCombinedTurnTypeForSingleLane(rs, deviation);
     } else {
-        for (int it = 0; it < ls; it++) {
-            if (it < rs.leftLanes) {
-                //lanes left from active
-                if (laneType != TurnType::C) {
-                    //avoid repeat of turns, e.g. for TSLL get TL
-                    lanes[it] = TurnType::getPrev(laneType) << 1;
-                } else {
-                    // can be several straight directions
-                    lanes[it] = TurnType::C << 1;
-                }
-            } else if (it >= rs.leftLanes + currentLanesCount) {
-                //lanes in right from active
-                if (laneType != TurnType::C) {
-                    lanes[it] = TurnType::getNext(laneType) << 1;
-                } else {
-                    lanes[it] = TurnType::C << 1;
-                }
+        bool ltr = rs.leftLanes < rs.rightLanes;
+        // active lanes
+        for(int i = 0; i < min(prevLanesCount, currentLanesCount); i++) {
+            int ind = ltr ? i : lanes.size() - i - 1;
+            lanes[ind] = (mainLaneType << 1) + 1;
+        }
+        // left lanes
+        for(int i = 0; i < min(prevLanesCount, rs.leftLanes); i++) {
+            int lane = getTurnByAngle(rs.attachedAngles[i]);
+            if (lane >= mainLaneType) {
+                lane = TurnType::getPrev(mainLaneType);
+            }
+            if (lanes[i] == 0) {
+                lanes[i] = lane << 1;
             } else {
-                //active lane
-                if (currentLanesCount == 1) {
-                    auto combined = createCombinedTurnTypeForSingleLane(rs, deviation);
-                    lanes[it] = combined[0];
-                } else {
-                    lanes[it] = (laneType << 1) + 1;
-                }
+                TurnType::setSecondaryTurn(lanes, i, lane);
+            }
+        }
+        // right lanes
+        for (int i = 0; i < min(prevLanesCount, rs.rightLanes); i++) {
+            int ind = lanes.size() - i - 1;
+            int lane = getTurnByAngle(rs.attachedAngles[rs.leftLanes + rs.rightLanes - i - 1]);
+            if (lane <= mainLaneType) {
+                lane = TurnType::getNext(mainLaneType);
+            }
+            if (lanes[ind] == 0) {
+                lanes[ind] = lane << 1;
+            } else {
+                TurnType::setSecondaryTurn(lanes, ind, lane);
+            }
+        }
+
+        // Fill All left empty slots with inactive C
+        for (int i = 0; i < prevLanesCount; i++) {
+            if (lanes[i] == 0) {
+                lanes[i] = TurnType::C << 1;
             }
         }
     }
@@ -1983,6 +2000,22 @@ void avoidKeepForThroughMoving(vector<SHARED_PTR<RouteSegmentResult> >& result) 
     }
 }
 
+void removeMuteGoAhead(vector<SHARED_PTR<RouteSegmentResult> >& result) {
+    for (int i = 0; i < result.size(); i++) {
+        auto & curr = result[i];
+        auto & turnType = curr->turnType;
+        if (!turnType || !turnType->goAhead() || !turnType->isSkipToSpeak() || 
+                turnType->getLanes().empty()) {
+            continue;
+        }
+        int cnt = turnType->countTurnTypeDirections(TurnType::C, true);
+        int cntAll = turnType->countTurnTypeDirections(TurnType::C, false);
+        if (cnt > 0 && cnt == cntAll && cnt >= 2 && (turnType->getLanes().size() - cnt) <= 1) {
+            curr->turnType = nullptr;
+        }
+    }
+}
+
 void prepareTurnResults(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResult> >& result) {
     for (int i = 0; i < result.size(); i ++) {
         const auto& turnType = getTurnInfo(result, i, ctx->leftSideNavigation);
@@ -1993,6 +2026,7 @@ void prepareTurnResults(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResul
     ignorePrecedingStraightsOnSameIntersection(ctx->leftSideNavigation, result);
     justifyUTurns(ctx->leftSideNavigation, result);
     avoidKeepForThroughMoving(result);
+    removeMuteGoAhead(result);
     addTurnInfoDescriptions(result);
 }
 
