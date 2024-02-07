@@ -803,7 +803,7 @@ vector<int> createCombinedTurnTypeForSingleLane(RoadSplitStructure & rs, double 
     bool allStraight = rs.allAreStraight();
     vector<int> lanes(1);
     int extraLanes = 0;
-    double prevAngle = NaN;
+    double prevAngle = NAN;
     //iterate from left to right turns
     for (int i = size - 1; i >= 0; i--) {
         double angle = rs.attachedAngles[i];
