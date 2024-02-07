@@ -44,10 +44,10 @@ class RoutePlannerFrontEnd {
     
     bool TRACE_ROUTING = false;
     bool USE_HH_ROUTING = false;
-    bool USE_ONLY_HH_ROUTING = false;
     HHRoutingConfig * HH_ROUTING_CONFIG = nullptr;
     
 public:
+    bool USE_ONLY_HH_ROUTING = false;
     
     RoutePlannerFrontEnd() : useSmartRouteRecalculation(true) {
     }
