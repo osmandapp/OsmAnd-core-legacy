@@ -386,6 +386,7 @@ double getDistance(double lat1, double lon1, double lat2, double lon2);
 double getPowZoom(float zoom);
 
 double measuredDist31(int x1, int y1, int x2, int y2);
+double getTileDistanceWidth(double lat, float zoom);
 double squareDist31TileMetric(int x1, int y1, int x2, int y2);
 double squareRootDist31(int x1, int y1, int x2, int y2);
 double getTileWidth(int y31);

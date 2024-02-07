@@ -72,6 +72,23 @@ class RouteCalculationProgress {
 							  int reverseSegmentQueueSize);
 	virtual float getLinearProgress();
 	virtual float getApproximationProgress();
+    
+    enum HHIteration {
+        //in percent
+        SELECT_REGIONS = 5,
+        LOAD_POINS = 5,
+        START_END_POINT = 25,
+        ROUTING = 25,
+        DETAILED = 30,
+        ALTERNATIVES = 10,
+        DONE = 0
+    };
+    
+    HHIteration hhIterationStep;
+    void hhIteration(HHIteration step) {
+        hhIterationStep = step;
+    }
+    
 };
 
 #endif /*_OSMAND_ROUTE_CALCULATION_PROGRESS_H*/

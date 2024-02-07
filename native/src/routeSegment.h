@@ -72,6 +72,8 @@ struct RouteSegment {
     inline int getEndPointY() { return road->getPoint31YTile(segmentEnd); }
     
     inline int getEndPointX() { return road->getPoint31XTile(segmentEnd); }
+    
+    float getDistanceFromStart() { return distanceFromStart; }
 
 	inline bool isPositive() { return segmentEnd > segmentStart; }
 
