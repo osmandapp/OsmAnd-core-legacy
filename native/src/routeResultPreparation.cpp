@@ -280,7 +280,7 @@ void calculateTimeSpeed(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResul
         auto rr = result[i];
         auto road = rr->object;
         double distOnRoadToPass = 0;
-        double speed = ctx->config->router->defineVehicleSpeed(road);
+        double speed = ctx->config->router->defineVehicleSpeed(road, rr->isForwardDirection());
         if (speed == 0) {
             speed = ctx->config->router->getDefaultSpeed();
         } else {

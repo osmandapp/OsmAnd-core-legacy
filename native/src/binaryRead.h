@@ -69,7 +69,7 @@ struct RouteSubregion {
 	uint32_t top;
 	uint32_t bottom;
 	std::vector<RouteSubregion> subregions;
-    SHARED_PTR<RoutingIndex> routingIndex;
+	SHARED_PTR<RoutingIndex> routingIndex;
 
 	RouteSubregion(const SHARED_PTR<RoutingIndex>& ind) : length(0), filePointer(0), mapDataBlock(0), routingIndex(ind) {
 	}
@@ -87,6 +87,7 @@ enum PART_INDEXES {
 	ADDRESS_INDEX,
 	TRANSPORT_INDEX,
 	ROUTING_INDEX,
+    HH_INDEX
 };
 
 struct BinaryPartIndex {
@@ -130,7 +131,7 @@ struct RoutingIndex : BinaryPartIndex {
 	void completeRouteEncodingRules();
 
 	uint32_t findOrCreateRouteType(const std::string& tag, const std::string& value);
-    
+
 	uint32_t searchRouteEncodingRule(const std::string& tag, const std::string& value);
 
 	RouteTypeRule& quickGetEncodingRule(uint32_t id) {
@@ -138,12 +139,100 @@ struct RoutingIndex : BinaryPartIndex {
 	}
 };
 
+struct HHRoutePointsBox {
+    uint32_t length;
+    int32_t filePointer;
+    int32_t left, right, bottom, top;
+    bool init;
+    
+    HHRoutePointsBox(): length(0), filePointer(0), left(0), right(0), bottom(0), top(0), init(false) {
+    }
+
+    SkRect getSkRect() {
+        SkRect qr = SkRect::MakeLTRB(left, top, right, bottom);
+        return qr;
+    }
+
+    bool contains(int x, int y) {
+        return x >= left && x <= right && y >= top && y <= bottom;
+    }
+};
+
+struct HHRouteBlockSegments {
+    int idRangeStart;
+    int32_t idRangeLength;
+    int profileId;
+    uint32_t length;
+    int filePointer;
+    
+    ~HHRouteBlockSegments() {
+        for (auto & s : sublist) {
+            delete s;
+        }
+    }
+    
+    std::vector<HHRouteBlockSegments *> sublist;
+};
+
+struct HHRouteIndex : BinaryPartIndex {
+    //HHRouteRegion
+    uint64_t edition;
+    std::string profile;
+    std::vector<std::string> profileParams;
+    SHARED_PTR<HHRoutePointsBox> top;
+    // not stored in cache
+    std::vector<HHRouteBlockSegments *> segments;
+    SkRect * rect;
+    
+    HHRouteIndex() : BinaryPartIndex(HH_INDEX), edition(0), profile(""), rect(nullptr) {
+    }
+    
+    ~HHRouteIndex() {
+        for (auto & s : segments) {
+            delete s;
+        }
+        delete rect;
+    }
+    
+    SkRect * getSkRect() {
+        if (rect == nullptr) {
+            if (!top) {
+                rect = new SkRect();
+            } else {
+                rect = new SkRect(top->getSkRect());
+            }
+        }
+        return rect;
+    }
+    
+    double intersectionArea(SkRect b) {
+        if (rect == nullptr) {
+            rect = getSkRect();
+        }
+        double xleft = std::max(std::min(rect->left(), rect->right()), std::min(b.left(), b.right()));
+        double xright = std::min(std::max(rect->left(), rect->right()), std::max(b.left(), b.right()));
+        double ytop = std::max(std::min(rect->top(), rect->bottom()), std::min(b.top(), b.bottom()));
+        double ybottom = std::min(std::max(rect->top(), rect->bottom()), std::max(b.top(), b.bottom()));
+        if (xright <= xleft || ybottom <= ytop) {
+            return 0;
+        }
+        double intersectionArea = (xright - xleft) * (ybottom - ytop);
+        return intersectionArea;
+    }
+    
+    HHRouteBlockSegments * createHHRouteBlockSegments() {
+        // all segments stored in std::vector<HHRouteBlockSegments *> segments
+        HHRouteBlockSegments * np = new HHRouteBlockSegments();
+        return np;
+    }
+};
+
 struct RouteDataObject {
 	const static int RESTRICTION_SHIFT = 3;
 	const static uint64_t RESTRICTION_MASK = 7;
 	const static int HEIGHT_UNDEFINED = -80000;
 
-    SHARED_PTR<RoutingIndex> region;
+	SHARED_PTR<RoutingIndex> region;
 	std::vector<uint32_t> types;
 	std::vector<uint32_t> pointsX;
 	std::vector<uint32_t> pointsY;
@@ -155,16 +244,16 @@ struct RouteDataObject {
 	std::vector<double> heightDistanceArray;
 	int64_t id;
 
-    void setPointTypes(int pntInd, std::vector<uint32_t> array) {
-        if (pointTypes.size() <= pntInd) {
-            std::vector<std::vector<uint32_t>> npointTypes(pntInd + 1);
-            for (int k = 0; k < pointTypes.size(); k++) {
-                npointTypes[k] = pointTypes[k];
-            }
-            pointTypes = npointTypes;
-        }
-        pointTypes[pntInd] = array;
-    }
+	void setPointTypes(int pntInd, std::vector<uint32_t> array) {
+		if (pointTypes.size() <= pntInd) {
+			std::vector<std::vector<uint32_t>> npointTypes(pntInd + 1);
+			for (int k = 0; k < pointTypes.size(); k++) {
+				npointTypes[k] = pointTypes[k];
+			}
+			pointTypes = npointTypes;
+		}
+		pointTypes[pntInd] = array;
+	}
 
 	UNORDERED(map)<int, std::string> names;
 	vector<pair<uint32_t, uint32_t>> namesIds;
@@ -343,14 +432,14 @@ struct RouteDataObject {
 
    #ifdef _IOS_BUILD
 	inline string transliterate(const string& s) {
-        QString transliterateName = OsmAnd::ICU::transliterateToLatin(QString::fromStdString(s));
-        return transliterateName.toStdString();
+		QString transliterateName = OsmAnd::ICU::transliterateToLatin(QString::fromStdString(s));
+		return transliterateName.toStdString();
 	}
    #endif
-    
+
    #ifndef _IOS_BUILD
    inline string transliterate(const string& s) {
-       return s;
+	   return s;
    }
    #endif
 
@@ -453,14 +542,30 @@ struct RouteDataObject {
 	inline int getPointsLength() {
 		return (int)pointsX.size();
 	}
-	
+
+	inline int getPoint31XTile(int i) {
+		return pointsX[i];
+	}
+
+	inline int getPoint31XTile(int s, int e) {
+		return pointsX[s] / 2 + pointsX[e] / 2;
+	}
+
+	inline int getPoint31YTile(int i) {
+		return pointsY[i];
+	}
+
+	inline int getPoint31YTile(int s, int e) {
+		return pointsY[s] / 2 + pointsY[e] / 2;
+	}
+
 	std::vector<uint32_t> getPointTypes(int ind) {
 		if (ind >= pointTypes.size()) {
 			return {};
 		}
 		return pointTypes[ind];
 	}
-	
+
 	void insert(int pos, int x31, int y31) {
 		pointsX.insert(pointsX.begin() + pos, x31);
 		pointsY.insert(pointsY.begin() + pos, y31);
@@ -479,7 +584,7 @@ struct RouteDataObject {
 	bool platform();
 
 	bool roundabout();
-	
+
 	bool hasTrafficLightAt(int i);
 
 	double simplifyDistance(int x, int y, int px, int py) {
@@ -772,11 +877,13 @@ struct BinaryMapFile {
 	std::vector<SHARED_PTR<RoutingIndex>> routingIndexes;
 	std::vector<SHARED_PTR<TransportIndex>> transportIndexes;
 	std::vector<SHARED_PTR<BinaryPartIndex>> indexes;
+    std::vector<SHARED_PTR<HHRouteIndex>> hhIndexes;
 	UNORDERED(map)<uint64_t, shared_ptr<IncompleteTransportRoute>> incompleteTransportRoutes;
 	bool incompleteLoaded = false;
 	int fd = -1;
 	int routefd = -1;
 	int geocodingfd = -1;
+    int hhfd = -1;
 	bool basemap;
 	bool external;
 	bool roadOnly;
@@ -784,7 +891,7 @@ struct BinaryMapFile {
 
 	int openFile() {
 #if defined(_WIN32)
-		int fileDescriptor = open(inputName.c_str(), O_RDONLY | O_BINARY);		
+		int fileDescriptor = open(inputName.c_str(), O_RDONLY | O_BINARY);
 #else
 		int fileDescriptor = open(inputName.c_str(), O_RDONLY);
 #endif
@@ -817,6 +924,13 @@ struct BinaryMapFile {
 		}
 		return geocodingfd;
 	}
+    
+    int getHhFD() {
+        if (hhfd <= 0) {
+            hhfd = openFile();
+        }
+        return hhfd;
+    }
 
 	bool isBasemap() {
 		return basemap;
@@ -970,4 +1084,9 @@ bool closeBinaryMapFile(std::string inputName);
 
 void getIncompleteTransportRoutes(BinaryMapFile* file);
 
+struct NetworkDBPoint;
+struct HHRoutingContext;
+struct HHRouteRegionPointsCtx;
+void initHHPoints(BinaryMapFile* file, SHARED_PTR<HHRouteIndex> reg, HHRoutingContext * ctx, short mapId, UNORDERED_map<int64_t, NetworkDBPoint *> & resPoints);
+int loadNetworkSegmentPoint(HHRoutingContext * ctx, SHARED_PTR<HHRouteRegionPointsCtx> regCtx, HHRouteBlockSegments * block, int searchInd);
 #endif

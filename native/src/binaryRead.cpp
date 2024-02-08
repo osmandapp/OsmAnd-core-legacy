@@ -18,6 +18,8 @@
 #undef max
 #endif
 
+#include "hhRouteDataStructure.h"
+
 using namespace std;
 #define DO_(EXPRESSION) \
 	if (!(EXPRESSION)) return false
@@ -765,6 +767,403 @@ bool readRoutingIndex(CodedInputStream* input, const SHARED_PTR<RoutingIndex>& r
 	return true;
 }
 
+NetworkDBPoint * readPoint(CodedInputStream* input, HHRoutingContext * hctx, short mapId,
+                                     UNORDERED_map<int64_t, NetworkDBPoint *> & mp, int dx, int dy) {
+    if (hctx == nullptr) {
+        return nullptr;
+    }
+    uint32_t tag;
+    int32_t len = 0;
+    int value;
+    int dualIdPoint = -1;
+    UNORDERED_map<int64_t, NetworkDBPoint *>::iterator it;
+    WireFormatLite::ReadPrimitive<int32_t, WireFormatLite::TYPE_INT32>(input, &len);
+    int oldLimit = input->PushLimit(len);
+    NetworkDBPoint * pnt = hctx->createNetworkDBPoint();
+    pnt->mapId = mapId;
+    while (true) {
+        tag = input->ReadTag();
+        switch (WireFormatLite::GetTagFieldNumber(tag)) {
+            case 0:
+                input->PopLimit(oldLimit);
+                mp.insert(std::pair<int64_t, NetworkDBPoint *>(pnt->index, pnt));
+                it = mp.find(dualIdPoint);
+                if (dualIdPoint >= 0 && it != mp.end()) {
+                    pnt->dualPoint = (*it).second;
+                    pnt->dualPoint->dualPoint = pnt;
+                    pnt->dualPoint->endX = pnt->startX;
+                    pnt->dualPoint->endY = pnt->startY;
+                    pnt->endX = pnt->dualPoint->startX;
+                    pnt->endY = pnt->dualPoint->startY;
+                }
+                return pnt;
+            case OsmAnd::OBF::OsmAndHHRoutingIndex::HHRouteNetworkPoint::kIdFieldNumber:
+                WireFormatLite::ReadPrimitive<int32_t, WireFormatLite::TYPE_INT32>(input, &pnt->fileId);
+                break;
+            case OsmAnd::OBF::OsmAndHHRoutingIndex::HHRouteNetworkPoint::kDxFieldNumber:
+                WireFormatLite::ReadPrimitive<int32_t, WireFormatLite::TYPE_SINT32>(input, &value);
+                pnt->endX = pnt->startX = (value + dx);
+                break;
+            case OsmAnd::OBF::OsmAndHHRoutingIndex::HHRouteNetworkPoint::kDyFieldNumber:
+                WireFormatLite::ReadPrimitive<int32_t, WireFormatLite::TYPE_SINT32>(input, &value);
+                pnt->endY = pnt->startY = (value + dy);
+                break;
+            case OsmAnd::OBF::OsmAndHHRoutingIndex::HHRouteNetworkPoint::kGlobalIdFieldNumber:
+                WireFormatLite::ReadPrimitive<int64_t, WireFormatLite::TYPE_INT64>(input, &pnt->index);
+                break;
+            case OsmAnd::OBF::OsmAndHHRoutingIndex::HHRouteNetworkPoint::kRoadIdFieldNumber:
+                WireFormatLite::ReadPrimitive<int64_t, WireFormatLite::TYPE_INT64>(input, &pnt->roadId);
+                break;
+            case OsmAnd::OBF::OsmAndHHRoutingIndex::HHRouteNetworkPoint::kRoadStartEndIndexFieldNumber:
+                WireFormatLite::ReadPrimitive<int32_t, WireFormatLite::TYPE_INT32>(input, &value);
+                pnt->start = (short) (value >> 1);
+                pnt->end = (short) (pnt->start + (value % 2 == 1 ? 1 : -1));
+                break;
+            case OsmAnd::OBF::OsmAndHHRoutingIndex::HHRouteNetworkPoint::kClusterIdFieldNumber:
+                WireFormatLite::ReadPrimitive<int32_t, WireFormatLite::TYPE_INT32>(input, &pnt->clusterId);
+                break;
+            case OsmAnd::OBF::OsmAndHHRoutingIndex::HHRouteNetworkPoint::kPartialIndFieldNumber:
+                int partial;
+                WireFormatLite::ReadPrimitive<int32_t, WireFormatLite::TYPE_INT32>(input, &partial);
+                pnt->incomplete = partial > 0;
+                break;
+            case OsmAnd::OBF::OsmAndHHRoutingIndex::HHRouteNetworkPoint::kDualPointIdFieldNumber:
+                WireFormatLite::ReadPrimitive<int32_t, WireFormatLite::TYPE_INT32>(input, &dualIdPoint);
+                break;
+            case OsmAnd::OBF::OsmAndHHRoutingIndex::HHRouteNetworkPoint::kDualClusterIdFieldNumber:
+                WireFormatLite::ReadPrimitive<int32_t, WireFormatLite::TYPE_INT32>(input, &value);
+                break;
+            default:
+                skipUnknownFields(input, tag);
+                break;
+        }
+    }
+    return nullptr;
+}
+
+SHARED_PTR<HHRoutePointsBox> readPointBox(CodedInputStream* input, const SHARED_PTR<HHRouteIndex>& hhIndex, HHRoutingContext * hctx,
+                                          short mapId, UNORDERED_map<int64_t, NetworkDBPoint *> & mp,
+                                          const SHARED_PTR<HHRoutePointsBox>& parent) {
+    SHARED_PTR<HHRoutePointsBox> box = make_shared<HHRoutePointsBox>();
+    readInt(input, &box->length);
+    box->filePointer = input->TotalBytesRead();
+    int oldLimit = input->PushLimit(box->length);
+    uint32_t tag;
+    while (true) {
+        if (hctx == nullptr && box->bottom != 0 && box->top != 0 && box->right != 0 && box->left != 0) {
+            input->Skip(input->BytesUntilLimit());
+        }
+        tag = input->ReadTag();
+        switch (WireFormatLite::GetTagFieldNumber(tag)) {
+            case 0:
+                input->PopLimit(oldLimit);
+                return box;
+            case OsmAnd::OBF::OsmAndHHRoutingIndex_HHRoutePointsBox::kBottomFieldNumber:
+                int32_t bottom;
+                WireFormatLite::ReadPrimitive<int32_t, WireFormatLite::TYPE_SINT32>(input, &bottom);
+                box->bottom = bottom + (parent ? parent->bottom : 0);
+                break;
+            case OsmAnd::OBF::OsmAndHHRoutingIndex_HHRoutePointsBox::kTopFieldNumber:
+                int32_t top;
+                WireFormatLite::ReadPrimitive<int32_t, WireFormatLite::TYPE_SINT32>(input, &top);
+                box->top = top + (parent ? parent->top : 0);
+                break;
+            case OsmAnd::OBF::OsmAndHHRoutingIndex_HHRoutePointsBox::kRightFieldNumber:
+                int32_t right;
+                WireFormatLite::ReadPrimitive<int32_t, WireFormatLite::TYPE_SINT32>(input, &right);
+                box->right = right + (parent ? parent->right : 0);
+                break;
+            case OsmAnd::OBF::OsmAndHHRoutingIndex_HHRoutePointsBox::kLeftFieldNumber:
+                int32_t left;
+                WireFormatLite::ReadPrimitive<int32_t, WireFormatLite::TYPE_SINT32>(input, &left);
+                box->left = left + (parent ? parent->left : 0);
+                break;
+            case OsmAnd::OBF::OsmAndHHRoutingIndex_HHRoutePointsBox::kBoxesFieldNumber:
+                if (hctx == nullptr) {
+                    input->Skip(input->BytesUntilLimit());
+                } else {
+                    readPointBox(input, hhIndex, hctx, mapId, mp, box);
+                }
+                break;
+            case OsmAnd::OBF::OsmAndHHRoutingIndex_HHRoutePointsBox::kPointsFieldNumber:
+                if (hctx == nullptr) {
+                    input->Skip(input->BytesUntilLimit());
+                } else {
+                    readPoint(input, hctx, mapId, mp, box->left, box->top);
+                }
+                break;
+            default: {
+                skipUnknownFields(input, tag);
+                break;
+            }
+        }
+    }
+    return nullptr;
+}
+
+bool readHHIndex(CodedInputStream* input, const SHARED_PTR<HHRouteIndex>& hhIndex) {
+    uint32_t defaultId = 1;
+    uint32_t tag;
+    string value;
+    hhIndex->profileParams.clear();
+    UNORDERED_map<int64_t, NetworkDBPoint *> mp;
+    while (true) {
+        tag = input->ReadTag();
+        switch (WireFormatLite::GetTagFieldNumber(tag)) {
+            case 0: {
+                return true;
+            }
+            case OsmAnd::OBF::OsmAndHHRoutingIndex::kEditionFieldNumber:
+                DO_((WireFormatLite::ReadPrimitive<uint64_t, WireFormatLite::TYPE_UINT64>(input, &hhIndex->edition)));
+                break;
+            case OsmAnd::OBF::OsmAndHHRoutingIndex::kProfileFieldNumber:
+                DO_((WireFormatLite::ReadString(input, &hhIndex->profile)));
+                break;
+            case OsmAnd::OBF::OsmAndHHRoutingIndex::kProfileParamsFieldNumber:
+                DO_((WireFormatLite::ReadString(input, &value)));
+                hhIndex->profileParams.push_back(value);
+                break;
+            case OsmAnd::OBF::OsmAndHHRoutingIndex::kPointBoxesFieldNumber:
+                hhIndex->top = readPointBox(input, hhIndex, nullptr, 0, mp, nullptr);
+                break;
+            case OsmAnd::OBF::OsmAndHHRoutingIndex::kPointSegmentsFieldNumber:
+                input->Skip(input->BytesUntilLimit());
+                break;
+            default:
+                if (!skipUnknownFields(input, tag)) {
+                    return false;
+                }
+                break;
+        }
+    }
+    return true;
+}
+
+bool readRegionSegmentHeader(CodedInputStream* input, HHRouteBlockSegments * block) {
+    readInt(input, &block->length);
+    block->filePointer = input->TotalBytesRead();
+    int oldLimit = input->PushLimit(block->length);
+    uint32_t tag;
+    while (true) {
+        tag = input->ReadTag();
+        switch (WireFormatLite::GetTagFieldNumber(tag)) {
+            case 0:
+                input->PopLimit(oldLimit);
+                return true;
+            case OsmAnd::OBF::OsmAndHHRoutingIndex::HHRouteBlockSegments::kIdRangeLengthFieldNumber:
+                DO_((WireFormatLite::ReadPrimitive<int32_t, WireFormatLite::TYPE_INT32>(input, &block->idRangeLength)));
+                break;
+            case OsmAnd::OBF::OsmAndHHRoutingIndex::HHRouteBlockSegments::kIdRangeStartFieldNumber:
+                DO_((WireFormatLite::ReadPrimitive<int32_t, WireFormatLite::TYPE_INT32>(input, &block->idRangeStart)));
+                break;
+            case OsmAnd::OBF::OsmAndHHRoutingIndex::HHRouteBlockSegments::kProfileIdFieldNumber:
+                DO_((WireFormatLite::ReadPrimitive<int32_t, WireFormatLite::TYPE_INT32>(input, &block->profileId)));
+                break;
+            case OsmAnd::OBF::OsmAndHHRoutingIndex::HHRouteBlockSegments::kInnerBlocksFieldNumber:
+                input->Skip(input->BytesUntilLimit());
+                break;
+            case OsmAnd::OBF::OsmAndHHRoutingIndex::HHRouteBlockSegments::kPointSegmentsFieldNumber:
+                input->Skip(input->BytesUntilLimit());
+                break;
+            default:
+                if (!skipUnknownFields(input, tag)) {
+                    return false;
+                }
+                break;
+        }
+    }
+    return true;
+}
+
+void initHHPoints(BinaryMapFile* file, SHARED_PTR<HHRouteIndex> reg, HHRoutingContext * hctx,
+                  short mapId, UNORDERED_map<int64_t, NetworkDBPoint *> & resPoints) {
+    lseek(file->getHhFD(), 0, SEEK_SET);
+    FileInputStream stream(file->getHhFD());
+    stream.SetCloseOnDelete(false);
+    CodedInputStream* input = new CodedInputStream(&stream);
+    input->SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
+    input->Seek(reg->filePointer);
+    int oldLimit = input->PushLimit(reg->length);
+    reg->segments = {};
+    uint32_t tag;
+    while (true) {
+        tag = input->ReadTag();
+        switch (WireFormatLite::GetTagFieldNumber(tag)) {
+            case 0:
+                input->PopLimit(oldLimit);
+                return;
+            case OsmAnd::OBF::OsmAndHHRoutingIndex::kPointBoxesFieldNumber:
+                readPointBox(input, reg, hctx, mapId, resPoints, nullptr);
+                break;
+            case OsmAnd::OBF::OsmAndHHRoutingIndex::kPointSegmentsFieldNumber: {
+                HHRouteBlockSegments * seg = reg->createHHRouteBlockSegments();
+                if (readRegionSegmentHeader(input, seg)) {
+                    reg->segments.push_back(seg);
+                } else {
+                    delete seg;
+                }
+                break;
+            }
+            default:
+                skipUnknownFields(input, tag);
+                break;
+        }
+    }
+}
+
+std::vector<NetworkDBSegment *> parseSegments(HHRoutingContext * ctx, std::vector<int32_t> pointSegments, std::vector<NetworkDBPoint *> lst, NetworkDBPoint * pnt, bool out)  {
+    std::vector<NetworkDBSegment *> l;
+    if (pointSegments.size() == 0 || pnt->incomplete) {
+        return l;
+    }
+    
+    if (pointSegments.size() < lst.size()) {
+        OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error,
+                          "HHRoutePointSegments size is less than %s %d < %d",
+                          out ? "OutgoingPoints" : "IncomingPoints", pointSegments.size(), lst.size());
+        return l;
+    }
+    
+    for (int i = 0; i < lst.size(); i++) {
+        int d = pointSegments.at(i);
+        if (d <= 0) {
+            continue;
+        }
+        double dist = d / 10.0;
+        NetworkDBPoint * start = out ? pnt : lst.at(i);
+        NetworkDBPoint * end = out ? lst.at(i) : pnt;
+        NetworkDBSegment * seg = ctx->createNetworkDBSegment(start, end, dist, out, false);
+        l.push_back(seg);
+    }
+    return l;
+}
+
+void setSegments(CodedInputStream * input, HHRoutingContext * ctx, std::vector<int32_t> & segmentsIn, std::vector<int32_t> & segmentsOut) {
+    uint32_t size;
+    input->ReadVarint32(&size);
+    int oldLimit = input->PushLimit(size);
+    bool loop = true;
+    int x;
+    int old;
+    do {
+        uint32_t t = input->ReadTag();
+        switch (WireFormatLite::GetTagFieldNumber(t)) {
+            case 0:
+                loop = false;
+                break;
+            case OsmAnd::OBF::OsmAndHHRoutingIndex_HHRoutePointSegments::kSegmentsInFieldNumber:
+                input->ReadVarint32(&size);
+                old = input->PushLimit(size);
+                while (input->BytesUntilLimit() > 0) {
+                    WireFormatLite::ReadPrimitive<int32_t, WireFormatLite::TYPE_INT32>(input, &x);
+                    segmentsIn.push_back(x);
+                }
+                input->PopLimit(old);
+                break;
+            case OsmAnd::OBF::OsmAndHHRoutingIndex_HHRoutePointSegments::kSegmentsOutFieldNumber:
+                input->ReadVarint32(&size);
+                old = input->PushLimit(size);
+                while (input->BytesUntilLimit() > 0) {
+                    WireFormatLite::ReadPrimitive<int32_t, WireFormatLite::TYPE_INT32>(input, &x);
+                    segmentsOut.push_back(x);
+                }
+                input->PopLimit(old);
+                break;
+            default:
+                skipUnknownFields(input, t);
+        }
+    } while (loop);
+    
+    input->PopLimit(oldLimit);
+}
+
+int loadNetworkSegmentPoint(CodedInputStream * input, HHRoutingContext * ctx, SHARED_PTR<HHRouteRegionPointsCtx> regCtx, HHRouteBlockSegments * block, int searchInd) {
+    if (block->sublist.size() > 0) {
+        for (auto * s : block->sublist) {
+            if (HHRoutingContext::checkId(searchInd, s)) {
+                return loadNetworkSegmentPoint(input, ctx, regCtx, s, searchInd);
+            }
+        }
+        return 0;
+    }
+    if (input->TotalBytesRead() != block->filePointer) {
+        input->Seek(block->filePointer);
+    }
+    int oldLimit = input->PushLimit(block->length);
+    uint32_t tag;
+    int loaded = 0;
+    int ind = 0;
+    while (true) {
+        tag = input->ReadTag();
+        switch (WireFormatLite::GetTagFieldNumber(tag)) {
+            case 0:
+                input->PopLimit(oldLimit);
+                return loaded;
+            case OsmAnd::OBF::OsmAndHHRoutingIndex_HHRouteBlockSegments::kIdRangeLengthFieldNumber:
+                WireFormatLite::ReadPrimitive<int32_t, WireFormatLite::TYPE_INT32>(input, &block->idRangeLength);
+                break;
+            case OsmAnd::OBF::OsmAndHHRoutingIndex_HHRouteBlockSegments::kIdRangeStartFieldNumber:
+                WireFormatLite::ReadPrimitive<int32_t, WireFormatLite::TYPE_INT32>(input, &block->idRangeStart);
+                break;
+            case OsmAnd::OBF::OsmAndHHRoutingIndex_HHRouteBlockSegments::kProfileIdFieldNumber:
+                WireFormatLite::ReadPrimitive<int32_t, WireFormatLite::TYPE_INT32>(input, &block->profileId);
+                break;
+            case OsmAnd::OBF::OsmAndHHRoutingIndex_HHRouteBlockSegments::kInnerBlocksFieldNumber:
+                if (!HHRoutingContext::checkId(searchInd, block)) {
+                    input->Skip(input->BytesUntilLimit());
+                } else {
+                    // read all sublist
+                    HHRouteBlockSegments * child = regCtx->fileRegion->createHHRouteBlockSegments();
+                    readInt(input, &child->length);
+                    child->filePointer = input->TotalBytesRead();
+                    int olLimit = input->PushLimit(child->length);
+//                    OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
+//                                      "BLOCK I:%d %d/%d - %d - %d %d",
+//                                      block->filePointer, block->idRangeStart, block->idRangeLength, block->sublist.size(), child->length, child->filePointer);
+                    loaded += loadNetworkSegmentPoint(input, ctx, regCtx, child, searchInd);
+                    input->PopLimit(olLimit);
+                    block->sublist.push_back(child);
+                }
+                break;
+            case OsmAnd::OBF::OsmAndHHRoutingIndex_HHRouteBlockSegments::kPointSegmentsFieldNumber:
+                if (!HHRoutingContext::checkId(searchInd, block)) {
+                    input->Skip(input->BytesUntilLimit());
+                } else {
+                    int pntFileId = (ind++) + block->idRangeStart;
+                    NetworkDBPoint * point = regCtx->getPoint(pntFileId);
+                    std::vector<int32_t> segmentsIn;
+                    std::vector<int32_t> segmentsOut;
+                    setSegments(input, ctx, segmentsIn, segmentsOut);
+                    if (point != nullptr) {
+                        // not used from this file
+                        point->connectedSet(true, parseSegments(ctx, segmentsIn, ctx->getIncomingPoints(point), point, false));
+                        point->connectedSet(false, parseSegments(ctx, segmentsOut, ctx->getOutgoingPoints(point), point, true));
+                        loaded += point->conn(true).size() + point->conn(false).size();
+                    }
+                }
+                break;
+            default:
+                skipUnknownFields(input, tag);
+                break;
+        }
+    }
+    input->PopLimit(oldLimit);
+    return 0;
+}
+
+int loadNetworkSegmentPoint(HHRoutingContext * ctx, SHARED_PTR<HHRouteRegionPointsCtx> regCtx, HHRouteBlockSegments * block, int searchInd) {
+    auto & file = regCtx->file;
+    auto & reg = regCtx->fileRegion;
+    
+    lseek(file->getHhFD(), 0, SEEK_SET);
+    FileInputStream stream(file->getHhFD());
+    stream.SetCloseOnDelete(false);
+    CodedInputStream * input = new CodedInputStream(&stream);
+    input->SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
+    input->Seek(reg->filePointer);
+    return loadNetworkSegmentPoint(input, ctx, regCtx, block, searchInd);
+}
+
 bool readTransportBounds(CodedInputStream* input, TransportIndex* ind) {
 	while (true) {
 		int si;
@@ -961,6 +1360,20 @@ bool initMapStructure(CodedInputStream* input, BinaryMapFile* file, bool useLive
 				input->Seek(tIndex->filePointer + tIndex->length);
 				break;
 			}
+            case OsmAnd::OBF::OsmAndStructure::kHhRoutingIndexFieldNumber: {
+                auto hhIndex = std::make_shared<HHRouteIndex>();
+                readInt(input, &hhIndex->length);
+                hhIndex->filePointer = input->TotalBytesRead();
+                int oldLimit = input->PushLimit(hhIndex->length);
+                readHHIndex(input, hhIndex);
+                input->PopLimit(oldLimit);
+                input->Seek(hhIndex->filePointer + hhIndex->length);
+                if (!file->liveMap || useLive) {
+                    file->hhIndexes.push_back(hhIndex);
+                    file->indexes.push_back(file->hhIndexes.back());
+                }
+                break;
+            }
 			case OsmAnd::OBF::OsmAndStructure::kVersionConfirmFieldNumber: {
 				DO_((WireFormatLite::ReadPrimitive<uint32_t, WireFormatLite::TYPE_UINT32>(input, &versionConfirm)));
 				break;
@@ -3236,6 +3649,25 @@ BinaryMapFile* initBinaryMapFile(std::string inputName, bool useLive, bool routi
 			mapFile->routingIndexes.push_back(mi);
 			mapFile->indexes.push_back(mapFile->routingIndexes.back());
 		}
+        
+        for (int i = 0; i < fo->hhroutingindex_size() && !mapFile->liveMap; i++) {
+            auto mi = std::make_shared<HHRouteIndex>();
+            OsmAnd::OBF::HHRoutingPart mp = fo->hhroutingindex(i);
+            mi->filePointer = mp.offset();
+            mi->length = mp.size();
+            mi->edition = mp.edition();
+            mi->profile = mp.profile();
+            for (int j = 0; j < mp.profileparams_size(); j++) {
+                mi->profileParams.push_back(mp.profileparams(j));
+            }
+            mi->top = std::make_shared<HHRoutePointsBox>();
+            mi->top->bottom = mp.bottom();
+            mi->top->right = mp.right();
+            mi->top->left = mp.left();
+            mi->top->top = mp.top();
+            mapFile->hhIndexes.push_back(mi);
+            mapFile->indexes.push_back(mapFile->hhIndexes.back());
+        }
 		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "Native file initialized from cache: %s %d ms",
 						  inputName.c_str(), timer.GetElapsedMs());
 	} else {

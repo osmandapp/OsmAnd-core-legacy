@@ -100,9 +100,28 @@ static GeneralRouterProfile parseGeneralRouterProfile(string profile, GeneralRou
 		return GeneralRouterProfile::PUBLIC_TRANSPORT;
 	} else if ("horsebackriding" == to_lowercase(profile)) {
 		return GeneralRouterProfile::HORSEBACKRIDING;
+    } else if ("boat" == to_lowercase(profile)) {
+        return GeneralRouterProfile::BOAT;
 	} else {
 		return def;
 	}
+}
+
+static std::string profileToString(GeneralRouterProfile prof) {
+    switch(prof) {
+        case GeneralRouterProfile::CAR:
+            return "car";
+        case GeneralRouterProfile::PEDESTRIAN:
+            return "pedestrian";
+        case GeneralRouterProfile::BICYCLE:
+            return "bicycle";
+        case GeneralRouterProfile::BOAT:
+            return "boat";
+        case GeneralRouterProfile::PUBLIC_TRANSPORT:
+            return "public_transport";
+        default:
+            return "";
+    }
 }
 
 enum class RoutingParameterType { NUMERIC, BOOLEAN, SYMBOLIC };
@@ -354,6 +373,7 @@ class GeneralRouter {
 	vector<RoutingParameter> parametersList;
 	UNORDERED(map)<string, RoutingParameter> parameters;
 	MAP_STR_INT universalRules;
+	MAP_STR_STR parameterValues;
 	vector<tag_value> universalRulesById;
 	UNORDERED(map)<string, dynbitset> tagRuleMask;
 	vector<double> ruleToValue;	 // Object TODO;
@@ -491,7 +511,7 @@ class GeneralRouter {
 	/**
 	 * return routing speed in m/s for vehicle for specified road
 	 */
-	double defineRoutingSpeed(const SHARED_PTR<RouteDataObject>& road);
+    double defineRoutingSpeed(const SHARED_PTR<RouteDataObject>& road, bool dir);
 
 	/*
 	 * return transition penalty between different road classes in seconds
@@ -501,12 +521,12 @@ class GeneralRouter {
 	/**
 	 * return real speed in m/s for vehicle for specified road
 	 */
-	double defineVehicleSpeed(const SHARED_PTR<RouteDataObject>& road);
+	double defineVehicleSpeed(const SHARED_PTR<RouteDataObject>& road, bool dir);
 
 	/**
 	 * define priority to multiply the speed for g(x) A*
 	 */
-	double defineSpeedPriority(const SHARED_PTR<RouteDataObject>& road);
+	double defineSpeedPriority(const SHARED_PTR<RouteDataObject>& road, bool dir);
 
 	/**
 	 * define destination priority
@@ -542,8 +562,13 @@ class GeneralRouter {
 	/**
 	 * Calculate turn time
 	 */
-	double calculateTurnTime(const SHARED_PTR<RouteSegment>& segment, int segmentEnd, const SHARED_PTR<RouteSegment>& prev,
-							 int prevSegmentEnd);
+	double calculateTurnTime(const SHARED_PTR<RouteSegment>& segment, const SHARED_PTR<RouteSegment>& prev);
+    
+    MAP_STR_STR getParameterValues() {
+        return parameterValues;        
+    }
+    
+    std::vector<std::string> serializeParameterValues(MAP_STR_STR vls);
 
 	void printRules();
 

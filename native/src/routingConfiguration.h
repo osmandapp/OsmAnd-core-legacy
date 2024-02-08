@@ -5,6 +5,7 @@
 #include "CommonCollections.h"
 #include "commonOsmAndCore.h"
 #include "generalRouter.h"
+
 struct RoutingRule {
     string tagName;
     string t;
@@ -54,10 +55,13 @@ struct DirectionPoint {
     }
 };
 
-struct RoutingConfiguration {
+#define DEFAULT_PENALTY_FOR_REVERSE_DIRECTION 60 // if no penaltyForReverseDirection in xml
+#define NO_DIRECTION ((float)(-2 * M_PI)) // -360 degrees in RADIANS for no-direction rule (Java uses ==null instead)
 
+struct RoutingConfiguration {
     const static int DEFAULT_MEMORY_LIMIT = 256;
     const static int DEVIATION_RADIUS = 3000;
+
     MAP_STR_STR attributes;
     quad_tree<SHARED_PTR<DirectionPoint>> directionPoints;
     double directionPointsRadius = 30.0; // 30 m
@@ -65,7 +69,9 @@ struct RoutingConfiguration {
     SHARED_PTR<GeneralRouter> router;
 
     long memoryLimitation;
-    float initialDirection;
+    float initialDirection = NO_DIRECTION;
+    float targetDirection = NO_DIRECTION;
+    double penaltyForReverseDirection = DEFAULT_PENALTY_FOR_REVERSE_DIRECTION; // -1 means reverse is forbidden
 
     int zoomToLoad;
     float heurCoefficient;
@@ -87,8 +93,11 @@ struct RoutingConfiguration {
     // 1.5 Recalculate distance help
     float recalculateDistance;
     time_t routeCalculationTime = 0;
+    
+    // 1.7 Maximum visited segments
+    int MAX_VISITED = -1;
 
-    RoutingConfiguration(float initDirection = -2 * M_PI, int memLimit = DEFAULT_MEMORY_LIMIT) : router(new GeneralRouter()), memoryLimitation(memLimit), initialDirection(initDirection), zoomToLoad(16), heurCoefficient(1), planRoadDirection(0), routerName(""), recalculateDistance(20000.0f) {
+    RoutingConfiguration(float initDirection = NO_DIRECTION, int memLimit = DEFAULT_MEMORY_LIMIT) : router(new GeneralRouter()), memoryLimitation(memLimit), initialDirection(initDirection), zoomToLoad(16), heurCoefficient(1), planRoadDirection(0), routerName(""), recalculateDistance(20000.0f) {
     }
 
     string getAttribute(SHARED_PTR<GeneralRouter> router, string propertyName) {
@@ -106,6 +115,7 @@ struct RoutingConfiguration {
         minStepApproximation = parseFloat(getAttribute(router, "minStepApproximation"), 100);
         maxStepApproximation = parseFloat(getAttribute(router, "maxStepApproximation"), 3000);
         smoothenPointsNoRoute = parseFloat(getAttribute(router, "smoothenPointsNoRoute"), 5);
+        penaltyForReverseDirection = parseFloat(getAttribute(router, "penaltyForReverseDirection"), DEFAULT_PENALTY_FOR_REVERSE_DIRECTION);
         // don't use file limitations?
         memoryLimitation = (int)parseFloat(getAttribute(router, "nativeMemoryLimitInMB"), memoryLimitation);
         zoomToLoad = (int)parseFloat(getAttribute(router, "zoomToLoadTiles"), 16);
@@ -126,7 +136,7 @@ public:
     }
     
     SHARED_PTR<RoutingConfiguration> build(string router, int memoryLimitMB, MAP_STR_STR& params) {
-        return build(router, -2 * M_PI, memoryLimitMB, params);
+        return build(router, NO_DIRECTION, memoryLimitMB, params);
     }
     
     SHARED_PTR<RoutingConfiguration> build(string router, float direction, long memoryLimitMB, MAP_STR_STR& params) {
