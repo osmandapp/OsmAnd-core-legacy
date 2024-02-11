@@ -464,7 +464,6 @@ jfieldID jfield_RouteCalculationProgress_unloadedTiles = NULL;
 jfieldID jfield_RouteCalculationProgress_loadedPrevUnloadedTiles = NULL;
 jfieldID jfield_RouteCalculationProgress_distinctLoadedTiles = NULL;
 
-
 jclass jclass_RenderedObject = NULL;
 jmethodID jmethod_RenderedObject_putTag = NULL;
 jmethodID jmethod_RenderedObject_setIconRes = NULL;

@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include "routeCalculationProgress.h"
+#include "Logging.h"
 
 SHARED_PTR<RouteCalculationProgress> RouteCalculationProgress::capture(SHARED_PTR<RouteCalculationProgress>& cp) {
 	SHARED_PTR<RouteCalculationProgress> p = std::make_shared<RouteCalculationProgress>();
@@ -97,7 +98,34 @@ void RouteCalculationProgress::updateStatus(float distanceFromBegin, int directS
 	this->reverseSegmentQueueSize = reverseSegmentQueueSize;
 }
 
+float RouteCalculationProgress::getLinearProgressHH() {
+	float progress = 0;
+
+	for (int i = HHIteration::HH_NOT_STARTED; i <= HHIteration::DONE; i++) {
+		auto found = hhIterationPercent.find((HHIteration) i);
+		if (found != hhIterationPercent.end()) {
+			if (i == hhIterationStep) {
+				progress += hhCurrentStepProgress * (float) found->second; // current step
+				break;
+			} else {
+				progress += (float) found->second; // passed steps
+			}
+		}
+	}
+
+	if (hhTargetsTotal > 0) {
+		progress = (100.0 * (float) hhTargetsDone + progress) / (float) hhTargetsTotal; // intermediate points
+	} else {
+		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "Error: getLinearProgressHH() got hhTargetsTotal=0");
+	}
+
+	return std::fmin(progress, 99);
+}
+
 float RouteCalculationProgress::getLinearProgress() {
+	if(hhIterationStep != HH_NOT_STARTED) {
+		return getLinearProgressHH();
+	}
 	float p = std::max(this->distanceFromBegin, this->distanceFromEnd);
 	float all = totalEstimatedDistance * 1.35f;
 	float pr = 0;

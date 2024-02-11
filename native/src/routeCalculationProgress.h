@@ -56,6 +56,7 @@ class RouteCalculationProgress {
 		  visitedDirectSegments(0), visitedOppositeSegments(0), directQueueSize(0), oppositeQueueSize(0),
           finalSegmentsFound(0), loadedTiles(0), unloadedTiles(0), loadedPrevUnloadedTiles(0), distinctLoadedTiles(0),
           totalIterations(1), iteration(-1), cancelled(false), maxLoadedTiles(0),
+          hhIterationStep(HH_NOT_STARTED), hhCurrentStepProgress(0), hhTargetsDone(0), hhTargetsTotal(0),
           requestPrivateAccessRouting(false) {
 	}
 
@@ -70,25 +71,52 @@ class RouteCalculationProgress {
 	virtual void updateApproximatedDistance(float distance) { approximatedDistance = distance; }
 	virtual void updateStatus(float distanceFromBegin, int directSegmentQueueSize, float distanceFromEnd,
 							  int reverseSegmentQueueSize);
+	virtual float getLinearProgressHH();
 	virtual float getLinearProgress();
 	virtual float getApproximationProgress();
-    
-    enum HHIteration {
-        //in percent
-        SELECT_REGIONS = 5,
-        LOAD_POINS = 5,
-        START_END_POINT = 25,
-        ROUTING = 25,
-        DETAILED = 30,
-        ALTERNATIVES = 10,
-        DONE = 0
-    };
-    
-    HHIteration hhIterationStep;
-    void hhIteration(HHIteration step) {
-        hhIterationStep = step;
-    }
-    
+
+	enum HHIteration {
+		HH_NOT_STARTED,
+		SELECT_REGIONS,
+		LOAD_POINTS,
+		START_END_POINT,
+		ROUTING,
+		DETAILED,
+		ALTERNATIVES,
+		DONE
+	};
+
+	std::unordered_map<HHIteration, int> hhIterationPercent = {
+		{ HH_NOT_STARTED, 0 }, // hhIteration not filled
+		{ SELECT_REGIONS, 5 },
+		{ LOAD_POINTS, 5 },
+		{ START_END_POINT, 15 },
+		{ ROUTING, 25 },
+		{ DETAILED, 50 },
+		{ ALTERNATIVES, 0 },
+		{ DONE, 0 }
+	};
+
+	int hhIterationStep;
+	double hhCurrentStepProgress;
+	int hhTargetsDone, hhTargetsTotal;
+
+	void hhIteration(HHIteration step) {
+		hhIterationStep = step;
+		hhCurrentStepProgress = 0;
+	}
+
+	void hhTargetsProgress(int done, int total) {
+		hhTargetsDone = done;
+		hhTargetsTotal = total;
+	}
+
+	void hhIterationProgress(double k) {
+		// validate 0-100% and disallow to progress back
+		if (k >= 0 && k <= 1.0 && k > hhCurrentStepProgress) {
+			hhCurrentStepProgress = k;
+		}
+	}
 };
 
 #endif /*_OSMAND_ROUTE_CALCULATION_PROGRESS_H*/
