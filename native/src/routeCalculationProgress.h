@@ -75,7 +75,7 @@ class RouteCalculationProgress {
 	virtual float getLinearProgress();
 	virtual float getApproximationProgress();
 
-	enum HHIteration {
+	const enum HHIteration {
 		HH_NOT_STARTED,
 		SELECT_REGIONS,
 		LOAD_POINTS,
@@ -86,8 +86,8 @@ class RouteCalculationProgress {
 		DONE
 	};
 
-	std::unordered_map<HHIteration, int> hhIterationPercent = {
-		{ HH_NOT_STARTED, 0 }, // hhIteration not filled
+	const std::unordered_map<HHIteration, int> hhIterationPercent = {
+		{ HH_NOT_STARTED, 0 }, // hhIteration is not filled
 		{ SELECT_REGIONS, 5 },
 		{ LOAD_POINTS, 5 },
 		{ START_END_POINT, 15 },
@@ -101,17 +101,17 @@ class RouteCalculationProgress {
 	double hhCurrentStepProgress;
 	int hhTargetsDone, hhTargetsTotal;
 
-	void hhIteration(HHIteration step) {
+	virtual void hhIteration(HHIteration step) {
 		hhIterationStep = step;
 		hhCurrentStepProgress = 0;
 	}
 
-	void hhTargetsProgress(int done, int total) {
+	virtual void hhTargetsProgress(int done, int total) {
 		hhTargetsDone = done;
 		hhTargetsTotal = total;
 	}
 
-	void hhIterationProgress(double k) {
+	virtual void hhIterationProgress(double k) {
 		// validate 0-100% and disallow to progress back
 		if (k >= 0 && k <= 1.0 && k > hhCurrentStepProgress) {
 			hhCurrentStepProgress = k;

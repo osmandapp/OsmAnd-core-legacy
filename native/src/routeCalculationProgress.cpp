@@ -108,7 +108,7 @@ float RouteCalculationProgress::getLinearProgressHH() {
 				progress += hhCurrentStepProgress * (float) found->second; // current step
 				break;
 			} else {
-				progress += (float) found->second; // passed steps
+				progress += (float) found->second; // passed step
 			}
 		}
 	}

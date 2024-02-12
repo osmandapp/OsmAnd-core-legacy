@@ -463,6 +463,10 @@ jfieldID jfield_RouteCalculationProgress_loadedTiles = NULL;
 jfieldID jfield_RouteCalculationProgress_unloadedTiles = NULL;
 jfieldID jfield_RouteCalculationProgress_loadedPrevUnloadedTiles = NULL;
 jfieldID jfield_RouteCalculationProgress_distinctLoadedTiles = NULL;
+jfieldID jfield_RouteCalculationProgress_hhIterationStep = NULL;
+jfieldID jfield_RouteCalculationProgress_hhTargetsDone = NULL;
+jfieldID jfield_RouteCalculationProgress_hhTargetsTotal = NULL;
+jfieldID jfield_RouteCalculationProgress_hhCurrentStepProgress = NULL;
 
 jclass jclass_RenderedObject = NULL;
 jmethodID jmethod_RenderedObject_putTag = NULL;
@@ -885,10 +889,18 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jfield_RouteCalculationProgress_loadedTiles = getFid(env, jclass_RouteCalculationProgress, "loadedTiles", "I");
 	jfield_RouteCalculationProgress_unloadedTiles = getFid(env, jclass_RouteCalculationProgress, "unloadedTiles", "I");
 	jfield_RouteCalculationProgress_loadedPrevUnloadedTiles =
-	getFid(env, jclass_RouteCalculationProgress, "loadedPrevUnloadedTiles", "I");
+		getFid(env, jclass_RouteCalculationProgress, "loadedPrevUnloadedTiles", "I");
 	jfield_RouteCalculationProgress_distinctLoadedTiles = 
 		getFid(env, jclass_RouteCalculationProgress, "distinctLoadedTiles", "I");
-	
+	jfield_RouteCalculationProgress_hhIterationStep =
+		getFid(env, jclass_RouteCalculationProgress, "hhIterationStep", "I");
+	jfield_RouteCalculationProgress_hhTargetsDone =
+		getFid(env, jclass_RouteCalculationProgress, "hhTargetsDone", "I");
+	jfield_RouteCalculationProgress_hhTargetsTotal =
+		getFid(env, jclass_RouteCalculationProgress, "hhTargetsTotal", "I");
+	jfield_RouteCalculationProgress_hhCurrentStepProgress =
+		getFid(env, jclass_RouteCalculationProgress, "hhCurrentStepProgress", "D");
+
 	jclass_TransportRoutingConfiguration = findGlobalClass(env, "net/osmand/router/TransportRoutingConfiguration");
 	jfield_TransportRoutingConfiguration_ZOOM_TO_LOAD_TILES =
 		getFid(env, jclass_TransportRoutingConfiguration, "ZOOM_TO_LOAD_TILES", "I");
@@ -1386,6 +1398,30 @@ class RouteCalculationProgressWrapper : public RouteCalculationProgress {
 
    public:
 	RouteCalculationProgressWrapper(JNIEnv* ienv, jobject progress) : RouteCalculationProgress(), ienv(ienv), progress(progress) {}
+	virtual void hhIteration(HHIteration step) {
+		if (progress != NULL) {
+			ienv->SetIntField(progress, jfield_RouteCalculationProgress_hhIterationStep, step);
+			ienv->SetDoubleField(progress, jfield_RouteCalculationProgress_hhCurrentStepProgress, 0);
+		}
+		RouteCalculationProgress::hhIteration(step);
+	}
+
+	virtual void hhTargetsProgress(int done, int total) {
+		if (progress != NULL) {
+			ienv->SetIntField(progress, jfield_RouteCalculationProgress_hhTargetsDone, done);
+			ienv->SetIntField(progress, jfield_RouteCalculationProgress_hhTargetsTotal, total);
+		}
+		RouteCalculationProgress::hhTargetsProgress(done, total);
+	}
+
+	virtual void hhIterationProgress(double k) {
+		if (progress != NULL) {
+			if (k >= 0 && k <= 1.0 && k > hhCurrentStepProgress) {
+				ienv->SetDoubleField(progress, jfield_RouteCalculationProgress_hhCurrentStepProgress, k);
+			}
+		}
+		RouteCalculationProgress::hhIterationProgress(k);
+	}
 
 	virtual bool isCancelled() {
 		if (progress == NULL) {
