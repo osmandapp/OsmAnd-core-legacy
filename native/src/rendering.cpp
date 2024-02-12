@@ -917,6 +917,8 @@ void drawPoint(MapDataObject* mObj, RenderingRuleSearchRequest* req, SkCanvas* c
 
 	RenderableObject* rObj = new RenderableObject(mObj);
 	rObj->type = "point";
+	rObj->iconX = mObj->getLabelX();
+	rObj->iconY = mObj->getLabelY();
 
 	// init render rules
 	req->setInitialTagValueZoom(tag, value, rc->getZoom(), mObj);
@@ -1086,7 +1088,7 @@ void drawIconsOverCanvas(RenderingContext* rc, RenderingRuleSearchRequest* req, 
 					if (rObj->mainIcon != "") {
 						rObj->visible = true;
 						rObj->iconOrder = icon->order;
-						rObj->iconSize = icon->iconSize;
+						rObj->iconSize = icon->iconSize * coef;
 					}
 				}
 				if (icon->shield != NULL) {

@@ -516,11 +516,11 @@ std::string RenderableObject::toJson() const {
 	j["id"] = getId();
 	j["type"] = type;
 	j["points"] = json::Array();
-	
+
 	for (const auto& p : getPoints()) {
 		json::JSON point = json::Array();
-		point.append(get31LatitudeY(p.first));
-		point.append(get31LongitudeX(p.second));
+		point.append(p.first);
+		point.append(p.second);
 		j["points"].append(point);
 	}
 
@@ -550,6 +550,8 @@ std::string RenderableObject::toJson() const {
 	j["shield"] = shield;
 	j["iconOrder"] = iconOrder;
 	j["iconSize"] = iconSize;
+	j["iconX"] = iconX;
+	j["iconY"] = iconY;
 
 	// text
 	j["text"] = text;

@@ -357,6 +357,7 @@ struct RenderableObject {
 
 	// general
 	std::string type;
+	std::vector<std::pair<int, int>> points;
 	bool visible = false;
 
 	// points
@@ -365,6 +366,8 @@ struct RenderableObject {
 	std::string shield;
 	int iconOrder;
 	int iconSize;
+	int iconX;
+	int iconY;
 
 	// text
 	std::string text;
