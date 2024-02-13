@@ -56,8 +56,9 @@ class RouteCalculationProgress {
 		  visitedDirectSegments(0), visitedOppositeSegments(0), directQueueSize(0), oppositeQueueSize(0),
           finalSegmentsFound(0), loadedTiles(0), unloadedTiles(0), loadedPrevUnloadedTiles(0), distinctLoadedTiles(0),
           totalIterations(1), iteration(-1), cancelled(false), maxLoadedTiles(0),
-          hhIterationStep(HH_NOT_STARTED), hhCurrentStepProgress(0), hhTargetsDone(0), hhTargetsTotal(0),
-          requestPrivateAccessRouting(false) {
+          requestPrivateAccessRouting(false),
+          hhIterationStep(HH_NOT_STARTED), hhCurrentStepProgress(0), hhTargetsDone(0), hhTargetsTotal(0)
+		{
 	}
 
 	virtual SHARED_PTR<RouteCalculationProgress> capture(SHARED_PTR<RouteCalculationProgress>& cp);
@@ -75,7 +76,7 @@ class RouteCalculationProgress {
 	virtual float getLinearProgress();
 	virtual float getApproximationProgress();
 
-	const enum HHIteration {
+	enum HHIteration {
 		HH_NOT_STARTED,
 		SELECT_REGIONS,
 		LOAD_POINTS,
@@ -86,37 +87,27 @@ class RouteCalculationProgress {
 		DONE
 	};
 
-	const std::unordered_map<HHIteration, int> hhIterationPercent = {
-		{ HH_NOT_STARTED, 0 }, // hhIteration is not filled
-		{ SELECT_REGIONS, 5 },
-		{ LOAD_POINTS, 5 },
-		{ START_END_POINT, 15 },
-		{ ROUTING, 25 },
-		{ DETAILED, 50 },
-		{ ALTERNATIVES, 0 },
-		{ DONE, 0 }
-	};
+	inline int hhIterationPercent(int step) {
+		switch(step) {
+			case HH_NOT_STARTED: return 0; // hhIteration is not filled
+			case SELECT_REGIONS: return 5;
+			case LOAD_POINTS: return 5;
+			case START_END_POINT: return 15;
+			case ROUTING: return 25;
+			case DETAILED: return 50;
+			case ALTERNATIVES: return 0;
+			case DONE: return 0;
+		}
+		return 0;
+	}
 
 	int hhIterationStep;
 	double hhCurrentStepProgress;
 	int hhTargetsDone, hhTargetsTotal;
 
-	virtual void hhIteration(HHIteration step) {
-		hhIterationStep = step;
-		hhCurrentStepProgress = 0;
-	}
-
-	virtual void hhTargetsProgress(int done, int total) {
-		hhTargetsDone = done;
-		hhTargetsTotal = total;
-	}
-
-	virtual void hhIterationProgress(double k) {
-		// validate 0-100% and disallow to progress back
-		if (k >= 0 && k <= 1.0 && k > hhCurrentStepProgress) {
-			hhCurrentStepProgress = k;
-		}
-	}
+	virtual void hhTargetsProgress(int done, int total);
+	virtual void hhIteration(HHIteration step);
+	virtual void hhIterationProgress(double k);
 };
 
 #endif /*_OSMAND_ROUTE_CALCULATION_PROGRESS_H*/

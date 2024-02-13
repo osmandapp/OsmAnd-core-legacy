@@ -102,13 +102,13 @@ float RouteCalculationProgress::getLinearProgressHH() {
 	float progress = 0;
 
 	for (int i = HHIteration::HH_NOT_STARTED; i <= HHIteration::DONE; i++) {
-		auto found = hhIterationPercent.find((HHIteration) i);
-		if (found != hhIterationPercent.end()) {
+		int percent = hhIterationPercent(i);
+		if (percent > 0) {
 			if (i == hhIterationStep) {
-				progress += hhCurrentStepProgress * (float) found->second; // current step
+				progress += hhCurrentStepProgress * (float) percent; // current step
 				break;
 			} else {
-				progress += (float) found->second; // passed step
+				progress += (float) percent; // passed step
 			}
 		}
 	}
@@ -154,6 +154,23 @@ float RouteCalculationProgress::getApproximationProgress() {
 	}
 	progress = INITIAL_PROGRESS + progress * (1 - INITIAL_PROGRESS);
 	return std::fmin(progress * 100.0, 99);
+}
+
+void RouteCalculationProgress::hhTargetsProgress(int done, int total) {
+	hhTargetsDone = done;
+	hhTargetsTotal = total;
+}
+
+void RouteCalculationProgress::hhIteration(HHIteration step) {
+	hhIterationStep = step;
+	hhCurrentStepProgress = 0;
+}
+
+void RouteCalculationProgress::hhIterationProgress(double k) {
+	// validate 0-100% and disallow to progress back
+	if (k >= 0 && k <= 1.0 && k > hhCurrentStepProgress) {
+		hhCurrentStepProgress = k;
+	}
 }
 
 #endif /*_OSMAND_ROUTE_CALCULATION_PROGRESS_CPP*/
