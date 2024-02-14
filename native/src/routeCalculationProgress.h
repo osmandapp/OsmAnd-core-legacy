@@ -33,6 +33,7 @@ class RouteCalculationProgress {
 	int visitedOppositeSegments;
 	int directQueueSize;
 	int oppositeQueueSize;
+    int finalSegmentsFound;
 
 	int loadedTiles;
 	int unloadedTiles;
@@ -53,8 +54,9 @@ class RouteCalculationProgress {
 		  reverseSegmentQueueSize(0), totalEstimatedDistance(0), totalApproximateDistance(0),
 		  approximatedDistance(0), routingCalculatedTime(0), visitedSegments(0),
 		  visitedDirectSegments(0), visitedOppositeSegments(0), directQueueSize(0), oppositeQueueSize(0),
-		  loadedTiles(0), unloadedTiles(0), loadedPrevUnloadedTiles(0), distinctLoadedTiles(0), totalIterations(1),
-		  iteration(-1), cancelled(false), maxLoadedTiles(0), requestPrivateAccessRouting(false) {
+          finalSegmentsFound(0), loadedTiles(0), unloadedTiles(0), loadedPrevUnloadedTiles(0), distinctLoadedTiles(0),
+          totalIterations(1), iteration(-1), cancelled(false), maxLoadedTiles(0),
+          requestPrivateAccessRouting(false) {
 	}
 
 	virtual SHARED_PTR<RouteCalculationProgress> capture(SHARED_PTR<RouteCalculationProgress>& cp);
@@ -70,6 +72,23 @@ class RouteCalculationProgress {
 							  int reverseSegmentQueueSize);
 	virtual float getLinearProgress();
 	virtual float getApproximationProgress();
+    
+    enum HHIteration {
+        //in percent
+        SELECT_REGIONS = 5,
+        LOAD_POINS = 5,
+        START_END_POINT = 25,
+        ROUTING = 25,
+        DETAILED = 30,
+        ALTERNATIVES = 10,
+        DONE = 0
+    };
+    
+    HHIteration hhIterationStep;
+    void hhIteration(HHIteration step) {
+        hhIterationStep = step;
+    }
+    
 };
 
 #endif /*_OSMAND_ROUTE_CALCULATION_PROGRESS_H*/

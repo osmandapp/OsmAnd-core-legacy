@@ -101,6 +101,9 @@ add_library(osmand SHARED
 	"${ROOT}/src/proto/osmand_index.pb.cc"
 	"${ROOT}/src/java_wrap.cpp"
 	"${ROOT}/src/routeCalculationProgress.cpp"
+	"${ROOT}/src/hhRouteDataStructure.cpp"
+	"${ROOT}/src/hhRoutePlanner.cpp"
+	"${ROOT}/src/NetworkDBPointRouteInfo.cpp"
 	${pd_sources}
 )
 

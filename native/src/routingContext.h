@@ -94,10 +94,13 @@ struct RoutingContext {
 
 	int targetX;
 	int targetY;
+    std::vector<int> intermediatesX;
+    std::vector<int> intermediatesY;
 	int64_t targetRoadId;
 	int targetSegmentInd;
 	bool targetTransportStop;
 	bool publicTransport;
+    int dijkstraMode;
 	bool basemap;
 	bool geocoding;
 

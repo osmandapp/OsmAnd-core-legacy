@@ -496,13 +496,13 @@ double GeneralRouter::defineRoutingObstacle(const SHARED_PTR<RouteDataObject>& r
 	return 0;
 }
 
-double GeneralRouter::defineRoutingSpeed(const SHARED_PTR<RouteDataObject>& road) {
-	double spd = evaluateCache(RouteDataObjectAttribute::ROAD_SPEED, road, defaultSpeed);
+double GeneralRouter::defineRoutingSpeed(const SHARED_PTR<RouteDataObject>& road, bool dir) {
+    double spd = evaluateCache(RouteDataObjectAttribute::ROAD_SPEED, road->region, road->types, defaultSpeed, dir, false);
 	return max(min(spd, maxSpeed), minSpeed);
 }
 
-double GeneralRouter::defineVehicleSpeed(const SHARED_PTR<RouteDataObject>& road) {
-	double spd = evaluateCache(RouteDataObjectAttribute::ROAD_SPEED, road, defaultSpeed);
+double GeneralRouter::defineVehicleSpeed(const SHARED_PTR<RouteDataObject>& road, bool dir) {
+    double spd = evaluateCache(RouteDataObjectAttribute::ROAD_SPEED, road->region, road->types, defaultSpeed, dir, false);
 	return max(min(spd, maxVehicleSpeed), minSpeed);
 }
 
@@ -513,8 +513,9 @@ double GeneralRouter::definePenaltyTransition(const SHARED_PTR<RouteDataObject>&
 	return evaluateCache(RouteDataObjectAttribute::PENALTY_TRANSITION, road, 0);
 }
 
-double GeneralRouter::defineSpeedPriority(const SHARED_PTR<RouteDataObject>& road) {
-	return evaluateCache(RouteDataObjectAttribute::ROAD_PRIORITIES, road, 1.);
+double GeneralRouter::defineSpeedPriority(const SHARED_PTR<RouteDataObject>& road, bool dir) {
+    evaluateCache(RouteDataObjectAttribute::ROAD_PRIORITIES, road, 1.);
+    return evaluateCache(RouteDataObjectAttribute::ROAD_PRIORITIES, road->region, road->types, 1., dir, false);
 }
 
 double GeneralRouter::defineDestinationPriority(const SHARED_PTR<RouteDataObject>& road) {
@@ -537,8 +538,7 @@ bool GeneralRouter::restrictionsAware() {
 	return _restrictionsAware;
 }
 
-double GeneralRouter::calculateTurnTime(const SHARED_PTR<RouteSegment>& segment, int segmentEnd,
-                                        const SHARED_PTR<RouteSegment>& prev, int prevSegmentEnd) {
+double GeneralRouter::calculateTurnTime(const SHARED_PTR<RouteSegment>& segment, const SHARED_PTR<RouteSegment>& prev) {
 	double ts = definePenaltyTransition(segment->getRoad());
 	double prevTs = definePenaltyTransition(prev->getRoad());
 
@@ -570,9 +570,8 @@ double GeneralRouter::calculateTurnTime(const SHARED_PTR<RouteSegment>& segment,
 			totalPenalty += rt;
 		}
 	} else if (sharpTurn > 0 || slightTurn > 0) {
-		double a1 =
-			segment->getRoad()->directionRoute(segment->getSegmentStart(), segment->getSegmentStart() < segmentEnd);
-		double a2 = prev->getRoad()->directionRoute(prevSegmentEnd, prevSegmentEnd < prev->getSegmentStart());
+        double a1 = segment->getRoad()->directionRoute(segment->getSegmentStart(), segment->isPositive());
+        double a2 = prev->getRoad()->directionRoute(prev->getSegmentEnd(), !prev->isPositive());
 		double diff = abs(alignAngleDifference(a1 - a2 - M_PI));
 		// more like UT
 		if (diff > 2 * M_PI / 3) {
@@ -582,6 +581,21 @@ double GeneralRouter::calculateTurnTime(const SHARED_PTR<RouteSegment>& segment,
 		}
 	}
 	return totalPenalty;
+}
+
+std::vector<std::string> GeneralRouter::serializeParameterValues(MAP_STR_STR vls) {
+    std::vector<std::string> ls;
+    for (auto const& e : vls) {
+        const auto & it = parameters.find(e.first);
+        if (it != parameters.end()) {
+            if (it->second.type == RoutingParameterType::BOOLEAN) {
+                ls.push_back(e.first);
+            } else {
+                ls.push_back(e.first + "=" + e.second);
+            }
+        }
+    }
+    return ls;
 }
 
 void GeneralRouter::printRules() {

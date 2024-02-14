@@ -32,8 +32,14 @@ double getPowZoom(float zoom) {
 	}
 }
 
-static double getTileDistanceWidth(double zoom) {
+double getTileDistanceWidth(double zoom) {
 	return getDistance(30, getLongitudeFromTile(zoom, 0), 30, getLongitudeFromTile(zoom, 1));
+}
+
+double getTileDistanceWidth(double lat, float zoom) {
+	double lon1 = getLongitudeFromTile(zoom, 0);
+	double lon2 = getLongitudeFromTile(zoom, 1);
+	return getDistance(lat, lon1, lat, lon2);
 }
 
 double measuredDist31(int x1, int y1, int x2, int y2) {
@@ -50,58 +56,6 @@ double dabs(double d) {
 
 const uint precisionPower = 10;
 const uint precisionDiv = 1 << (31 - precisionPower);
-
-double coefficientsY[1 << precisionPower];
-bool initializeYArray = false;
-double convert31YToMeters(int y1, int y2, int x) {
-	if (!initializeYArray) {
-		coefficientsY[0] = 0;
-		for (uint i = 0; i < (1 << precisionPower) - 1; i++) {
-			coefficientsY[i + 1] =
-				coefficientsY[i] + measuredDist31(0, i << (31 - precisionPower), 0, ((i + 1) << (31 - precisionPower)));
-		}
-		initializeYArray = true;
-	}
-	uint div1 = y1 / precisionDiv;
-	uint mod1 = y1 % precisionDiv;
-	uint div2 = y2 / precisionDiv;
-	uint mod2 = y2 % precisionDiv;
-	double h1;
-		if(div1 + 1 >= sizeof(coefficientsY)/sizeof(*coefficientsY)) {
-			h1 = coefficientsY[div1] + mod1 / ((double)precisionDiv) * (coefficientsY[div1] - coefficientsY[div1 - 1]);
-		} else {
-			h1 = coefficientsY[div1] + mod1 / ((double)precisionDiv) * (coefficientsY[div1 + 1] - coefficientsY[div1]);
-		}
-		double h2 ;
-		if(div2 + 1 >= sizeof(coefficientsY)/sizeof(*coefficientsY)) {
-			h2 = coefficientsY[div2] + mod2 / ((double)precisionDiv) * (coefficientsY[div2] - coefficientsY[div2 - 1]);
-		} else {
-			h2 = coefficientsY[div2] + mod2 / ((double)precisionDiv) * (coefficientsY[div2 + 1] - coefficientsY[div2]);
-		}
-	double res = h1 - h2;
-	// OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "ind %f != %f", res,  measuredDist31(x, y1, x, y2));
-	return res;
-}
-double coefficientsX[1 << precisionPower];
-bool initializeXArray = false;
-double convert31XToMeters(int x1, int x2, int y) {
-	if (!initializeXArray) {
-		for (uint i = 0; i < (1 << precisionPower); i++) {
-			coefficientsX[i] = 0;
-		}
-		initializeXArray = true;
-	}
-	int ind = y / precisionDiv;
-	if (coefficientsX[ind] == 0) {
-		double md = measuredDist31(x1, y, x2, y);
-		if (md < 10 || x1 == x2) {
-			return md;
-		}
-		coefficientsX[ind] = md / dabs((double)x1 - (double)x2);
-	}
-	// translate into meters
-	return ((double)x1 - x2) * coefficientsX[ind];
-}
 
 double scalarMultiplication(double xA, double yA, double xB, double yB, double xC, double yC) {
 	// Scalar multiplication between (AB, AC)
@@ -136,43 +90,78 @@ std::pair<double, double> getProjection(double lat, double lon, double fromLat, 
 	return std::pair<double, double>(prlat, prlon);
 }
 
-std::pair<int, int> getProjectionPoint(int px, int py, int xA, int yA, int xB, int yB) {
-	double mDist = measuredDist31(xA, yA, xB, yB);
-	int prx = xA;
-	int pry = yA;
-	double projection = calculateProjection31TileMetric(xA, yA, xB, yB, px, py);
+std::pair<int, int> getProjectionPoint(int px, int py, int st31x, int st31y, int end31x, int end31y) {
+	// st31x, st31y - A, end31x, end31y - B, px, py - C
+	double tWidth = getTileWidth(py);
+	// Scalar multiplication between (AB, AC)
+	double projection = (end31x - st31x) * tWidth * (px - st31x) * tWidth
+			+ (end31y - st31y) * tWidth * (py - st31y) * tWidth;
+	double mDist = squareRootDist31(end31x, end31y, st31x, st31y);
+	int pry = end31y;
+	int prx = end31x;
 	if (projection < 0) {
-		prx = xA;
-		pry = yA;
+		prx = st31x;
+		pry = st31y;
 	} else if (projection >= mDist * mDist) {
-		prx = xB;
-		pry = yB;
+		prx = end31x;
+		pry = end31y;
 	} else {
-		double c = projection / (mDist * mDist);
-		prx = (int)((double)xA + ((double)xB - xA) * c);
-		pry = (int)((double)yA + ((double)yB - yA) * c);
+		prx = (int) (st31x + (end31x - st31x) * (projection / (mDist * mDist)));
+		pry = (int) (st31y + (end31y - st31y) * (projection / (mDist * mDist)));
 	}
 	return std::pair<int, int>(prx, pry);
 }
 
-double calculateProjection31TileMetric(int xA, int yA, int xB, int yB, int xC, int yC) {
-	// Scalar multiplication between (AB, AC)
-	double multiple = convert31XToMeters(xB, xA, yA) * convert31XToMeters(xC, xA, yA) +
-					  convert31YToMeters(yB, yA, xA) * convert31YToMeters(yC, yA, xA);
-	return multiple;
-}
 double squareDist31TileMetric(int x1, int y1, int x2, int y2) {
+	const int EQUATOR = 1 << 30;
+	bool top1 = y1 > EQUATOR;
+	bool top2 = y2 > EQUATOR;
+	if (top1 != top2 && y1 != EQUATOR && y2 != EQUATOR) {
+		int mx = x1 / 2 + x2 / 2;
+		double d1 = sqrt(squareDist31TileMetric(mx, EQUATOR, x2, y2));
+		double d2 = sqrt(squareDist31TileMetric(mx, EQUATOR, x1, y1));
+		return (d1 + d2) * (d1 + d2);
+	}
 	// translate into meters
-	double dy = convert31YToMeters(y1, y2, x1);
-	double dx = convert31XToMeters(x1, x2, y1);
+	int ymidx = y1 / 2 + y2 / 2;
+	double tw = getTileWidth(ymidx);
+
+	double dy = (y1 - y2) * tw;
+	double dx = (x2 - x1) * tw;
 	return dx * dx + dy * dy;
 }
 
 double squareRootDist31(int x1, int y1, int x2, int y2) {
-	// translate into meters
-	double dy = convert31YToMeters(y1, y2, x1);
-	double dx = convert31XToMeters(x1, x2, y1);
-	return sqrt(dx * dx + dy * dy);
+	return sqrt(squareDist31TileMetric(x1, y1, x2, y2));
+}
+
+// 14 precision, gives 10x speedup, 0.02% error
+double getTileWidth(int y31) {
+	static UNORDERED(map)<int, double> DIST_CACHE; // cache (static) TODO location: global (heap) or local (static-heap)
+	const int PRECISION_ZOOM = 14; // 16 doesn't fit into tile int
+
+	double y = y31 / 1.0 / (1 << (31 - PRECISION_ZOOM));
+	int tileY = (int) y; // width the same for all x
+	double ry = y - tileY;
+
+	double d;
+	if (auto found = DIST_CACHE.find(tileY); found != DIST_CACHE.end()) {
+		d = found->second;
+	} else {
+		d = getTileDistanceWidth(get31LatitudeY(tileY << (31 - PRECISION_ZOOM)), PRECISION_ZOOM) / (1 << (31 - PRECISION_ZOOM));
+		DIST_CACHE.insert({tileY, d});
+	}
+
+	double dp;
+	tileY = tileY + 1;
+	if (auto found = DIST_CACHE.find(tileY); found != DIST_CACHE.end()) {
+		dp = found->second;
+	} else {
+		dp = getTileDistanceWidth(get31LatitudeY(tileY << (31 - PRECISION_ZOOM)), PRECISION_ZOOM) / (1 << (31 - PRECISION_ZOOM));
+		DIST_CACHE.insert({tileY, dp});
+	}
+
+	return ry * dp + (1 - ry) * d;
 }
 
 double degreesDiff(const double a1, const double a2) {
@@ -184,13 +173,13 @@ double degreesDiff(const double a1, const double a2) {
 
 double normalizeDegrees360(double degrees)
 {
-    while (degrees < 0.0f) {
-        degrees += 360.0f;
-    }
-    while (degrees >= 360.0f) {
-        degrees -= 360.0f;
-    }
-    return degrees;
+	while (degrees < 0.0f) {
+		degrees += 360.0f;
+	}
+	while (degrees >= 360.0f) {
+		degrees -= 360.0f;
+	}
+	return degrees;
 }
 
 double checkLongitude(double longitude) {
@@ -224,11 +213,11 @@ int get31TileNumberX(double longitude) {
 	longitude = checkLongitude(longitude);
 	int64_t l = 1;
 	l <<= 31;
-    
-    double tileNumberX = ((longitude + 180) / 360 * l);
-    if (tileNumberX > INT_MAX)
-        tileNumberX = INT_MAX;
-    	return (int)tileNumberX;
+
+	double tileNumberX = ((longitude + 180) / 360 * l);
+	if (tileNumberX > INT_MAX)
+		tileNumberX = INT_MAX;
+		return (int)tileNumberX;
 }
 
 int get31TileNumberY(double latitude) {
@@ -325,7 +314,7 @@ int findFirstNumberEndIndex(string value) {
 		}
 		i++;
 	}
-	if (state == 2) {	
+	if (state == 2) {
 		return i - 1;
 	}
 	if (state == 0) {
