@@ -818,6 +818,13 @@ void drawTextOverCanvas(RenderingContext* rc, RenderingRuleSearchRequest* req, S
 					rObj->text = textDrawInfo->text;
 					rObj->textSize = textDrawInfo->textSize;
 					rObj->textOnPath = textDrawInfo->drawOnPath;
+					rObj->textColor = textDrawInfo->textColor;
+					rObj->textShadow = textDrawInfo->textShadow;
+					rObj->textShadowColor = textDrawInfo->textShadowColor;
+					rObj->bold = textDrawInfo->bold;
+					rObj->italic = textDrawInfo->italic;
+					rObj->shieldRes = textDrawInfo->shieldRes;
+					rObj->shieldResIcon = textDrawInfo->shieldResIcon;
 				}
 			}
 			if (textDrawInfo->drawOnPath && textDrawInfo->path != NULL) {
@@ -838,6 +845,9 @@ void drawTextOverCanvas(RenderingContext* rc, RenderingRuleSearchRequest* req, S
 				globalFontRegistry.drawHbTextOnPath(cv, textDrawInfo->text, *textDrawInfo->path, fontEntry, skFontText, paintText, textDrawInfo->hOffset, textDrawInfo->vOffset - fm.fTop / 4);
 				rc->nativeOperations.Start();
 			} else {
+				if (rc->saveTextTile) {
+					continue;
+				}
 				drawShield(textDrawInfo, textDrawInfo->shieldRes, &paintIcon, rc, cv, r, fm);
 				drawShield(textDrawInfo, textDrawInfo->shieldResIcon, &paintIcon, rc, cv, r, fm);
 				drawWrappedText(rc, cv, textDrawInfo, textSize, paintText, skFontText, fontEntry);

@@ -373,8 +373,16 @@ struct RenderableObject {
 	std::string text;
 	int textSize;
 	int textOnPath;
-	
-	RenderableObject(MapDataObject* _obj) : obj(_obj) {
+	int textColor;
+	int textShadow;
+	int textShadowColor;
+	bool bold;
+	bool italic;
+	std::string shieldRes;
+	std::string shieldResIcon;
+
+	RenderableObject(MapDataObject* _obj)
+		: obj(_obj) {
 	}
 
 	int64_t getId() const {

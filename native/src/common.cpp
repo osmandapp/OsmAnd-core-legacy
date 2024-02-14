@@ -557,6 +557,13 @@ std::string RenderableObject::toJson() const {
 	j["text"] = text;
 	j["textSize"] = textSize;
 	j["textOnPath"] = textOnPath;
+	j["textColor"] = textColor;
+	j["textShadow"] = textShadow;
+	j["textShadowColor"] = textShadowColor;
+	j["bold"] = bold;
+	j["italic"] = italic;
+	j["shieldRes"] = shieldRes;
+	j["shieldResIcon"] = shieldResIcon;
 
 	return j.dump();
 }
