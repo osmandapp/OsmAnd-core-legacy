@@ -7,10 +7,10 @@ using namespace std::chrono;
 namespace OsmAnd {
 class ElapsedTimer {
    private:
-	high_resolution_clock::duration elapsed;
-	high_resolution_clock::time_point startPoint;
 	bool isEnabled;
 	bool isRunning;
+	high_resolution_clock::duration elapsed;
+	high_resolution_clock::time_point startPoint;
 
    public:
 	ElapsedTimer();
