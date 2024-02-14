@@ -1246,7 +1246,9 @@ bool readTransportIndex(CodedInputStream* input, SHARED_PTR<TransportIndex>& ind
 				break;
 			}
 			case OsmAnd::OBF::OsmAndTransportIndex::kIncompleteRoutesFieldNumber: {
-				input->ReadVarint32(&ind->incompleteRoutesLength);
+				uint32_t inlen;
+				input->ReadVarint32(&inlen);
+				ind->incompleteRoutesLength = inlen;
 				ind->incompleteRoutesOffset = input->TotalBytesRead();
 				input->Seek(ind->incompleteRoutesOffset + ind->incompleteRoutesLength);
 				break;
