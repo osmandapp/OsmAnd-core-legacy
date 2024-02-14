@@ -993,7 +993,7 @@ void drawPoint(MapDataObject* mObj, RenderingRuleSearchRequest* req, SkCanvas* c
 		ico->secondOrder = ((mObj->id % 10000) << 8) + typeInd;
 		if (ico->order >= 0) {
 			rc->iconsToDraw.push_back(ico);
-			renderableObjects.emplace(ico->object.id, rObj);
+			renderableObjects.emplace(ico->object.id, std::move(rObj));
 		}
 	}
 	renderText(mObj, rObj, req, rc, pair.first, pair.second, px, py, 0, NULL, ico, renderableObjects);
