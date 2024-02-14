@@ -39,9 +39,9 @@ enum class GeneralRouterProfile;
 static const uint MAP_VERSION = 2;
 static const int SHIFT_ID = 6;
 struct MapTreeBounds {
-	uint32_t length;
-	uint32_t filePointer;
-	uint32_t mapDataBlock;
+	uint64_t length;
+	uint64_t filePointer;
+	uint64_t mapDataBlock;
 	uint32_t left;
 	uint32_t right;
 	uint32_t top;
@@ -61,9 +61,9 @@ struct RestrictionInfo {
 
 struct RoutingIndex;
 struct RouteSubregion {
-	uint32_t length;
-	uint32_t filePointer;
-	uint32_t mapDataBlock;
+	uint64_t length;
+	uint64_t filePointer;
+	uint64_t mapDataBlock;
 	uint32_t left;
 	uint32_t right;
 	uint32_t top;
@@ -91,8 +91,8 @@ enum PART_INDEXES {
 };
 
 struct BinaryPartIndex {
-	uint32_t length;
-	int filePointer;
+	uint64_t length;
+	uint64_t filePointer;
 	PART_INDEXES type;
 	std::string name;
 
@@ -140,8 +140,8 @@ struct RoutingIndex : BinaryPartIndex {
 };
 
 struct HHRoutePointsBox {
-    uint32_t length;
-    int32_t filePointer;
+    uint64_t length;
+    uint64_t filePointer;
     int32_t left, right, bottom, top;
     bool init;
     
@@ -162,8 +162,8 @@ struct HHRouteBlockSegments {
     int idRangeStart;
     int32_t idRangeLength;
     int profileId;
-    uint32_t length;
-    int filePointer;
+    uint64_t length;
+    uint64_t filePointer;
     
     ~HHRouteBlockSegments() {
         for (auto & s : sublist) {
@@ -785,7 +785,7 @@ struct RouteDataObject {
 };
 
 struct IndexStringTable {
-	uint32_t fileOffset;
+	uint64_t fileOffset;
 	uint32_t length;
 	UNORDERED(map)<int32_t, string> stringTable;
 };
@@ -796,10 +796,10 @@ struct TransportIndex : BinaryPartIndex {
 	int top;
 	int bottom;
 
-	uint32_t stopsFileOffset;
-	uint32_t stopsFileLength;
-	uint32_t incompleteRoutesOffset;
-	uint32_t incompleteRoutesLength;
+	uint64_t stopsFileOffset;
+	uint64_t stopsFileLength;
+	uint64_t incompleteRoutesOffset;
+	uint64_t incompleteRoutesLength;
 
 	IndexStringTable* stringTable;
 
