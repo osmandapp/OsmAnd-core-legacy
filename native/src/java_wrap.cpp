@@ -1101,17 +1101,17 @@ void loadJniRenderingContext(JNIEnv* env) {
 		env->GetMethodID(jclass_RouteDataObject, "setRestriction", "(IJIJ)V");
 
 	jclass_RouteRegion = findGlobalClass(env, "net/osmand/binary/BinaryMapRouteReaderAdapter$RouteRegion");
-	jfield_RouteRegion_length = getFid(env, jclass_RouteRegion, "length", "I");
-	jfield_RouteRegion_filePointer = getFid(env, jclass_RouteRegion, "filePointer", "I");
+	jfield_RouteRegion_length = getFid(env, jclass_RouteRegion, "length", "J");
+	jfield_RouteRegion_filePointer = getFid(env, jclass_RouteRegion, "filePointer", "J");
 
 	jclass_RouteSubregion = findGlobalClass(env, "net/osmand/binary/BinaryMapRouteReaderAdapter$RouteSubregion");
-	jfield_RouteSubregion_length = getFid(env, jclass_RouteSubregion, "length", "I");
-	jfield_RouteSubregion_filePointer = getFid(env, jclass_RouteSubregion, "filePointer", "I");
+	jfield_RouteSubregion_length = getFid(env, jclass_RouteSubregion, "length", "J");
+	jfield_RouteSubregion_filePointer = getFid(env, jclass_RouteSubregion, "filePointer", "J");
 	jfield_RouteSubregion_left = getFid(env, jclass_RouteSubregion, "left", "I");
 	jfield_RouteSubregion_right = getFid(env, jclass_RouteSubregion, "right", "I");
 	jfield_RouteSubregion_top = getFid(env, jclass_RouteSubregion, "top", "I");
 	jfield_RouteSubregion_bottom = getFid(env, jclass_RouteSubregion, "bottom", "I");
-	jfield_RouteSubregion_shiftToData = getFid(env, jclass_RouteSubregion, "shiftToData", "I");
+	jfield_RouteSubregion_shiftToData = getFid(env, jclass_RouteSubregion, "shiftToData", "J");
 
 	jclass_nativeGpxPointApproximation = findGlobalClass(env, "net/osmand/NativeLibrary$NativeGpxPointApproximation");
 	jmethod_nativeGpxPointApproximation_init =
