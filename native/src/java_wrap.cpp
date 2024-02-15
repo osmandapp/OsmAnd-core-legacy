@@ -1801,8 +1801,8 @@ extern "C" JNIEXPORT jobject JNICALL Java_net_osmand_NativeLibrary_nativeSearchG
 	UNORDERED(map)<int64_t, int> indexes;
 	for (int t = 0; t < ienv->GetArrayLength(regions); t++) {
 		jobject oreg = ienv->GetObjectArrayElement(regions, t);
-		int64_t fp = ienv->GetIntField(oreg, jfield_RouteRegion_filePointer);
-		int64_t ln = ienv->GetIntField(oreg, jfield_RouteRegion_length);
+		int64_t fp = ienv->GetLongField(oreg, jfield_RouteRegion_filePointer);
+		int64_t ln = ienv->GetLongField(oreg, jfield_RouteRegion_length);
 		ienv->DeleteLocalRef(oreg);
 		indexes[(fp << 31) + ln] = t;
 	}
@@ -1841,8 +1841,8 @@ extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_nativeRo
 	UNORDERED(map)<int64_t, int> indexes;
 	for (int t = 0; t < ienv->GetArrayLength(regions); t++) {
 		jobject oreg = ienv->GetObjectArrayElement(regions, t);
-		int64_t fp = ienv->GetIntField(oreg, jfield_RouteRegion_filePointer);
-		int64_t ln = ienv->GetIntField(oreg, jfield_RouteRegion_length);
+		int64_t fp = ienv->GetLongField(oreg, jfield_RouteRegion_filePointer);
+		int64_t ln = ienv->GetLongField(oreg, jfield_RouteRegion_length);
 		ienv->DeleteLocalRef(oreg);
 		indexes[(fp << 31) + ln] = t;
 	}
@@ -2300,13 +2300,13 @@ extern "C" JNIEXPORT jobject JNICALL Java_net_osmand_NativeLibrary_loadRoutingDa
 	ind->filePointer = regFilePointer;
 	ind->name = getString(ienv, regName);
 	RouteSubregion sub(ind);
-	sub.filePointer = ienv->GetIntField(subreg, jfield_RouteSubregion_filePointer);
-	sub.length = ienv->GetIntField(subreg, jfield_RouteSubregion_length);
+	sub.filePointer = ienv->GetLongField(subreg, jfield_RouteSubregion_filePointer);
+	sub.length = ienv->GetLongField(subreg, jfield_RouteSubregion_length);
 	sub.left = ienv->GetIntField(subreg, jfield_RouteSubregion_left);
 	sub.right = ienv->GetIntField(subreg, jfield_RouteSubregion_right);
 	sub.top = ienv->GetIntField(subreg, jfield_RouteSubregion_top);
 	sub.bottom = ienv->GetIntField(subreg, jfield_RouteSubregion_bottom);
-	sub.mapDataBlock = ienv->GetIntField(subreg, jfield_RouteSubregion_shiftToData);
+	sub.mapDataBlock = ienv->GetLongField(subreg, jfield_RouteSubregion_shiftToData);
 	std::vector<RouteDataObject*> result;
 	SearchQuery q;
 	searchRouteDataForSubRegion(&q, result, &sub, false);
