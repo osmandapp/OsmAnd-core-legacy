@@ -224,7 +224,8 @@ HHNetworkRouteRes * HHRoutePlanner::cancelledStatus() {
 HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX, int endY, HHRoutingConfig * config) {
     auto & progress = currentCtx->rctx->progress;
     OsmAnd::ElapsedTimer timer;
-    timer.Start();
+    OsmAnd::ElapsedTimer overallTimer;
+    overallTimer.Start();
     config = prepareDefaultRoutingConfig(config);
     SHARED_PTR<HHRoutingContext> hctx = initHCtx(config, startX, startY, endX, endY);
     if (hctx == nullptr) {
@@ -250,23 +251,23 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
     do {
         progress->hhIteration(RouteCalculationProgress::HHIteration::ROUTING);
         OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Routing...");
-        long time = timer.GetElapsedMs();
+        timer.Start();
         NetworkDBPoint * finalPnt = runRoutingPointsToPoints(hctx, stPoints, endPoints);
         if (progress->isCancelled()) {
             return cancelledStatus();
         }
         route = createRouteSegmentFromFinalPoint(hctx, finalPnt);
-        time = (timer.GetElapsedMs() - time);
+        double time = timer.GetElapsedMs();
         OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "%d segments, cost %.2f, %.2f ms\n", route->segments.size(), route->getHHRoutingTime(), time);
         hctx->stats.routingTime+= time;
         progress->hhIteration(RouteCalculationProgress::HHIteration::DETAILED);
         OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Parse detailed route segments...");
-        time = timer.GetElapsedMs();
+        timer.Start();
         bool recalc = retrieveSegmentsGeometry(hctx, route, hctx->config->ROUTE_ALL_SEGMENTS, progress);
         if (progress->isCancelled()) {
             return cancelledStatus();
         }
-        time = (timer.GetElapsedMs() - time);
+        time = timer.GetElapsedMs();
         OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "%.2f ms\n", time);
         hctx->stats.routingTime += time;
         if (recalc) {
@@ -284,19 +285,19 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
         //TODO debug
         progress->hhIteration(RouteCalculationProgress::HHIteration::ALTERNATIVES);
         OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Alternative routes...");
-        long time = timer.GetElapsedMs();
+        timer.Start();
         calcAlternativeRoute(hctx, route, stPoints, endPoints, progress);
-        hctx->stats.altRoutingTime += timer.GetElapsedMs() - time;
+        hctx->stats.altRoutingTime += timer.GetElapsedMs();
         hctx->stats.routingTime += hctx->stats.altRoutingTime;
         OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "%d %.2f ms\n", route->altRoutes.size(), hctx->stats.altRoutingTime);
-        time = timer.GetElapsedMs();
+        timer.Start();
         for (HHNetworkRouteRes * alt : route->altRoutes) {
             retrieveSegmentsGeometry(hctx, alt, hctx->config->ROUTE_ALL_ALT_SEGMENTS, progress);
             if (progress->isCancelled()) {
                 return cancelledStatus();
             }
         }
-        hctx->stats.prepTime += timer.GetElapsedMs() - time;
+        hctx->stats.prepTime += timer.GetElapsedMs();
     }
     
     if (hctx->config->USE_GC_MORE_OFTEN) {
@@ -304,19 +305,19 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
         //printGCInformation();
     }
     
-    long time = timer.GetElapsedMs();
+    timer.Start();
     prepareRouteResults(hctx, route, startX, startY, endX, endY);
-    hctx->stats.prepTime += timer.GetElapsedMs() - time;
-    OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "%.2f ms\n", hctx->stats.prepTime);
+    hctx->stats.prepTime += timer.GetElapsedMs();
+    OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "prepTime %.2f ms\n", hctx->stats.prepTime);
     if (DEBUG_VERBOSE_LEVEL >= 1) {
         //OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Detailed progress: " + hctx->rctx->calculationProgress.getInfo(null));
     }
     OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
-                      "Found final route - cost %.2f (detailed %.2f, %.1f%%), %d depth ( first met %,d, visited %,d (%,d unique) of %,d added vertices )",
+                      "Found final route - cost %.2f (detailed %.2f, %.1f%%), %d depth ( first met %d, visited %d (%d unique) of %d added vertices )",
                       route->getHHRoutingTime(), route->getHHRoutingDetailed(), 100 * (1 - route->getHHRoutingDetailed() / route->getHHRoutingTime()),
                       route->segments.size(), hctx->stats.firstRouteVisitedVertices, hctx->stats.visitedVertices, hctx->stats.uniqueVisitedVertices,
                       hctx->stats.addedVertices);
-    time = timer.GetElapsedMs();
+    timer.Start();
     OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Routing %.5f %.5f -> %.5f %.5f (HC %d, dir %d)",
                       get31LatitudeY(startY), get31LongitudeX(startX),
                       get31LatitudeY(endY), get31LongitudeX(endX),
@@ -329,11 +330,11 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
     if (hctx->config->ROUTE_ALL_SEGMENTS/* && route.detailed != null*/) {
         route->detailed = prepareResult(hctx->rctx, route->detailed);
     }
-    OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "%.2f ms\n", timer.GetElapsedMs() - time);
+    OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "%.2f ms\n", timer.GetElapsedMs());
     printResults(hctx->rctx, startX, startY, endX, endY, route->detailed);
     OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
-                      "Routing finished all %.1f ms: last mile %.1f ms, load data %.1f ms (%,d edges), routing %.1f ms (queue  - %.1f add ms + %.1f poll ms), prep result %.1f ms\n",
-                      timer.GetElapsedMs(), hctx->stats.searchPointsTime, hctx->stats.loadEdgesTime + hctx->stats.loadPointsTime,
+                      "Routing finished all %.f ms: last mile %.f ms, load data %.f ms (%d edges), routing %.f ms (queue - %.f add ms + %.f poll ms), prep result %.f ms\n",
+                      (double) overallTimer.GetElapsedMs(), hctx->stats.searchPointsTime, (hctx->stats.loadEdgesTime + hctx->stats.loadPointsTime),
                       hctx->stats.loadEdgesCnt, hctx->stats.routingTime, hctx->stats.addQueueTime, hctx->stats.pollQueueTime, hctx->stats.prepTime);
     //printGCInformation();
     return route;

@@ -424,6 +424,7 @@ bool sortRouteRegions(const RouteSubregion& i, const RouteSubregion& j) {
 }
 
 inline bool readInt(CodedInputStream* input, uint32_t* sz) {
+	// should be replaced with bool readInt(CodedInputStream* input, uint64_t* sz) in the future
 	uint8_t buf[4];
 	if (!input->ReadRaw(buf, 4)) {
 		return false;
@@ -431,6 +432,16 @@ inline bool readInt(CodedInputStream* input, uint32_t* sz) {
 	*sz = ((buf[0] << 24) + (buf[1] << 16) + (buf[2] << 8) + buf[3]);
 	return true;
 }
+
+inline bool readInt(CodedInputStream* input, uint64_t* sz) {
+	uint8_t buf[4];
+	if (!input->ReadRaw(buf, 4)) {
+		return false;
+	}
+	*sz = ((buf[0] << 24) + (buf[1] << 16) + (buf[2] << 8) + buf[3]);
+	return true;
+}
+
 
 bool skipFixed32(CodedInputStream* input) {
 	uint32_t sz;
@@ -1235,7 +1246,9 @@ bool readTransportIndex(CodedInputStream* input, SHARED_PTR<TransportIndex>& ind
 				break;
 			}
 			case OsmAnd::OBF::OsmAndTransportIndex::kIncompleteRoutesFieldNumber: {
-				input->ReadVarint32(&ind->incompleteRoutesLength);
+				uint32_t inlen;
+				input->ReadVarint32(&inlen);
+				ind->incompleteRoutesLength = inlen;
 				ind->incompleteRoutesOffset = input->TotalBytesRead();
 				input->Seek(ind->incompleteRoutesOffset + ind->incompleteRoutesLength);
 				break;

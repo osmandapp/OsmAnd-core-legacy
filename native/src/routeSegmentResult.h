@@ -53,13 +53,13 @@ struct RouteSegmentResult {
 	}
 
 	RouteSegmentResult(const SHARED_PTR<RouteDataObject>& object)
-		: startPointIndex(0), endPointIndex(0), object(object), segmentTime(0),
-		segmentSpeed(0), routingTime(0), distance(0), description("") {
+		: startPointIndex(0), endPointIndex(0), leftSide(false), object(object), 
+		segmentTime(0), segmentSpeed(0), routingTime(0), distance(0), description("") {
 	}
 
 	RouteSegmentResult(const SHARED_PTR<RouteDataObject>& object, int startPointIndex, int endPointIndex)
-		: startPointIndex(startPointIndex), endPointIndex(endPointIndex), object(object), segmentTime(0),
-		  segmentSpeed(0), routingTime(0), distance(0), description("") {
+		: startPointIndex(startPointIndex), endPointIndex(endPointIndex), leftSide(false), object(object), 
+		segmentTime(0), segmentSpeed(0), routingTime(0), distance(0), description("") {
 		updateCapacity();
 	}
 
