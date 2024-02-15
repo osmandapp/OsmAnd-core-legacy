@@ -374,7 +374,7 @@ HHNetworkRouteRes * HHRoutePlanner::prepareRouteResults(SHARED_PTR<HHRoutingCont
         }
         
         hctx->rctx->progress->routingCalculatedTime += routeSegment.rtTimeDetailed;
-        
+
         if (DEBUG_VERBOSE_LEVEL >= 1) {
             int segments = (int) routeSegment.list.size();
             if (s == nullptr) {

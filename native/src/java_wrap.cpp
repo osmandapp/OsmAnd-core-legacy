@@ -1860,7 +1860,6 @@ extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_nativeRo
 							c->finalRouteSegment->distanceFromStart);
 	}
 
-	 
 	addIntField(ienv, jCtx, jfield_RoutingContext_alertFasterRoadToVisitedSegments, c->alertFasterRoadToVisitedSegments);
 	addIntField(ienv, jCtx, jfield_RoutingContext_alertSlowerSegmentedWasVisitedEarlier, c->alertSlowerSegmentedWasVisitedEarlier);
 	if (c->progress && c->progress.get()) {
@@ -1885,6 +1884,9 @@ extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_nativeRo
 		addLongField(ienv, progress, jfield_RouteCalculationProgress_timeToLoadHeaders, c->progress->timeToLoadHeaders.GetElapsedMicros() * 1000);
 		addLongField(ienv, progress, jfield_RouteCalculationProgress_timeToFindInitialSegments, c->progress->timeToFindInitialSegments.GetElapsedMicros() * 1000);
 		addLongField(ienv, progress, jfield_RouteCalculationProgress_timeNanoToCalcDeviation, c->progress->timeExtra.GetElapsedMicros() * 1000);
+		if (c->progress->routingCalculatedTime > 0) {
+			ienv->SetFloatField(progress, jfield_RouteCalculationProgress_routingCalculatedTime, c->progress->routingCalculatedTime);
+		}
 	}
 	if (r.size() == 0) {
 		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "No route found");
