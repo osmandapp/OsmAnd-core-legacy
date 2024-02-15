@@ -241,7 +241,6 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
     UNORDERED_map<int64_t, NetworkDBPoint *> stPoints;
     UNORDERED_map<int64_t, NetworkDBPoint *> endPoints;
     // avoid overwriting progress
-    // TODO fix crash at `Cancel route`
     if (hctx->rctx->progress == nullptr) {
         hctx->rctx->progress = std::make_shared<RouteCalculationProgress>();
     }
