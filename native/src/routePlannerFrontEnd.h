@@ -42,8 +42,8 @@ class RoutePlannerFrontEnd {
     
     bool useSmartRouteRecalculation;
     
-    bool TRACE_ROUTING = false;
-    bool USE_HH_ROUTING = false;
+	// bool TRACE_ROUTING = false; // not used
+	// bool USE_HH_ROUTING = false; // not used
     HHRoutingConfig * HH_ROUTING_CONFIG = nullptr;
     
 public:

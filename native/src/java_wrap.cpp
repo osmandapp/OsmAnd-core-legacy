@@ -1398,7 +1398,10 @@ class RouteCalculationProgressWrapper : public RouteCalculationProgress {
 
    public:
 	RouteCalculationProgressWrapper(JNIEnv* ienv, jobject progress) : RouteCalculationProgress(), ienv(ienv), progress(progress) {}
-	virtual void hhIteration(HHIteration step) {
+
+	virtual ~RouteCalculationProgressWrapper() override { }
+
+	virtual void hhIteration(HHIteration step) override {
 		if (progress != NULL) {
 			ienv->SetIntField(progress, jfield_RouteCalculationProgress_hhIterationStep, step);
 			ienv->SetDoubleField(progress, jfield_RouteCalculationProgress_hhCurrentStepProgress, 0);
@@ -1406,7 +1409,7 @@ class RouteCalculationProgressWrapper : public RouteCalculationProgress {
 		RouteCalculationProgress::hhIteration(step);
 	}
 
-	virtual void hhTargetsProgress(int done, int total) {
+	virtual void hhTargetsProgress(int done, int total) override {
 		if (progress != NULL) {
 			ienv->SetIntField(progress, jfield_RouteCalculationProgress_hhTargetsDone, done);
 			ienv->SetIntField(progress, jfield_RouteCalculationProgress_hhTargetsTotal, total);
@@ -1414,7 +1417,7 @@ class RouteCalculationProgressWrapper : public RouteCalculationProgress {
 		RouteCalculationProgress::hhTargetsProgress(done, total);
 	}
 
-	virtual void hhIterationProgress(double k) {
+	virtual void hhIterationProgress(double k) override {
 		if (progress != NULL) {
 			if (k >= 0 && k <= 1.0 && k > hhCurrentStepProgress) {
 				ienv->SetDoubleField(progress, jfield_RouteCalculationProgress_hhCurrentStepProgress, k);
@@ -1423,41 +1426,41 @@ class RouteCalculationProgressWrapper : public RouteCalculationProgress {
 		RouteCalculationProgress::hhIterationProgress(k);
 	}
 
-	virtual bool isCancelled() {
+	virtual bool isCancelled() override {
 		if (progress == NULL) {
 			return false;
 		}
 		return ienv->GetBooleanField(progress, jfield_RouteCalculationProgress_isCancelled);
 	}
 
-	virtual void setSegmentNotFound(int s) {
+	virtual void setSegmentNotFound(int s) override {
 		if (progress != NULL) {
 			ienv->SetIntField(progress, jfield_RouteCalculationProgress_segmentNotFound, s);
 		}
 	}
 
-	virtual void updateIteration(int iteration) {
+	virtual void updateIteration(int iteration) override {
 		RouteCalculationProgress::updateIteration(iteration);
 		if (progress != NULL) {
 			ienv->SetIntField(progress, jfield_RouteCalculationProgress_iteration, iteration);
 		}
 	}
 
-	virtual void updateTotalEstimatedDistance(float distance) {
+	virtual void updateTotalEstimatedDistance(float distance) override {
 		RouteCalculationProgress::updateTotalEstimatedDistance(distance);
 		if (progress != NULL) {
 			ienv->SetFloatField(progress, jfield_RouteCalculationProgress_totalEstimatedDistance, distance);
 		}
 	}
 
-	virtual void updateTotalApproximateDistance(float distance) {
+	virtual void updateTotalApproximateDistance(float distance) override {
 		RouteCalculationProgress::updateTotalApproximateDistance(distance);
 		if (progress != NULL) {
 			ienv->SetFloatField(progress, jfield_RouteCalculationProgress_totalApproximateDistance, distance);
 		}
 	}
 
-	virtual void updateApproximatedDistance(float distance) {
+	virtual void updateApproximatedDistance(float distance) override {
 		RouteCalculationProgress::updateApproximatedDistance(distance);
 		if (progress != NULL) {
 			ienv->SetFloatField(progress, jfield_RouteCalculationProgress_approximatedDistance, distance);
@@ -1465,7 +1468,7 @@ class RouteCalculationProgressWrapper : public RouteCalculationProgress {
 	}
 
 	virtual void updateStatus(float distanceFromBegin, int directSegmentQueueSize, float distanceFromEnd,
-							  int reverseSegmentQueueSize) {
+							  int reverseSegmentQueueSize) override {
 		RouteCalculationProgress::updateStatus(distanceFromBegin, directSegmentQueueSize, distanceFromEnd,
 											   reverseSegmentQueueSize);
 		if (progress != NULL) {

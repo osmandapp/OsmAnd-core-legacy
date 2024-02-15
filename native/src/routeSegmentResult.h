@@ -48,8 +48,8 @@ struct RouteSegmentResult {
 	SHARED_PTR<TurnType> turnType;
 
 	RouteSegmentResult(const SHARED_PTR<RouteDataObject>& object, bool leftSide)
-		: startPointIndex(0), endPointIndex(0), object(object), segmentTime(0),
-		segmentSpeed(0), routingTime(0), distance(0), description(""), leftSide(leftSide) {
+		: startPointIndex(0), endPointIndex(0), leftSide(leftSide), object(object),
+		segmentTime(0), segmentSpeed(0), routingTime(0), distance(0), description("") {
 	}
 
 	RouteSegmentResult(const SHARED_PTR<RouteDataObject>& object)

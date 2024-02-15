@@ -61,6 +61,8 @@ class RouteCalculationProgress {
 		{
 	}
 
+	virtual ~RouteCalculationProgress() { }
+
 	virtual SHARED_PTR<RouteCalculationProgress> capture(SHARED_PTR<RouteCalculationProgress>& cp);
 	virtual UNORDERED(map) < string,
 		UNORDERED(map) < string, string >> getInfo(SHARED_PTR<RouteCalculationProgress> firstPhase);
