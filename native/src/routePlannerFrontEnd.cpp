@@ -786,8 +786,8 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 	if (!ctx->progress) {
 		ctx->progress = std::make_shared<RouteCalculationProgress>();
 	}
-    vector<int> targetsX = {endX};
-    vector<int> targetsY = {endY};
+	vector<int> targetsX = { endX };
+	vector<int> targetsY = { endY };
 	bool intermediatesEmpty = intermediatesX.empty();
 	if (!intermediatesEmpty) {
 		targetsX.insert(targetsX.end(), intermediatesX.begin(), intermediatesX.end());
@@ -802,7 +802,8 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
         HHNetworkRouteRes * r = nullptr;
         double dir = ctx->config->initialDirection ;
         for (int i = 0; i < targetsX.size(); i++) {
-            res = calculateHHRoute(routePlanner, i == 0 ? startX : targetsX.at(i - 1),
+            ctx->progress->hhTargetsProgress(i, targetsX.size());
+            res = calculateHHRoute(routePlanner, ctx.get(), i == 0 ? startX : targetsX.at(i - 1),
                                    i == 0 ? startY : targetsY.at(i - 1),
                                    targetsX.at(i), targetsY.at(i), dir);
             if (!r) {
@@ -971,15 +972,18 @@ std::vector<SHARED_PTR<GpxPoint>> RoutePlannerFrontEnd::generateGpxPoints(SHARED
 	return gpxPoints;
 }
 
-HHNetworkRouteRes * RoutePlannerFrontEnd::calculateHHRoute(HHRoutePlanner & routePlanner, int startX, int startY, int endX, int endY, double dir) {
+HHNetworkRouteRes * RoutePlannerFrontEnd::calculateHHRoute(HHRoutePlanner & routePlanner, RoutingContext* ctx, int startX, int startY, int endX, int endY, double dir)
+{
     try {
         auto cfg = routePlanner.prepareDefaultRoutingConfig(HH_ROUTING_CONFIG);
         cfg->INITIAL_DIRECTION = dir;
         HHNetworkRouteRes * res = routePlanner.runRouting(startX, startY, endX, endY, cfg);
         if (res != nullptr && res->error == "") {
+            ctx->progress->hhIteration(RouteCalculationProgress::HHIteration::DONE);
             makeStartEndPointsPrecise(res->detailed, startX, startY, endX, endY, {}, {});
             return res;
         }
+        ctx->progress->hhIteration(RouteCalculationProgress::HHIteration::HH_NOT_STARTED);
     } catch (const std::exception e) {
         OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, e.what());
         if (USE_ONLY_HH_ROUTING) {
@@ -1019,7 +1023,8 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchHHRoute(Routi
         HHNetworkRouteRes * r = nullptr;
         double dir = ctx->config->initialDirection ;
         for (int i = 0; i < targetsX.size(); i++) {
-            HHNetworkRouteRes * res = calculateHHRoute(routePlanner, i == 0 ? ctx->startX : targetsX.at(i - 1),
+            ctx->progress->hhTargetsProgress(i, targetsX.size());
+            HHNetworkRouteRes * res = calculateHHRoute(routePlanner, ctx, i == 0 ? ctx->startX : targetsX.at(i - 1),
                                    i == 0 ? ctx->startY : targetsY.at(i - 1),
                                    targetsX.at(i), targetsY.at(i), dir);
             if (!r) {

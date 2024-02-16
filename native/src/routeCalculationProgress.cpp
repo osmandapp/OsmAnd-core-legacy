@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include "routeCalculationProgress.h"
+#include "Logging.h"
 
 SHARED_PTR<RouteCalculationProgress> RouteCalculationProgress::capture(SHARED_PTR<RouteCalculationProgress>& cp) {
 	SHARED_PTR<RouteCalculationProgress> p = std::make_shared<RouteCalculationProgress>();
@@ -97,7 +98,34 @@ void RouteCalculationProgress::updateStatus(float distanceFromBegin, int directS
 	this->reverseSegmentQueueSize = reverseSegmentQueueSize;
 }
 
+float RouteCalculationProgress::getLinearProgressHH() {
+	float progress = 0;
+
+	for (int i = HHIteration::HH_NOT_STARTED; i < HHIteration::Count; i++) {
+		int percent = hhIterationPercent(i);
+		if (percent > 0) {
+			if (i == hhIterationStep) {
+				progress += hhCurrentStepProgress * (float) percent; // current step
+				break;
+			} else {
+				progress += (float) percent; // passed step
+			}
+		}
+	}
+
+	if (hhTargetsTotal > 0) {
+		progress = (100.0 * (float) hhTargetsDone + progress) / (float) hhTargetsTotal; // intermediate points
+	} else {
+		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "Error: getLinearProgressHH() got hhTargetsTotal=0");
+	}
+
+	return std::fmin(progress, 99);
+}
+
 float RouteCalculationProgress::getLinearProgress() {
+	if(hhIterationStep != HH_NOT_STARTED) {
+		return getLinearProgressHH();
+	}
 	float p = std::max(this->distanceFromBegin, this->distanceFromEnd);
 	float all = totalEstimatedDistance * 1.35f;
 	float pr = 0;
@@ -126,6 +154,23 @@ float RouteCalculationProgress::getApproximationProgress() {
 	}
 	progress = INITIAL_PROGRESS + progress * (1 - INITIAL_PROGRESS);
 	return std::fmin(progress * 100.0, 99);
+}
+
+void RouteCalculationProgress::hhTargetsProgress(int done, int total) {
+	hhTargetsDone = done;
+	hhTargetsTotal = total;
+}
+
+void RouteCalculationProgress::hhIteration(HHIteration step) {
+	hhIterationStep = step;
+	hhCurrentStepProgress = 0;
+}
+
+void RouteCalculationProgress::hhIterationProgress(double k) {
+	// validate 0-100% and disallow to progress back
+	if (k >= 0 && k <= 1.0 && k > hhCurrentStepProgress) {
+		hhCurrentStepProgress = k;
+	}
 }
 
 #endif /*_OSMAND_ROUTE_CALCULATION_PROGRESS_CPP*/

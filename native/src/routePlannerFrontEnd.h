@@ -13,7 +13,7 @@ struct RouteSegment;
 struct RoutingConfiguration;
 
 struct GpxRouteApproximation {
-	
+
 	RoutingContext* ctx;
 	int routeCalculations = 0;
 	int routePointsSearched = 0;
@@ -42,8 +42,6 @@ class RoutePlannerFrontEnd {
     
     bool useSmartRouteRecalculation;
     
-    bool TRACE_ROUTING = false;
-    bool USE_HH_ROUTING = false;
     HHRoutingConfig * HH_ROUTING_CONFIG = nullptr;
     
 public:
@@ -87,7 +85,7 @@ public:
 	
 	void searchGpxRoute(SHARED_PTR<GpxRouteApproximation>& gctx, vector<SHARED_PTR<GpxPoint>>& gpxPoints, GpxRouteApproximationCallback acceptor = nullptr);
 	static bool hasSegment(vector<SHARED_PTR<RouteSegmentResult>>& result, SHARED_PTR<RouteSegment>& current);
-    HHRoutingConfig * setDefaultRoutingConfig();
+	HHRoutingConfig* setDefaultRoutingConfig();
 	
 private:
 	
@@ -110,7 +108,7 @@ private:
 	bool pointCloseEnough(SHARED_PTR<GpxRouteApproximation>& gctx, SHARED_PTR<GpxPoint>& ipoint,
 	                      vector<SHARED_PTR<RouteSegmentResult>>& res);
 	void makeSegmentPointPrecise(SHARED_PTR<RouteSegmentResult>& routeSegmentResult, double lat, double lon, bool st);
-    HHNetworkRouteRes * calculateHHRoute(HHRoutePlanner & routePlanner, int startX, int startY, int endX, int endY, double dir);
+	HHNetworkRouteRes* calculateHHRoute(HHRoutePlanner & routePlanner, RoutingContext* ctx, int startX, int startY, int endX, int endY, double dir);
 };
 
 #endif /*_OSMAND_ROUTE_PLANNER_FRONT_END_H*/

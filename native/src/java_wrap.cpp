@@ -463,7 +463,10 @@ jfieldID jfield_RouteCalculationProgress_loadedTiles = NULL;
 jfieldID jfield_RouteCalculationProgress_unloadedTiles = NULL;
 jfieldID jfield_RouteCalculationProgress_loadedPrevUnloadedTiles = NULL;
 jfieldID jfield_RouteCalculationProgress_distinctLoadedTiles = NULL;
-
+jfieldID jfield_RouteCalculationProgress_hhIterationStep = NULL;
+jfieldID jfield_RouteCalculationProgress_hhTargetsDone = NULL;
+jfieldID jfield_RouteCalculationProgress_hhTargetsTotal = NULL;
+jfieldID jfield_RouteCalculationProgress_hhCurrentStepProgress = NULL;
 
 jclass jclass_RenderedObject = NULL;
 jmethodID jmethod_RenderedObject_putTag = NULL;
@@ -886,10 +889,18 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jfield_RouteCalculationProgress_loadedTiles = getFid(env, jclass_RouteCalculationProgress, "loadedTiles", "I");
 	jfield_RouteCalculationProgress_unloadedTiles = getFid(env, jclass_RouteCalculationProgress, "unloadedTiles", "I");
 	jfield_RouteCalculationProgress_loadedPrevUnloadedTiles =
-	getFid(env, jclass_RouteCalculationProgress, "loadedPrevUnloadedTiles", "I");
+		getFid(env, jclass_RouteCalculationProgress, "loadedPrevUnloadedTiles", "I");
 	jfield_RouteCalculationProgress_distinctLoadedTiles = 
 		getFid(env, jclass_RouteCalculationProgress, "distinctLoadedTiles", "I");
-	
+	jfield_RouteCalculationProgress_hhIterationStep =
+		getFid(env, jclass_RouteCalculationProgress, "hhIterationStep", "I");
+	jfield_RouteCalculationProgress_hhTargetsDone =
+		getFid(env, jclass_RouteCalculationProgress, "hhTargetsDone", "I");
+	jfield_RouteCalculationProgress_hhTargetsTotal =
+		getFid(env, jclass_RouteCalculationProgress, "hhTargetsTotal", "I");
+	jfield_RouteCalculationProgress_hhCurrentStepProgress =
+		getFid(env, jclass_RouteCalculationProgress, "hhCurrentStepProgress", "D");
+
 	jclass_TransportRoutingConfiguration = findGlobalClass(env, "net/osmand/router/TransportRoutingConfiguration");
 	jfield_TransportRoutingConfiguration_ZOOM_TO_LOAD_TILES =
 		getFid(env, jclass_TransportRoutingConfiguration, "ZOOM_TO_LOAD_TILES", "I");
@@ -1388,41 +1399,68 @@ class RouteCalculationProgressWrapper : public RouteCalculationProgress {
    public:
 	RouteCalculationProgressWrapper(JNIEnv* ienv, jobject progress) : RouteCalculationProgress(), ienv(ienv), progress(progress) {}
 
-	virtual bool isCancelled() {
+	virtual ~RouteCalculationProgressWrapper() override { }
+
+	virtual void hhIteration(HHIteration step) override {
+		if (progress != NULL) {
+			ienv->SetIntField(progress, jfield_RouteCalculationProgress_hhIterationStep, step);
+			ienv->SetDoubleField(progress, jfield_RouteCalculationProgress_hhCurrentStepProgress, 0);
+		}
+		RouteCalculationProgress::hhIteration(step);
+	}
+
+	virtual void hhTargetsProgress(int done, int total) override {
+		if (progress != NULL) {
+			ienv->SetIntField(progress, jfield_RouteCalculationProgress_hhTargetsDone, done);
+			ienv->SetIntField(progress, jfield_RouteCalculationProgress_hhTargetsTotal, total);
+		}
+		RouteCalculationProgress::hhTargetsProgress(done, total);
+	}
+
+	virtual void hhIterationProgress(double k) override {
+		if (progress != NULL) {
+			if (k >= 0 && k <= 1.0 && k > hhCurrentStepProgress) {
+				ienv->SetDoubleField(progress, jfield_RouteCalculationProgress_hhCurrentStepProgress, k);
+			}
+		}
+		RouteCalculationProgress::hhIterationProgress(k);
+	}
+
+	virtual bool isCancelled() override {
 		if (progress == NULL) {
 			return false;
 		}
 		return ienv->GetBooleanField(progress, jfield_RouteCalculationProgress_isCancelled);
 	}
 
-	virtual void setSegmentNotFound(int s) {
+	virtual void setSegmentNotFound(int s) override {
 		if (progress != NULL) {
 			ienv->SetIntField(progress, jfield_RouteCalculationProgress_segmentNotFound, s);
 		}
 	}
 
-	virtual void updateIteration(int iteration) {
+	virtual void updateIteration(int iteration) override {
 		RouteCalculationProgress::updateIteration(iteration);
 		if (progress != NULL) {
 			ienv->SetIntField(progress, jfield_RouteCalculationProgress_iteration, iteration);
 		}
 	}
 
-	virtual void updateTotalEstimatedDistance(float distance) {
+	virtual void updateTotalEstimatedDistance(float distance) override {
 		RouteCalculationProgress::updateTotalEstimatedDistance(distance);
 		if (progress != NULL) {
 			ienv->SetFloatField(progress, jfield_RouteCalculationProgress_totalEstimatedDistance, distance);
 		}
 	}
 
-	virtual void updateTotalApproximateDistance(float distance) {
+	virtual void updateTotalApproximateDistance(float distance) override {
 		RouteCalculationProgress::updateTotalApproximateDistance(distance);
 		if (progress != NULL) {
 			ienv->SetFloatField(progress, jfield_RouteCalculationProgress_totalApproximateDistance, distance);
 		}
 	}
 
-	virtual void updateApproximatedDistance(float distance) {
+	virtual void updateApproximatedDistance(float distance) override {
 		RouteCalculationProgress::updateApproximatedDistance(distance);
 		if (progress != NULL) {
 			ienv->SetFloatField(progress, jfield_RouteCalculationProgress_approximatedDistance, distance);
@@ -1430,7 +1468,7 @@ class RouteCalculationProgressWrapper : public RouteCalculationProgress {
 	}
 
 	virtual void updateStatus(float distanceFromBegin, int directSegmentQueueSize, float distanceFromEnd,
-							  int reverseSegmentQueueSize) {
+							  int reverseSegmentQueueSize) override {
 		RouteCalculationProgress::updateStatus(distanceFromBegin, directSegmentQueueSize, distanceFromEnd,
 											   reverseSegmentQueueSize);
 		if (progress != NULL) {
