@@ -985,7 +985,7 @@ HHNetworkRouteRes * RoutePlannerFrontEnd::calculateHHRoute(HHRoutePlanner & rout
         }
         ctx->progress->hhIteration(RouteCalculationProgress::HHIteration::HH_NOT_STARTED);
     } catch (const std::exception e) {
-        OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, e.what());
+        OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "%s", e.what());
         if (USE_ONLY_HH_ROUTING) {
             std::string ex = "Error during routing calculation : ";
             ex += e.what();
