@@ -46,7 +46,7 @@ jobject newGlobalRef(JNIEnv* env, jobject o) {
 }
 
 void throwNewException(JNIEnv* env, const char* msg) {
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, msg);
+	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "%s", msg);
 	env->ThrowNew(env->FindClass("java/lang/Exception"), msg);
 }
 

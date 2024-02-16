@@ -1718,7 +1718,7 @@ void printResults(RoutingContext* ctx, int startX, int startY, int endX, int end
 		}
 	}
 	for (string msg : routeInfo) {
-		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, msg.c_str());
+		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "%s", msg.c_str());
 	}
 }
 
