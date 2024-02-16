@@ -101,7 +101,7 @@ void RouteCalculationProgress::updateStatus(float distanceFromBegin, int directS
 float RouteCalculationProgress::getLinearProgressHH() {
 	float progress = 0;
 
-	for (int i = HHIteration::HH_NOT_STARTED; i <= HHIteration::DONE; i++) {
+	for (int i = HHIteration::HH_NOT_STARTED; i < HHIteration::Count; i++) {
 		int percent = hhIterationPercent(i);
 		if (percent > 0) {
 			if (i == hhIterationStep) {

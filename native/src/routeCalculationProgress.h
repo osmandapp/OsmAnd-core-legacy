@@ -86,7 +86,8 @@ class RouteCalculationProgress {
 		ROUTING,
 		DETAILED,
 		ALTERNATIVES,
-		DONE
+		DONE,
+		Count
 	};
 
 	inline int hhIterationPercent(int step) {
