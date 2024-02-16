@@ -374,7 +374,7 @@ HHNetworkRouteRes * HHRoutePlanner::prepareRouteResults(SHARED_PTR<HHRoutingCont
         }
         
         hctx->rctx->progress->routingCalculatedTime += routeSegment.rtTimeDetailed;
-        
+
         if (DEBUG_VERBOSE_LEVEL >= 1) {
             int segments = (int) routeSegment.list.size();
             if (s == nullptr) {
@@ -762,8 +762,8 @@ bool HHRoutePlanner::retrieveSegmentsGeometry(SHARED_PTR<HHRoutingContext> hctx,
             float distanceFromStart = f.at(0)->distanceFromStart;
             if ((distanceFromStart + MAX_INC_COST_CORR) > (s.segment->dist + MAX_INC_COST_CORR) * hctx->config->MAX_INC_COST_CF) {
                 OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
-                                  "Route cost increased (%.2f > %.2f) between %s -> %s: recalculate route\n",
-                                  distanceFromStart, s.segment->dist, s.segment->start, s.segment->end);
+                                  "Route cost increased (%.2f > %.2f) between %d -> %d: recalculate route\n",
+                                  distanceFromStart, s.segment->dist, s.segment->start->index, s.segment->end->index);
                 s.segment->dist = distanceFromStart;
                 return true;
             }
@@ -867,7 +867,7 @@ void HHRoutePlanner::addPointToQueue(SHARED_PTR<HHRoutingContext> hctx, SHARED_P
     timer.Start();
     if (DEBUG_VERBOSE_LEVEL > 2) {
         OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
-                          "Add  %s to visit - cost %.2f (%.2f prev, %.2f dist) > prev cost %.2f \n", point,
+                          "Add  Point %d to visit - cost %.2f (%.2f prev, %.2f dist) > prev cost %.2f \n", point->index,
                           cost, parent == nullptr ? 0 : parent->rt(reverse)->rtDistanceFromStart, segmentDist, point->rt(reverse)->rtCost);
     }
     if (point->rt(reverse)->rtVisited) {
@@ -921,8 +921,8 @@ void HHRoutePlanner::addConnectedToQueue(SHARED_PTR<HHRoutingContext> hctx, SHAR
             double sSegmentCost = smallestSegmentCost(hctx, point, nextPoint);
             // TODO lots of incorrect distance in db
             OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
-                              "Incorrect distance %s -> %s: db = %.2f > fastest %.2f \n",
-                              point, nextPoint, connected->dist, sSegmentCost);
+                              "Incorrect distance Point %d -> Point %d: db = %.2f > fastest %.2f \n",
+                              point->index, nextPoint->index, connected->dist, sSegmentCost);
             connected->dist = sSegmentCost;
         }
         double cost = point->rt(reverse)->rtDistanceFromStart  + connected->dist + hctx->distanceToEnd(reverse, nextPoint);
