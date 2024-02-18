@@ -929,7 +929,7 @@ void HHRoutePlanner::addConnectedToQueue(SHARED_PTR<HHRoutingContext> hctx, SHAR
             double sSegmentCost = smallestSegmentCost(hctx, point, nextPoint);
             // TODO lots of incorrect distance in db
             OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
-                              "Incorrect distance Point %d -> Point %d: db = %.2f > fastest %.2f \n",
+                              "Incorrect distance Point %d -> Point %d: db = %.2f > fastest %.2f",
                               point->index, nextPoint->index, connected->dist, sSegmentCost);
             connected->dist = sSegmentCost;
         }
