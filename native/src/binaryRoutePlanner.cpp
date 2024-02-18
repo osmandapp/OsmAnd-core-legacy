@@ -185,6 +185,10 @@ SHARED_PTR<RouteSegment> initEdgeSegment(RoutingContext* ctx, SHARED_PTR<RouteSe
 			break;
 		}
 	}
+	if (ctx->isInterrupted() || segments.size() == 0 || seg == nullptr) {
+		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "initEdgeSegment() got empty segments (cancel)");
+		return nullptr;
+	}
 	if (seg->getSegmentStart() != (originalDir ? pnt->getSegmentStart() : pnt->getSegmentEnd())
 			|| seg->getSegmentEnd() != (originalDir ? pnt->getSegmentEnd() : pnt->getSegmentStart())) {
 		seg = RouteSegment::initRouteSegment(seg, !seg->isPositive());
