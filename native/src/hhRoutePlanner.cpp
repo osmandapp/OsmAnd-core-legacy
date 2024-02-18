@@ -757,8 +757,8 @@ bool HHRoutePlanner::retrieveSegmentsGeometry(SHARED_PTR<HHRoutingContext> hctx,
             if (f.size() == 0) {
                 bool full = hctx->config->FULL_DIJKSTRA_NETWORK_RECALC-- > 0;
                 OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
-                                  "Route not found (%srecalc) %s -> %s\n", full ? "dijkstra+" : "",
-                                  s.segment->start, s.segment->end);
+                                  "Route not found (%srecalc) %d -> %d",
+                                  full ? "dijkstra+" : "", s.segment->start->index, s.segment->end->index);
                 if (full) {
                     recalculateNetworkCluster(hctx, s.segment->start);
                 }
@@ -822,7 +822,7 @@ std::vector<SHARED_PTR<RouteSegment>> HHRoutePlanner::runDetailedRouting(SHARED_
     } else if (end == nullptr) {
         OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
                           "End point is not present in detailed maps: Point %d (%d %d-%d)",
-                          endS->index, endS->roadId, endS->roadId/64, endS->start, endS->end);
+                          endS->index, endS->roadId/64, endS->start, endS->end);
         return f;
     }
     double oldP = hctx->rctx->config->penaltyForReverseDirection;
@@ -841,11 +841,11 @@ std::vector<SHARED_PTR<RouteSegment>> HHRoutePlanner::runDetailedRouting(SHARED_
     }
     if (f.size() == 0) {
         OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
-                          "No route found between %d %.5f %.5f Road (%d) name ('%s') -> %d %.5f %.5f Road (%d) name ('%s') \n",
-                          start->segmentStart, get31LatitudeY(start->preciseY), get31LongitudeX(start->preciseY),
-                          start->getRoad()->getId() / 64, start->getRoad()->getName().c_str(),
-                          end->segmentStart, get31LatitudeY(end->preciseY), get31LongitudeX(end->preciseY),
-                          end->getRoad()->getId() / 64, end->getRoad()->getName().c_str());
+                          "No route found between %d %.5f %.5f Road (%d) name ('%s') -> %d %.5f %.5f Road (%d) name ('%s')",
+                          (int) start->segmentStart, (float) get31LatitudeY(start->preciseY), (float) get31LongitudeX(start->preciseX),
+                          (int) (start->getRoad()->getId() / 64), start->getRoad()->getName().c_str(),
+                          (int) end->segmentStart, (float) get31LatitudeY(end->preciseY), (float) get31LongitudeX(end->preciseX),
+                          (int) (end->getRoad()->getId() / 64), end->getRoad()->getName().c_str());
     }
     hctx->rctx->config->MAX_VISITED = -1;
     // clean up
