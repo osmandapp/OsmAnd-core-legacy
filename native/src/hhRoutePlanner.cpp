@@ -940,9 +940,9 @@ void HHRoutePlanner::addConnectedToQueue(SHARED_PTR<HHRoutingContext> hctx, SHAR
         double cost = point->rt(reverse)->rtDistanceFromStart  + connected->dist + hctx->distanceToEnd(reverse, nextPoint);
         if (ASSERT_COST_INCREASING && point->rt(reverse)->rtCost - cost > 1) {
             OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error,
-                              "Point %d (%d %d-%d) (cost %.2f) -> %s (cost %.2f) st=%.2f-> + %.2f, toend=%.2f->%.2f: ",
+                              "Point %d (%d %d-%d) (cost %.2f) -> %d (cost %.2f) st=%.2f-> + %.2f, toend=%.2f->%.2f: ",
                               point->index, point->roadId / 64, point->start, point->end, point->rt(reverse)->rtCost,
-                              nextPoint, cost, point->rt(reverse)->rtDistanceFromStart, connected->dist,
+                              nextPoint->index, cost, point->rt(reverse)->rtDistanceFromStart, connected->dist,
                               point->rt(reverse)->rtDistanceToEnd, hctx->distanceToEnd(reverse, nextPoint));
             return;
         }
