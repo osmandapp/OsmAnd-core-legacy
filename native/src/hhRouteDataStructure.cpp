@@ -57,8 +57,8 @@ void HHRoutingContext::clearVisited(UNORDERED_map<int64_t, NetworkDBPoint *> & s
     queue(true).reset();
     queue(false).reset();
     for (NetworkDBPoint * p : queueAdded) {
-        auto & pos = p->rt(false)->rtDetailedRoute;
-        auto & rev = p->rt(true)->rtDetailedRoute;
+        SHARED_PTR<RouteSegment> pos = std::move(p->rt(false)->rtDetailedRoute);
+        SHARED_PTR<RouteSegment> rev = std::move(p->rt(true)->rtDetailedRoute);
         p->clearRouting();
         auto itS = stPoints.find(p->index);
         auto itE = endPoints.find(p->index);

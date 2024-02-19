@@ -141,8 +141,7 @@ struct NetworkDBPoint {
     
     void clearRouting() {
         rtExclude = false;
-        rtPos = nullptr;
-        rtRev = nullptr;
+        rtPos = rtRev = nullptr; // rt()->rtDetailedRoute will be set to nullptr together with rtPos/rtRev
     }
     
     SHARED_PTR<NetworkDBPointRouteInfo> rt(bool rev) {
