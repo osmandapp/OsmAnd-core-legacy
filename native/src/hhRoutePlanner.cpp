@@ -750,11 +750,15 @@ bool HHRoutePlanner::retrieveSegmentsGeometry(SHARED_PTR<HHRoutingContext> hctx,
                 return false;
             }
             std::vector<SHARED_PTR<RouteSegment>> f = runDetailedRouting(hctx, s.segment->start, s.segment->end, true);
+            if (progress->isCancelled()) {
+                OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "runDetailedRouting() f.size()=%d (cancel)", f.size());
+                return false;
+            }
             if (f.size() == 0) {
                 bool full = hctx->config->FULL_DIJKSTRA_NETWORK_RECALC-- > 0;
                 OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
-                                  "Route not found (%srecalc) %s -> %s\n", full ? "dijkstra+" : "",
-                                  s.segment->start, s.segment->end);
+                                  "Route not found (%srecalc) %d -> %d",
+                                  full ? "dijkstra+" : "", s.segment->start->index, s.segment->end->index);
                 if (full) {
                     recalculateNetworkCluster(hctx, s.segment->start);
                 }
@@ -818,7 +822,7 @@ std::vector<SHARED_PTR<RouteSegment>> HHRoutePlanner::runDetailedRouting(SHARED_
     } else if (end == nullptr) {
         OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
                           "End point is not present in detailed maps: Point %d (%d %d-%d)",
-                          endS->index, endS->roadId, endS->roadId/64, endS->start, endS->end);
+                          endS->index, endS->roadId/64, endS->start, endS->end);
         return f;
     }
     double oldP = hctx->rctx->config->penaltyForReverseDirection;
@@ -837,11 +841,11 @@ std::vector<SHARED_PTR<RouteSegment>> HHRoutePlanner::runDetailedRouting(SHARED_
     }
     if (f.size() == 0) {
         OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
-                          "No route found between %d %.5f %.5f Road (%d) name ('%s') -> %d %.5f %.5f Road (%d) name ('%s') \n",
-                          start->segmentStart, get31LatitudeY(start->preciseY), get31LongitudeX(start->preciseY),
-                          start->getRoad()->getId() / 64, start->getRoad()->getName().c_str(),
-                          end->segmentStart, get31LatitudeY(end->preciseY), get31LongitudeX(end->preciseY),
-                          end->getRoad()->getId() / 64, end->getRoad()->getName().c_str());
+                          "No route found between %d %.5f %.5f Road (%d) name ('%s') -> %d %.5f %.5f Road (%d) name ('%s')",
+                          (int) start->segmentStart, (float) get31LatitudeY(start->preciseY), (float) get31LongitudeX(start->preciseX),
+                          (int) (start->getRoad()->getId() / 64), start->getRoad()->getName().c_str(),
+                          (int) end->segmentStart, (float) get31LatitudeY(end->preciseY), (float) get31LongitudeX(end->preciseX),
+                          (int) (end->getRoad()->getId() / 64), end->getRoad()->getName().c_str());
     }
     hctx->rctx->config->MAX_VISITED = -1;
     // clean up
@@ -936,9 +940,9 @@ void HHRoutePlanner::addConnectedToQueue(SHARED_PTR<HHRoutingContext> hctx, SHAR
         double cost = point->rt(reverse)->rtDistanceFromStart  + connected->dist + hctx->distanceToEnd(reverse, nextPoint);
         if (ASSERT_COST_INCREASING && point->rt(reverse)->rtCost - cost > 1) {
             OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error,
-                              "Point %d (%d %d-%d) (cost %.2f) -> %s (cost %.2f) st=%.2f-> + %.2f, toend=%.2f->%.2f: ",
+                              "Point %d (%d %d-%d) (cost %.2f) -> %d (cost %.2f) st=%.2f-> + %.2f, toend=%.2f->%.2f: ",
                               point->index, point->roadId / 64, point->start, point->end, point->rt(reverse)->rtCost,
-                              nextPoint, cost, point->rt(reverse)->rtDistanceFromStart, connected->dist,
+                              nextPoint->index, cost, point->rt(reverse)->rtDistanceFromStart, connected->dist,
                               point->rt(reverse)->rtDistanceToEnd, hctx->distanceToEnd(reverse, nextPoint));
             return;
         }
