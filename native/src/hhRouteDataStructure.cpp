@@ -57,22 +57,17 @@ void HHRoutingContext::clearVisited(UNORDERED_map<int64_t, NetworkDBPoint *> & s
     queue(true).reset();
     queue(false).reset();
     for (NetworkDBPoint * p : queueAdded) {
-        const auto & pos = p->rt(false)->rtDetailedRoute;
-        const auto & rev = p->rt(true)->rtDetailedRoute;
-
-        // posCopy and revCopy are used because clearRouting() kills their parents with themself
-        SHARED_PTR<RouteSegment> posCopy = pos.get() == nullptr ? nullptr : std::make_shared<RouteSegment>(*pos);
-        SHARED_PTR<RouteSegment> revCopy = rev.get() == nullptr ? nullptr : std::make_shared<RouteSegment>(*rev);
-
+        SHARED_PTR<RouteSegment> pos = std::move(p->rt(false)->rtDetailedRoute);
+        SHARED_PTR<RouteSegment> rev = std::move(p->rt(true)->rtDetailedRoute);
         p->clearRouting();
         auto itS = stPoints.find(p->index);
         auto itE = endPoints.find(p->index);
-        if (itS != stPoints.end() && posCopy != nullptr && posCopy.get() != nullptr) {
+        if (itS != stPoints.end() && pos.get() != nullptr) {
             p->setDistanceToEnd(false, distanceToEnd(false, p));
-            p->setDetailedParentRt(false, posCopy);
-        } else if (itE != endPoints.end() && revCopy != nullptr && revCopy.get() != nullptr) {
+            p->setDetailedParentRt(false, pos);
+        } else if (itE != endPoints.end() && rev.get() != nullptr) {
             p->setDistanceToEnd(true, distanceToEnd(true, p));
-            p->setDetailedParentRt(true, revCopy);
+            p->setDetailedParentRt(true, rev);
         }
         //TODO ask Victor is need to destroy NetworkDBPoint * here ?
     }
