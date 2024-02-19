@@ -67,10 +67,10 @@ void HHRoutingContext::clearVisited(UNORDERED_map<int64_t, NetworkDBPoint *> & s
         p->clearRouting();
         auto itS = stPoints.find(p->index);
         auto itE = endPoints.find(p->index);
-        if (itS != stPoints.end() && posCopy.get() != nullptr) {
+        if (itS != stPoints.end() && posCopy != nullptr && posCopy.get() != nullptr) {
             p->setDistanceToEnd(false, distanceToEnd(false, p));
             p->setDetailedParentRt(false, posCopy);
-        } else if (itE != endPoints.end() && revCopy.get() != nullptr) {
+        } else if (itE != endPoints.end() && revCopy != nullptr && revCopy.get() != nullptr) {
             p->setDistanceToEnd(true, distanceToEnd(true, p));
             p->setDetailedParentRt(true, revCopy);
         }
