@@ -53,14 +53,14 @@ SHARED_PTR<HHRoutingContext> HHRoutePlanner::selectBestRoutingFiles(int startX, 
     SHARED_PTR<GeneralRouter> router = hctx->rctx->config->router;
     string profile = profileToString(router->getProfile()); // use base profile
     std::vector<string> ls = router->serializeParameterValues(router->getParameterValues());
-    
+
     SkRect qr = SkRect::MakeLTRB(std::min(startX, endX), std::min(startY, endY), std::max(startX, endX), std::max(startY, endY));
-    
+
     const std::vector<BinaryMapFile*> & openFiles = getOpenMapFiles();
     for (BinaryMapFile * r : openFiles) {
         for (SHARED_PTR<HHRouteIndex> & hhRegion : r->hhIndexes) {
             SkRect * hhRegionRect = hhRegion->getSkRect();
-            if (hhRegion->profile == profile && qr.intersect(*hhRegionRect)) {
+            if (hhRegion->profile == profile && SkRect::Intersects(qr, *hhRegionRect)) {
                 double intersect = hhRegion->intersectionArea(qr);
                 hhRouteRegionGroup->appendToGroups(hhRegion, r, groups, intersect);
             }
