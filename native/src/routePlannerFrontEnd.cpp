@@ -152,7 +152,7 @@ void makeStartEndPointsPrecise(vector<SHARED_PTR<RouteSegmentResult>>& res, int 
 	}
 }
 
-vector<SHARED_PTR<RouteSegmentResult>> runRouting(RoutingContext* ctx, SHARED_PTR<RouteSegment> recalculationEnd) {
+vector<SHARED_PTR<RouteSegmentResult>> runRouting(RoutingContext* ctx, SHARED_PTR<RouteSegment> recalculationEnd, bool makePrecise) {
 	refreshProgressDistance(ctx);
 
 	OsmAnd::ElapsedTimer timer;
@@ -189,6 +189,14 @@ vector<SHARED_PTR<RouteSegmentResult>> runRouting(RoutingContext* ctx, SHARED_PT
 		ctx->progress->routingCalculatedTime += ctx->finalRouteSegment->distanceFromStart;
 	}
 
+	if (ctx->isCalledFromJava) {
+		return result; // actual for searchGpxRoute only (Java BRP-cpp uses binaryRoutePlanner directly)
+	}
+
+	if (makePrecise) {
+		makeStartEndPointsPrecise(result, ctx->startX, ctx->startY, ctx->targetX, ctx->targetY, {}, {});
+	}
+
 	return prepareResult(ctx, result);
 }
 
@@ -205,7 +213,7 @@ bool RoutePlannerFrontEnd::hasSegment(vector<SHARED_PTR<RouteSegmentResult>>& re
 
 vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRouteInternalPrepare(
 	RoutingContext* ctx, SHARED_PTR<RouteSegmentPoint> start, SHARED_PTR<RouteSegmentPoint> end,
-	SHARED_PTR<PrecalculatedRouteDirection> routeDirection) {
+	SHARED_PTR<PrecalculatedRouteDirection> routeDirection, bool makePrecise) {
 	auto recalculationEnd = getRecalculationEnd(ctx);
 	if (recalculationEnd) {
 		ctx->initStartAndTargetPoints(start, recalculationEnd);
@@ -215,7 +223,7 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRouteInternal
 	if (routeDirection) {
 		ctx->precalcRoute = routeDirection->adopt(ctx);
 	}
-	return runRouting(ctx, recalculationEnd);
+	return runRouting(ctx, recalculationEnd, makePrecise);
 }
 
 double GpxRouteApproximation::distFromLastPoint(double lat, double lon) {
@@ -640,7 +648,7 @@ bool RoutePlannerFrontEnd::findGpxRouteSegment(SHARED_PTR<GpxRouteApproximation>
 		gctx->routeDistCalculations += (target->cumDist - start->cumDist);
 		gctx->routeCalculations++;
 		RoutingContext* cp = new RoutingContext(gctx->ctx);
-		res = searchRouteInternalPrepare(cp, start->pnt, target->pnt, nullptr);
+		res = searchRouteInternalPrepare(cp, start->pnt, target->pnt, nullptr, false);
 		delete cp;
 		// BinaryRoutePlanner.printDebugMemoryInformation(gctx.ctx);
 		routeIsCorrect = !res.empty();
@@ -718,6 +726,7 @@ bool RoutePlannerFrontEnd::pointCloseEnough(SHARED_PTR<GpxRouteApproximation>& g
 	return false;
 }
 
+// BRP-ios main function with interpoints support (called by entry-point function)
 vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 	RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentPoint>>& points,
 	SHARED_PTR<PrecalculatedRouteDirection> routeDirection) {
@@ -725,7 +734,7 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 		if (!useSmartRouteRecalculation) {
 			ctx->previouslyCalculatedRoute.clear();
 		}
-		return searchRouteInternalPrepare(ctx, points[0], points[1], routeDirection);
+		return searchRouteInternalPrepare(ctx, points[0], points[1], routeDirection, true); // BRP-ios (no-interpoints)
 	}
 
 	vector<SHARED_PTR<RouteSegmentResult>> firstPartRecalculatedRoute;
@@ -766,7 +775,7 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 			}
 		}
 		local.progress = ctx->progress;
-		auto res = searchRouteInternalPrepare(&local, points[i], points[i + 1], routeDirection);
+		auto res = searchRouteInternalPrepare(&local, points[i], points[i + 1], routeDirection, true); // BRP-ios (interpoints)
 
 		results.insert(results.end(), res.begin(), res.end());
 
@@ -780,7 +789,7 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 	return results;
 }
 
-vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
+vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute( // BRP-ios entry point
 	SHARED_PTR<RoutingContext> ctx, int startX, int startY, int endX, int endY, vector<int>& intermediatesX,
 	vector<int>& intermediatesY, SHARED_PTR<PrecalculatedRouteDirection> routeDirection) {
 	if (!ctx->progress) {
@@ -859,11 +868,10 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 		if (routeDirection) {
 			ctx->precalcRoute = routeDirection->adopt(ctx.get());
 		}
-		auto res = runRouting(ctx.get(), recalculationEnd);
+		auto res = runRouting(ctx.get(), recalculationEnd, true); // iOS (no-interpoints)
 		if (!res.empty()) {
 			printResults(ctx.get(), startX, startY, endX, endY, res);
 		}
-		makeStartEndPointsPrecise(res, startX, startY, endX, endY, intermediatesX, intermediatesY);
 		return res;
 	}
 	int indexNotFound = 0;
@@ -883,9 +891,8 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 	if (!addSegment(endX, endY, ctx.get(), indexNotFound++, points, ctx->targetTransportStop)) {
 		return vector<SHARED_PTR<RouteSegmentResult>>();
 	}
-	auto res = searchRoute(ctx.get(), points, routeDirection);
+	auto res = searchRoute(ctx.get(), points, routeDirection); // iOS (interpoints)
 	// make start and end more precise
-	makeStartEndPointsPrecise(res, startX, startY, endX, endY, intermediatesX, intermediatesY);
 
 	printResults(ctx.get(), startX, startY, endX, endY, res);
 
@@ -977,10 +984,9 @@ HHNetworkRouteRes * RoutePlannerFrontEnd::calculateHHRoute(HHRoutePlanner & rout
     try {
         auto cfg = routePlanner.prepareDefaultRoutingConfig(HH_ROUTING_CONFIG);
         cfg->INITIAL_DIRECTION = dir;
-        HHNetworkRouteRes * res = routePlanner.runRouting(startX, startY, endX, endY, cfg);
+        HHNetworkRouteRes * res = routePlanner.runRouting(startX, startY, endX, endY, cfg); // HH-cpp
         if (res != nullptr && res->error == "") {
             ctx->progress->hhIteration(RouteCalculationProgress::HHIteration::DONE);
-            makeStartEndPointsPrecise(res->detailed, startX, startY, endX, endY, {}, {});
             return res;
         }
         ctx->progress->hhIteration(RouteCalculationProgress::HHIteration::HH_NOT_STARTED);
@@ -1005,7 +1011,7 @@ HHRoutingConfig * RoutePlannerFrontEnd::setDefaultRoutingConfig() {
     return HH_ROUTING_CONFIG;
 }
 
-vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchHHRoute(RoutingContext * ctx) {
+vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchHHRoute(RoutingContext* ctx) { // HH-cpp JNI entry point
     if (HH_ROUTING_CONFIG != nullptr) {
         if (!ctx->progress) {
             ctx->progress = std::make_shared<RouteCalculationProgress>();

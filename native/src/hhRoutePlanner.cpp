@@ -328,7 +328,10 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
         return cancelledStatus();
     }
     if (hctx->config->ROUTE_ALL_SEGMENTS/* && route.detailed != null*/) {
-        route->detailed = prepareResult(hctx->rctx, route->detailed);
+		if (hctx->rctx->isCalledFromJava == false) {
+			makeStartEndPointsPrecise(route->detailed, startX, startY, endX, endY, {}, {});
+			route->detailed = prepareResult(hctx->rctx, route->detailed);
+		}
     }
     OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "%.2f ms\n", timer.GetElapsedMs());
     printResults(hctx->rctx, startX, startY, endX, endY, route->detailed);
@@ -402,7 +405,7 @@ void HHRoutePlanner::findFirstLastSegments(SHARED_PTR<HHRoutingContext> hctx, in
     OsmAnd::ElapsedTimer timer;
     timer.Start();
     OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Finding first / last segments...");
-    auto planner = std::shared_ptr<RoutePlannerFrontEnd>();
+    // auto planner = std::shared_ptr<RoutePlannerFrontEnd>();
     int startReiterate = -1, endReiterate = -1;
     bool found = false;
     //hctx->rctx->progress->cancelled = false;

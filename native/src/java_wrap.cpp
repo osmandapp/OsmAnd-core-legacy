@@ -1740,6 +1740,7 @@ RoutingContext* getRoutingContext(JNIEnv* ienv, jobject jCtx, jfloat initDirecti
 		c = new RoutingContext(config);
 		ienv->SetLongField(jCtx, jfield_RoutingContext_nativeRoutingContext, (jlong)c);
 	}
+	c->isCalledFromJava = true;
 	c->config->initialDirection = initDirection;
 	c->progress = SHARED_PTR<RouteCalculationProgress>(new RouteCalculationProgressWrapper(ienv, progress));
 	c->startX = ienv->GetIntField(jCtx, jfield_RoutingContext_startX);
@@ -1871,9 +1872,9 @@ extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_nativeRo
 	if (hhConfig) {
 		//HH routing
 		RoutePlannerFrontEnd rpfe(hhConfig);
-		r = rpfe.searchHHRoute(c);
+		r = rpfe.searchHHRoute(c); // HH-cpp: routePlannerFrontEnd.cpp -> hhRoutePlanner.cpp
 	} else {
-		r = searchRouteInternal(c, false);
+		r = searchRouteInternal(c, false); // BRP-cpp: do direct call to binaryRoutePlanner.cpp
 	}
 
 	UNORDERED(map)<int64_t, int> indexes;

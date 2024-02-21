@@ -57,11 +57,13 @@ public:
         HH_ROUTING_CONFIG = hhConfig;
     }
     
-    vector<SHARED_PTR<RouteSegmentResult> > searchRoute(RoutingContext* ctx,
+    vector<SHARED_PTR<RouteSegmentResult>> searchRoute(RoutingContext* ctx,
                                            vector<SHARED_PTR<RouteSegmentPoint>>& points,
                                            SHARED_PTR<PrecalculatedRouteDirection> routeDirection);
     
-    vector<SHARED_PTR<RouteSegmentResult> > searchRouteInternalPrepare(RoutingContext* ctx, SHARED_PTR<RouteSegmentPoint> start, SHARED_PTR<RouteSegmentPoint> end, SHARED_PTR<PrecalculatedRouteDirection> routeDirection);
+    vector<SHARED_PTR<RouteSegmentResult>> searchRouteInternalPrepare(RoutingContext* ctx, SHARED_PTR<RouteSegmentPoint> start,
+                                           SHARED_PTR<RouteSegmentPoint> end, SHARED_PTR<PrecalculatedRouteDirection> routeDirection,
+                                           bool makePrecise);
     
     void setUseFastRecalculation(bool use) {
         useSmartRouteRecalculation = use;
@@ -110,5 +112,8 @@ private:
 	void makeSegmentPointPrecise(SHARED_PTR<RouteSegmentResult>& routeSegmentResult, double lat, double lon, bool st);
 	HHNetworkRouteRes* calculateHHRoute(HHRoutePlanner & routePlanner, RoutingContext* ctx, int startX, int startY, int endX, int endY, double dir);
 };
+
+void makeStartEndPointsPrecise(vector<SHARED_PTR<RouteSegmentResult>>& res, int startX, int startY, int endX, int endY,
+							   vector<int> intermediatesX, vector<int> intermediatesY);
 
 #endif /*_OSMAND_ROUTE_PLANNER_FRONT_END_H*/
