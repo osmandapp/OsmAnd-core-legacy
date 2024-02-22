@@ -789,7 +789,7 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 	return results;
 }
 
-vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute( // BRP-ios entry point
+vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute( // HH-ios BRP-ios entry point
 	SHARED_PTR<RoutingContext> ctx, int startX, int startY, int endX, int endY, vector<int>& intermediatesX,
 	vector<int>& intermediatesY, SHARED_PTR<PrecalculatedRouteDirection> routeDirection) {
 	if (!ctx->progress) {
