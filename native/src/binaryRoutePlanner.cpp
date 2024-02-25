@@ -236,10 +236,16 @@ SHARED_PTR<RouteSegment> createNull() { return std::make_shared<RouteSegment>(nu
 void initQueuesWithStartEnd(RoutingContext* ctx, SHARED_PTR<RouteSegmentPoint>& start, SHARED_PTR<RouteSegmentPoint>& end,
 							SEGMENTS_QUEUE& graphDirectSegments, SEGMENTS_QUEUE& graphReverseSegments) {
 	if (start) {
+		if (ctx->precalcRoute && ctx->precalcRoute->startPoint == PrecalculatedRouteDirection::calc(ctx->startX, ctx->startY)) {
+			ctx->precalcRoute->startPoint = PrecalculatedRouteDirection::calc(start->preciseX, start->preciseY);
+		}
 		ctx->startX = start->preciseX;
 		ctx->startY = start->preciseY;
 	}
 	if (end) {
+		if (ctx->precalcRoute && ctx->precalcRoute->endPoint == PrecalculatedRouteDirection::calc(ctx->targetX, ctx->targetY)) {
+			ctx->precalcRoute->endPoint = PrecalculatedRouteDirection::calc(end->preciseX, end->preciseY);
+		}
 		ctx->targetX = end->preciseX;
 		ctx->targetY = end->preciseY;
 	}
