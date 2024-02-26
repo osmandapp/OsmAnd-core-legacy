@@ -1,5 +1,7 @@
 project(osmand)
-
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 include("../../common.cmake")
 
 set(ROOT "${OSMAND_ROOT}/native")
@@ -33,7 +35,7 @@ if(CMAKE_TARGET_OS STREQUAL "windows")
 		"$ENV{JAVA_HOME}/include/win32"
 	)
 	add_definitions(-DSK_BUILD_FOR_WIN32)
-elseif(CMAKE_TARGET_OS STREQUAL "darwin")
+elseif((CMAKE_TARGET_OS STREQUAL "darwin") OR (CMAKE_TARGET_OS STREQUAL "macosx"))
         include_directories(AFTER SYSTEM
                 "$ENV{JAVA_HOME}/include/darwin"
         )
@@ -61,7 +63,7 @@ if(CMAKE_TARGET_OS STREQUAL "linux")
     set(pd_sources
 		"${OSMAND_ROOT}/targets/linux/OsmAndCore/src/Logging.cpp"
 	)
-elseif(CMAKE_TARGET_OS STREQUAL "darwin")
+elseif((CMAKE_TARGET_OS STREQUAL "darwin") OR (CMAKE_TARGET_OS STREQUAL "macosx"))
     set(pd_sources
                 "${OSMAND_ROOT}/targets/darwin/OsmAndCore/src/Logging.cpp"
         )
