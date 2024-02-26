@@ -83,12 +83,12 @@ static double h(RoutingContext* ctx, int begX, int begY, int endX, int endY) {
 	if (ctx->dijkstraMode != 0) {
 		return 0;
 	}
-	double distToFinalPoint = squareRootDist(begX, begY, endX, endY);
-	double result = distToFinalPoint / ctx->config->router->getMaxSpeed();
-	if (ctx->precalcRoute != nullptr) {
+	if (ctx->precalcRoute && ctx->precalcRoute->isActive()) {
 		float te = ctx->precalcRoute->timeEstimate(begX, begY, endX, endY);
 		if (te > 0) return te;
 	}
+	double distToFinalPoint = squareRootDist(begX, begY, endX, endY);
+	double result = distToFinalPoint / ctx->config->router->getMaxSpeed();
 	return result;
 }
 
@@ -235,17 +235,15 @@ SHARED_PTR<RouteSegment> createNull() { return std::make_shared<RouteSegment>(nu
 
 void initQueuesWithStartEnd(RoutingContext* ctx, SHARED_PTR<RouteSegmentPoint>& start, SHARED_PTR<RouteSegmentPoint>& end,
 							SEGMENTS_QUEUE& graphDirectSegments, SEGMENTS_QUEUE& graphReverseSegments) {
+	if (ctx->precalcRoute && ctx->precalcRoute->isActive()) {
+		ctx->precalcRoute->updatePreciseStartEnd(start ? start->preciseX : 0, start ? start->preciseY : 0,
+												 end ? end->preciseX : 0, end ? end->preciseY : 0);
+	}
 	if (start) {
-		if (ctx->precalcRoute && ctx->precalcRoute->startPoint == PrecalculatedRouteDirection::calc(ctx->startX, ctx->startY)) {
-			ctx->precalcRoute->startPoint = PrecalculatedRouteDirection::calc(start->preciseX, start->preciseY);
-		}
 		ctx->startX = start->preciseX;
 		ctx->startY = start->preciseY;
 	}
 	if (end) {
-		if (ctx->precalcRoute && ctx->precalcRoute->endPoint == PrecalculatedRouteDirection::calc(ctx->targetX, ctx->targetY)) {
-			ctx->precalcRoute->endPoint = PrecalculatedRouteDirection::calc(end->preciseX, end->preciseY);
-		}
 		ctx->targetX = end->preciseX;
 		ctx->targetY = end->preciseY;
 	}

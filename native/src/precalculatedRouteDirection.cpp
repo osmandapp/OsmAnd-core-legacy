@@ -173,6 +173,27 @@ SHARED_PTR<PrecalculatedRouteDirection> PrecalculatedRouteDirection::adopt(Routi
 	return routeDirection;
 }
 
+void PrecalculatedRouteDirection::updatePreciseStartEnd(int sx, int sy, int ex, int ey) {
+	if (sx > 0 && sy > 0) {
+		int ind = getIndex(sx, sy);
+		if (ind != -1) {
+			this->startPoint = calc(sx, sy);
+			this->startFinishTime = (float)squareRootDist31(pointsX[ind], pointsY[ind], sx, sy) / maxSpeed;
+		}
+	}
+	if (ex > 0 && ey > 0) {
+		int ind = getIndex(ex, ey);
+		if (ind != -1) {
+			this->endPoint = calc(ex, ey);
+			this->endFinishTime = (float)squareRootDist31(pointsX[ind], pointsY[ind], ex, ey) / maxSpeed;
+		}
+	}
+}
+
+bool PrecalculatedRouteDirection::isActive() {
+	return this->startPoint > 0 && this->endPoint > 0;
+}
+
 float PrecalculatedRouteDirection::getDeviationDistance(int x31, int y31) {
 	int ind = getIndex(x31, y31);
 	if (ind == -1) {
@@ -229,8 +250,8 @@ int PrecalculatedRouteDirection::getIndex(int x31, int y31) {
 float PrecalculatedRouteDirection::timeEstimate(int sx31, int sy31, int ex31, int ey31) {
 	uint64_t l1 = calc(sx31, sy31);
 	uint64_t l2 = calc(ex31, ey31);
-	int x31 = sx31;
-	int y31 = sy31;
+	int x31 = 0;
+	int y31 = 0;
 	bool start = false;
 	if (l1 == startPoint || l1 == endPoint) {
 		start = l1 == startPoint;

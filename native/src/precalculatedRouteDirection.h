@@ -49,6 +49,8 @@ struct PrecalculatedRouteDirection {
 	static SHARED_PTR<PrecalculatedRouteDirection> build(vector<int>& x31, vector<int>& y31, float maxSpeed);
 
 	SHARED_PTR<PrecalculatedRouteDirection> adopt(RoutingContext* ctx);
+	void updatePreciseStartEnd(int sx, int sy, int ex, int ey);
+	bool isActive();
 
 	float getDeviationDistance(int x31, int y31, int ind);
 	float getDeviationDistance(int x31, int y31);
