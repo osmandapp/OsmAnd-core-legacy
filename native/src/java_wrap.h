@@ -107,5 +107,6 @@ jobject convertTransportRouteToJava(JNIEnv* ienv, SHARED_PTR<TransportRoute>& ro
 RouteAttributeExpression convertExpressionFromJava(JNIEnv* ienv, jobject jExpression);
 
 void clearDirectionPointFromRouteResult(SHARED_PTR<RouteSegmentResult> r );
+void deleteRoutingContext(RoutingContext* c, JNIEnv* ienv, jobject jCtx);
 
 #endif

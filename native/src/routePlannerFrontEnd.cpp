@@ -793,7 +793,7 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 		targetsX.insert(targetsX.end(), intermediatesX.begin(), intermediatesX.end());
 		targetsY.insert(targetsY.end(), intermediatesY.begin(), intermediatesY.end());
 	}
-	if (needRequestPrivateAccessRouting(ctx, targetsX, targetsY)) {
+	if (needRequestPrivateAccessRouting(ctx.get(), targetsX, targetsY)) {
 		ctx->progress->requestPrivateAccessRouting = true;
 	}
 	if (HH_ROUTING_CONFIG != nullptr) {
@@ -892,7 +892,7 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 	return res;
 }
 
-bool RoutePlannerFrontEnd::needRequestPrivateAccessRouting(SHARED_PTR<RoutingContext> ctx, vector<int>& targetsX,
+bool RoutePlannerFrontEnd::needRequestPrivateAccessRouting(RoutingContext* ctx, vector<int>& targetsX,
 														   vector<int>& targetsY) {
 	bool res = false;
 	SHARED_PTR<GeneralRouter> router = ctx->config->router;
@@ -905,7 +905,7 @@ bool RoutePlannerFrontEnd::needRequestPrivateAccessRouting(SHARED_PTR<RoutingCon
 		for (int i = 0; i < targetsX.size(); i++) {
 			int x31 = targetsX[i];
 			int y31 = targetsY[i];
-			SHARED_PTR<RouteSegmentPoint> rp = findRouteSegment(x31, y31, ctx.get());
+			SHARED_PTR<RouteSegmentPoint> rp = findRouteSegment(x31, y31, ctx);
 			if (rp && rp->road) {
 				if (rp->road->hasPrivateAccess(ctx->config->router->getProfile())) {
 					res = true;
