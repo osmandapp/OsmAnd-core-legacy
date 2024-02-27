@@ -1811,8 +1811,9 @@ extern "C" JNIEXPORT jboolean JNICALL Java_net_osmand_NativeLibrary_nativeNeedRe
 	jobject progress = ienv->GetObjectField(jCtx, jfield_RoutingContext_calculationProgress);
 	RoutingContext* c = getRoutingContext(ienv, jCtx, NO_DIRECTION, false, progress);
 	SHARED_PTR<RoutePlannerFrontEnd> rpfe = shared_ptr<RoutePlannerFrontEnd>(new RoutePlannerFrontEnd());
-	bool res = rpfe->needRequestPrivateAccessRouting(std::make_shared<RoutingContext>(c), coordinatesX, coordinatesY);
+	bool res = rpfe->needRequestPrivateAccessRouting(c, coordinatesX, coordinatesY);
 	ienv->DeleteLocalRef(progress);
+	deleteRoutingContext(c, ienv, jCtx);
 	return res;
 }
 
@@ -1875,7 +1876,6 @@ extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_nativeRo
 	} else {
 		r = searchRouteInternal(c, false);
 	}
-
 	UNORDERED(map)<int64_t, int> indexes;
 	for (int t = 0; t < ienv->GetArrayLength(regions); t++) {
 		jobject oreg = ienv->GetObjectArrayElement(regions, t);
@@ -1929,18 +1929,21 @@ extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_nativeRo
 	if (r.size() == 0) {
 		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "No route found");
 	}
-	fflush(stdout);
 	ienv->DeleteLocalRef(progress);
 	ienv->DeleteLocalRef(precalculatedRoute);
-	if (c != NULL && !ienv->GetBooleanField(jCtx, jfield_RoutingContext_keepNativeRoutingContext)) {
-		ienv->SetLongField(jCtx, jfield_RoutingContext_nativeRoutingContext, 0);
-		delete c;
-	}
 	if (hhConfig) {
 		delete hhConfig;
 		hhConfig = NULL;
 	}
+	deleteRoutingContext(c, ienv, jCtx);
 	return res;
+}
+
+void deleteRoutingContext(RoutingContext* c, JNIEnv* ienv, jobject jCtx) {
+	if (c != NULL && !ienv->GetBooleanField(jCtx, jfield_RoutingContext_keepNativeRoutingContext)) {
+		ienv->SetLongField(jCtx, jfield_RoutingContext_nativeRoutingContext, 0);
+		delete c;
+	}
 }
 
 void parseTransportRoutingConfiguration(JNIEnv* ienv, shared_ptr<TransportRoutingConfiguration>& rConfig,

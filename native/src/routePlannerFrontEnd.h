@@ -77,7 +77,7 @@ public:
                                            vector<int>& intermediatesX, vector<int>& intermediatesY,
                                            SHARED_PTR<PrecalculatedRouteDirection> routeDirection = nullptr);
     vector<SHARED_PTR<RouteSegmentResult>> searchHHRoute(RoutingContext * ctx);
-    bool needRequestPrivateAccessRouting(SHARED_PTR<RoutingContext> ctx, vector<int>& targetsX, vector<int>& targetsY);
+    bool needRequestPrivateAccessRouting(RoutingContext* ctx, vector<int>& targetsX, vector<int>& targetsY);
     
     static SHARED_PTR<RouteSegmentResult> generateStraightLineSegment(float averageSpeed, vector<pair<double, double>> points);
 	
