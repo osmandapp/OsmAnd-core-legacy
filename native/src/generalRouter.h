@@ -37,6 +37,7 @@ struct GeneralRouterConstants {
 
 	static const char* USE_SHORTEST_WAY;
 	static const char* USE_HEIGHT_OBSTACLES;
+    static const char* GROUP_RELIEF_SMOOTHNESS_FACTOR;
 	static const char* ALLOW_PRIVATE;
 	static const char* CHECK_ALLOW_PRIVATE_NEEDED;
 	static const char* ALLOW_PRIVATE_FOR_TRUCK;

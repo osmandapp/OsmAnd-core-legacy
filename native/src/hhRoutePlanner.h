@@ -22,6 +22,8 @@ public:
     static const int MAX_POINTS_CLUSTER_ROUTING;
     static const int ROUTE_POINTS;
     constexpr static const double MAX_INC_COST_CORR = 10.0;
+    // this constant should dynamically change if route is not found
+    constexpr static const double EXCLUDE_PRIORITY_CONSTANT = 0.2;
     
     HHRoutingConfig * prepareDefaultRoutingConfig(HHRoutingConfig * c);
     HHNetworkRouteRes * runRouting(int startX, int startY, int endX, int endY, HHRoutingConfig * config);
@@ -66,6 +68,7 @@ private:
                               UNORDERED_map<int64_t, NetworkDBPoint *> stPoints, UNORDERED_map<int64_t,
                               NetworkDBPoint *> endPoints, SHARED_PTR<RouteCalculationProgress> progress);
     HHNetworkRouteRes * cancelledStatus();
+    void filterPointsBasedOnConfiguration(SHARED_PTR<HHRoutingContext> & hctx);
     
 };
 

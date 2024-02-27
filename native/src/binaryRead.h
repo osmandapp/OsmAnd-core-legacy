@@ -174,6 +174,15 @@ struct HHRouteBlockSegments {
     std::vector<HHRouteBlockSegments *> sublist;
 };
 
+struct TagValuePair {
+    std::string tag;
+    std::string value;
+    int32_t additionalAttribute;
+    
+    TagValuePair(string tag, string value, int32_t additionalAttribute): tag(tag), value(value), additionalAttribute(additionalAttribute) {
+    }
+};
+
 struct HHRouteIndex : BinaryPartIndex {
     //HHRouteRegion
     uint64_t edition;
@@ -183,6 +192,7 @@ struct HHRouteIndex : BinaryPartIndex {
     // not stored in cache
     std::vector<HHRouteBlockSegments *> segments;
     SkRect * rect;
+    std::vector<TagValuePair> encodingRules;
     
     HHRouteIndex() : BinaryPartIndex(HH_INDEX), edition(0), profile(""), rect(nullptr) {
     }

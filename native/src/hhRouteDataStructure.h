@@ -15,6 +15,7 @@ struct HHRoutingConfig
 			
 	double INITIAL_DIRECTION;
 	static const int CALCULATE_ALL_DETAILED = 3;
+    static const int STATS_VERBOSE_LEVEL = 1;
     
     int FULL_DIJKSTRA_NETWORK_RECALC = 10;
     double MAX_INC_COST_CF = 1.25;
@@ -113,6 +114,7 @@ struct HHRoutingConfig
 };
 
 struct NetworkDBSegment;
+struct TagValuePair;
 struct NetworkDBPoint {
     NetworkDBPoint * dualPoint;
     int64_t index;
@@ -134,6 +136,7 @@ struct NetworkDBPoint {
     SHARED_PTR<NetworkDBPointRouteInfo> rtPos;
     std::vector<NetworkDBSegment *> connected;
     std::vector<NetworkDBSegment *> connectedReverse;
+    std::vector<TagValuePair> tagValues;
     
     ~NetworkDBPoint() {
         //all NetworkDBPoint * stored and delete in HHRoutingContext
@@ -483,6 +486,7 @@ struct HHRoutingContext {
     
     std::vector<NetworkDBSegment *> cacheAllNetworkDBSegment;
     std::vector<NetworkDBPoint *> cacheAllNetworkDBPoint;
+    UNORDERED_map<string, string> filterRoutingParameters;
     
     DataTileManager pointsRect;
     

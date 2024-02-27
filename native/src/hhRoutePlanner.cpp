@@ -232,9 +232,8 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
         HHNetworkRouteRes * res = new HHNetworkRouteRes("Files for hh routing were not initialized. Route couldn't be calculated.");
         return res;
     }
-    if (hctx->config->USE_GC_MORE_OFTEN) {
-        //printGCInformation();
-    }
+    filterPointsBasedOnConfiguration(hctx);
+    
     OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Routing %.5f %.5f -> %.5f %.5f (HC %d, dir %d)",
                       get31LatitudeY(startY), get31LongitudeX(startX),
                       get31LatitudeY(endY), get31LongitudeX(endX),
@@ -1264,6 +1263,84 @@ bool HHRoutePlanner::retainAll(std::set<int64_t> & source, const std::set<int64_
             iter++;
         }
         return modified;
+    }
+}
+
+void HHRoutePlanner::filterPointsBasedOnConfiguration(SHARED_PTR<HHRoutingContext> & hctx) {
+    SHARED_PTR<GeneralRouter>  & vr = hctx->rctx->config->router;
+    UNORDERED_map<string, RoutingParameter> & parameters = vr->getParameters();
+    UNORDERED_map<string, string> tm;
+    for (const auto & es : vr->getParameterValues()) {
+        string paramId = es.first;
+        // These parameters don't affect the routing filters
+        // This assumption probably shouldn't be used in general and only for popular parameters)
+        if (parameters.find(paramId) != parameters.end() && paramId != GeneralRouterConstants::USE_SHORTEST_WAY
+            && paramId != GeneralRouterConstants::USE_HEIGHT_OBSTACLES
+            && paramId.rfind(GeneralRouterConstants::GROUP_RELIEF_SMOOTHNESS_FACTOR, 0) != 0) {
+            tm.insert(std::make_pair(paramId, es.second));
+        }
+    }
+    if (hctx->filterRoutingParameters.size() == tm.size()) {
+        bool eq = true;
+        for (const auto & t : tm) {
+            if (hctx->filterRoutingParameters.find(t.first) == hctx->filterRoutingParameters.end()) {
+                eq = false;
+                break;
+            }
+        }
+        if (eq) {
+            return;
+        }
+    }
+    for (auto & it : hctx->pointsById) {
+        it.second->rtExclude = false;
+    }
+    if (tm.size() == 0) {
+        // no parameters
+        hctx->filterRoutingParameters = tm;
+        return;
+    }
+    if (hctx->config->STATS_VERBOSE_LEVEL > 0) {
+        OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, " Filter points based on parameters...");
+    }
+    OsmAnd::ElapsedTimer timer;
+    timer.Start();
+    const SHARED_PTR<RoutingIndex> regR = std::make_shared<RoutingIndex>();
+    SHARED_PTR<RouteDataObject> rdo = std::make_shared<RouteDataObject>(regR);
+    for (auto & it : hctx->pointsById) {
+        NetworkDBPoint * pnt = it.second;
+        for (TagValuePair & tp : pnt->tagValues) {
+            tp.additionalAttribute = -1;
+        }
+    }
+    int filtered = 0;
+    for (auto & it : hctx->pointsById) {
+        NetworkDBPoint * pnt = it.second;
+        if (pnt->tagValues.size() > 0) {
+            for (TagValuePair & tp : pnt->tagValues) {
+                // reuse additionalAttribute to cache values
+                if (tp.additionalAttribute < 0) {
+                    tp.additionalAttribute = regR->searchRouteEncodingRule(tp.tag, tp.value);
+                }
+                if (tp.additionalAttribute < 0) {
+                    tp.additionalAttribute = (int32_t)regR->routeEncodingRules.size();
+                    regR->initRouteEncodingRule(tp.additionalAttribute, tp.tag, tp.value);
+                }
+                rdo->types.push_back(tp.additionalAttribute);
+            }
+            pnt->rtExclude = !currentCtx->rctx->config->router->acceptLine(rdo);
+            if (!pnt->rtExclude) {
+                // constant should be reduced if route is not found
+                pnt->rtExclude = currentCtx->rctx->config->router->defineSpeedPriority(rdo, pnt->end > pnt->start) < EXCLUDE_PRIORITY_CONSTANT;
+            }
+            if (pnt->rtExclude) {
+                filtered++;
+            }
+        }
+    }
+    hctx->filterRoutingParameters = tm;
+    if (hctx->config->STATS_VERBOSE_LEVEL > 0) {
+        OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "%d excluded from %d, %.2f ms\n", filtered, hctx->pointsById.size(), timer.GetElapsedMs());
     }
 }
 
