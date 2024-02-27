@@ -1936,7 +1936,6 @@ extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_nativeRo
 		hhConfig = NULL;
 	}
 	deleteRoutingContext(c, ienv, jCtx);
-	fflush(stdout);
 	return res;
 }
 
