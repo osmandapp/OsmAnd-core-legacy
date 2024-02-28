@@ -411,7 +411,7 @@ struct DataTileManager {
             }
             total += l.size();
         }
-        OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "%s tiles stores %d in %d tiles. Tile size min %d, max %d, avg %.2f.\n ",
+        OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "%s tiles stores %d in %zu tiles. Tile size min %d, max %d, avg %.2f.\n ",
                           name.c_str(), total, objects.size(), min, max, total / (objects.size() + 0.1));
     }
     

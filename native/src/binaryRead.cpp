@@ -1085,7 +1085,7 @@ std::vector<NetworkDBSegment *> parseSegments(HHRoutingContext * ctx, std::vecto
     
     if (pointSegments.size() < lst.size()) {
         OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error,
-                          "HHRoutePointSegments size is less than %s %d < %d",
+                          "HHRoutePointSegments size is less than %s %zu < %zu",
                           out ? "OutgoingPoints" : "IncomingPoints", pointSegments.size(), lst.size());
         return l;
     }
@@ -3578,7 +3578,7 @@ bool initMapFilesFromCache(std::string inputName) {
 	cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 	OsmAnd::OBF::OsmAndStoredIndex* c = new OsmAnd::OBF::OsmAndStoredIndex();
 	if (c->MergeFromCodedStream(&cis)) {
-		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Native Cache file initialized: %s %d", inputName.c_str(),
+		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Native Cache file initialized: %s %llu", inputName.c_str(),
 						  timer.GetElapsedMs());
 		cache = c;
 		return true;
@@ -3712,7 +3712,7 @@ BinaryMapFile* initBinaryMapFile(std::string inputName, bool useLive, bool routi
             mapFile->hhIndexes.push_back(mi);
             mapFile->indexes.push_back(mapFile->hhIndexes.back());
         }
-		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "Native file initialized from cache: %s %d ms",
+		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "Native file initialized from cache: %s %llu ms",
 						  inputName.c_str(), timer.GetElapsedMs());
 	} else {
 		FileInputStream input(mapFile->getFD());
@@ -3720,12 +3720,12 @@ BinaryMapFile* initBinaryMapFile(std::string inputName, bool useLive, bool routi
 		CodedInputStream cis(&input);
 		cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 		if (!initMapStructure(&cis, mapFile, useLive, routingOnly)) {
-			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "Native File not initialised : %s %d ms", 
+			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "Native File not initialised : %s %llu ms",
 					inputName.c_str(), timer.GetElapsedMs());
 			delete mapFile;
 			return NULL;
 		} else {
-			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "Native File not initialized from cache: %s %d ms",
+			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "Native File not initialized from cache: %s %llu ms",
 					inputName.c_str(), timer.GetElapsedMs());
 		}
 	}
