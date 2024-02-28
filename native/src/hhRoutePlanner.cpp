@@ -80,7 +80,6 @@ SHARED_PTR<HHRoutingContext> HHRoutePlanner::selectBestRoutingFiles(int startX, 
             }
         }
     }
-    //TODO need to check sort with several maps
     std::sort(groups.begin(), groups.end(), [](const SHARED_PTR<HHRouteRegionsGroup> o1, const SHARED_PTR<HHRouteRegionsGroup> o2) {
         if (o1->containsStartEnd != o2->containsStartEnd) {
             return !o1->containsStartEnd;
@@ -281,7 +280,6 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
     } while (route == nullptr);
     
     if (hctx->config->CALC_ALTERNATIVES) {
-        //TODO debug
         progress->hhIteration(RouteCalculationProgress::HHIteration::ALTERNATIVES);
         OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Alternative routes...");
         timer.Start();
@@ -301,7 +299,6 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
     
     if (hctx->config->USE_GC_MORE_OFTEN) {
         hctx->unloadAllConnections();
-        //printGCInformation();
     }
     
     timer.Start();
@@ -561,10 +558,8 @@ UNORDERED_map<int64_t, NetworkDBPoint *> HHRoutePlanner::initStart(SHARED_PTR<HH
     hctx->rctx->config->planRoadDirection = reverse ? -1 : 1;
     hctx->rctx->config->heurCoefficient = 0; // dijkstra
     hctx->rctx->unloadAllData(); // needed for proper multidijsktra work
-    //hctx->rctx->progress = std::make_shared<RouteCalculationProgress>();// reuse same progress
     std::vector<SHARED_PTR<RouteSegment>> frs = searchRouteInternal(hctx->rctx, reverse ? nullptr : s, reverse ? s : nullptr, hctx->boundaries, {});
     hctx->rctx->config->MAX_VISITED = -1;
-    //OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, hctx.rctx.calculationProgress.getInfo(null));
     if (!frs.empty()) {
         std::set<int64_t> set;
         for (auto & o : frs) {
@@ -600,9 +595,6 @@ UNORDERED_map<int64_t, NetworkDBPoint *> HHRoutePlanner::initStart(SHARED_PTR<HH
                     OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "Illegal state exception");
                     return pnts;
                 }
-//                if (pnt->index == 2773594 || pnt->index == 2773602) {
-//                    OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "OK");
-//                }
                 pnt->setDistanceToEnd(reverse, hctx->distanceToEnd(reverse, pnt));
                 pnt->setDetailedParentRt(reverse, o);
                 pnts.insert(std::pair<int64_t, NetworkDBPoint *>(pnt->index, pnt));
@@ -768,8 +760,6 @@ bool HHRoutePlanner::retrieveSegmentsGeometry(SHARED_PTR<HHRoutingContext> hctx,
                 OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "More than one final route segment");
                 return false;
             }
-            //TODO what is distanceFromStart in really if we return vector
-            //if ((f.distanceFromStart + MAX_INC_COST_CORR) > (s.segment.dist + MAX_INC_COST_CORR) * hctx.config.MAX_INC_COST_CF) {
             float distanceFromStart = f.at(0)->distanceFromStart;
             if ((distanceFromStart + MAX_INC_COST_CORR) > (s.segment->dist + MAX_INC_COST_CORR) * hctx->config->MAX_INC_COST_CF) {
                 OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
@@ -779,7 +769,6 @@ bool HHRoutePlanner::retrieveSegmentsGeometry(SHARED_PTR<HHRoutingContext> hctx,
                 return true;
             }
             s.rtTimeDetailed = distanceFromStart;
-            //TODO how to work if size > 1
             s.list = convertFinalSegmentToResults(hctx->rctx, f.at(0));
         }
     }
@@ -915,11 +904,9 @@ void HHRoutePlanner::addConnectedToQueue(SHARED_PTR<HHRoutingContext> hctx, SHAR
             continue;
         }
         // modify CH to not compute all top points
-        //TODO chInd() is always 0 !!!
         if (hctx->config->USE_CH && (nextPoint->chInd() > 0 && nextPoint->chInd() < point->chInd())) {
             continue;
         }
-        //TODO midPntDepth() is always 0 !!!
         if (hctx->config->USE_MIDPOINT && std::min(depth, hctx->config->MIDPOINT_MAX_DEPTH) > nextPoint->midPntDepth() + hctx->config->MIDPOINT_ERROR) {
             continue;
         }
@@ -930,7 +917,6 @@ void HHRoutePlanner::addConnectedToQueue(SHARED_PTR<HHRoutingContext> hctx, SHAR
         if (ASSERT_AND_CORRECT_DIST_SMALLER && hctx->config->HEURISTIC_COEFFICIENT > 0
             && smallestSegmentCost(hctx, point, nextPoint) - connected->dist >  1) {
             double sSegmentCost = smallestSegmentCost(hctx, point, nextPoint);
-            // TODO lots of incorrect distance in db
             OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
                               "Incorrect distance Point %lld -> Point %lld: db = %.2f > fastest %.2f",
                               point->index, nextPoint->index, connected->dist, sSegmentCost);
@@ -1275,7 +1261,7 @@ void HHRoutePlanner::filterPointsBasedOnConfiguration(SHARED_PTR<HHRoutingContex
         // This assumption probably shouldn't be used in general and only for popular parameters)
         if (parameters.find(paramId) != parameters.end() && paramId != GeneralRouterConstants::USE_SHORTEST_WAY
             && paramId != GeneralRouterConstants::USE_HEIGHT_OBSTACLES
-            && paramId.rfind(GeneralRouterConstants::GROUP_RELIEF_SMOOTHNESS_FACTOR, 0) != 0) {
+            && !startsWith(paramId, GeneralRouterConstants::GROUP_RELIEF_SMOOTHNESS_FACTOR)) {
             tm.insert(std::make_pair(paramId, es.second));
         }
     }
