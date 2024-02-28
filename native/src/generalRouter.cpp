@@ -64,10 +64,12 @@ GeneralRouter::GeneralRouter(const GeneralRouter& parent, const MAP_STR_STR& par
 
 	universalRules = parent.universalRules;
 	universalRulesById = parent.universalRulesById;
+    parameterValues = params;
 	tagRuleMask = parent.tagRuleMask;
 	ruleToValue = parent.ruleToValue;
 	parameters = parent.parameters;
 	parametersList = parent.parametersList;
+    profileName = parent.profileName;
 
 	for (int i = 0; i < (int)RouteDataObjectAttribute::COUNT; i++) {
 		newRouteAttributeContext(parent.objectAttributes[i], params);

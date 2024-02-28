@@ -818,7 +818,7 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
                 dir = (r->detailed[r->detailed.size() - 1]->getBearingEnd() / 180.0) * M_PI;
             }
         }
-		if ((r && r->isCorrect()) || USE_ONLY_HH_ROUTING) {
+		if (r && (r->isCorrect() || USE_ONLY_HH_ROUTING)) {
             return r->detailed;
 		}
     }
