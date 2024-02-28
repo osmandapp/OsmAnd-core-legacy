@@ -517,14 +517,19 @@ struct HHRoutingContext {
     }
     
     void clearVisited() {
-        queue(true).reset();
-        queue(false).reset();
+        resetAllQueues();
         for (auto & p : queueAdded) {
             p->clearRouting();
         }
         queueAdded.clear();
         visited.clear();
         visitedRev.clear();
+    }
+    
+    void resetAllQueues() {
+        while( !queueGlobal->empty() ) queueGlobal->pop();
+        while( !queuePos->empty() ) queuePos->pop();
+        while( !queueRev->empty() ) queueRev->pop();
     }
     
     void clearVisited(UNORDERED_map<int64_t, NetworkDBPoint *> & stPoints, UNORDERED_map<int64_t, NetworkDBPoint *> & endPoints);
