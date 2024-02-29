@@ -718,6 +718,7 @@ bool RoutePlannerFrontEnd::pointCloseEnough(SHARED_PTR<GpxRouteApproximation>& g
 	return false;
 }
 
+// BRP-ios main function with interpoints support (called by entry-point function)
 vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 	RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentPoint>>& points,
 	SHARED_PTR<PrecalculatedRouteDirection> routeDirection) {
@@ -725,7 +726,7 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 		if (!useSmartRouteRecalculation) {
 			ctx->previouslyCalculatedRoute.clear();
 		}
-		return searchRouteInternalPrepare(ctx, points[0], points[1], routeDirection);
+		return searchRouteInternalPrepare(ctx, points[0], points[1], routeDirection); // BRP-ios (no-interpoints)
 	}
 
 	vector<SHARED_PTR<RouteSegmentResult>> firstPartRecalculatedRoute;
@@ -766,7 +767,7 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 			}
 		}
 		local.progress = ctx->progress;
-		auto res = searchRouteInternalPrepare(&local, points[i], points[i + 1], routeDirection);
+		auto res = searchRouteInternalPrepare(&local, points[i], points[i + 1], routeDirection); // BRP-ios (interpoints)
 
 		results.insert(results.end(), res.begin(), res.end());
 
@@ -780,6 +781,7 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 	return results;
 }
 
+// HH-ios BRP-ios entry point
 vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 	SHARED_PTR<RoutingContext> ctx, int startX, int startY, int endX, int endY, vector<int>& intermediatesX,
 	vector<int>& intermediatesY, SHARED_PTR<PrecalculatedRouteDirection> routeDirection) {
@@ -866,7 +868,7 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 		if (routeDirection) {
 			ctx->precalcRoute = routeDirection->adopt(ctx.get());
 		}
-		auto res = runRouting(ctx.get(), recalculationEnd);
+		auto res = runRouting(ctx.get(), recalculationEnd); // iOS (no-interpoints)
 		if (!res.empty()) {
 			printResults(ctx.get(), startX, startY, endX, endY, res);
 		}
@@ -890,7 +892,7 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 	if (!addSegment(endX, endY, ctx.get(), indexNotFound++, points, ctx->targetTransportStop)) {
 		return vector<SHARED_PTR<RouteSegmentResult>>();
 	}
-	auto res = searchRoute(ctx.get(), points, routeDirection);
+	auto res = searchRoute(ctx.get(), points, routeDirection); // iOS (interpoints)
 	// make start and end more precise
 	makeStartEndPointsPrecise(res, startX, startY, endX, endY, intermediatesX, intermediatesY);
 
@@ -984,7 +986,7 @@ HHNetworkRouteRes * RoutePlannerFrontEnd::calculateHHRoute(HHRoutePlanner & rout
 	try {
 		auto cfg = routePlanner.prepareDefaultRoutingConfig(HH_ROUTING_CONFIG);
 		cfg->INITIAL_DIRECTION = dir;
-		HHNetworkRouteRes * res = routePlanner.runRouting(startX, startY, endX, endY, cfg);
+		HHNetworkRouteRes * res = routePlanner.runRouting(startX, startY, endX, endY, cfg); // HH-cpp
 		if (res != nullptr && res->error == "") {
 			ctx->progress->hhIteration(RouteCalculationProgress::HHIteration::DONE);
 			makeStartEndPointsPrecise(res->detailed, startX, startY, endX, endY, {}, {});
@@ -1012,6 +1014,7 @@ HHRoutingConfig * RoutePlannerFrontEnd::setDefaultRoutingConfig() {
 	return HH_ROUTING_CONFIG;
 }
 
+// HH-cpp JNI entry point
 vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchHHRoute(RoutingContext * ctx) {
 	if (HH_ROUTING_CONFIG != nullptr) {
 		if (!ctx->progress) {

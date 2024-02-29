@@ -400,7 +400,7 @@ void HHRoutePlanner::findFirstLastSegments(SHARED_PTR<HHRoutingContext> hctx, in
     OsmAnd::ElapsedTimer timer;
     timer.Start();
     OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Finding first / last segments...");
-    auto planner = std::shared_ptr<RoutePlannerFrontEnd>();
+    // auto planner = std::shared_ptr<RoutePlannerFrontEnd>();
     int startReiterate = -1, endReiterate = -1;
     bool found = false;
     //hctx->rctx->progress->cancelled = false;
