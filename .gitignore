@@ -3,6 +3,7 @@
 externals/.stamp
 .gradle
 # Ignore binary files
+.attach_pid*
 /binaries
 *.vscode
 .idea
