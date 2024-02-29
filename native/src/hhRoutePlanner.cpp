@@ -157,7 +157,7 @@ int64_t HHRoutePlanner::calculateRoutePointInternalId(SHARED_PTR<RouteDataObject
     int32_t positive = nextPntId - pntId;
     int pntLen = road->getPointsLength();
     if (positive < 0) {
-        OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "Check only positive segments are in calculation");
+        OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "Check only positive segments are in calculation (hhRoutePlanner) [Native]");
         return -1;
     }
     if (pntId < 0 || nextPntId < 0 || pntId >= pntLen || nextPntId >= pntLen ||
@@ -174,12 +174,15 @@ SHARED_PTR<HHRoutingContext> HHRoutePlanner::initHCtx(HHRoutingConfig * c, int s
     progress->hhIteration(RouteCalculationProgress::HHIteration::SELECT_REGIONS);
     hctx = selectBestRoutingFiles(startX, startY, endX, endY, hctx);
     
-    OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Selected files: %s", (hctx == nullptr ? " NULL " : hctx->getRoutingInfo().c_str()));
     if (hctx == nullptr) {
+        OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "No files found for routing");
         return hctx;
     }
-
-    hctx->stats = RoutingStats(); // reset stats (hctx.stats = new RoutingStats() in Java)
+    if (c->STATS_VERBOSE_LEVEL > 0) {
+        OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Selected files: %s", (hctx == nullptr ? " NULL " : hctx->getRoutingInfo().c_str()));
+    }
+    
+    hctx->stats = RoutingStats();
     hctx->config = c;
     hctx->startX = startX;
     hctx->startY = startY;
@@ -194,10 +197,15 @@ SHARED_PTR<HHRoutingContext> HHRoutePlanner::initHCtx(HHRoutingConfig * c, int s
     OsmAnd::ElapsedTimer timer;
     timer.Start();
     progress->hhIteration(RouteCalculationProgress::HHIteration::LOAD_POINTS);
-    OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Loading points... ");
+    if (c->STATS_VERBOSE_LEVEL > 0) {
+        OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Loading points... ");
+    }
     hctx->pointsById = hctx->loadNetworkPoints();
     hctx->stats.loadPointsTime = timer.GetElapsedMs();
-    OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, " %zu - %.2fms\n", hctx->pointsById.size(), hctx->stats.loadPointsTime);
+    timer.Start();
+    if (c->STATS_VERBOSE_LEVEL > 0) {
+        OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, " %zu - %.2fms\n", hctx->pointsById.size(), hctx->stats.loadPointsTime);
+    }
     UNORDERED_map<int64_t, NetworkDBPoint *>::iterator it;
     for (it = hctx->pointsById.begin(); it != hctx->pointsById.end(); it++) {
         it->second->markSegmentsNotLoaded();
@@ -213,8 +221,14 @@ SHARED_PTR<HHRoutingContext> HHRoutePlanner::initHCtx(HHRoutingConfig * c, int s
         hctx->pointsByGeo.insert(std::pair<int64_t, NetworkDBPoint *>(pos, pnt));
         hctx->regions[pnt->mapId]->pntsByFileId.insert(std::pair<int64_t, NetworkDBPoint *>(pnt->fileId, pnt));
     }
-    hctx->pointsRect.printStatsDistribution("Points distributed");
+    if (DEBUG_VERBOSE_LEVEL > 0) {
+        hctx->pointsRect.printStatsDistribution("Points distributed");
+    }
     hctx->initialized = true;
+    hctx->stats.loadPointsTime = timer.GetElapsedMs();
+    if (c->STATS_VERBOSE_LEVEL > 0) {
+        OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, " %zu - %.2f ms\n", hctx->pointsById.size(), hctx->stats.loadPointsTime);
+    }
     return hctx;
 }
 
@@ -227,6 +241,7 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
     OsmAnd::ElapsedTimer timer;
     OsmAnd::ElapsedTimer overallTimer;
     overallTimer.Start();
+    int SL = config->STATS_VERBOSE_LEVEL;
     config = prepareDefaultRoutingConfig(config);
     SHARED_PTR<HHRoutingContext> hctx = initHCtx(config, startX, startY, endX, endY);
     if (hctx == nullptr) {
@@ -248,9 +263,21 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
     progress->hhIteration(RouteCalculationProgress::HHIteration::START_END_POINT);
     findFirstLastSegments(hctx, startX, startY, endX, endY, stPoints, endPoints);
     HHNetworkRouteRes * route = nullptr;
+    bool recalc = false;
+    double firstIterationTime = 0;
+    int iteration = 0;
     do {
         progress->hhIteration(RouteCalculationProgress::HHIteration::ROUTING);
-        OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Routing...");
+        iteration++;
+        if (recalc && firstIterationTime == 0) {
+            if (DEBUG_VERBOSE_LEVEL > 0) {
+                OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Recalculating route due to route structure changes...");
+            }
+            firstIterationTime = hctx->stats.routingTime;
+        }
+        if (!recalc || DEBUG_VERBOSE_LEVEL > 0) {
+            OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Routing...");
+        }
         timer.Start();
         NetworkDBPoint * finalPnt = runRoutingPointsToPoints(hctx, stPoints, endPoints);
         if (progress->isCancelled()) {
@@ -258,17 +285,23 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
         }
         route = createRouteSegmentFromFinalPoint(hctx, finalPnt);
         double time = timer.GetElapsedMs();
-        OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "%zu segments, cost %.2f, %.2f ms\n", route->segments.size(), route->getHHRoutingTime(), time);
+        if (!recalc || DEBUG_VERBOSE_LEVEL > 0) {
+            OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "%zu segments, cost %.2f, %.2f ms\n", route->segments.size(), route->getHHRoutingTime(), time);
+        }
         hctx->stats.routingTime+= time;
         progress->hhIteration(RouteCalculationProgress::HHIteration::DETAILED);
-        OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Parse detailed route segments...");
+        if (!recalc || DEBUG_VERBOSE_LEVEL > 0) {
+            OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Parse detailed route segments...");
+        }
         timer.Start();
-        bool recalc = retrieveSegmentsGeometry(hctx, route, hctx->config->ROUTE_ALL_SEGMENTS, progress);
+        recalc = retrieveSegmentsGeometry(hctx, route, hctx->config->ROUTE_ALL_SEGMENTS, progress);
         if (progress->isCancelled()) {
             return cancelledStatus();
         }
         time = timer.GetElapsedMs();
-        OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "%.2f ms\n", time);
+        if (firstIterationTime == 0 || DEBUG_VERBOSE_LEVEL > 0) {
+            OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "%.2f ms\n", time);
+        }
         hctx->stats.routingTime += time;
         if (recalc) {
             if (hctx->stats.prepTime + hctx->stats.routingTime > hctx->config->MAX_TIME_REITERATION_MS) {
@@ -281,6 +314,11 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
         }
     } while (route == nullptr);
     
+    if (firstIterationTime > 0 && DEBUG_VERBOSE_LEVEL == 0 && SL > 0) {
+        OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "%d iterations, %.2f ms\n", iteration, hctx->stats.routingTime - firstIterationTime);
+    }
+    
+    double altRoutes = 0;
     if (hctx->config->CALC_ALTERNATIVES) {
         progress->hhIteration(RouteCalculationProgress::HHIteration::ALTERNATIVES);
         OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Alternative routes...");
@@ -296,7 +334,8 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
                 return cancelledStatus();
             }
         }
-        hctx->stats.prepTime += timer.GetElapsedMs();
+        altRoutes = timer.GetElapsedMs();
+        OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "%.2f ms\n", altRoutes);
     }
     
     if (hctx->config->USE_GC_MORE_OFTEN) {
@@ -304,12 +343,10 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
     }
     
     timer.Start();
+    OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,"Prepare results (turns, alt routes)...");
     prepareRouteResults(hctx, route, startX, startY, endX, endY);
     hctx->stats.prepTime += timer.GetElapsedMs();
     OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "prepTime %.2f ms\n", hctx->stats.prepTime);
-    if (DEBUG_VERBOSE_LEVEL >= 1) {
-        //OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Detailed progress: " + hctx->rctx->calculationProgress.getInfo(null));
-    }
     OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
                       "Found final route - cost %.2f (detailed %.2f, %.1f%%), %zu depth ( first met %d, visited %d (%d unique) of %d added vertices )",
                       route->getHHRoutingTime(), route->getHHRoutingDetailed(), 100 * (1 - route->getHHRoutingDetailed() / route->getHHRoutingTime()),
@@ -320,12 +357,12 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
                       get31LatitudeY(startY), get31LongitudeX(startX),
                       get31LatitudeY(endY), get31LongitudeX(endX),
                       (int) hctx->config->HEURISTIC_COEFFICIENT, (int) hctx->config->DIJKSTRA_DIRECTION);
-    OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Calculate turns...");
+    hctx->stats.prepTime += altRoutes;
     
     if (progress->isCancelled()) {
         return cancelledStatus();
     }
-    if (hctx->config->ROUTE_ALL_SEGMENTS/* && route.detailed != null*/) {
+    if (hctx->config->ROUTE_ALL_SEGMENTS) {
         route->detailed = prepareResult(hctx->rctx, route->detailed);
     }
     OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "%llu ms\n", timer.GetElapsedMs());
@@ -334,7 +371,6 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
                       "Routing finished all %llu ms: last mile %.f ms, load data %.f ms (%d edges), routing %.f ms (queue - %.f add ms + %.f poll ms), prep result %.f ms\n",
                       overallTimer.GetElapsedMs(), hctx->stats.searchPointsTime, (hctx->stats.loadEdgesTime + hctx->stats.loadPointsTime),
                       hctx->stats.loadEdgesCnt, hctx->stats.routingTime, hctx->stats.addQueueTime, hctx->stats.pollQueueTime, hctx->stats.prepTime);
-    //printGCInformation();
     return route;
 }
 
@@ -379,18 +415,22 @@ HHNetworkRouteRes * HHRoutePlanner::prepareRouteResults(SHARED_PTR<HHRoutingCont
         if (DEBUG_VERBOSE_LEVEL >= 1) {
             int segments = (int) routeSegment.list.size();
             if (s == nullptr) {
-                OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
-                                  "First / last segment - %d segments, %.2fs \n",
-                                  segments, routeSegment.rtTimeDetailed);
+                if (hctx->config->STATS_VERBOSE_LEVEL > 0) {
+                    OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
+                                      "First / last segment - %d segments, %.2fs \n",
+                                      segments, routeSegment.rtTimeDetailed);
+                }
             } else {
-                OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
-                                  "\nRoute %lld [%d] -> %lld [%d] %s - hh dist %.2f s, detail %.2f s (%.1f%%) segments %d ( end %.5f/%.5f - %lld ) ",
-                                  s->start->index, s->start->chInd(), s->end->index, s->end->chInd(), s->shortcut ? "sh" : "bs",
-                                  s->dist, routeSegment.rtTimeDetailed, 100 * (1 - routeSegment.rtTimeDetailed / s->dist),
-                                  segments, get31LatitudeY(s->end->startY), get31LongitudeX(s->end->startX), s->end->roadId / 64);
+                if (hctx->config->STATS_VERBOSE_LEVEL > 0) {
+                    OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
+                                      "\nRoute %lld [%d] -> %lld [%d] %s - hh dist %.2f s, detail %.2f s (%.1f%%) segments %d ( end %.5f/%.5f - %lld ) ",
+                                      s->start->index, s->start->chInd(), s->end->index, s->end->chInd(), s->shortcut ? "sh" : "bs",
+                                      s->dist, routeSegment.rtTimeDetailed, 100 * (1 - routeSegment.rtTimeDetailed / s->dist),
+                                      segments, get31LatitudeY(s->end->startY), get31LongitudeX(s->end->startX), s->end->roadId / 64);
                 }
             }
         }
+    }
     return route;
 }
 
@@ -399,7 +439,9 @@ void HHRoutePlanner::findFirstLastSegments(SHARED_PTR<HHRoutingContext> hctx, in
                                            UNORDERED_map<int64_t, NetworkDBPoint *> & endPoints) {
     OsmAnd::ElapsedTimer timer;
     timer.Start();
-    OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Finding first / last segments...");
+    if (hctx->config->STATS_VERBOSE_LEVEL > 0) {
+        OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Finding first / last segments...");
+    }
     auto planner = std::shared_ptr<RoutePlannerFrontEnd>();
     int startReiterate = -1, endReiterate = -1;
     bool found = false;
@@ -459,8 +501,10 @@ void HHRoutePlanner::findFirstLastSegments(SHARED_PTR<HHRoutingContext> hctx, in
         if (stPoints.empty()) {
             LatLon l = startP->getPreciseLatLon();
             auto & r = startP->road;
-            OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Reiterate with next start point: %d (%.5f %.5f): %lld %s",
-                              startP->segmentStart, l.lat, l.lon, r->getId() / 64, r->getName().c_str());
+            if (hctx->config->STATS_VERBOSE_LEVEL > 0) {
+                OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Reiterate with next start point: %d (%.5f %.5f): %lld %s",
+                                  startP->segmentStart, l.lat, l.lon, r->getId() / 64, r->getName().c_str());
+            }
             startReiterate++;
             found = false;
             continue;
@@ -476,8 +520,10 @@ void HHRoutePlanner::findFirstLastSegments(SHARED_PTR<HHRoutingContext> hctx, in
         if (endPoints.empty()) {
             LatLon l = endP->getPreciseLatLon();
             auto & r = endP->road;
-            OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Reiterate with next end point: %d (%.5f %.5f): %lld %s",
-                              endP->segmentStart, l.lat, l.lon, r->getId() / 64, r->getName().c_str());
+            if (hctx->config->STATS_VERBOSE_LEVEL > 0) {
+                OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Reiterate with next end point: %d (%.5f %.5f): %lld %s",
+                                  endP->segmentStart, l.lat, l.lon, r->getId() / 64, r->getName().c_str());
+            }
             endReiterate++;
             found = false;
             continue;
@@ -485,7 +531,9 @@ void HHRoutePlanner::findFirstLastSegments(SHARED_PTR<HHRoutingContext> hctx, in
         found = true;
     } while (!found);
     hctx->stats.searchPointsTime = timer.GetElapsedMs();
-    OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Finding first (%zu) / last (%zu) segments...%.2f ms\n", stPoints.size(), endPoints.size(), hctx->stats.searchPointsTime);
+    if (hctx->config->STATS_VERBOSE_LEVEL > 0) {
+        OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Finding first (%zu) / last (%zu) segments...%.2f ms\n", stPoints.size(), endPoints.size(), hctx->stats.searchPointsTime);
+    }
     timer.Disable();
 }
 
@@ -594,7 +642,7 @@ UNORDERED_map<int64_t, NetworkDBPoint *> HHRoutePlanner::initStart(SHARED_PTR<HH
                     o->distanceFromStart += calcRoutingSegmentTimeOnlyDist(hctx->rctx->config->router, o) / 2;
                 }
                 if (pnt->rt(reverse)->rtCost != 0) {
-                    OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "Illegal state exception");
+                    OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "Illegal state exception (hhRoutePlanner) [Native]");
                     return pnts;
                 }
                 pnt->setDistanceToEnd(reverse, hctx->distanceToEnd(reverse, pnt));
@@ -759,14 +807,16 @@ bool HHRoutePlanner::retrieveSegmentsGeometry(SHARED_PTR<HHRoutingContext> hctx,
                 return true;
             }
             if (f.size() > 1) {
-                OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "More than one final route segment");
+                OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "More than one final route segment (hhRoutePlanner) [Native]");
                 return false;
             }
             float distanceFromStart = f.at(0)->distanceFromStart;
             if ((distanceFromStart + MAX_INC_COST_CORR) > (s.segment->dist + MAX_INC_COST_CORR) * hctx->config->MAX_INC_COST_CF) {
-                OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
-                                  "Route cost increased (%.2f > %.2f) between %lld -> %lld: recalculate route\n",
-                                  distanceFromStart, s.segment->dist, s.segment->start->index, s.segment->end->index);
+                if (DEBUG_VERBOSE_LEVEL > 0) {
+                    OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
+                                      "Route cost increased (%.2f > %.2f) between %lld -> %lld: recalculate route\n",
+                                      distanceFromStart, s.segment->dist, s.segment->start->index, s.segment->end->index);
+                }
                 s.segment->dist = distanceFromStart;
                 return true;
             }
@@ -1210,7 +1260,7 @@ void HHRoutePlanner::calcAlternativeRoute(SHARED_PTR<HHRoutingContext> hctx, HHN
                 route->altRoutes.erase(route->altRoutes.begin() + k);
             }
         }
-        if (route->altRoutes.size() > 0) {
+        if (route->altRoutes.size() > 0 && hctx->config->STATS_VERBOSE_LEVEL > 0) {
             OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
                               "Cost %.2f - %.2f [%zu unique / %d]...",
                               route->altRoutes.at(0)->getHHRoutingTime(),
@@ -1220,7 +1270,9 @@ void HHRoutePlanner::calcAlternativeRoute(SHARED_PTR<HHRoutingContext> hctx, HHN
         int ind = DEBUG_ALT_ROUTE_SELECTION % (route->altRoutes.size() + 1);
         if (ind > 0) {
             HHNetworkRouteRes * rts = route->altRoutes.at(ind - 1);
-            OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "%d select %.2f ", DEBUG_ALT_ROUTE_SELECTION, rts->getHHRoutingTime());
+            if (hctx->config->STATS_VERBOSE_LEVEL > 0) {
+                OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "%d select %.2f ", DEBUG_ALT_ROUTE_SELECTION, rts->getHHRoutingTime());
+            }
             route->detailed = rts->detailed;
             route->segments = rts->segments;
             std::vector<HHNetworkRouteRes *> r;
