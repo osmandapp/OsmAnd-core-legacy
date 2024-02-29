@@ -178,6 +178,8 @@ SHARED_PTR<HHRoutingContext> HHRoutePlanner::initHCtx(HHRoutingConfig * c, int s
     if (hctx == nullptr) {
         return hctx;
     }
+
+    hctx->stats = RoutingStats(); // reset stats (hctx.stats = new RoutingStats() in Java)
     hctx->config = c;
     hctx->startX = startX;
     hctx->startY = startY;

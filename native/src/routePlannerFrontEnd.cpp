@@ -786,13 +786,15 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 	if (!ctx->progress) {
 		ctx->progress = std::make_shared<RouteCalculationProgress>();
 	}
-	vector<int> targetsX = { endX };
-	vector<int> targetsY = { endY };
+	vector<int> targetsX;
+	vector<int> targetsY;
 	bool intermediatesEmpty = intermediatesX.empty();
 	if (!intermediatesEmpty) {
 		targetsX.insert(targetsX.end(), intermediatesX.begin(), intermediatesX.end());
 		targetsY.insert(targetsY.end(), intermediatesY.begin(), intermediatesY.end());
 	}
+	targetsX.push_back(endX);
+	targetsY.push_back(endY);
 	if (needRequestPrivateAccessRouting(ctx.get(), targetsX, targetsY)) {
 		ctx->progress->requestPrivateAccessRouting = true;
 	}
@@ -802,10 +804,15 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 		HHNetworkRouteRes * r = nullptr;
 		double dir = ctx->config->initialDirection ;
 		for (int i = 0; i < targetsX.size(); i++) {
+			double initialPenalty = ctx->config->penaltyForReverseDirection;
+			if (i > 0) {
+				ctx->config->penaltyForReverseDirection /= 2; // relax reverse-penalty (only for inter-points)
+			}
 			ctx->progress->hhTargetsProgress(i, targetsX.size());
 			res = calculateHHRoute(routePlanner, ctx.get(), i == 0 ? startX : targetsX.at(i - 1),
 									i == 0 ? startY : targetsY.at(i - 1),
 									targetsX.at(i), targetsY.at(i), dir);
+			ctx->config->penaltyForReverseDirection = initialPenalty;
 			if (!r) {
 				r = res;
 			} else {
@@ -818,7 +825,7 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 				dir = (r->detailed[r->detailed.size() - 1]->getBearingEnd() / 180.0) * M_PI;
 			}
 		}
-		if (r && (r->isCorrect() || USE_ONLY_HH_ROUTING)) {
+		if (r && (r->isCorrect() || USE_ONLY_HH_ROUTING)) { // note: USE_ONLY_HH_ROUTING is broken here
 			return r->detailed;
 		}
 	}
@@ -1023,10 +1030,15 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchHHRoute(Routi
 		HHNetworkRouteRes * r = nullptr;
 		double dir = ctx->config->initialDirection ;
 		for (int i = 0; i < targetsX.size(); i++) {
+			double initialPenalty = ctx->config->penaltyForReverseDirection;
+			if (i > 0) {
+				ctx->config->penaltyForReverseDirection /= 2; // relax reverse-penalty (only for inter-points)
+			}
 			ctx->progress->hhTargetsProgress(i, targetsX.size());
 			HHNetworkRouteRes * res = calculateHHRoute(routePlanner, ctx, i == 0 ? ctx->startX : targetsX.at(i - 1),
 								i == 0 ? ctx->startY : targetsY.at(i - 1),
 								targetsX.at(i), targetsY.at(i), dir);
+			ctx->config->penaltyForReverseDirection = initialPenalty;
 			if (!r) {
 				r = res;
 			} else {
