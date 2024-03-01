@@ -39,7 +39,7 @@ HHRoutingConfig * HHRoutePlanner::prepareDefaultRoutingConfig(HHRoutingConfig * 
     return c;
 }
 
-SHARED_PTR<HHRoutingContext> HHRoutePlanner::initNewContext(RoutingContext * ctx, std::vector<SHARED_PTR<HHRouteRegionPointsCtx>> regions) {
+SHARED_PTR<HHRoutingContext> HHRoutePlanner::initNewContext(RoutingContext * ctx, std::vector<SHARED_PTR<HHRouteRegionPointsCtx>> & regions) {
     currentCtx = std::make_shared<HHRoutingContext>();
     currentCtx->rctx = ctx;
     if (regions.size() > 0) {
@@ -48,7 +48,7 @@ SHARED_PTR<HHRoutingContext> HHRoutePlanner::initNewContext(RoutingContext * ctx
     return currentCtx;
 }
 
-SHARED_PTR<HHRoutingContext> HHRoutePlanner::selectBestRoutingFiles(int startX, int startY, int endX, int endY, SHARED_PTR<HHRoutingContext> hctx) {
+SHARED_PTR<HHRoutingContext> HHRoutePlanner::selectBestRoutingFiles(int startX, int startY, int endX, int endY, const SHARED_PTR<HHRoutingContext> & hctx) {
     std::vector<SHARED_PTR<HHRouteRegionsGroup>> groups;
     SHARED_PTR<GeneralRouter> router = hctx->rctx->config->router;
     string profile = profileToString(router->getProfile()); // use base profile
@@ -126,7 +126,7 @@ SHARED_PTR<HHRoutingContext> HHRoutePlanner::selectBestRoutingFiles(int startX, 
     return initNewContext(hctx->rctx, regions);
 }
 
-MAP_VECTORS_NETWORK_DB_POINTS HHRoutePlanner::groupByClusters( UNORDERED_map<int64_t, NetworkDBPoint *> pointsById, bool out) {
+MAP_VECTORS_NETWORK_DB_POINTS HHRoutePlanner::groupByClusters( UNORDERED_map<int64_t, NetworkDBPoint *> & pointsById, bool out) {
     MAP_VECTORS_NETWORK_DB_POINTS res;
     UNORDERED_map<int64_t, NetworkDBPoint *>::iterator it;
     for (it = pointsById.begin(); it != pointsById.end(); it++) {
@@ -148,12 +148,12 @@ MAP_VECTORS_NETWORK_DB_POINTS HHRoutePlanner::groupByClusters( UNORDERED_map<int
     return res;
 }
 
-int64_t HHRoutePlanner::calculateRoutePointInternalId(int64_t id, int32_t pntId, int32_t nextPntId) {
+int64_t HHRoutePlanner::calculateRoutePointInternalId(int64_t id, int32_t pntId, int32_t nextPntId) const {
     int32_t positive = nextPntId - pntId;
     return (id << ROUTE_POINTS) + (pntId << 1) + (positive > 0 ? 1 : 0);
 }
 
-int64_t HHRoutePlanner::calculateRoutePointInternalId(SHARED_PTR<RouteDataObject> road, int32_t pntId, int32_t nextPntId) {
+int64_t HHRoutePlanner::calculateRoutePointInternalId(const SHARED_PTR<RouteDataObject> & road, int32_t pntId, int32_t nextPntId) const {
     int32_t positive = nextPntId - pntId;
     int pntLen = road->getPointsLength();
     if (positive < 0) {
@@ -232,7 +232,7 @@ SHARED_PTR<HHRoutingContext> HHRoutePlanner::initHCtx(HHRoutingConfig * c, int s
     return hctx;
 }
 
-HHNetworkRouteRes * HHRoutePlanner::cancelledStatus() {
+HHNetworkRouteRes * HHRoutePlanner::cancelledStatus() const {
     return new HHNetworkRouteRes("Routing was cancelled.");
 }
 
@@ -374,7 +374,7 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
     return route;
 }
 
-HHNetworkRouteRes * HHRoutePlanner::prepareRouteResults(SHARED_PTR<HHRoutingContext> hctx, HHNetworkRouteRes * route, int startX, int startY, int endX, int endY) {
+HHNetworkRouteRes * HHRoutePlanner::prepareRouteResults(const SHARED_PTR<HHRoutingContext> & hctx, HHNetworkRouteRes * route, int startX, int startY, int endX, int endY) {
     hctx->rctx->progress->routingCalculatedTime = 0;
     route->stats = hctx->stats;
     SHARED_PTR<RouteSegmentResult> straightLine = nullptr;
@@ -434,7 +434,7 @@ HHNetworkRouteRes * HHRoutePlanner::prepareRouteResults(SHARED_PTR<HHRoutingCont
     return route;
 }
 
-void HHRoutePlanner::findFirstLastSegments(SHARED_PTR<HHRoutingContext> hctx, int startX, int startY, int endX, int endY,
+void HHRoutePlanner::findFirstLastSegments(const SHARED_PTR<HHRoutingContext> & hctx, int startX, int startY, int endX, int endY,
                                            UNORDERED_map<int64_t, NetworkDBPoint *> & stPoints,
                                            UNORDERED_map<int64_t, NetworkDBPoint *> & endPoints) {
     OsmAnd::ElapsedTimer timer;
@@ -537,15 +537,15 @@ void HHRoutePlanner::findFirstLastSegments(SHARED_PTR<HHRoutingContext> hctx, in
     timer.Disable();
 }
 
-int64_t HHRoutePlanner::calcRPId(SHARED_PTR<RouteSegmentPoint> p, int pntId, int nextPntId) {
+int64_t HHRoutePlanner::calcRPId(const SHARED_PTR<RouteSegmentPoint> & p, int pntId, int nextPntId) const {
     return calculateRoutePointInternalId(p->getRoad()->getId(), pntId, nextPntId);
 }
 
-int64_t HHRoutePlanner::calcRPId(SHARED_PTR<RouteSegment> p, int pntId, int nextPntId) {
+int64_t HHRoutePlanner::calcRPId(const SHARED_PTR<RouteSegment> & p, int pntId, int nextPntId) const {
     return calculateRoutePointInternalId(p->getRoad()->getId(), pntId, nextPntId);
 }
 
-UNORDERED_map<int64_t, NetworkDBPoint *> HHRoutePlanner::initStart(SHARED_PTR<HHRoutingContext> hctx, SHARED_PTR<RouteSegmentPoint> s,
+UNORDERED_map<int64_t, NetworkDBPoint *> HHRoutePlanner::initStart(const SHARED_PTR<HHRoutingContext> & hctx, const SHARED_PTR<RouteSegmentPoint> & s,
                                                                    bool reverse, UNORDERED_map<int64_t, NetworkDBPoint *> & pnts) {
     if (!hctx->config->ROUTE_LAST_MILE) {
         // simple method to calculate without detailed maps
@@ -653,12 +653,11 @@ UNORDERED_map<int64_t, NetworkDBPoint *> HHRoutePlanner::initStart(SHARED_PTR<HH
     }
     if (hctx->config->USE_GC_MORE_OFTEN) {
         hctx->rctx->unloadAllData();
-        //printGCInformation();
     }
     return pnts;
 }
 
-int64_t HHRoutePlanner::calcUniDirRoutePointInternalId(SHARED_PTR<RouteSegmentPoint> segm) {
+int64_t HHRoutePlanner::calcUniDirRoutePointInternalId(const SHARED_PTR<RouteSegmentPoint> & segm) const {
     if (segm->getSegmentStart() < segm->getSegmentEnd()) {
         return calculateRoutePointInternalId(segm->getRoad(), segm->getSegmentStart(), segm->getSegmentEnd());
     } else {
@@ -666,7 +665,7 @@ int64_t HHRoutePlanner::calcUniDirRoutePointInternalId(SHARED_PTR<RouteSegmentPo
     }
 }
 
-HHNetworkRouteRes * HHRoutePlanner::createRouteSegmentFromFinalPoint(SHARED_PTR<HHRoutingContext> hctx, NetworkDBPoint * pnt) {
+HHNetworkRouteRes * HHRoutePlanner::createRouteSegmentFromFinalPoint(const SHARED_PTR<HHRoutingContext> & hctx, NetworkDBPoint * pnt) {
     HHNetworkRouteRes * route = new HHNetworkRouteRes();
     if (pnt != nullptr) {
         NetworkDBPoint * itPnt = pnt;
@@ -709,8 +708,7 @@ HHNetworkRouteRes * HHRoutePlanner::createRouteSegmentFromFinalPoint(SHARED_PTR<
     return route;
 }
 
-void HHRoutePlanner::recalculateNetworkCluster(SHARED_PTR<HHRoutingContext> hctx, NetworkDBPoint * start) {
-    //BinaryRoutePlanner plan = new BinaryRoutePlanner();
+void HHRoutePlanner::recalculateNetworkCluster(const SHARED_PTR<HHRoutingContext> & hctx, NetworkDBPoint * start) {
     hctx->rctx->config->planRoadDirection = 1;
     hctx->rctx->config->heurCoefficient = 0;
     // SPEEDUP: Speed up by just clearing visited
@@ -772,7 +770,7 @@ void HHRoutePlanner::recalculateNetworkCluster(SHARED_PTR<HHRoutingContext> hctx
 }
 
 
-bool HHRoutePlanner::retrieveSegmentsGeometry(SHARED_PTR<HHRoutingContext> hctx, HHNetworkRouteRes * route,
+bool HHRoutePlanner::retrieveSegmentsGeometry(const SHARED_PTR<HHRoutingContext> & hctx, HHNetworkRouteRes * route,
                                               bool routeSegments, SHARED_PTR<RouteCalculationProgress> progress) {
     for (int i = 0; i < route->segments.size(); i++) {
         progress->hhIterationProgress((double) i / route->segments.size());
@@ -849,7 +847,7 @@ SHARED_PTR<RouteSegmentPoint> HHRoutePlanner::loadPoint(RoutingContext * ctx, co
     return rsp;
 }
 
-std::vector<SHARED_PTR<RouteSegment>> HHRoutePlanner::runDetailedRouting(SHARED_PTR<HHRoutingContext> hctx, const NetworkDBPoint * startS, const NetworkDBPoint * endS, bool useBoundaries) {
+std::vector<SHARED_PTR<RouteSegment>> HHRoutePlanner::runDetailedRouting(const SHARED_PTR<HHRoutingContext> & hctx, const NetworkDBPoint * startS, const NetworkDBPoint * endS, bool useBoundaries) {
     std::vector<SHARED_PTR<RouteSegment>> f;
     hctx->rctx->config->planRoadDirection = 0; // A* bidirectional
     hctx->rctx->config->heurCoefficient = 1;
@@ -895,7 +893,7 @@ std::vector<SHARED_PTR<RouteSegment>> HHRoutePlanner::runDetailedRouting(SHARED_
     return f;
 }
 
-NetworkDBPoint * HHRoutePlanner::scanFinalPoint(NetworkDBPoint * finalPoint, std::vector<NetworkDBPoint *> lt) {
+NetworkDBPoint * HHRoutePlanner::scanFinalPoint(NetworkDBPoint * finalPoint, std::vector<NetworkDBPoint *> & lt) {
     for (NetworkDBPoint * p : lt) {
         if (p->rt(true)->rtDistanceFromStart == 0 || p->rt(false)->rtDistanceFromStart == 0) {
             continue;
@@ -908,12 +906,12 @@ NetworkDBPoint * HHRoutePlanner::scanFinalPoint(NetworkDBPoint * finalPoint, std
     return finalPoint;
 }
 
-double HHRoutePlanner::smallestSegmentCost(SHARED_PTR<HHRoutingContext> hctx, NetworkDBPoint * st, NetworkDBPoint * end) {
+double HHRoutePlanner::smallestSegmentCost(const SHARED_PTR<HHRoutingContext> & hctx, NetworkDBPoint * st, NetworkDBPoint * end) const {
     double dist = squareRootDist31(st->midX(), st->midY(), end->midX(), end->midY());
     return dist / hctx->rctx->config->router->getMaxSpeed();
 }
 
-void HHRoutePlanner::addPointToQueue(SHARED_PTR<HHRoutingContext> hctx, SHARED_PTR<HH_QUEUE> queue, bool reverse,
+void HHRoutePlanner::addPointToQueue(const SHARED_PTR<HHRoutingContext> & hctx, SHARED_PTR<HH_QUEUE> queue, bool reverse,
                                      NetworkDBPoint * point, NetworkDBPoint * parent, double segmentDist, double cost) {
     OsmAnd::ElapsedTimer timer;
     timer.Start();
@@ -937,7 +935,7 @@ void HHRoutePlanner::addPointToQueue(SHARED_PTR<HHRoutingContext> hctx, SHARED_P
     timer.Disable();
 }
 
-void HHRoutePlanner::addConnectedToQueue(SHARED_PTR<HHRoutingContext> hctx, SHARED_PTR<HH_QUEUE> queue, NetworkDBPoint * point, bool reverse) {
+void HHRoutePlanner::addConnectedToQueue(const SHARED_PTR<HHRoutingContext> & hctx, SHARED_PTR<HH_QUEUE> & queue, NetworkDBPoint * point, bool reverse) {
     int depth = hctx->config->USE_MIDPOINT || hctx->config->MAX_DEPTH > 0 ? point->rt(reverse)->getDepth(reverse) : 0;
     if (hctx->config->MAX_DEPTH > 0 && depth >= hctx->config->MAX_DEPTH) {
         return;
@@ -990,9 +988,9 @@ void HHRoutePlanner::addConnectedToQueue(SHARED_PTR<HHRoutingContext> hctx, SHAR
     }
 }
 
-NetworkDBPoint * HHRoutePlanner::runRoutingPointsToPoints(SHARED_PTR<HHRoutingContext> hctx,
-                                                          UNORDERED_map<int64_t, NetworkDBPoint *> stPoints,
-                                                          UNORDERED_map<int64_t, NetworkDBPoint *> endPoints) {
+NetworkDBPoint * HHRoutePlanner::runRoutingPointsToPoints(const SHARED_PTR<HHRoutingContext> & hctx,
+                                                          UNORDERED_map<int64_t, NetworkDBPoint *> & stPoints,
+                                                          UNORDERED_map<int64_t, NetworkDBPoint *> & endPoints) {
     UNORDERED_map<int64_t, NetworkDBPoint *>::iterator it;
     for (it = stPoints.begin(); it != stPoints.end(); it++) {
         NetworkDBPoint * start = it->second;
@@ -1016,7 +1014,7 @@ NetworkDBPoint * HHRoutePlanner::runRoutingPointsToPoints(SHARED_PTR<HHRoutingCo
     return t;
 }
 
-NetworkDBPoint * HHRoutePlanner::runRoutingWithInitQueue(SHARED_PTR<HHRoutingContext> hctx) {
+NetworkDBPoint * HHRoutePlanner::runRoutingWithInitQueue(const SHARED_PTR<HHRoutingContext> & hctx) {
     float DIR_CONFIG = hctx->config->DIJKSTRA_DIRECTION;
     SHARED_PTR<RouteCalculationProgress> progress = hctx->rctx == nullptr ? nullptr : hctx->rctx->progress;
     double straightStartEndCost = squareRootDist31(hctx->startX, hctx->startY, hctx->endX, hctx->endY) /
@@ -1109,7 +1107,7 @@ NetworkDBPoint * HHRoutePlanner::runRoutingWithInitQueue(SHARED_PTR<HHRoutingCon
     return nullptr;
 }
 
-void HHRoutePlanner::printPoint(NetworkDBPoint * p, bool rev) {
+void HHRoutePlanner::printPoint(NetworkDBPoint * p, bool rev) const {
     if (DEBUG_VERBOSE_LEVEL > 1) {
         int64_t pind = 0;
         int64_t pchInd = 0;
@@ -1123,9 +1121,9 @@ void HHRoutePlanner::printPoint(NetworkDBPoint * p, bool rev) {
     }
 }
 
-void HHRoutePlanner::calcAlternativeRoute(SHARED_PTR<HHRoutingContext> hctx, HHNetworkRouteRes * route,
-                                          UNORDERED_map<int64_t, NetworkDBPoint *> stPoints, UNORDERED_map<int64_t,
-                                          NetworkDBPoint *> endPoints, SHARED_PTR<RouteCalculationProgress> progress) {
+void HHRoutePlanner::calcAlternativeRoute(const SHARED_PTR<HHRoutingContext> & hctx, HHNetworkRouteRes * route,
+                                          UNORDERED_map<int64_t, NetworkDBPoint *> & stPoints, UNORDERED_map<int64_t,
+                                          NetworkDBPoint *> & endPoints, SHARED_PTR<RouteCalculationProgress> & progress) {
     std::vector<NetworkDBPoint *> exclude;
     HHNetworkRouteRes * rt = route;
     // distances between all points and start/end
@@ -1286,7 +1284,7 @@ void HHRoutePlanner::calcAlternativeRoute(SHARED_PTR<HHRoutingContext> hctx, HHN
     }
 }
 
-bool HHRoutePlanner::retainAll(std::set<int64_t> & source, const std::set<int64_t> & other) {
+bool HHRoutePlanner::retainAll(std::set<int64_t> & source, const std::set<int64_t> & other) const {
     if (source == other) {
         return false;
     } else {
@@ -1305,7 +1303,7 @@ bool HHRoutePlanner::retainAll(std::set<int64_t> & source, const std::set<int64_
     }
 }
 
-void HHRoutePlanner::filterPointsBasedOnConfiguration(SHARED_PTR<HHRoutingContext> & hctx) {
+void HHRoutePlanner::filterPointsBasedOnConfiguration(const SHARED_PTR<HHRoutingContext> & hctx) {
     SHARED_PTR<GeneralRouter>  & vr = hctx->rctx->config->router;
     UNORDERED_map<string, RoutingParameter> & parameters = vr->getParameters();
     UNORDERED_map<string, string> tm;
