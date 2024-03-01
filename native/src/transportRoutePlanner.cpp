@@ -11,7 +11,7 @@
 #include "transportRoutingObjects.h"
 
 struct TransportSegmentsComparator
-	: public std::binary_function<SHARED_PTR<TransportRouteSegment>&, SHARED_PTR<TransportRouteSegment>&, bool> {
+	: public std::function<bool(SHARED_PTR<TransportRouteSegment>&, SHARED_PTR<TransportRouteSegment>&)> {
 	TransportSegmentsComparator() {
 	}
 	bool operator()(const SHARED_PTR<TransportRouteSegment>& lhs, const SHARED_PTR<TransportRouteSegment>& rhs) const {

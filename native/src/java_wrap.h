@@ -46,7 +46,7 @@ jobject newGlobalRef(JNIEnv* env, jobject o) {
 }
 
 void throwNewException(JNIEnv* env, const char* msg) {
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, msg);
+	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "%s", msg);
 	env->ThrowNew(env->FindClass("java/lang/Exception"), msg);
 }
 
@@ -107,5 +107,6 @@ jobject convertTransportRouteToJava(JNIEnv* ienv, SHARED_PTR<TransportRoute>& ro
 RouteAttributeExpression convertExpressionFromJava(JNIEnv* ienv, jobject jExpression);
 
 void clearDirectionPointFromRouteResult(SHARED_PTR<RouteSegmentResult> r );
+void deleteRoutingContext(RoutingContext* c, JNIEnv* ienv, jobject jCtx);
 
 #endif

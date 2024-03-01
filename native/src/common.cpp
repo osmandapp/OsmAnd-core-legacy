@@ -145,7 +145,8 @@ double getTileWidth(int y31) {
 	double ry = y - tileY;
 
 	double d;
-	if (auto found = DIST_CACHE.find(tileY); found != DIST_CACHE.end()) {
+	auto found = DIST_CACHE.find(tileY);
+	if (found != DIST_CACHE.end()) {
 		d = found->second;
 	} else {
 		d = getTileDistanceWidth(get31LatitudeY(tileY << (31 - PRECISION_ZOOM)), PRECISION_ZOOM) / (1 << (31 - PRECISION_ZOOM));
@@ -154,7 +155,8 @@ double getTileWidth(int y31) {
 
 	double dp;
 	tileY = tileY + 1;
-	if (auto found = DIST_CACHE.find(tileY); found != DIST_CACHE.end()) {
+	found = DIST_CACHE.find(tileY);
+	if (found != DIST_CACHE.end()) {
 		dp = found->second;
 	} else {
 		dp = getTileDistanceWidth(get31LatitudeY(tileY << (31 - PRECISION_ZOOM)), PRECISION_ZOOM) / (1 << (31 - PRECISION_ZOOM));
@@ -215,9 +217,11 @@ int get31TileNumberX(double longitude) {
 	l <<= 31;
 
 	double tileNumberX = ((longitude + 180) / 360 * l);
-	if (tileNumberX > INT_MAX)
+	if (tileNumberX > INT_MAX) {
 		tileNumberX = INT_MAX;
-		return (int)tileNumberX;
+	}
+
+	return (int)tileNumberX;
 }
 
 int get31TileNumberY(double latitude) {

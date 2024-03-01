@@ -56,8 +56,12 @@ class RouteCalculationProgress {
 		  visitedDirectSegments(0), visitedOppositeSegments(0), directQueueSize(0), oppositeQueueSize(0),
           finalSegmentsFound(0), loadedTiles(0), unloadedTiles(0), loadedPrevUnloadedTiles(0), distinctLoadedTiles(0),
           totalIterations(1), iteration(-1), cancelled(false), maxLoadedTiles(0),
-          requestPrivateAccessRouting(false) {
+          requestPrivateAccessRouting(false),
+          hhIterationStep(HH_NOT_STARTED), hhCurrentStepProgress(0), hhTargetsDone(0), hhTargetsTotal(0)
+		{
 	}
+
+	virtual ~RouteCalculationProgress() { }
 
 	virtual SHARED_PTR<RouteCalculationProgress> capture(SHARED_PTR<RouteCalculationProgress>& cp);
 	virtual UNORDERED(map) < string,
@@ -70,25 +74,43 @@ class RouteCalculationProgress {
 	virtual void updateApproximatedDistance(float distance) { approximatedDistance = distance; }
 	virtual void updateStatus(float distanceFromBegin, int directSegmentQueueSize, float distanceFromEnd,
 							  int reverseSegmentQueueSize);
+	virtual float getLinearProgressHH();
 	virtual float getLinearProgress();
 	virtual float getApproximationProgress();
-    
-    enum HHIteration {
-        //in percent
-        SELECT_REGIONS = 5,
-        LOAD_POINS = 5,
-        START_END_POINT = 25,
-        ROUTING = 25,
-        DETAILED = 30,
-        ALTERNATIVES = 10,
-        DONE = 0
-    };
-    
-    HHIteration hhIterationStep;
-    void hhIteration(HHIteration step) {
-        hhIterationStep = step;
-    }
-    
+
+	enum HHIteration {
+		HH_NOT_STARTED,
+		SELECT_REGIONS,
+		LOAD_POINTS,
+		START_END_POINT,
+		ROUTING,
+		DETAILED,
+		ALTERNATIVES,
+		DONE,
+		Count
+	};
+
+	inline int hhIterationPercent(int step) {
+		switch(step) {
+			case HH_NOT_STARTED: return 0; // hhIteration is not filled
+			case SELECT_REGIONS: return 5;
+			case LOAD_POINTS: return 5;
+			case START_END_POINT: return 15;
+			case ROUTING: return 25;
+			case DETAILED: return 50;
+			case ALTERNATIVES: return 0;
+			case DONE: return 0;
+		}
+		return 0;
+	}
+
+	int hhIterationStep;
+	double hhCurrentStepProgress;
+	int hhTargetsDone, hhTargetsTotal;
+
+	virtual void hhTargetsProgress(int done, int total);
+	virtual void hhIteration(HHIteration step);
+	virtual void hhIterationProgress(double k);
 };
 
 #endif /*_OSMAND_ROUTE_CALCULATION_PROGRESS_H*/

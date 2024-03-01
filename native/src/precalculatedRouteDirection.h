@@ -23,7 +23,7 @@ struct PrecalculatedRouteDirection {
 	uint64_t endPoint;
 	quad_tree<int> quadTree;
 
-	inline uint64_t calc(int x31, int y31) {
+	static inline uint64_t calc(int x31, int y31) {
 		return (((uint64_t)x31) << 32l) + ((uint64_t)y31);
 	}
 

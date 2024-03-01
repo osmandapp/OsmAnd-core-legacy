@@ -786,14 +786,14 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 	if (!ctx->progress) {
 		ctx->progress = std::make_shared<RouteCalculationProgress>();
 	}
-    vector<int> targetsX = {endX};
-    vector<int> targetsY = {endY};
+	vector<int> targetsX = { endX };
+	vector<int> targetsY = { endY };
 	bool intermediatesEmpty = intermediatesX.empty();
 	if (!intermediatesEmpty) {
 		targetsX.insert(targetsX.end(), intermediatesX.begin(), intermediatesX.end());
 		targetsY.insert(targetsY.end(), intermediatesY.begin(), intermediatesY.end());
 	}
-	if (needRequestPrivateAccessRouting(ctx, targetsX, targetsY)) {
+	if (needRequestPrivateAccessRouting(ctx.get(), targetsX, targetsY)) {
 		ctx->progress->requestPrivateAccessRouting = true;
 	}
 	if (HH_ROUTING_CONFIG != nullptr) {
@@ -802,7 +802,8 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
         HHNetworkRouteRes * r = nullptr;
         double dir = ctx->config->initialDirection ;
         for (int i = 0; i < targetsX.size(); i++) {
-            res = calculateHHRoute(routePlanner, i == 0 ? startX : targetsX.at(i - 1),
+            ctx->progress->hhTargetsProgress(i, targetsX.size());
+            res = calculateHHRoute(routePlanner, ctx.get(), i == 0 ? startX : targetsX.at(i - 1),
                                    i == 0 ? startY : targetsY.at(i - 1),
                                    targetsX.at(i), targetsY.at(i), dir);
             if (!r) {
@@ -891,7 +892,7 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 	return res;
 }
 
-bool RoutePlannerFrontEnd::needRequestPrivateAccessRouting(SHARED_PTR<RoutingContext> ctx, vector<int>& targetsX,
+bool RoutePlannerFrontEnd::needRequestPrivateAccessRouting(RoutingContext* ctx, vector<int>& targetsX,
 														   vector<int>& targetsY) {
 	bool res = false;
 	SHARED_PTR<GeneralRouter> router = ctx->config->router;
@@ -904,7 +905,7 @@ bool RoutePlannerFrontEnd::needRequestPrivateAccessRouting(SHARED_PTR<RoutingCon
 		for (int i = 0; i < targetsX.size(); i++) {
 			int x31 = targetsX[i];
 			int y31 = targetsY[i];
-			SHARED_PTR<RouteSegmentPoint> rp = findRouteSegment(x31, y31, ctx.get());
+			SHARED_PTR<RouteSegmentPoint> rp = findRouteSegment(x31, y31, ctx);
 			if (rp && rp->road) {
 				if (rp->road->hasPrivateAccess(ctx->config->router->getProfile())) {
 					res = true;
@@ -971,17 +972,20 @@ std::vector<SHARED_PTR<GpxPoint>> RoutePlannerFrontEnd::generateGpxPoints(SHARED
 	return gpxPoints;
 }
 
-HHNetworkRouteRes * RoutePlannerFrontEnd::calculateHHRoute(HHRoutePlanner & routePlanner, int startX, int startY, int endX, int endY, double dir) {
+HHNetworkRouteRes * RoutePlannerFrontEnd::calculateHHRoute(HHRoutePlanner & routePlanner, RoutingContext* ctx, int startX, int startY, int endX, int endY, double dir)
+{
     try {
         auto cfg = routePlanner.prepareDefaultRoutingConfig(HH_ROUTING_CONFIG);
         cfg->INITIAL_DIRECTION = dir;
         HHNetworkRouteRes * res = routePlanner.runRouting(startX, startY, endX, endY, cfg);
         if (res != nullptr && res->error == "") {
+            ctx->progress->hhIteration(RouteCalculationProgress::HHIteration::DONE);
             makeStartEndPointsPrecise(res->detailed, startX, startY, endX, endY, {}, {});
             return res;
         }
+        ctx->progress->hhIteration(RouteCalculationProgress::HHIteration::HH_NOT_STARTED);
     } catch (const std::exception e) {
-        OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, e.what());
+        OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "%s", e.what());
         if (USE_ONLY_HH_ROUTING) {
             std::string ex = "Error during routing calculation : ";
             ex += e.what();
@@ -1019,7 +1023,8 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchHHRoute(Routi
         HHNetworkRouteRes * r = nullptr;
         double dir = ctx->config->initialDirection ;
         for (int i = 0; i < targetsX.size(); i++) {
-            HHNetworkRouteRes * res = calculateHHRoute(routePlanner, i == 0 ? ctx->startX : targetsX.at(i - 1),
+            ctx->progress->hhTargetsProgress(i, targetsX.size());
+            HHNetworkRouteRes * res = calculateHHRoute(routePlanner, ctx, i == 0 ? ctx->startX : targetsX.at(i - 1),
                                    i == 0 ? ctx->startY : targetsY.at(i - 1),
                                    targetsX.at(i), targetsY.at(i), dir);
             if (!r) {

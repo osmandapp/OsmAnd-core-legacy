@@ -39,7 +39,7 @@ set(skia_opts_sse42 "${UPSTREAM}/src/opts/SkOpts_sse42.cpp")
 set(skia_opts_avx "${UPSTREAM}/src/opts/SkOpts_avx.cpp")
 set(skia_opts_hsw "${UPSTREAM}/src/opts/SkOpts_hsw.cpp")
 
-if(CMAKE_TARGET_OS STREQUAL "darwin")
+if((CMAKE_TARGET_OS STREQUAL "darwin") OR (CMAKE_TARGET_OS STREQUAL "macosx"))
 	file(GLOB src_utils_mac "${UPSTREAM}/src/utils/mac/*")
     set(target_specific_sources "${target_specific_sources}"
 		"${UPSTREAM}/src/ports/SkDebug_stdio.cpp"
@@ -193,7 +193,7 @@ if(CMAKE_TARGET_OS STREQUAL "linux")
 	)
 endif()
 
-if(CMAKE_TARGET_OS STREQUAL "darwin")
+if((CMAKE_TARGET_OS STREQUAL "darwin") OR (CMAKE_TARGET_OS STREQUAL "macosx"))
    	find_library(CORE_FOUNDATION_LIBRARY CoreFoundation)
         find_library(CORE_TEXT_LIBRARY CoreText)
         find_library(CORE_GRAPHICS_LIBRARY CoreGraphics)

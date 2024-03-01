@@ -3,10 +3,11 @@
 
 #include "CommonCollections.h"
 
-namespace OsmAnd {
-enum class LogSeverityLevel { Error = 1, Warning, Debug, Info };
+#define CHECK_PRINTF_FORMAT __attribute__((format(printf, 2, 3))) // gcc/clang -Wformat for custom printf-functions
 
-void LogPrintf(LogSeverityLevel level, const char* format, ...);
+namespace OsmAnd {
+	enum class LogSeverityLevel { Error = 1, Warning, Debug, Info };
+	void LogPrintf(LogSeverityLevel level, const char* format, ...) CHECK_PRINTF_FORMAT;
 }  // namespace OsmAnd
 
 #endif	// _OSMAND_LOGGING_H_

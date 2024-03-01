@@ -1691,7 +1691,7 @@ void printResults(RoutingContext* ctx, int startX, int startY, int endX, int end
 	string alerts;
 	alerts.append("Alerts during routing: ")
 		.append(std::to_string(ctx->alertFasterRoadToVisitedSegments))
-		.append("fastRoads,")
+		.append(" fastRoads,")
 		.append(std::to_string(ctx->alertSlowerSegmentedWasVisitedEarlier))
 		.append(" slowSegmentsEearlier");
 	if (ctx->alertFasterRoadToVisitedSegments + ctx->alertSlowerSegmentedWasVisitedEarlier == 0) {
@@ -1718,7 +1718,7 @@ void printResults(RoutingContext* ctx, int startX, int startY, int endX, int end
 		}
 	}
 	for (string msg : routeInfo) {
-		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, msg.c_str());
+		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "%s", msg.c_str());
 	}
 }
 

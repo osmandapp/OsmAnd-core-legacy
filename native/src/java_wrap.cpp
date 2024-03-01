@@ -463,7 +463,10 @@ jfieldID jfield_RouteCalculationProgress_loadedTiles = NULL;
 jfieldID jfield_RouteCalculationProgress_unloadedTiles = NULL;
 jfieldID jfield_RouteCalculationProgress_loadedPrevUnloadedTiles = NULL;
 jfieldID jfield_RouteCalculationProgress_distinctLoadedTiles = NULL;
-
+jfieldID jfield_RouteCalculationProgress_hhIterationStep = NULL;
+jfieldID jfield_RouteCalculationProgress_hhTargetsDone = NULL;
+jfieldID jfield_RouteCalculationProgress_hhTargetsTotal = NULL;
+jfieldID jfield_RouteCalculationProgress_hhCurrentStepProgress = NULL;
 
 jclass jclass_RenderedObject = NULL;
 jmethodID jmethod_RenderedObject_putTag = NULL;
@@ -886,10 +889,18 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jfield_RouteCalculationProgress_loadedTiles = getFid(env, jclass_RouteCalculationProgress, "loadedTiles", "I");
 	jfield_RouteCalculationProgress_unloadedTiles = getFid(env, jclass_RouteCalculationProgress, "unloadedTiles", "I");
 	jfield_RouteCalculationProgress_loadedPrevUnloadedTiles =
-	getFid(env, jclass_RouteCalculationProgress, "loadedPrevUnloadedTiles", "I");
+		getFid(env, jclass_RouteCalculationProgress, "loadedPrevUnloadedTiles", "I");
 	jfield_RouteCalculationProgress_distinctLoadedTiles = 
 		getFid(env, jclass_RouteCalculationProgress, "distinctLoadedTiles", "I");
-	
+	jfield_RouteCalculationProgress_hhIterationStep =
+		getFid(env, jclass_RouteCalculationProgress, "hhIterationStep", "I");
+	jfield_RouteCalculationProgress_hhTargetsDone =
+		getFid(env, jclass_RouteCalculationProgress, "hhTargetsDone", "I");
+	jfield_RouteCalculationProgress_hhTargetsTotal =
+		getFid(env, jclass_RouteCalculationProgress, "hhTargetsTotal", "I");
+	jfield_RouteCalculationProgress_hhCurrentStepProgress =
+		getFid(env, jclass_RouteCalculationProgress, "hhCurrentStepProgress", "D");
+
 	jclass_TransportRoutingConfiguration = findGlobalClass(env, "net/osmand/router/TransportRoutingConfiguration");
 	jfield_TransportRoutingConfiguration_ZOOM_TO_LOAD_TILES =
 		getFid(env, jclass_TransportRoutingConfiguration, "ZOOM_TO_LOAD_TILES", "I");
@@ -1388,41 +1399,68 @@ class RouteCalculationProgressWrapper : public RouteCalculationProgress {
    public:
 	RouteCalculationProgressWrapper(JNIEnv* ienv, jobject progress) : RouteCalculationProgress(), ienv(ienv), progress(progress) {}
 
-	virtual bool isCancelled() {
+	virtual ~RouteCalculationProgressWrapper() override { }
+
+	virtual void hhIteration(HHIteration step) override {
+		if (progress != NULL) {
+			ienv->SetIntField(progress, jfield_RouteCalculationProgress_hhIterationStep, step);
+			ienv->SetDoubleField(progress, jfield_RouteCalculationProgress_hhCurrentStepProgress, 0);
+		}
+		RouteCalculationProgress::hhIteration(step);
+	}
+
+	virtual void hhTargetsProgress(int done, int total) override {
+		if (progress != NULL) {
+			ienv->SetIntField(progress, jfield_RouteCalculationProgress_hhTargetsDone, done);
+			ienv->SetIntField(progress, jfield_RouteCalculationProgress_hhTargetsTotal, total);
+		}
+		RouteCalculationProgress::hhTargetsProgress(done, total);
+	}
+
+	virtual void hhIterationProgress(double k) override {
+		if (progress != NULL) {
+			if (k >= 0 && k <= 1.0 && k > hhCurrentStepProgress) {
+				ienv->SetDoubleField(progress, jfield_RouteCalculationProgress_hhCurrentStepProgress, k);
+			}
+		}
+		RouteCalculationProgress::hhIterationProgress(k);
+	}
+
+	virtual bool isCancelled() override {
 		if (progress == NULL) {
 			return false;
 		}
 		return ienv->GetBooleanField(progress, jfield_RouteCalculationProgress_isCancelled);
 	}
 
-	virtual void setSegmentNotFound(int s) {
+	virtual void setSegmentNotFound(int s) override {
 		if (progress != NULL) {
 			ienv->SetIntField(progress, jfield_RouteCalculationProgress_segmentNotFound, s);
 		}
 	}
 
-	virtual void updateIteration(int iteration) {
+	virtual void updateIteration(int iteration) override {
 		RouteCalculationProgress::updateIteration(iteration);
 		if (progress != NULL) {
 			ienv->SetIntField(progress, jfield_RouteCalculationProgress_iteration, iteration);
 		}
 	}
 
-	virtual void updateTotalEstimatedDistance(float distance) {
+	virtual void updateTotalEstimatedDistance(float distance) override {
 		RouteCalculationProgress::updateTotalEstimatedDistance(distance);
 		if (progress != NULL) {
 			ienv->SetFloatField(progress, jfield_RouteCalculationProgress_totalEstimatedDistance, distance);
 		}
 	}
 
-	virtual void updateTotalApproximateDistance(float distance) {
+	virtual void updateTotalApproximateDistance(float distance) override {
 		RouteCalculationProgress::updateTotalApproximateDistance(distance);
 		if (progress != NULL) {
 			ienv->SetFloatField(progress, jfield_RouteCalculationProgress_totalApproximateDistance, distance);
 		}
 	}
 
-	virtual void updateApproximatedDistance(float distance) {
+	virtual void updateApproximatedDistance(float distance) override {
 		RouteCalculationProgress::updateApproximatedDistance(distance);
 		if (progress != NULL) {
 			ienv->SetFloatField(progress, jfield_RouteCalculationProgress_approximatedDistance, distance);
@@ -1430,7 +1468,7 @@ class RouteCalculationProgressWrapper : public RouteCalculationProgress {
 	}
 
 	virtual void updateStatus(float distanceFromBegin, int directSegmentQueueSize, float distanceFromEnd,
-							  int reverseSegmentQueueSize) {
+							  int reverseSegmentQueueSize) override {
 		RouteCalculationProgress::updateStatus(distanceFromBegin, directSegmentQueueSize, distanceFromEnd,
 											   reverseSegmentQueueSize);
 		if (progress != NULL) {
@@ -1773,8 +1811,9 @@ extern "C" JNIEXPORT jboolean JNICALL Java_net_osmand_NativeLibrary_nativeNeedRe
 	jobject progress = ienv->GetObjectField(jCtx, jfield_RoutingContext_calculationProgress);
 	RoutingContext* c = getRoutingContext(ienv, jCtx, NO_DIRECTION, false, progress);
 	SHARED_PTR<RoutePlannerFrontEnd> rpfe = shared_ptr<RoutePlannerFrontEnd>(new RoutePlannerFrontEnd());
-	bool res = rpfe->needRequestPrivateAccessRouting(std::make_shared<RoutingContext>(c), coordinatesX, coordinatesY);
+	bool res = rpfe->needRequestPrivateAccessRouting(c, coordinatesX, coordinatesY);
 	ienv->DeleteLocalRef(progress);
+	deleteRoutingContext(c, ienv, jCtx);
 	return res;
 }
 
@@ -1801,8 +1840,8 @@ extern "C" JNIEXPORT jobject JNICALL Java_net_osmand_NativeLibrary_nativeSearchG
 	UNORDERED(map)<int64_t, int> indexes;
 	for (int t = 0; t < ienv->GetArrayLength(regions); t++) {
 		jobject oreg = ienv->GetObjectArrayElement(regions, t);
-		int64_t fp = ienv->GetIntField(oreg, jfield_RouteRegion_filePointer);
-		int64_t ln = ienv->GetIntField(oreg, jfield_RouteRegion_length);
+		int64_t fp = ienv->GetLongField(oreg, jfield_RouteRegion_filePointer);
+		int64_t ln = ienv->GetLongField(oreg, jfield_RouteRegion_length);
 		ienv->DeleteLocalRef(oreg);
 		indexes[(fp << 31) + ln] = t;
 	}
@@ -1837,12 +1876,11 @@ extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_nativeRo
 	} else {
 		r = searchRouteInternal(c, false);
 	}
-
 	UNORDERED(map)<int64_t, int> indexes;
 	for (int t = 0; t < ienv->GetArrayLength(regions); t++) {
 		jobject oreg = ienv->GetObjectArrayElement(regions, t);
-		int64_t fp = ienv->GetIntField(oreg, jfield_RouteRegion_filePointer);
-		int64_t ln = ienv->GetIntField(oreg, jfield_RouteRegion_length);
+		int64_t fp = ienv->GetLongField(oreg, jfield_RouteRegion_filePointer);
+		int64_t ln = ienv->GetLongField(oreg, jfield_RouteRegion_length);
 		ienv->DeleteLocalRef(oreg);
 		indexes[(fp << 31) + ln] = t;
 	}
@@ -1860,7 +1898,6 @@ extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_nativeRo
 							c->finalRouteSegment->distanceFromStart);
 	}
 
-	 
 	addIntField(ienv, jCtx, jfield_RoutingContext_alertFasterRoadToVisitedSegments, c->alertFasterRoadToVisitedSegments);
 	addIntField(ienv, jCtx, jfield_RoutingContext_alertSlowerSegmentedWasVisitedEarlier, c->alertSlowerSegmentedWasVisitedEarlier);
 	if (c->progress && c->progress.get()) {
@@ -1885,22 +1922,28 @@ extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_nativeRo
 		addLongField(ienv, progress, jfield_RouteCalculationProgress_timeToLoadHeaders, c->progress->timeToLoadHeaders.GetElapsedMicros() * 1000);
 		addLongField(ienv, progress, jfield_RouteCalculationProgress_timeToFindInitialSegments, c->progress->timeToFindInitialSegments.GetElapsedMicros() * 1000);
 		addLongField(ienv, progress, jfield_RouteCalculationProgress_timeNanoToCalcDeviation, c->progress->timeExtra.GetElapsedMicros() * 1000);
+		if (c->progress->routingCalculatedTime > 0) {
+			ienv->SetFloatField(progress, jfield_RouteCalculationProgress_routingCalculatedTime, c->progress->routingCalculatedTime);
+		}
 	}
 	if (r.size() == 0) {
 		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "No route found");
 	}
-	fflush(stdout);
 	ienv->DeleteLocalRef(progress);
 	ienv->DeleteLocalRef(precalculatedRoute);
-	if (c != NULL && !ienv->GetBooleanField(jCtx, jfield_RoutingContext_keepNativeRoutingContext)) {
-		ienv->SetLongField(jCtx, jfield_RoutingContext_nativeRoutingContext, 0);
-		delete c;
-	}
 	if (hhConfig) {
 		delete hhConfig;
 		hhConfig = NULL;
 	}
+	deleteRoutingContext(c, ienv, jCtx);
 	return res;
+}
+
+void deleteRoutingContext(RoutingContext* c, JNIEnv* ienv, jobject jCtx) {
+	if (c != NULL && !ienv->GetBooleanField(jCtx, jfield_RoutingContext_keepNativeRoutingContext)) {
+		ienv->SetLongField(jCtx, jfield_RoutingContext_nativeRoutingContext, 0);
+		delete c;
+	}
 }
 
 void parseTransportRoutingConfiguration(JNIEnv* ienv, shared_ptr<TransportRoutingConfiguration>& rConfig,
@@ -2300,13 +2343,13 @@ extern "C" JNIEXPORT jobject JNICALL Java_net_osmand_NativeLibrary_loadRoutingDa
 	ind->filePointer = regFilePointer;
 	ind->name = getString(ienv, regName);
 	RouteSubregion sub(ind);
-	sub.filePointer = ienv->GetIntField(subreg, jfield_RouteSubregion_filePointer);
-	sub.length = ienv->GetIntField(subreg, jfield_RouteSubregion_length);
+	sub.filePointer = ienv->GetLongField(subreg, jfield_RouteSubregion_filePointer);
+	sub.length = ienv->GetLongField(subreg, jfield_RouteSubregion_length);
 	sub.left = ienv->GetIntField(subreg, jfield_RouteSubregion_left);
 	sub.right = ienv->GetIntField(subreg, jfield_RouteSubregion_right);
 	sub.top = ienv->GetIntField(subreg, jfield_RouteSubregion_top);
 	sub.bottom = ienv->GetIntField(subreg, jfield_RouteSubregion_bottom);
-	sub.mapDataBlock = ienv->GetIntField(subreg, jfield_RouteSubregion_shiftToData);
+	sub.mapDataBlock = ienv->GetLongField(subreg, jfield_RouteSubregion_shiftToData);
 	std::vector<RouteDataObject*> result;
 	SearchQuery q;
 	searchRouteDataForSubRegion(&q, result, &sub, false);
