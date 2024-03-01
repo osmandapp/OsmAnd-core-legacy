@@ -339,7 +339,6 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
 }
 
 HHNetworkRouteRes * HHRoutePlanner::prepareRouteResults(SHARED_PTR<HHRoutingContext> hctx, HHNetworkRouteRes * route, int startX, int startY, int endX, int endY) {
-    hctx->rctx->progress->routingCalculatedTime = 0;
     route->stats = hctx->stats;
     SHARED_PTR<RouteSegmentResult> straightLine = nullptr;
     for(int routeSegmentInd = 0; routeSegmentInd < route->segments.size(); routeSegmentInd++ ) {
