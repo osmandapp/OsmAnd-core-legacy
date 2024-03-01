@@ -8,9 +8,6 @@
 #include "routeSegmentResult.h"
 #include "routingConfiguration.h"
 
-void makeSegmentPointPrecise(SHARED_PTR<RouteSegmentResult>& routeSegmentResult, int px, int py, bool st);
-void makeSegmentPointPrecise(SHARED_PTR<RouteSegmentResult>& routeSegmentResult, double lat, double lon, bool st);
-
 SHARED_PTR<RoutingContext> RoutePlannerFrontEnd::buildRoutingContext(
 	SHARED_PTR<RoutingConfiguration> config, RouteCalculationMode rm /*= RouteCalculationMode::NORMAL*/) {
 	return std::make_shared<RoutingContext>(config, rm);
@@ -91,7 +88,7 @@ bool addSegment(int x31, int y31, RoutingContext* ctx, int indexNotFound, vector
 	}
 }
 
-void makeStartEndPointsPrecise(vector<SHARED_PTR<RouteSegmentResult>>& res, int startX, int startY, int endX, int endY,
+void RoutePlannerFrontEnd::makeStartEndPointsPrecise(vector<SHARED_PTR<RouteSegmentResult>>& res, int startX, int startY, int endX, int endY,
 							   vector<int> intermediatesX, vector<int> intermediatesY) {
 	if (res.size() > 0) {
 		makeSegmentPointPrecise(res[0], startX, startY, true);
@@ -270,13 +267,13 @@ void RoutePlannerFrontEnd::searchGpxRoute(SHARED_PTR<GpxRouteApproximation> &gct
 		acceptor(gctx->ctx->progress->cancelled ? nullptr : gctx);
 }
 
-void makeSegmentPointPrecise(SHARED_PTR<RouteSegmentResult>& routeSegmentResult, double lat, double lon, bool st) {
+void RoutePlannerFrontEnd::makeSegmentPointPrecise(SHARED_PTR<RouteSegmentResult>& routeSegmentResult, double lat, double lon, bool st) {
 	int px = get31TileNumberX(lon);
 	int py = get31TileNumberY(lat);
 	return makeSegmentPointPrecise(routeSegmentResult, px, py, st);
 }
 
-void makeSegmentPointPrecise(SHARED_PTR<RouteSegmentResult>& routeSegmentResult, int px, int py, bool st) {
+void RoutePlannerFrontEnd::makeSegmentPointPrecise(SHARED_PTR<RouteSegmentResult>& routeSegmentResult, int px, int py, bool st) {
 	int pind = st ? routeSegmentResult->getStartPointIndex() : routeSegmentResult->getEndPointIndex();
 
 	SHARED_PTR<RouteDataObject> r = std::make_shared<RouteDataObject>(routeSegmentResult->object);
