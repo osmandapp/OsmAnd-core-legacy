@@ -375,7 +375,6 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
 }
 
 HHNetworkRouteRes * HHRoutePlanner::prepareRouteResults(const SHARED_PTR<HHRoutingContext> & hctx, HHNetworkRouteRes * route, int startX, int startY, int endX, int endY) {
-    hctx->rctx->progress->routingCalculatedTime = 0;
     route->stats = hctx->stats;
     SHARED_PTR<RouteSegmentResult> straightLine = nullptr;
     for(int routeSegmentInd = 0; routeSegmentInd < route->segments.size(); routeSegmentInd++ ) {
@@ -442,7 +441,7 @@ void HHRoutePlanner::findFirstLastSegments(const SHARED_PTR<HHRoutingContext> & 
     if (hctx->config->STATS_VERBOSE_LEVEL > 0) {
         OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Finding first / last segments...");
     }
-    auto planner = std::shared_ptr<RoutePlannerFrontEnd>();
+    // auto planner = std::shared_ptr<RoutePlannerFrontEnd>();
     int startReiterate = -1, endReiterate = -1;
     bool found = false;
     hctx->rctx->progress->hhIterationProgress(0.00); // %
