@@ -76,8 +76,6 @@ inline int compareRoutingSubregionTile(SHARED_PTR<RoutingSubregionTile>& o1, SHA
 }
 
 struct RoutingContext {
-	bool isCalledFromJava; // default is false, changed by getRoutingContext() in java_wrap.cpp
-
 	typedef UNORDERED(map)<int64_t, SHARED_PTR<RoutingSubregionTile>> MAP_SUBREGION_TILES;
 
 	RouteCalculationMode calculationMode;
@@ -137,13 +135,11 @@ struct RoutingContext {
 		this->calculationProgressFirstPhase = std::make_shared<RouteCalculationProgress>();
 		this->alertFasterRoadToVisitedSegments = 0;
 		this->alertSlowerSegmentedWasVisitedEarlier = 0;
-		this->isCalledFromJava = cp->isCalledFromJava;
 	}
 
 	RoutingContext(SHARED_PTR<RoutingConfiguration> config,
 				   RouteCalculationMode calcMode = RouteCalculationMode::NORMAL)
-		: isCalledFromJava(false),
-		  calculationMode(calcMode), config(config), progress(new RouteCalculationProgress()),
+		: calculationMode(calcMode), config(config), progress(new RouteCalculationProgress()),
 		  calculationProgressFirstPhase(new RouteCalculationProgress()), leftSideNavigation(false),
 		  startTransportStop(false), targetTransportStop(false), publicTransport(false), geocoding(false),
 		  conditionalTime(0), precalcRoute(new PrecalculatedRouteDirection()), alertFasterRoadToVisitedSegments(0),
