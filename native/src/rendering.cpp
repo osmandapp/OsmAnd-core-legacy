@@ -1447,7 +1447,9 @@ void doRendering(std::vector<FoundMapDataObject>& mapDataObjects, SkCanvas* canv
 	drawTextOverCanvas(rc, req, canvas, renderableObjects);
 	rc->textRendering.Pause();
 
-	updateTextTile(renderableObjects, rc);
+	if (rc->saveTextTile) {
+		updateTextTile(renderableObjects, rc);
+	}
 
 	renderableObjects.clear();
 
