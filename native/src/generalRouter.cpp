@@ -20,6 +20,7 @@ const double GeneralRouterConstants::CAR_SHORTEST_DEFAULT_SPEED = 55 / 3.6f;
 const double GeneralRouterConstants::BICYCLE_SHORTEST_DEFAULT_SPEED = 15 / 3.6f;
 const char* GeneralRouterConstants::USE_SHORTEST_WAY = "short_way";
 const char* GeneralRouterConstants::USE_HEIGHT_OBSTACLES = "height_obstacles";
+const char* GeneralRouterConstants::GROUP_RELIEF_SMOOTHNESS_FACTOR = "relief_smoothness_factor";
 const char* GeneralRouterConstants::ALLOW_PRIVATE = "allow_private";
 const char* GeneralRouterConstants::CHECK_ALLOW_PRIVATE_NEEDED = "check_allow_private_needed";
 const char* GeneralRouterConstants::ALLOW_PRIVATE_FOR_TRUCK = "allow_private_for_truck";
@@ -63,10 +64,12 @@ GeneralRouter::GeneralRouter(const GeneralRouter& parent, const MAP_STR_STR& par
 
 	universalRules = parent.universalRules;
 	universalRulesById = parent.universalRulesById;
+	parameterValues = params;
 	tagRuleMask = parent.tagRuleMask;
 	ruleToValue = parent.ruleToValue;
 	parameters = parent.parameters;
 	parametersList = parent.parametersList;
+	profileName = parent.profileName;
 
 	for (int i = 0; i < (int)RouteDataObjectAttribute::COUNT; i++) {
 		newRouteAttributeContext(parent.objectAttributes[i], params);

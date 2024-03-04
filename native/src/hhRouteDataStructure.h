@@ -15,6 +15,7 @@ struct HHRoutingConfig
 			
 	double INITIAL_DIRECTION;
 	static const int CALCULATE_ALL_DETAILED = 3;
+    static const int STATS_VERBOSE_LEVEL = 0;
     
     int FULL_DIJKSTRA_NETWORK_RECALC = 10;
     double MAX_INC_COST_CF = 1.25;
@@ -113,6 +114,7 @@ struct HHRoutingConfig
 };
 
 struct NetworkDBSegment;
+struct TagValuePair;
 struct NetworkDBPoint {
     NetworkDBPoint * dualPoint;
     int64_t index;
@@ -134,6 +136,7 @@ struct NetworkDBPoint {
     SHARED_PTR<NetworkDBPointRouteInfo> rtPos;
     std::vector<NetworkDBSegment *> connected;
     std::vector<NetworkDBSegment *> connectedReverse;
+    std::vector<TagValuePair> tagValues;
     
     ~NetworkDBPoint() {
         //all NetworkDBPoint * stored and delete in HHRoutingContext
@@ -408,7 +411,7 @@ struct DataTileManager {
             }
             total += l.size();
         }
-        OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "%s tiles stores %d in %d tiles. Tile size min %d, max %d, avg %.2f.\n ",
+        OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "%s tiles stores %d in %zu tiles. Tile size min %d, max %d, avg %.2f.\n ",
                           name.c_str(), total, objects.size(), min, max, total / (objects.size() + 0.1));
     }
     
@@ -483,6 +486,7 @@ struct HHRoutingContext {
     
     std::vector<NetworkDBSegment *> cacheAllNetworkDBSegment;
     std::vector<NetworkDBPoint *> cacheAllNetworkDBPoint;
+    UNORDERED_map<string, string> filterRoutingParameters;
     
     DataTileManager pointsRect;
     
@@ -513,14 +517,19 @@ struct HHRoutingContext {
     }
     
     void clearVisited() {
-        queue(true).reset();
-        queue(false).reset();
+        resetAllQueues();
         for (auto & p : queueAdded) {
             p->clearRouting();
         }
         queueAdded.clear();
         visited.clear();
         visitedRev.clear();
+    }
+    
+    void resetAllQueues() {
+        while( !queueGlobal->empty() ) queueGlobal->pop();
+        while( !queuePos->empty() ) queuePos->pop();
+        while( !queueRev->empty() ) queueRev->pop();
     }
     
     void clearVisited(UNORDERED_map<int64_t, NetworkDBPoint *> & stPoints, UNORDERED_map<int64_t, NetworkDBPoint *> & endPoints);

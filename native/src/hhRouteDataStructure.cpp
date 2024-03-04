@@ -54,8 +54,7 @@ NetworkDBSegment * NetworkDBPoint::getSegment(const NetworkDBPoint * target, boo
 }
 
 void HHRoutingContext::clearVisited(UNORDERED_map<int64_t, NetworkDBPoint *> & stPoints, UNORDERED_map<int64_t, NetworkDBPoint *> & endPoints) {
-    queue(true).reset();
-    queue(false).reset();
+    resetAllQueues();
     for (NetworkDBPoint * p : queueAdded) {
         SHARED_PTR<RouteSegment> pos = std::move(p->rt(false)->rtDetailedRoute);
         SHARED_PTR<RouteSegment> rev = std::move(p->rt(true)->rtDetailedRoute);
@@ -69,7 +68,6 @@ void HHRoutingContext::clearVisited(UNORDERED_map<int64_t, NetworkDBPoint *> & s
             p->setDistanceToEnd(true, distanceToEnd(true, p));
             p->setDetailedParentRt(true, rev);
         }
-        //TODO ask Victor is need to destroy NetworkDBPoint * here ?
     }
     queueAdded.clear();
     visited.clear();

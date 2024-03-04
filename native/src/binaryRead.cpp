@@ -778,8 +778,8 @@ bool readRoutingIndex(CodedInputStream* input, const SHARED_PTR<RoutingIndex>& r
 	return true;
 }
 
-NetworkDBPoint * readPoint(CodedInputStream* input, HHRoutingContext * hctx, short mapId,
-                                     UNORDERED_map<int64_t, NetworkDBPoint *> & mp, int dx, int dy) {
+NetworkDBPoint * readPoint(CodedInputStream* input, HHRoutingContext * hctx, SHARED_PTR<HHRouteIndex> reg, short mapId,
+                           UNORDERED_map<int64_t, NetworkDBPoint *> & mp, int dx, int dy) {
     if (hctx == nullptr) {
         return nullptr;
     }
@@ -822,6 +822,21 @@ NetworkDBPoint * readPoint(CodedInputStream* input, HHRoutingContext * hctx, sho
             case OsmAnd::OBF::OsmAndHHRoutingIndex::HHRouteNetworkPoint::kGlobalIdFieldNumber:
                 WireFormatLite::ReadPrimitive<int64_t, WireFormatLite::TYPE_INT64>(input, &pnt->index);
                 break;
+            case OsmAnd::OBF::OsmAndHHRoutingIndex::HHRouteNetworkPoint::kTagValueIdsFieldNumber: {
+                int32_t length;
+                WireFormatLite::ReadPrimitive<int32_t, WireFormatLite::TYPE_INT32>(input, &length);
+                int old = input->PushLimit(length);
+                while (input->BytesUntilLimit() > 0) {
+                    int32_t tvId;
+                    WireFormatLite::ReadPrimitive<int32_t, WireFormatLite::TYPE_INT32>(input, &tvId);
+                    if (tvId < reg->encodingRules.size()) {
+                        TagValuePair tagValuePair = reg->encodingRules.at(tvId);
+                        pnt->tagValues.push_back(tagValuePair);
+                    }
+                }
+                input->PopLimit(old);
+                break;
+            }
             case OsmAnd::OBF::OsmAndHHRoutingIndex::HHRouteNetworkPoint::kRoadIdFieldNumber:
                 WireFormatLite::ReadPrimitive<int64_t, WireFormatLite::TYPE_INT64>(input, &pnt->roadId);
                 break;
@@ -900,7 +915,7 @@ SHARED_PTR<HHRoutePointsBox> readPointBox(CodedInputStream* input, const SHARED_
                 if (hctx == nullptr) {
                     input->Skip(input->BytesUntilLimit());
                 } else {
-                    readPoint(input, hctx, mapId, mp, box->left, box->top);
+                    readPoint(input, hctx, hhIndex, mapId, mp, box->left, box->top);
                 }
                 break;
             default: {
@@ -986,6 +1001,30 @@ bool readRegionSegmentHeader(CodedInputStream* input, HHRouteBlockSegments * blo
     return true;
 }
 
+bool readStringTable(CodedInputStream* input, std::vector<std::string>& list) {
+    uint32_t tag;
+    while ((tag = input->ReadTag()) != 0) {
+        switch (WireFormatLite::GetTagFieldNumber(tag)) {
+            case OsmAnd::OBF::StringTable::kSFieldNumber: {
+                std::string s;
+                WireFormatLite::ReadString(input, &s);
+                list.push_back(s);
+                break;
+            }
+            default: {
+                if (WireFormatLite::GetTagWireType(tag) == WireFormatLite::WIRETYPE_END_GROUP) {
+                    return false;
+                }
+                if (!skipUnknownFields(input, tag)) {
+                    return false;
+                }
+                break;
+            }
+        }
+    }
+    return true;
+}
+
 void initHHPoints(BinaryMapFile* file, SHARED_PTR<HHRouteIndex> reg, HHRoutingContext * hctx,
                   short mapId, UNORDERED_map<int64_t, NetworkDBPoint *> & resPoints) {
     lseek(file->getHhFD(), 0, SEEK_SET);
@@ -1003,6 +1042,22 @@ void initHHPoints(BinaryMapFile* file, SHARED_PTR<HHRouteIndex> reg, HHRoutingCo
             case 0:
                 input->PopLimit(oldLimit);
                 return;
+            case OsmAnd::OBF::OsmAndHHRoutingIndex::kTagValuesTableFieldNumber: {
+                int32_t length;
+                WireFormatLite::ReadPrimitive<int32_t, WireFormatLite::TYPE_INT32>(input, &length);
+                int old = input->PushLimit(length);
+                std::vector<std::string> st;
+                readStringTable(input, st);
+                for (std::string s : st) {
+                    size_t i = s.find_first_of('=');
+                    if (i != string::npos) {
+                        TagValuePair tvp(s.substr(0, i), s.substr(i + 1), -1);
+                        reg->encodingRules.push_back(tvp);
+                    }
+                }
+                input->PopLimit(old);
+                break;
+            }
             case OsmAnd::OBF::OsmAndHHRoutingIndex::kPointBoxesFieldNumber:
                 readPointBox(input, reg, hctx, mapId, resPoints, nullptr);
                 break;
@@ -1030,7 +1085,7 @@ std::vector<NetworkDBSegment *> parseSegments(HHRoutingContext * ctx, std::vecto
     
     if (pointSegments.size() < lst.size()) {
         OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error,
-                          "HHRoutePointSegments size is less than %s %d < %d",
+                          "HHRoutePointSegments size is less than %s %zu < %zu",
                           out ? "OutgoingPoints" : "IncomingPoints", pointSegments.size(), lst.size());
         return l;
     }
@@ -1410,30 +1465,6 @@ bool initMapStructure(CodedInputStream* input, BinaryMapFile* file, bool useLive
 	if (file->version != MAP_VERSION) {
 		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "Version of the file is not supported.");
 		return false;
-	}
-	return true;
-}
-
-bool readStringTable(CodedInputStream* input, std::vector<std::string>& list) {
-	uint32_t tag;
-	while ((tag = input->ReadTag()) != 0) {
-		switch (WireFormatLite::GetTagFieldNumber(tag)) {
-			case OsmAnd::OBF::StringTable::kSFieldNumber: {
-				std::string s;
-				WireFormatLite::ReadString(input, &s);
-				list.push_back(s);
-				break;
-			}
-			default: {
-				if (WireFormatLite::GetTagWireType(tag) == WireFormatLite::WIRETYPE_END_GROUP) {
-					return false;
-				}
-				if (!skipUnknownFields(input, tag)) {
-					return false;
-				}
-				break;
-			}
-		}
 	}
 	return true;
 }
@@ -3547,7 +3578,7 @@ bool initMapFilesFromCache(std::string inputName) {
 	cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 	OsmAnd::OBF::OsmAndStoredIndex* c = new OsmAnd::OBF::OsmAndStoredIndex();
 	if (c->MergeFromCodedStream(&cis)) {
-		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Native Cache file initialized: %s %d", inputName.c_str(),
+		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Native Cache file initialized: %s %llu", inputName.c_str(),
 						  timer.GetElapsedMs());
 		cache = c;
 		return true;
@@ -3681,7 +3712,7 @@ BinaryMapFile* initBinaryMapFile(std::string inputName, bool useLive, bool routi
             mapFile->hhIndexes.push_back(mi);
             mapFile->indexes.push_back(mapFile->hhIndexes.back());
         }
-		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "Native file initialized from cache: %s %d ms",
+		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "Native file initialized from cache: %s %llu ms",
 						  inputName.c_str(), timer.GetElapsedMs());
 	} else {
 		FileInputStream input(mapFile->getFD());
@@ -3689,12 +3720,12 @@ BinaryMapFile* initBinaryMapFile(std::string inputName, bool useLive, bool routi
 		CodedInputStream cis(&input);
 		cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 		if (!initMapStructure(&cis, mapFile, useLive, routingOnly)) {
-			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "Native File not initialised : %s %d ms", 
+			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "Native File not initialised : %s %llu ms",
 					inputName.c_str(), timer.GetElapsedMs());
 			delete mapFile;
 			return NULL;
 		} else {
-			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "Native File not initialized from cache: %s %d ms",
+			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "Native File not initialized from cache: %s %llu ms",
 					inputName.c_str(), timer.GetElapsedMs());
 		}
 	}

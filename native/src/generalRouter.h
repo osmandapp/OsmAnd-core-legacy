@@ -37,6 +37,7 @@ struct GeneralRouterConstants {
 
 	static const char* USE_SHORTEST_WAY;
 	static const char* USE_HEIGHT_OBSTACLES;
+	static const char* GROUP_RELIEF_SMOOTHNESS_FACTOR;
 	static const char* ALLOW_PRIVATE;
 	static const char* CHECK_ALLOW_PRIVATE_NEEDED;
 	static const char* ALLOW_PRIVATE_FOR_TRUCK;
@@ -87,7 +88,7 @@ static RouteDataObjectAttribute parseRouteDataObjectAttribute(string attr, Route
 	}
 }
 
-enum class GeneralRouterProfile { CAR, PEDESTRIAN, BICYCLE, BOAT, PUBLIC_TRANSPORT, HORSEBACKRIDING };
+enum class GeneralRouterProfile { CAR, PEDESTRIAN, BICYCLE, BOAT, SKI, MOPED, TRAIN, PUBLIC_TRANSPORT, HORSEBACKRIDING };
 
 static GeneralRouterProfile parseGeneralRouterProfile(string profile, GeneralRouterProfile def) {
 	if ("car" == to_lowercase(profile)) {
@@ -96,32 +97,44 @@ static GeneralRouterProfile parseGeneralRouterProfile(string profile, GeneralRou
 		return GeneralRouterProfile::PEDESTRIAN;
 	} else if ("bicycle" == to_lowercase(profile)) {
 		return GeneralRouterProfile::BICYCLE;
+	} else if ("ski" == to_lowercase(profile)) {
+			return GeneralRouterProfile::SKI;
+	} else if ("moped" == to_lowercase(profile)) {
+			return GeneralRouterProfile::MOPED;
+	} else if ("train" == to_lowercase(profile)) {
+			return GeneralRouterProfile::TRAIN;
 	} else if ("public_transport" == to_lowercase(profile)) {
 		return GeneralRouterProfile::PUBLIC_TRANSPORT;
 	} else if ("horsebackriding" == to_lowercase(profile)) {
 		return GeneralRouterProfile::HORSEBACKRIDING;
-    } else if ("boat" == to_lowercase(profile)) {
-        return GeneralRouterProfile::BOAT;
+	} else if ("boat" == to_lowercase(profile)) {
+		return GeneralRouterProfile::BOAT;
 	} else {
 		return def;
 	}
 }
 
 static std::string profileToString(GeneralRouterProfile prof) {
-    switch(prof) {
-        case GeneralRouterProfile::CAR:
-            return "car";
-        case GeneralRouterProfile::PEDESTRIAN:
-            return "pedestrian";
-        case GeneralRouterProfile::BICYCLE:
-            return "bicycle";
-        case GeneralRouterProfile::BOAT:
-            return "boat";
-        case GeneralRouterProfile::PUBLIC_TRANSPORT:
-            return "public_transport";
-        default:
-            return "";
-    }
+	switch(prof) {
+		case GeneralRouterProfile::CAR:
+			return "car";
+		case GeneralRouterProfile::PEDESTRIAN:
+			return "pedestrian";
+		case GeneralRouterProfile::BICYCLE:
+			return "bicycle";
+		case GeneralRouterProfile::BOAT:
+			return "boat";
+		case GeneralRouterProfile::PUBLIC_TRANSPORT:
+			return "public_transport";
+		case GeneralRouterProfile::SKI:
+			return "ski";
+		case GeneralRouterProfile::MOPED:
+			return "moped";
+		case GeneralRouterProfile::TRAIN:
+			return "train";
+		default:
+			return "";
+	}
 }
 
 enum class RoutingParameterType { NUMERIC, BOOLEAN, SYMBOLIC };
@@ -571,6 +584,10 @@ class GeneralRouter {
     std::vector<std::string> serializeParameterValues(MAP_STR_STR vls);
 
 	void printRules();
+    
+	void setProfile(GeneralRouterProfile prof) {
+		profile = prof;
+	};
 
    private:
 	double parseValueFromTag(uint id, string type, GeneralRouter* router);

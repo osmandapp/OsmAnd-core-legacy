@@ -1207,7 +1207,7 @@ vector<SHARED_PTR<RouteSegmentResult>> convertFinalSegmentToResults(RoutingConte
 																	const SHARED_PTR<RouteSegment>& finalSegment) {
 	vector<SHARED_PTR<RouteSegmentResult>> result;
 	if (finalSegment) {
-        ctx->conditionalTime += finalSegment->distanceFromStart;
+        // ctx.routingTime += finalSegment.distanceFromStart; // done by convertFinalSegmentToResults Java / runRouting iOS
         float correctionTime = finalSegment->opposite == nullptr ? 0 :
                         finalSegment->distanceFromStart - distanceFromStart(finalSegment->opposite) - distanceFromStart(finalSegment->parentRoute);
         SHARED_PTR<RouteSegment> thisSegment =  finalSegment->opposite == nullptr ? finalSegment : finalSegment->getParentRoute(); // for dijkstra
