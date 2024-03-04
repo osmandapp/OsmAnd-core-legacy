@@ -1876,7 +1876,7 @@ extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_nativeRo
 	} else {
 		RoutePlannerFrontEnd rpfe;
 		r = searchRouteInternal(c, false); // BRP-cpp: do direct call to binaryRoutePlanner.cpp
-		rpfe.makeStartEndPointsPrecise(r, c->startX, c->startY, c->targetX, c->targetY, {}, {});
+		rpfe.makeStartEndPointsPrecise(r, c->startX, c->startY, c->targetX, c->targetY);
 	}
 	UNORDERED(map)<int64_t, int> indexes;
 	for (int t = 0; t < ienv->GetArrayLength(regions); t++) {

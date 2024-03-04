@@ -87,8 +87,7 @@ public:
 	static bool hasSegment(vector<SHARED_PTR<RouteSegmentResult>>& result, SHARED_PTR<RouteSegment>& current);
 	HHRoutingConfig* setDefaultRoutingConfig();
 
-	void makeStartEndPointsPrecise(vector<SHARED_PTR<RouteSegmentResult>>& res, int startX, int startY, int endX, int endY,
-								   vector<int> intermediatesX, vector<int> intermediatesY);
+	void makeStartEndPointsPrecise(vector<SHARED_PTR<RouteSegmentResult>>& res, int startX, int startY, int endX, int endY);
 
 private:
 	

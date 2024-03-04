@@ -88,8 +88,8 @@ bool addSegment(int x31, int y31, RoutingContext* ctx, int indexNotFound, vector
 	}
 }
 
-void RoutePlannerFrontEnd::makeStartEndPointsPrecise(vector<SHARED_PTR<RouteSegmentResult>>& res, int startX, int startY, int endX, int endY,
-							   vector<int> intermediatesX, vector<int> intermediatesY) {
+void RoutePlannerFrontEnd::makeStartEndPointsPrecise(vector<SHARED_PTR<RouteSegmentResult>>& res,
+													 int startX, int startY, int endX, int endY) {
 	if (res.size() > 0) {
 		makeSegmentPointPrecise(res[0], startX, startY, true);
 		makeSegmentPointPrecise(res[res.size() - 1], endX, endY, false);
@@ -675,7 +675,7 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 			ctx->previouslyCalculatedRoute.clear();
 		}
 		auto res = searchRouteInternalPrepare(ctx, points[0], points[1], routeDirection); // BRP-ios (no-interpoints)
-		makeStartEndPointsPrecise(res, ctx->startX, ctx->startY, ctx->targetX, ctx->targetY, {}, {});
+		makeStartEndPointsPrecise(res, ctx->startX, ctx->startY, ctx->targetX, ctx->targetY);
 		return res;
 	}
 
@@ -719,7 +719,7 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 		local.progress = ctx->progress;
 
 		auto res = searchRouteInternalPrepare(&local, points[i], points[i + 1], routeDirection); // BRP-ios (interpoints)
-		makeStartEndPointsPrecise(res, local.startX, local.startY, local.targetX, local.targetY, {}, {});
+		makeStartEndPointsPrecise(res, local.startX, local.startY, local.targetX, local.targetY);
 		results.insert(results.end(), res.begin(), res.end());
 
 		local.unloadAllData(ctx);
@@ -821,7 +821,7 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 			ctx->precalcRoute = routeDirection->adopt(ctx.get());
 		}
 		auto res = runRouting(ctx.get(), recalculationEnd); // iOS (no-interpoints)
-		makeStartEndPointsPrecise(res, startX, startY, endX, endY, {}, {});
+		makeStartEndPointsPrecise(res, startX, startY, endX, endY);
 		prepareResult(ctx.get(), res);
 		if (!res.empty()) {
 			printResults(ctx.get(), startX, startY, endX, endY, res);
@@ -939,7 +939,7 @@ HHNetworkRouteRes * RoutePlannerFrontEnd::calculateHHRoute(HHRoutePlanner & rout
 		HHNetworkRouteRes * res = routePlanner.runRouting(startX, startY, endX, endY, cfg); // HH-cpp
 		if (res != nullptr && res->error == "") {
 			ctx->progress->hhIteration(RouteCalculationProgress::HHIteration::DONE);
-			makeStartEndPointsPrecise(res->detailed, startX, startY, endX, endY, {}, {});
+			makeStartEndPointsPrecise(res->detailed, startX, startY, endX, endY);
 			return res;
 		}
 		ctx->progress->hhIteration(RouteCalculationProgress::HHIteration::HH_NOT_STARTED);
