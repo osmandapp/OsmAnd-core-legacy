@@ -133,7 +133,7 @@ vector<SHARED_PTR<RouteSegmentResult>> runRouting(RoutingContext* ctx, SHARED_PT
 		ctx->progress->routingCalculatedTime += ctx->finalRouteSegment->distanceFromStart;
 	}
 
-	return prepareResult(ctx, result);
+	return result; // prepareResult(ctx, result) will be called at the exit-points
 }
 
 bool RoutePlannerFrontEnd::hasSegment(vector<SHARED_PTR<RouteSegmentResult>>& result, SHARED_PTR<RouteSegment>& current) {
@@ -674,7 +674,9 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 		if (!useSmartRouteRecalculation) {
 			ctx->previouslyCalculatedRoute.clear();
 		}
-		return searchRouteInternalPrepare(ctx, points[0], points[1], routeDirection); // BRP-ios (no-interpoints)
+		auto res = searchRouteInternalPrepare(ctx, points[0], points[1], routeDirection); // BRP-ios (no-interpoints)
+		makeStartEndPointsPrecise(res, ctx->startX, ctx->startY, ctx->targetX, ctx->targetY, {}, {});
+		return res;
 	}
 
 	vector<SHARED_PTR<RouteSegmentResult>> firstPartRecalculatedRoute;
@@ -715,8 +717,9 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 			}
 		}
 		local.progress = ctx->progress;
-		auto res = searchRouteInternalPrepare(&local, points[i], points[i + 1], routeDirection); // BRP-ios (interpoints)
 
+		auto res = searchRouteInternalPrepare(&local, points[i], points[i + 1], routeDirection); // BRP-ios (interpoints)
+		makeStartEndPointsPrecise(res, local.startX, local.startY, local.targetX, local.targetY, {}, {});
 		results.insert(results.end(), res.begin(), res.end());
 
 		local.unloadAllData(ctx);
@@ -777,7 +780,7 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 		}
 		if (r && (r->isCorrect() || USE_ONLY_HH_ROUTING)) { // note: USE_ONLY_HH_ROUTING is broken here
 			prepareResult(ctx.get(), r->detailed);
-			return r->detailed;
+			return r->detailed; // exit-point
 		}
 	}
 	double maxDistance = measuredDist31(startX, startY, endX, endY);
@@ -799,7 +802,7 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 		SHARED_PTR<RoutingContext> nctx = buildRoutingContext(ctx->config, RouteCalculationMode::BASE);
 		nctx->progress = ctx->progress;
 		vector<SHARED_PTR<RouteSegmentResult>> ls =
-			searchRoute(nctx, startX, startY, endX, endY, intermediatesX, intermediatesY);
+			searchRoute(nctx, startX, startY, endX, endY, intermediatesX, intermediatesY); // iOS (interpoints) 2-phase
 		routeDirection =
 			PrecalculatedRouteDirection::build(ls, ctx->config->DEVIATION_RADIUS, ctx->config->router->maxSpeed);
 		ctx->calculationProgressFirstPhase =  ctx->progress->capture(ctx->progress);
@@ -818,11 +821,12 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 			ctx->precalcRoute = routeDirection->adopt(ctx.get());
 		}
 		auto res = runRouting(ctx.get(), recalculationEnd); // iOS (no-interpoints)
+		makeStartEndPointsPrecise(res, startX, startY, endX, endY, {}, {});
+		prepareResult(ctx.get(), res);
 		if (!res.empty()) {
 			printResults(ctx.get(), startX, startY, endX, endY, res);
 		}
-		makeStartEndPointsPrecise(res, startX, startY, endX, endY, intermediatesX, intermediatesY);
-		return res;
+		return res; // exit-point
 	}
 	int indexNotFound = 0;
 	vector<SHARED_PTR<RouteSegmentPoint>> points;
@@ -842,12 +846,9 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 		return vector<SHARED_PTR<RouteSegmentResult>>();
 	}
 	auto res = searchRoute(ctx.get(), points, routeDirection); // iOS (interpoints)
-	// make start and end more precise
-	makeStartEndPointsPrecise(res, startX, startY, endX, endY, intermediatesX, intermediatesY);
-
+	prepareResult(ctx.get(), res); // res is already precise after searchRoute
 	printResults(ctx.get(), startX, startY, endX, endY, res);
-
-	return res;
+	return res; // exit-point
 }
 
 bool RoutePlannerFrontEnd::needRequestPrivateAccessRouting(RoutingContext* ctx, vector<int>& targetsX,
@@ -1005,7 +1006,7 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchHHRoute(Routi
 		}
 		if ((r && r->isCorrect()) || USE_ONLY_HH_ROUTING) {
 			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Finish searchHHRoute Native");
-			return r->detailed;
+			return r->detailed; // prepareResult() will be called in Java
 		}
 	}
 	return {};
