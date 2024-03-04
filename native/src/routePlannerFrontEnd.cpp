@@ -985,7 +985,7 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchHHRoute(Routi
 			if (i > 0) {
 				ctx->config->penaltyForReverseDirection /= 2; // relax reverse-penalty (only for inter-points)
 			}
-			ctx->progress->hhTargetsProgress(i, targetsX.size());
+			ctx->progress->hhTargetsProgress(i, (int)targetsX.size());
 			HHNetworkRouteRes * res = calculateHHRoute(routePlanner, ctx, i == 0 ? ctx->startX : targetsX.at(i - 1),
 								i == 0 ? ctx->startY : targetsY.at(i - 1),
 								targetsX.at(i), targetsY.at(i), dir);

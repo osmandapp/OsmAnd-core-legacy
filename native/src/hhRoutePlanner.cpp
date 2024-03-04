@@ -444,14 +444,12 @@ void HHRoutePlanner::findFirstLastSegments(const SHARED_PTR<HHRoutingContext> & 
     // auto planner = std::shared_ptr<RoutePlannerFrontEnd>();
     int startReiterate = -1, endReiterate = -1;
     bool found = false;
-    //hctx->rctx->progress->cancelled = false;
     hctx->rctx->progress->hhIterationProgress(0.00); // %
     SHARED_PTR<RouteSegmentPoint> startPnt = findRouteSegment(startX, startY, hctx->rctx, false);
     if (startPnt == nullptr) {
         OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "Start point was not found (hhRoutePlanner) [Native]");
         return;
     }
-    //hctx->rctx->progress->cancelled = false;
     hctx->rctx->progress->hhIterationProgress(0.25); // %
     SHARED_PTR<RouteSegmentPoint> endPnt = findRouteSegment(endX, endY, hctx->rctx, false);
     if (endPnt == nullptr) {
