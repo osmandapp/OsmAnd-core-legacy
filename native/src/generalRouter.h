@@ -126,6 +126,12 @@ static std::string profileToString(GeneralRouterProfile prof) {
             return "boat";
         case GeneralRouterProfile::PUBLIC_TRANSPORT:
             return "public_transport";
+        case GeneralRouterProfile::SKI:
+            return "ski";
+        case GeneralRouterProfile::MOPED:
+            return "moped";
+        case GeneralRouterProfile::TRAIN:
+            return "train";
         default:
             return "";
     }
@@ -578,6 +584,10 @@ class GeneralRouter {
     std::vector<std::string> serializeParameterValues(MAP_STR_STR vls);
 
 	void printRules();
+    
+    void setProfile(GeneralRouterProfile prof) {
+        profile = prof;
+    };
 
    private:
 	double parseValueFromTag(uint id, string type, GeneralRouter* router);

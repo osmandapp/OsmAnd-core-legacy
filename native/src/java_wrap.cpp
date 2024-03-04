@@ -1628,6 +1628,7 @@ void parseRouteConfiguration(JNIEnv* ienv, SHARED_PTR<RoutingConfiguration> rCon
 	rConfig->router->maxVehicleSpeed = ienv->GetFloatField(router, jfield_GeneralRouter_maxVehicleSpeed);
 	rConfig->router->heightObstacles = ienv->GetBooleanField(router, jfield_GeneralRouter_heightObstacles);
 	rConfig->router->shortestRoute = ienv->GetBooleanField(router, jfield_GeneralRouter_shortestRoute);
+	rConfig->router->setProfile(parseGeneralRouterProfile(rConfig->routerName, GeneralRouterProfile::CAR));
 
 	// Map<String, String> attributes; // Attributes are not sync not used for calculation
 	// Map<String, RoutingParameter> parameters;  // not used for calculation
@@ -1936,6 +1937,7 @@ extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_nativeRo
 		hhConfig = NULL;
 	}
 	deleteRoutingContext(c, ienv, jCtx);
+	fflush(stdout);
 	return res;
 }
 
