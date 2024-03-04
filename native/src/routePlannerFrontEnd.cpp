@@ -89,7 +89,7 @@ bool addSegment(int x31, int y31, RoutingContext* ctx, int indexNotFound, vector
 }
 
 void RoutePlannerFrontEnd::makeStartEndPointsPrecise(vector<SHARED_PTR<RouteSegmentResult>>& res,
-													 int startX, int startY, int endX, int endY) {
+                                                     int startX, int startY, int endX, int endY) {
 	if (res.size() > 0) {
 		makeSegmentPointPrecise(res[0], startX, startY, true);
 		makeSegmentPointPrecise(res[res.size() - 1], endX, endY, false);
@@ -133,7 +133,7 @@ vector<SHARED_PTR<RouteSegmentResult>> runRouting(RoutingContext* ctx, SHARED_PT
 		ctx->progress->routingCalculatedTime += ctx->finalRouteSegment->distanceFromStart;
 	}
 
-	return result; // prepareResult(ctx, result) will be called at the exit-points
+	return result;
 }
 
 bool RoutePlannerFrontEnd::hasSegment(vector<SHARED_PTR<RouteSegmentResult>>& result, SHARED_PTR<RouteSegment>& current) {
