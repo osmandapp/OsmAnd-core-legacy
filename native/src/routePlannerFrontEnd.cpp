@@ -776,6 +776,7 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 			}
 		}
 		if (r && (r->isCorrect() || USE_ONLY_HH_ROUTING)) { // note: USE_ONLY_HH_ROUTING is broken here
+			prepareResult(ctx.get(), r->detailed);
 			return r->detailed;
 		}
 	}
