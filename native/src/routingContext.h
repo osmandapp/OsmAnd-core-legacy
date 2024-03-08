@@ -146,6 +146,14 @@ struct RoutingContext {
 		  alertSlowerSegmentedWasVisitedEarlier(0) {
 		this->basemap = RouteCalculationMode::BASE == calcMode;
 	}
+    
+    ~RoutingContext() {
+        breakChain();
+        segmentsToVisitNotForbidden.clear();
+        segmentsToVisitPrescripted.clear();
+        previouslyCalculatedRoute.clear();
+        unloadAllData();
+    }
 
 	void unloadAllData(RoutingContext* except = NULL) {
 		auto it = subregionTiles.begin();
@@ -163,6 +171,30 @@ struct RoutingContext {
 		subregionTiles = MAP_SUBREGION_TILES();
 		indexedSubregions = UNORDERED(map)<int64_t, std::vector<SHARED_PTR<RoutingSubregionTile>>>();
 	}
+    
+    void breakChain() {
+        if (finalRouteSegment) {
+            SHARED_PTR<RouteSegment> thisSegment =  finalRouteSegment->opposite == nullptr ? finalRouteSegment : finalRouteSegment->getParentRoute(); // for dijkstra
+            SHARED_PTR<RouteSegment> segment = finalRouteSegment->isReverseWaySearch() ? thisSegment : finalRouteSegment->opposite;
+            SHARED_PTR<RouteSegment> prevSegment;
+            while (segment) {
+                prevSegment = segment;
+                segment = segment->getParentRoute();
+                prevSegment->parentRoute = nullptr;//clear the chain of memory dependencies
+                prevSegment->opposite = nullptr;
+            }
+            // reverse break chain
+            segment = finalRouteSegment->isReverseWaySearch() ? finalRouteSegment->opposite : thisSegment;
+            while (segment) {
+                prevSegment = segment;
+                segment = segment->getParentRoute();
+                prevSegment->parentRoute = nullptr;//clear the chain of memory dependencies
+                prevSegment->opposite = nullptr;
+            }
+            finalRouteSegment->opposite = nullptr;
+            finalRouteSegment->parentRoute = nullptr;
+        }
+    }
 
 	bool isInterrupted() { return progress != nullptr ? progress->isCancelled() : false; }
 
