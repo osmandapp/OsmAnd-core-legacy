@@ -53,7 +53,7 @@ NetworkDBSegment * NetworkDBPoint::getSegment(const NetworkDBPoint * target, boo
     return nullptr;
 }
 
-void HHRoutingContext::clearVisited(UNORDERED_map<int64_t, NetworkDBPoint *> & stPoints, UNORDERED_map<int64_t, NetworkDBPoint *> & endPoints) {
+void HHRoutingContext::clearVisited(const UNORDERED_map<int64_t, NetworkDBPoint *> & stPoints, const UNORDERED_map<int64_t, NetworkDBPoint *> & endPoints) {
     resetAllQueues();
     for (NetworkDBPoint * p : queueAdded) {
         SHARED_PTR<RouteSegment> pos = std::move(p->rt(false)->rtDetailedRoute);
@@ -64,7 +64,8 @@ void HHRoutingContext::clearVisited(UNORDERED_map<int64_t, NetworkDBPoint *> & s
         if (itS != stPoints.end() && pos) {
             p->setDistanceToEnd(false, distanceToEnd(false, p));
             p->setDetailedParentRt(false, pos);
-        } else if (itE != endPoints.end() && rev) {
+        }
+        if (itE != endPoints.end() && rev) {
             p->setDistanceToEnd(true, distanceToEnd(true, p));
             p->setDetailedParentRt(true, rev);
         }
