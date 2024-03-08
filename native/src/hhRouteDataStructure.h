@@ -532,7 +532,7 @@ struct HHRoutingContext {
         while( !queueRev->empty() ) queueRev->pop();
     }
     
-    void clearVisited(UNORDERED_map<int64_t, NetworkDBPoint *> & stPoints, UNORDERED_map<int64_t, NetworkDBPoint *> & endPoints);
+    void clearVisited(const UNORDERED_map<int64_t, NetworkDBPoint *> & stPoints, const UNORDERED_map<int64_t, NetworkDBPoint *> & endPoints);
     
     UNORDERED_map<int64_t, NetworkDBPoint *> loadNetworkPoints() {
 
