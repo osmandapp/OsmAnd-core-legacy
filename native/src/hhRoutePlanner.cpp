@@ -454,8 +454,8 @@ void HHRoutePlanner::findFirstLastSegments(const SHARED_PTR<HHRoutingContext> & 
         OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "End point was not found (hhRoutePlanner) [Native]");
         return;
     }
-    auto & stOthers = startPnt->others;
-    auto & endOthers = endPnt->others;
+    vector<SHARED_PTR<RouteSegmentPoint>> stOthers = startPnt->others;//copy
+    vector<SHARED_PTR<RouteSegmentPoint>> endOthers = endPnt->others;
     do {
         if (startReiterate + endReiterate >= hctx->config->MAX_START_END_REITERATIONS) {
             break;
