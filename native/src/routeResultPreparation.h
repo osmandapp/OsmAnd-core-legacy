@@ -10,6 +10,7 @@ const string UNMATCHED_HIGHWAY_TYPE = "unmatched";
 struct RouteSegmentResult;
 struct FinalRouteSegment;
 struct CombineAreaRoutePoint;
+struct RoadSplitStructure;
 
 bool segmentLineBelongsToPolygon(CombineAreaRoutePoint& p, CombineAreaRoutePoint& n,
                                  vector<CombineAreaRoutePoint>& originalWay);
@@ -34,7 +35,8 @@ bool foundTUturn(vector<int> turnList);
 void printRouteInfoSegments(vector<SHARED_PTR<RouteSegmentResult> >& result);
 string buildRouteMessagesFromInfo(UNORDERED(map) < string, UNORDERED(map) < string, string >> info, vector<string>& routeMessages);
 void calculateTimeSpeed(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResult> >& result);
-vector<int> getUniqTurnTypes(const string& turnLanes);
+vector<int> getUniqDirections(const string& turnLanes);
+vector<int> getSyntheticDirections(SHARED_PTR<RouteSegmentResult> prevSegm, SHARED_PTR<RouteSegmentResult> currentSegm, SHARED_PTR<RoadSplitStructure> rs);
 bool hasTurn(const string& turnLanes, int turnType);
 bool hasSharpOrReverseTurnLane(const string& turnLanes);
 bool hasSameTurnLanes(SHARED_PTR<RouteSegmentResult>& prevSegm, SHARED_PTR<RouteSegmentResult>& currentSegm);

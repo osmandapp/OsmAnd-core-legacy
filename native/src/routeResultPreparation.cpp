@@ -541,9 +541,6 @@ RoadSplitStructure calculateRoadSplitStructure(SHARED_PTR<RouteSegmentResult>& p
                         rs.leftLanesInfo.push_back(turnLanesAttachedRoad);
                     }
                 }
-                for (int i = 0; i < lanes; i++) {
-                    rs.attachedAngles.push_back(deviation);
-                }
                 rs.speak = rs.speak || rsSpeakPriority <= speakPriority;
             } else {
                 if (attachedOnTheRight) {
@@ -552,6 +549,9 @@ RoadSplitStructure calculateRoadSplitStructure(SHARED_PTR<RouteSegmentResult>& p
                     rs.addRoadsOnLeft++;
                 }
             }
+        }
+        for (int i = 0; i < lanes; i++) {
+            rs.attachedAngles.push_back(deviation);
         }
     }
     return rs;
@@ -571,7 +571,10 @@ std::pair<int, int> findActiveIndex(SHARED_PTR<RouteSegmentResult> prevSegm, SHA
     if (!rs) {
         return pair;
     }
-    vector<int> directions = getUniqTurnTypes(turnLanes);
+    vector<int> directions = getUniqDirections(turnLanes);
+    if (rs->roadsOnLeft + rs->roadsOnRight >= directions.size()) {
+	    directions = getSyntheticDirections(prevSegm, currentSegm, rs);
+	}
     if (rs->roadsOnLeft + rs->roadsOnRight < directions.size()) {
         int startDirection = directions[rs->roadsOnLeft];
         int endDirection = directions[directions.size() - rs->roadsOnRight - 1];
@@ -2048,7 +2051,7 @@ vector<SHARED_PTR<RouteSegmentResult> > prepareResult(RoutingContext* ctx, const
     return result;
 }
 
-vector<int> getUniqTurnTypes(const string & turnLanes) {
+vector<int> getUniqDirections(const string & turnLanes) {
     std::set<int> tSet;
     vector<int> uniq;
     vector<string> splitLaneOptions = split_string(turnLanes, "|");
@@ -2065,11 +2068,29 @@ vector<int> getUniqTurnTypes(const string & turnLanes) {
     return uniq;
 }
 
+vector<int> getSyntheticDirections(SHARED_PTR<RouteSegmentResult> prevSegm, SHARED_PTR<RouteSegmentResult> currentSegm, SHARED_PTR<RoadSplitStructure> rs) {
+    double currentDeviation = degreesDiff(prevSegm->getBearingEnd(), currentSegm->getBearingBegin());
+    rs->attachedAngles.push_back(currentDeviation);
+    std::sort(rs->attachedAngles.begin(), rs->attachedAngles.end(), std::greater<double>{});
+    int size = rs->attachedAngles.size();
+    double prevAngle = NAN;
+    vector<int> directions;
+    // iterate from left to right turns
+    for (double & angle : rs->attachedAngles) {
+        if (!isnan(prevAngle) && angle == prevAngle) {
+            continue;
+        }
+        prevAngle = angle;
+        directions.push_back(getTurnByAngle(angle));
+	}
+    return directions;
+}
+
 bool hasTurn(const string & turnLanes, int turnType) {
     if (turnLanes.empty()) {
         return false;
     }
-    vector<int> uniqTurnTypes = getUniqTurnTypes(turnLanes);
+    vector<int> uniqTurnTypes = getUniqDirections(turnLanes);
     for (int lane : uniqTurnTypes) {
         if (lane == turnType) {
             return true;
@@ -2082,7 +2103,7 @@ bool hasSharpOrReverseTurnLane(const string & turnLanes) {
     if (turnLanes.empty()) {
         return false;
     }
-    vector<int> uniqTurnTypes = getUniqTurnTypes(turnLanes);
+    vector<int> uniqTurnTypes = getUniqDirections(turnLanes);
     for (int lane : uniqTurnTypes) {
         if (TurnType::isSharpOrReverse(lane)) {
             return true;
@@ -2097,8 +2118,8 @@ bool hasSameTurnLanes(SHARED_PTR<RouteSegmentResult> & prevSegm, SHARED_PTR<Rout
     if (turnLanesPrevSegm.empty() || turnLanesCurrSegm.empty()) {
         return false;
     }
-    vector<int> uniqPrev = getUniqTurnTypes(turnLanesPrevSegm);
-    vector<int> uniqCurr = getUniqTurnTypes(turnLanesCurrSegm);
+    vector<int> uniqPrev = getUniqDirections(turnLanesPrevSegm);
+    vector<int> uniqCurr = getUniqDirections(turnLanesCurrSegm);
     if (uniqPrev.size() != uniqCurr.size()) {
         return false;
     }
@@ -2177,7 +2198,7 @@ string getVirtualTurnLanes(SHARED_PTR<RouteSegmentResult>& segm) {
     vector<int> lanes = t->getLanes();
     string turnLanes = TurnType::convertLanesToOsmString(lanes, true, false);
     if (!turnLanes.empty()) {
-        vector<int> uniq = getUniqTurnTypes(turnLanes);
+        vector<int> uniq = getUniqDirections(turnLanes);
         // if we have 2 and more active directions
         if (uniq.size() >= 2) {
             return turnLanes;
