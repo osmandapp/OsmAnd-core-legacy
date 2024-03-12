@@ -810,21 +810,23 @@ void drawTextOverCanvas(RenderingContext* rc, RenderingRuleSearchRequest* req, S
 			//OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Text %s font %s", textDrawInfo->text.c_str(), fontEntry->pathToFont.c_str());
 			if (rc->interrupted()) return;
 			// draw text
-			auto it = renderableObjects.find(textDrawInfo->object.id);
-			if (it != renderableObjects.end()) {
-				auto& rObj = it->second;
-				if (rObj != nullptr && textDrawInfo->text != "") {
-					rObj->visible = true;
-					rObj->text = textDrawInfo->text;
-					rObj->textSize = textDrawInfo->textSize;
-					rObj->textOnPath = textDrawInfo->drawOnPath;
-					rObj->textColor = textDrawInfo->textColor;
-					rObj->textShadow = textDrawInfo->textShadow;
-					rObj->textShadowColor = textDrawInfo->textShadowColor;
-					rObj->bold = textDrawInfo->bold;
-					rObj->italic = textDrawInfo->italic;
-					rObj->shieldRes = textDrawInfo->shieldRes;
-					rObj->shieldResIcon = textDrawInfo->shieldResIcon;
+			if (rc->saveTextTile && !renderableObjects.empty()) {
+				auto it = renderableObjects.find(textDrawInfo->object.id);
+				if (it != renderableObjects.end()) {
+					auto& rObj = it->second;
+					if (rObj != nullptr && textDrawInfo->text != "") {
+						rObj->visible = true;
+						rObj->text = textDrawInfo->text;
+						rObj->textSize = textDrawInfo->textSize;
+						rObj->textOnPath = textDrawInfo->drawOnPath;
+						rObj->textColor = textDrawInfo->textColor;
+						rObj->textShadow = textDrawInfo->textShadow;
+						rObj->textShadowColor = textDrawInfo->textShadowColor;
+						rObj->bold = textDrawInfo->bold;
+						rObj->italic = textDrawInfo->italic;
+						rObj->shieldRes = textDrawInfo->shieldRes;
+						rObj->shieldResIcon = textDrawInfo->shieldResIcon;
+					}
 				}
 			}
 			if (textDrawInfo->drawOnPath && textDrawInfo->path != NULL) {

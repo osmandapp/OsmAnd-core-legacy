@@ -411,7 +411,9 @@ void renderText(MapDataObject* obj, RenderableObject* rObj, RenderingRuleSearchR
 							fillTextProperties(rc, dupInfo, req, x, y);
 							dupInfo->secondOrder = ((obj->id % 10000) << 8) + k;
 							rc->textToDraw.push_back(dupInfo);
-							renderableObjects.emplace(dupInfo->object.id, std::move(rObj));
+							if (rObj != NULL && !renderableObjects.empty()) {
+								renderableObjects.emplace(dupInfo->object.id, std::move(rObj));
+							}
 						}
 					}
 				} else {
@@ -423,7 +425,9 @@ void renderText(MapDataObject* obj, RenderableObject* rObj, RenderingRuleSearchR
 					fillTextProperties(rc, info, req, xText, yText);
 					info->secondOrder = ((obj->id % 10000) << 8) + k;
 					rc->textToDraw.push_back(info);
-					renderableObjects.emplace(info->object.id, std::move(rObj));
+					if (rObj != NULL && !renderableObjects.empty()) {
+						renderableObjects.emplace(info->object.id, std::move(rObj));
+					}
 				}
 			}
 		}
@@ -616,9 +620,6 @@ void drawPolyline(MapDataObject* mObj, RenderingRuleSearchRequest* req, SkCanvas
 		return;
 	}
 
-	RenderableObject* rObj = new RenderableObject(mObj);
-	rObj->type = "polyline";
-
 	std::string tag = pair.first;
 	std::string value = pair.second;
 
@@ -717,8 +718,15 @@ void drawPolyline(MapDataObject* mObj, RenderingRuleSearchRequest* req, SkCanvas
 			drawOneWayPaints(rc, cv, &path, oneway, onewayColor);
 		}
 		if (!drawOnlyShadow) {
-			renderText(mObj, rObj, req, rc, pair.first, pair.second, middlePoint.fX, middlePoint.fY, lineLen, &path,
-					   NULL, renderableObjects);
+			if (rc->saveTextTile) {
+				RenderableObject* rObj = new RenderableObject(mObj);
+				rObj->type = "polyline";
+				renderText(mObj, rObj, req, rc, pair.first, pair.second, middlePoint.fX, middlePoint.fY, lineLen, &path,
+						   NULL, renderableObjects);
+			} else {
+				renderText(mObj, NULL, req, rc, pair.first, pair.second, middlePoint.fX, middlePoint.fY, lineLen, &path,
+						   NULL, renderableObjects);
+			}
 		}
 	}
 }
@@ -792,8 +800,6 @@ void drawPolygon(MapDataObject* mObj, RenderingRuleSearchRequest* req, SkCanvas*
 	if (length <= 2) {
 		return;
 	}
-	RenderableObject* rObj = new RenderableObject(mObj);
-	rObj->type = "polygon";
 
 	std::string tag = pair.first;
 	std::string value = pair.second;
@@ -905,7 +911,19 @@ void drawPolygon(MapDataObject* mObj, RenderingRuleSearchRequest* req, SkCanvas*
 	bool addTextForSmallAreas = req->getBoolPropertyValue(req->props()->R_IGNORE_POLYGON_AS_POINT_AREA);
 	// ignorePointArea = false;
 	if (!prim.pointAdded && (prim.area > MAX_V_AREA || addTextForSmallAreas) && !ignoreText) {
-		renderText(mObj, rObj, req, rc, pair.first, pair.second, xText, yText, 0, NULL, NULL, renderableObjects);
+		if (rc->saveTextTile) {
+			RenderableObject* rObj = new RenderableObject(mObj);
+			rObj->type = "polygon";
+			renderText(mObj, rObj, req, rc, pair.first, pair.second, xText, yText, 0, &path, NULL, renderableObjects);
+		} else {
+			renderText(mObj, NULL, req, rc, pair.first, pair.second, xText, yText, 0, &path, NULL, renderableObjects);
+		}
+	}
+}
+
+void saveAdditionalIcons(RenderingContext* rc, RenderableObject* rObj, std::string iconId) {
+	if (rc->saveTextTile && rObj != NULL) {
+		rObj->additionalIcons.push_back(iconId);
 	}
 }
 
@@ -915,20 +933,12 @@ void drawPoint(MapDataObject* mObj, RenderingRuleSearchRequest* req, SkCanvas* c
 	std::string tag = pair.first;
 	std::string value = pair.second;
 
-	RenderableObject* rObj = new RenderableObject(mObj);
-	rObj->type = "point";
-	rObj->iconX = mObj->getLabelX();
-	rObj->iconY = mObj->getLabelY();
-
 	// init render rules
 	req->setInitialTagValueZoom(tag, value, rc->getZoom(), mObj);
 	req->setIntFilter(req->props()->R_TEXT_LENGTH, mObj->objectNames["name"].length());
 	req->searchRule(1);
 	std::string resId = prepareIconValue(*mObj, req->getStringPropertyValue(req->props()->R_ICON));
 	std::string shieldId = prepareIconValue(*mObj, req->getStringPropertyValue(req->props()->R_SHIELD));
-
-	rObj->mainIcon = resId;
-	rObj->shield = shieldId;
 
 	SkBitmap* bmp = getCachedBitmap(rc, resId);
 	SkBitmap* shield = getCachedBitmap(rc, shieldId);
@@ -953,6 +963,15 @@ void drawPoint(MapDataObject* mObj, RenderingRuleSearchRequest* req, SkCanvas* c
 			py /= length;
 		}
 	}
+	RenderableObject* rObj;
+	if (rc->saveTextTile) {
+		rObj = new RenderableObject(mObj);
+		rObj->type = "point";
+		rObj->iconX = mObj->getLabelX();
+		rObj->iconY = mObj->getLabelY();
+		rObj->mainIcon = resId;
+		rObj->shield = shieldId;
+	}
 
 	SHARED_PTR<IconDrawInfo> ico;
 	if (bmp != NULL) {
@@ -963,26 +982,26 @@ void drawPoint(MapDataObject* mObj, RenderingRuleSearchRequest* req, SkCanvas* c
 
 		iconId = req->getStringPropertyValue(req->props()->R_ICON_1);
 		ico->bmp_1 = getCachedBitmap(rc, prepareIconValue(*mObj, iconId));
-		rObj->additionalIcons.push_back(iconId);
-
+		saveAdditionalIcons(rc, rObj, iconId);
 		ico->bmp = bmp;
 		ico->bmpId = resId;
 
 		iconId = req->getStringPropertyValue(req->props()->R_ICON2);
 		ico->bmp2 = getCachedBitmap(rc, prepareIconValue(*mObj, iconId));
-		rObj->additionalIcons.push_back(iconId);
+		saveAdditionalIcons(rc, rObj, iconId);
 
 		iconId = req->getStringPropertyValue(req->props()->R_ICON3);
 		ico->bmp3 = getCachedBitmap(rc, prepareIconValue(*mObj, iconId));
-		rObj->additionalIcons.push_back(iconId);
+		saveAdditionalIcons(rc, rObj, iconId);
 
 		iconId = req->getStringPropertyValue(req->props()->R_ICON4);
 		ico->bmp4 = getCachedBitmap(rc, prepareIconValue(*mObj, iconId));
-		rObj->additionalIcons.push_back(iconId);
+		saveAdditionalIcons(rc, rObj, iconId);
 
 		iconId = req->getStringPropertyValue(req->props()->R_ICON5);
 		ico->bmp5 = getCachedBitmap(rc, prepareIconValue(*mObj, iconId));
-		rObj->additionalIcons.push_back(iconId);
+		saveAdditionalIcons(rc, rObj, iconId);
+
 		ico->shield = shield;
 		ico->shiftPy = req->getFloatPropertyValue(req->props()->R_ICON_SHIFT_PY, 0);
 		ico->shiftPx = req->getFloatPropertyValue(req->props()->R_ICON_SHIFT_PX, 0);
@@ -993,10 +1012,16 @@ void drawPoint(MapDataObject* mObj, RenderingRuleSearchRequest* req, SkCanvas* c
 		ico->secondOrder = ((mObj->id % 10000) << 8) + typeInd;
 		if (ico->order >= 0) {
 			rc->iconsToDraw.push_back(ico);
-			renderableObjects.emplace(ico->object.id, std::move(rObj));
+			if (rc->saveTextTile && rObj != NULL) {
+				renderableObjects.emplace(ico->object.id, std::move(rObj));
+			}
 		}
 	}
-	renderText(mObj, rObj, req, rc, pair.first, pair.second, px, py, 0, NULL, ico, renderableObjects);
+	if (rc->saveTextTile && rObj != NULL) {
+		renderText(mObj, rObj, req, rc, pair.first, pair.second, px, py, 0, NULL, ico, renderableObjects);
+	} else {
+		renderText(mObj, NULL, req, rc, pair.first, pair.second, px, py, 0, NULL, ico, renderableObjects);
+	}
 }
 
 void drawObject(RenderingContext* rc, SkCanvas* cv, RenderingRuleSearchRequest* req, SkPaint* paint,
@@ -1082,13 +1107,15 @@ void drawIconsOverCanvas(RenderingContext* rc, RenderingRuleSearchRequest* req, 
 			SkRect rm = makeRect(rc, icon, ico, NULL);
 			if (!intersects) {
 				icon->visible = true;
-				auto it = renderableObjects.find(icon->object.id);
-				if (it != renderableObjects.end()) {
-					auto& rObj = it->second;
-					if (rObj->mainIcon != "") {
-						rObj->visible = true;
-						rObj->iconOrder = icon->order;
-						rObj->iconSize = icon->iconSize * coef;
+				if (rc->saveTextTile && !renderableObjects.empty()) {
+					auto it = renderableObjects.find(icon->object.id);
+					if (it != renderableObjects.end()) {
+						auto& rObj = it->second;
+						if (rObj->mainIcon != "") {
+							rObj->visible = true;
+							rObj->iconOrder = icon->order;
+							rObj->iconSize = icon->iconSize * coef;
+						}
 					}
 				}
 				if (icon->shield != NULL) {
