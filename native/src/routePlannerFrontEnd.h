@@ -86,7 +86,9 @@ public:
 	void searchGpxRoute(SHARED_PTR<GpxRouteApproximation>& gctx, vector<SHARED_PTR<GpxPoint>>& gpxPoints, GpxRouteApproximationCallback acceptor = nullptr);
 	static bool hasSegment(vector<SHARED_PTR<RouteSegmentResult>>& result, SHARED_PTR<RouteSegment>& current);
 	HHRoutingConfig* setDefaultRoutingConfig();
-	
+
+	void makeStartEndPointsPrecise(vector<SHARED_PTR<RouteSegmentResult>>& res, int startX, int startY, int endX, int endY);
+
 private:
 	
 	SHARED_PTR<GpxPoint> findNextGpxPointWithin(vector<SHARED_PTR<GpxPoint>>& gpxPoints, SHARED_PTR<GpxPoint>& start,
@@ -107,6 +109,7 @@ private:
 	                      SHARED_PTR<GpxPoint>& gpxPoint, SHARED_PTR<GpxPoint>& gpxPointNext);
 	bool pointCloseEnough(SHARED_PTR<GpxRouteApproximation>& gctx, SHARED_PTR<GpxPoint>& ipoint,
 	                      vector<SHARED_PTR<RouteSegmentResult>>& res);
+	void makeSegmentPointPrecise(SHARED_PTR<RouteSegmentResult>& routeSegmentResult, int px, int py, bool st);
 	void makeSegmentPointPrecise(SHARED_PTR<RouteSegmentResult>& routeSegmentResult, double lat, double lon, bool st);
 	HHNetworkRouteRes* calculateHHRoute(HHRoutePlanner & routePlanner, RoutingContext* ctx, int startX, int startY, int endX, int endY, double dir);
 };

@@ -83,12 +83,12 @@ static double h(RoutingContext* ctx, int begX, int begY, int endX, int endY) {
 	if (ctx->dijkstraMode != 0) {
 		return 0;
 	}
-	double distToFinalPoint = squareRootDist(begX, begY, endX, endY);
-	double result = distToFinalPoint / ctx->config->router->getMaxSpeed();
-	if (ctx->precalcRoute != nullptr) {
+	if (ctx->precalcRoute && ctx->precalcRoute->isActive()) {
 		float te = ctx->precalcRoute->timeEstimate(begX, begY, endX, endY);
 		if (te > 0) return te;
 	}
+	double distToFinalPoint = squareRootDist(begX, begY, endX, endY);
+	double result = distToFinalPoint / ctx->config->router->getMaxSpeed();
 	return result;
 }
 
@@ -235,17 +235,15 @@ SHARED_PTR<RouteSegment> createNull() { return std::make_shared<RouteSegment>(nu
 
 void initQueuesWithStartEnd(RoutingContext* ctx, SHARED_PTR<RouteSegmentPoint>& start, SHARED_PTR<RouteSegmentPoint>& end,
 							SEGMENTS_QUEUE& graphDirectSegments, SEGMENTS_QUEUE& graphReverseSegments) {
+	if (ctx->precalcRoute && ctx->precalcRoute->isActive()) {
+		ctx->precalcRoute->updatePreciseStartEnd(start ? start->preciseX : 0, start ? start->preciseY : 0,
+												 end ? end->preciseX : 0, end ? end->preciseY : 0);
+	}
 	if (start) {
-		if (ctx->precalcRoute && ctx->precalcRoute->startPoint == PrecalculatedRouteDirection::calc(ctx->startX, ctx->startY)) {
-			ctx->precalcRoute->startPoint = PrecalculatedRouteDirection::calc(start->preciseX, start->preciseY);
-		}
 		ctx->startX = start->preciseX;
 		ctx->startY = start->preciseY;
 	}
 	if (end) {
-		if (ctx->precalcRoute && ctx->precalcRoute->endPoint == PrecalculatedRouteDirection::calc(ctx->targetX, ctx->targetY)) {
-			ctx->precalcRoute->endPoint = PrecalculatedRouteDirection::calc(end->preciseX, end->preciseY);
-		}
 		ctx->targetX = end->preciseX;
 		ctx->targetY = end->preciseY;
 	}
@@ -1207,31 +1205,31 @@ vector<SHARED_PTR<RouteSegmentResult>> convertFinalSegmentToResults(RoutingConte
 																	const SHARED_PTR<RouteSegment>& finalSegment) {
 	vector<SHARED_PTR<RouteSegmentResult>> result;
 	if (finalSegment) {
-        ctx->conditionalTime += finalSegment->distanceFromStart;
-        float correctionTime = finalSegment->opposite == nullptr ? 0 :
-                        finalSegment->distanceFromStart - distanceFromStart(finalSegment->opposite) - distanceFromStart(finalSegment->parentRoute);
-        SHARED_PTR<RouteSegment> thisSegment =  finalSegment->opposite == nullptr ? finalSegment : finalSegment->getParentRoute(); // for dijkstra
-        SHARED_PTR<RouteSegment> segment = finalSegment->isReverseWaySearch() ? thisSegment : finalSegment->opposite;
+		// ctx.routingTime += finalSegment.distanceFromStart; // done by convertFinalSegmentToResults Java / runRouting iOS
+		float correctionTime = finalSegment->opposite == nullptr ? 0 :
+						finalSegment->distanceFromStart - distanceFromStart(finalSegment->opposite) - distanceFromStart(finalSegment->parentRoute);
+		SHARED_PTR<RouteSegment> thisSegment =  finalSegment->opposite == nullptr ? finalSegment : finalSegment->getParentRoute(); // for dijkstra
+		SHARED_PTR<RouteSegment> segment = finalSegment->isReverseWaySearch() ? thisSegment : finalSegment->opposite;
 		while (segment && segment->getRoad()) {
 			auto res = std::make_shared<RouteSegmentResult>(segment->road, segment->getSegmentEnd(),
 															segment->getSegmentStart());
 			float parentRoutingTime =
 				segment->getParentRoute() != nullptr ? segment->getParentRoute()->distanceFromStart : 0;
 			res->routingTime = segment->distanceFromStart - parentRoutingTime + correctionTime;
-            correctionTime = 0;
+			correctionTime = 0;
 			segment = segment->getParentRoute();
 			addRouteSegmentToResult(result, res, false);
 		}
 		// reverse it just to attach good direction roads
 		std::reverse(result.begin(), result.end());
-        segment = finalSegment->isReverseWaySearch() ? finalSegment->opposite : thisSegment;
+		segment = finalSegment->isReverseWaySearch() ? finalSegment->opposite : thisSegment;
 		while (segment && segment->getRoad()) {
 			auto res = std::make_shared<RouteSegmentResult>(segment->road, segment->getSegmentStart(),
 															segment->getSegmentEnd());
 			float parentRoutingTime =
 				segment->getParentRoute() != nullptr ? segment->getParentRoute()->distanceFromStart : 0;
-            res->routingTime = segment->distanceFromStart - parentRoutingTime + correctionTime;
-            correctionTime = 0;
+			res->routingTime = segment->distanceFromStart - parentRoutingTime + correctionTime;
+			correctionTime = 0;
 			segment = segment->getParentRoute();
 			// happens in smart recalculation
 			addRouteSegmentToResult(result, res, true);
@@ -1244,7 +1242,7 @@ vector<SHARED_PTR<RouteSegmentResult>> convertFinalSegmentToResults(RoutingConte
 vector<SHARED_PTR<RouteSegmentResult>> searchRouteInternal(RoutingContext* ctx, bool leftSideNavigation) {
 	SHARED_PTR<RouteSegmentPoint> start =
 		findRouteSegment(ctx->startX, ctx->startY, ctx, ctx->publicTransport && ctx->startTransportStop,
-						 ctx->startRoadId, ctx->startSegmentInd);
+						ctx->startRoadId, ctx->startSegmentInd);
 	if (start.get() == NULL) {
 		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "Start point was not found [Native]");
 		if (ctx->progress.get()) {
@@ -1257,7 +1255,7 @@ vector<SHARED_PTR<RouteSegmentResult>> searchRouteInternal(RoutingContext* ctx, 
 	}
 	SHARED_PTR<RouteSegmentPoint> end =
 		findRouteSegment(ctx->targetX, ctx->targetY, ctx, ctx->publicTransport && ctx->targetTransportStop,
-						 ctx->targetRoadId, ctx->targetSegmentInd);
+						ctx->targetRoadId, ctx->targetSegmentInd);
 	if (end.get() == NULL) {
 		if (ctx->progress.get()) {
 			ctx->progress->setSegmentNotFound(1);
@@ -1267,13 +1265,13 @@ vector<SHARED_PTR<RouteSegmentResult>> searchRouteInternal(RoutingContext* ctx, 
 	} else {
 		// OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "End point was found %lld [Native]", end->road->id / 64);
 	}
-    vector<SHARED_PTR<RouteSegment>> results = searchRouteInternal(ctx, start, end, {}, {});
+	vector<SHARED_PTR<RouteSegment>> results = searchRouteInternal(ctx, start, end, {}, {});
 	SHARED_PTR<RouteSegment> finalSegment = nullptr;
 	if (results.size() > 0) {
 		finalSegment = results[0];
 	}
 	vector<SHARED_PTR<RouteSegmentResult>> res = convertFinalSegmentToResults(ctx, finalSegment);
-    ctx->finalRouteSegment = finalSegment;
+	ctx->finalRouteSegment = finalSegment;
 	attachConnectedRoads(ctx, res);
 	return res;
 }

@@ -1809,7 +1809,7 @@ void printRouteInfoSegments(vector<SHARED_PTR<RouteSegmentResult>>& result) {
 		additional.append("description = \"").append(res->description).append("\" ");
 
 		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug,
-						  "\t<segment id=\"%d\" oid=\"%lld\" start=\"%d\" end=\"%d\" %s/>",
+						  "\t<segment id=\"%ld\" oid=\"%ld\" start=\"%d\" end=\"%d\" %s/>",
 						  (res->object->getId() >> SHIFT_ID), res->object->getId(), res->getStartPointIndex(),
 						  res->getEndPointIndex(), additional.c_str());
 		int inc = res->getStartPointIndex() < res->getEndPointIndex() ? 1 : -1;
