@@ -1,17 +1,17 @@
+#include <SkAutoMalloc.h>
 #include <SkCanvas.h>
 #include <SkFilterQuality.h>
+#include <SkFont.h>
+#include <SkFontMetrics.h>
+#include <SkFontPriv.h>
 #include <SkPaint.h>
 #include <SkPath.h>
+#include <SkPathMeasure.h>
+#include <SkRSXform.h>
+#include <SkTextBlob.h>
 #include <SkTypeface.h>
 #include <SkTypes.h>
 #include <SkUtils.h>
-#include <SkFont.h>
-#include <SkFontMetrics.h>
-#include <SkPathMeasure.h>
-#include <SkRSXform.h>
-#include <SkFontPriv.h>
-#include <SkAutoMalloc.h>
-#include <SkTextBlob.h>
 #include <hb-ot.h>
 #include <math.h>
 #include <time.h>
@@ -726,7 +726,8 @@ static sk_sp<SkTypeface> sItalicTypeface = nullptr;
 static sk_sp<SkTypeface> sBoldTypeface = nullptr;
 static sk_sp<SkTypeface> sBoldItalicTypeface = nullptr;
 
-void drawTextOverCanvas(RenderingContext* rc, RenderingRuleSearchRequest* req, SkCanvas* cv) {
+void drawTextOverCanvas(RenderingContext* rc, RenderingRuleSearchRequest* req, SkCanvas* cv,
+						std::unordered_map<int64_t, std::unique_ptr<RenderableObject>>& renderableObjects) {
 	SkRect r = SkRect::MakeLTRB(0, 0, rc->getWidth(), rc->getHeight());
 	r.inset(-rc->getDensityValue(25), -rc->getDensityValue(25));
 	quad_tree<SHARED_PTR<TextDrawInfo>> boundsIntersect(r, 4, 0.6);
@@ -808,6 +809,26 @@ void drawTextOverCanvas(RenderingContext* rc, RenderingRuleSearchRequest* req, S
 		if (textDrawInfo->visible) {
 			//OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Text %s font %s", textDrawInfo->text.c_str(), fontEntry->pathToFont.c_str());
 			if (rc->interrupted()) return;
+			// draw text
+			if (rc->saveTextTile && !renderableObjects.empty()) {
+				auto it = renderableObjects.find(textDrawInfo->object.id);
+				if (it != renderableObjects.end()) {
+					auto& rObj = it->second;
+					if (rObj != nullptr && textDrawInfo->text != "") {
+						rObj->visible = true;
+						rObj->text = textDrawInfo->text;
+						rObj->textSize = textDrawInfo->textSize;
+						rObj->textOnPath = textDrawInfo->drawOnPath;
+						rObj->textColor = textDrawInfo->textColor;
+						rObj->textShadow = textDrawInfo->textShadow;
+						rObj->textShadowColor = textDrawInfo->textShadowColor;
+						rObj->bold = textDrawInfo->bold;
+						rObj->italic = textDrawInfo->italic;
+						rObj->shieldRes = textDrawInfo->shieldRes;
+						rObj->shieldResIcon = textDrawInfo->shieldResIcon;
+					}
+				}
+			}
 			if (textDrawInfo->drawOnPath && textDrawInfo->path != NULL) {
 				textDrawInfo->text = rc->getReshapedString(textDrawInfo->text);				
 				if (textDrawInfo->textShadow > 0) {
@@ -826,6 +847,9 @@ void drawTextOverCanvas(RenderingContext* rc, RenderingRuleSearchRequest* req, S
 				globalFontRegistry.drawHbTextOnPath(cv, textDrawInfo->text, *textDrawInfo->path, fontEntry, skFontText, paintText, textDrawInfo->hOffset, textDrawInfo->vOffset - fm.fTop / 4);
 				rc->nativeOperations.Start();
 			} else {
+				if (rc->saveTextTile) {
+					continue;
+				}
 				drawShield(textDrawInfo, textDrawInfo->shieldRes, &paintIcon, rc, cv, r, fm);
 				drawShield(textDrawInfo, textDrawInfo->shieldResIcon, &paintIcon, rc, cv, r, fm);
 				drawWrappedText(rc, cv, textDrawInfo, textSize, paintText, skFontText, fontEntry);
