@@ -938,9 +938,13 @@ HHNetworkRouteRes * RoutePlannerFrontEnd::calculateHHRoute(HHRoutePlanner & rout
 		cfg->INITIAL_DIRECTION = dir;
 		HHNetworkRouteRes * res = routePlanner.runRouting(startX, startY, endX, endY, cfg); // HH-cpp
 		if (res != nullptr && res->error == "") {
-			ctx->progress->hhIteration(RouteCalculationProgress::HHIteration::DONE);
-			makeStartEndPointsPrecise(res->detailed, startX, startY, endX, endY);
-			return res;
+			if (res->error == "") {
+				ctx->progress->hhIteration(RouteCalculationProgress::HHIteration::DONE);
+				makeStartEndPointsPrecise(res->detailed, startX, startY, endX, endY);
+				return res;
+			} else {
+				OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "%s", res->error.c_str());
+			}
 		}
 		ctx->progress->hhIteration(RouteCalculationProgress::HHIteration::HH_NOT_STARTED);
 	} catch (const std::exception e) {

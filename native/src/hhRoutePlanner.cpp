@@ -267,6 +267,8 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
     double firstIterationTime = 0;
     int iteration = 0;
     do {
+        timer.Reset();
+        timer.Start();
         progress->hhIteration(RouteCalculationProgress::HHIteration::ROUTING);
         iteration++;
         if (recalc && firstIterationTime == 0) {
@@ -278,7 +280,6 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
         if (!recalc || DEBUG_VERBOSE_LEVEL > 0) {
             OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Routing...");
         }
-        timer.Start();
         NetworkDBPoint * finalPnt = runRoutingPointsToPoints(hctx, stPoints, endPoints);
         if (progress->isCancelled()) {
             return cancelledStatus();
@@ -288,12 +289,10 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
         if (!recalc || DEBUG_VERBOSE_LEVEL > 0) {
             OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "%zu segments, cost %.2f, %.2f ms\n", route->segments.size(), route->getHHRoutingTime(), time);
         }
-        hctx->stats.routingTime+= time;
         progress->hhIteration(RouteCalculationProgress::HHIteration::DETAILED);
         if (!recalc || DEBUG_VERBOSE_LEVEL > 0) {
             OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Parse detailed route segments...");
         }
-        timer.Start();
         recalc = retrieveSegmentsGeometry(hctx, route, hctx->config->ROUTE_ALL_SEGMENTS, progress);
         if (progress->isCancelled()) {
             return cancelledStatus();
