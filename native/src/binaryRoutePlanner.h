@@ -38,5 +38,6 @@ float calculatePreciseStartTime(const RoutingContext* ctx, int projX, int projY,
 class GeneralRouter;
 float calcRoutingSegmentTimeOnlyDist(const SHARED_PTR<GeneralRouter>& router, const SHARED_PTR<RouteSegment>& segment);
 vector<SHARED_PTR<RouteSegmentResult>> convertFinalSegmentToResults(RoutingContext* ctx, const SHARED_PTR<RouteSegment>& finalSegment);
+void attachConnectedRoads(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResult>>& res);
 
 #endif /*_OSMAND_BINARY_ROUTE_PLANNER_H*/
