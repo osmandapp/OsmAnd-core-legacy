@@ -589,6 +589,7 @@ bool RoutePlannerFrontEnd::findGpxRouteSegment(SHARED_PTR<GpxRouteApproximation>
 		gctx->routeCalculations++;
 		RoutingContext* cp = new RoutingContext(gctx->ctx);
 		res = searchRouteInternalPrepare(cp, start->pnt, target->pnt, nullptr);
+		prepareResult(cp, res);
 		delete cp;
 		// BinaryRoutePlanner.printDebugMemoryInformation(gctx.ctx);
 		routeIsCorrect = !res.empty();
