@@ -611,6 +611,9 @@ bool RoutePlannerFrontEnd::findGpxRouteSegment(SHARED_PTR<GpxRouteApproximation>
 					if (res[0]->object->getPointsLength() != start->pnt->getRoad()->getPointsLength()) {
 						res[0]->object = start->pnt->getRoad();
 					}
+					if (res[0]->getStartPointIndex() == res[0]->getEndPointIndex()) {
+						res.erase(res.begin());
+					}
 				} else {
 					// for native routing this is possible when point lies on intersection of 2 lines
 					// solution here could be to pass to native routing id of the route
@@ -751,7 +754,7 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 	if (needRequestPrivateAccessRouting(ctx.get(), targetsX, targetsY)) {
 		ctx->progress->requestPrivateAccessRouting = true;
 	}
-	if (HH_ROUTING_CONFIG != nullptr) {
+	if (HH_ROUTING_CONFIG != nullptr && ctx->calculationMode != RouteCalculationMode::BASE) {
 		HHRoutePlanner routePlanner(ctx.get());
 		HHNetworkRouteRes * res;
 		HHNetworkRouteRes * r = nullptr;
@@ -778,7 +781,7 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 				dir = (r->detailed[r->detailed.size() - 1]->getBearingEnd() / 180.0) * M_PI;
 			}
 		}
-		if (r && (r->isCorrect() || USE_ONLY_HH_ROUTING)) { // note: USE_ONLY_HH_ROUTING is broken here
+		if (r && (r->isCorrect() || USE_ONLY_HH_ROUTING)) {
 			prepareResult(ctx.get(), r->detailed);
 			return r->detailed; // exit-point
 		}
@@ -807,7 +810,9 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 			PrecalculatedRouteDirection::build(ls, ctx->config->DEVIATION_RADIUS, ctx->config->router->maxSpeed);
 		ctx->calculationProgressFirstPhase =  ctx->progress->capture(ctx->progress);
 	}
-
+	if (!useSmartRouteRecalculation && intermediatesEmpty) {
+		ctx->previouslyCalculatedRoute = {};
+	}
 	if (intermediatesEmpty) {
 		ctx->startX = startX;
 		ctx->startY = startY;
@@ -1008,8 +1013,9 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchHHRoute(Routi
 				dir = (r->detailed[r->detailed.size() - 1]->getBearingEnd() / 180.0) * M_PI;
 			}
 		}
-		if ((r && r->isCorrect()) || USE_ONLY_HH_ROUTING) {
+		if (r && (r->isCorrect() || USE_ONLY_HH_ROUTING)) {
 			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Finish searchHHRoute Native");
+			attachConnectedRoads(ctx, r->detailed);
 			return r->detailed; // prepareResult() will be called in Java
 		}
 	}
