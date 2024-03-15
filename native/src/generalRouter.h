@@ -411,7 +411,7 @@ class GeneralRouter {
 	bool checkAllowPrivateNeeded;
 	string profileName;
 	string fileName;
-    UNORDERED(map)<string, string> hhNativeFilter;
+	UNORDERED(map)<string, string> hhNativeFilter;
 
 	GeneralRouter();
 	GeneralRouter(const GeneralRouterProfile profile, const MAP_STR_STR& attributes = MAP_STR_STR());
