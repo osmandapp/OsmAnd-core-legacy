@@ -434,6 +434,7 @@ jfieldID jfield_RoutingContext_calculationProgress = NULL;
 jfieldID jfield_RoutingContext_calculationMode = NULL;
 jfieldID jfield_RoutingContext_alertFasterRoadToVisitedSegments = NULL;
 jfieldID jfield_RoutingContext_alertSlowerSegmentedWasVisitedEarlier = NULL;
+jfieldID jfield_RoutingContext_hhNativeFilter = NULL;
 
 jclass jclass_RouteCalculationMode = NULL;
 jclass jclass_RoutePlannerFrontEnd = NULL;
@@ -537,6 +538,7 @@ jfieldID jfield_GeneralRouter_maxVehicleSpeed = NULL;
 jfieldID jfield_GeneralRouter_heightObstacles = NULL;
 jfieldID jfield_GeneralRouter_shortestRoute = NULL;
 jfieldID jfield_GeneralRouter_objectAttributes = NULL;
+jfieldID jfield_GeneralRouter_hhNativeFilter = NULL;
 jmethodID jmethod_GeneralRouter_getImpassableRoadIds = NULL;
 
 jclass jclass_RouteAttributeContext = NULL;
@@ -985,6 +987,7 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jfield_GeneralRouter_shortestRoute = getFid(env, jclass_GeneralRouter, "shortestRoute", "Z");
 	jfield_GeneralRouter_objectAttributes = getFid(env, jclass_GeneralRouter, "objectAttributes",
 												   "[Lnet/osmand/router/GeneralRouter$RouteAttributeContext;");
+	jfield_GeneralRouter_hhNativeFilter = getFid(env, jclass_GeneralRouter, "hhNativeFilter", "[Ljava/lang/String;");
 	jmethod_GeneralRouter_getImpassableRoadIds = env->GetMethodID(jclass_GeneralRouter, "getImpassableRoadIds", "()[J");
 
 	jclass_RenderedObject = findGlobalClass(env, "net/osmand/NativeLibrary$RenderedObject");
@@ -1629,6 +1632,14 @@ void parseRouteConfiguration(JNIEnv* ienv, SHARED_PTR<RoutingConfiguration> rCon
 	rConfig->router->heightObstacles = ienv->GetBooleanField(router, jfield_GeneralRouter_heightObstacles);
 	rConfig->router->shortestRoute = ienv->GetBooleanField(router, jfield_GeneralRouter_shortestRoute);
 	rConfig->router->setProfile(parseGeneralRouterProfile(rConfig->routerName, GeneralRouterProfile::CAR));
+
+	jobjectArray jhhNativeFilter = (jobjectArray)ienv->GetObjectField(router, jfield_GeneralRouter_hhNativeFilter);
+	vector<string> filter = convertJArrayToStrings(ienv, jhhNativeFilter);
+	for (int i = 0; i < filter.size(); i++) {
+		string key = filter[i];
+		string val = filter[i + 1];
+		rConfig->router->hhNativeFilter.insert(std::make_pair(key, val));
+	}
 
 	// Map<String, String> attributes; // Attributes are not sync not used for calculation
 	// Map<String, RoutingParameter> parameters;  // not used for calculation

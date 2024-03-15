@@ -1299,16 +1299,20 @@ bool HHRoutePlanner::retainAll(std::set<int64_t> & source, const std::set<int64_
 
 void HHRoutePlanner::filterPointsBasedOnConfiguration(const SHARED_PTR<HHRoutingContext> & hctx) {
     SHARED_PTR<GeneralRouter>  & vr = hctx->rctx->config->router;
-    UNORDERED_map<string, RoutingParameter> & parameters = vr->getParameters();
     UNORDERED_map<string, string> tm;
-    for (const auto & es : vr->getParameterValues()) {
-        string paramId = es.first;
-        // These parameters don't affect the routing filters
-        // This assumption probably shouldn't be used in general and only for popular parameters)
-        if (parameters.find(paramId) != parameters.end() && paramId != GeneralRouterConstants::USE_SHORTEST_WAY
-            && paramId != GeneralRouterConstants::USE_HEIGHT_OBSTACLES
-            && !startsWith(paramId, GeneralRouterConstants::GROUP_RELIEF_SMOOTHNESS_FACTOR)) {
-            tm.insert(std::make_pair(paramId, es.second));
+    if (vr->hhNativeFilter.size() > 0) {
+        tm = vr->hhNativeFilter;
+    } else {
+        UNORDERED_map<string, RoutingParameter> & parameters = vr->getParameters();
+        for (const auto & es : vr->getParameterValues()) {
+            string paramId = es.first;
+            // These parameters don't affect the routing filters
+            // This assumption probably shouldn't be used in general and only for popular parameters)
+            if (parameters.find(paramId) != parameters.end() && paramId != GeneralRouterConstants::USE_SHORTEST_WAY
+                && paramId != GeneralRouterConstants::USE_HEIGHT_OBSTACLES
+                && !startsWith(paramId, GeneralRouterConstants::GROUP_RELIEF_SMOOTHNESS_FACTOR)) {
+                tm.insert(std::make_pair(paramId, es.second));
+            }
         }
     }
     if (hctx->filterRoutingParameters.size() == tm.size()) {
