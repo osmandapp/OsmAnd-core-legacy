@@ -1635,7 +1635,7 @@ void parseRouteConfiguration(JNIEnv* ienv, SHARED_PTR<RoutingConfiguration> rCon
 
 	jobjectArray jhhNativeFilter = (jobjectArray)ienv->GetObjectField(router, jfield_GeneralRouter_hhNativeFilter);
 	vector<string> filter = convertJArrayToStrings(ienv, jhhNativeFilter);
-	for (int i = 0; i < filter.size(); i++) {
+	for (int i = 0; i < filter.size(); i += 2) {
 		string key = filter[i];
 		string val = filter[i + 1];
 		rConfig->router->hhNativeFilter.insert(std::make_pair(key, val));
