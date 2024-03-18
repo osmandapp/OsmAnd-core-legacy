@@ -344,7 +344,10 @@ bool RoutePlannerFrontEnd::isRouteCloseToGpxPoints(SHARED_PTR<GpxRouteApproximat
 		while (st != end) {
 			LatLon point = r->getPoint(st);
 			bool pointIsClosed = false;
-			for (int k = start->ind; !pointIsClosed && k < next->ind; k++) {
+			int delta = 5;
+			int startInd = std::max(0, start->ind - delta);
+			int nextInd = std::min((int)gpxPoints.size() - 1, next->ind + delta);
+			for (int k = startInd; !pointIsClosed && k < nextInd; k++) {
 				pointIsClosed = pointCloseEnough(gctx, point, gpxPoints[k], gpxPoints[k + 1]);
 			}
 			if (!pointIsClosed) {
@@ -414,8 +417,10 @@ void RoutePlannerFrontEnd::calculateGpxRoute(SHARED_PTR<GpxRouteApproximation>& 
 	for (int i = 0; i < gpxPoints.size() && !gctx->ctx->progress->isCancelled();) {
 		SHARED_PTR<GpxPoint>& pnt = gpxPoints[i];
 		if (!pnt->routeToTarget.empty()) {
-			LatLon startPoint = LatLon(pnt->routeToTarget[0]->getStartPoint().lat, pnt->routeToTarget[0]->getStartPoint().lon);
+			LatLon startPoint = pnt->getFirstRouteRes()->getStartPoint();
 			if (!lastStraightLine.empty()) {
+				makeSegmentPointPrecise(gctx->ctx, pnt->getFirstRouteRes(), pnt->lat, pnt->lon, true);
+				startPoint = pnt->getFirstRouteRes()->getStartPoint();
 				lastStraightLine.push_back(startPoint);
 				addStraightLine(gctx, lastStraightLine, straightPointStart, reg);
 				lastStraightLine.clear();
@@ -433,11 +438,12 @@ void RoutePlannerFrontEnd::calculateGpxRoute(SHARED_PTR<GpxRouteApproximation>& 
 		} else {
 			// add straight line from i -> i+1
 			if (lastStraightLine.empty()) {
-				straightPointStart = pnt;
-				// make smooth connection
-				if (gctx->distFromLastPoint(pnt->lat, pnt->lon) > 1) {
+				if (gctx->result.size() > 0 && gctx->finalPoints.size() > 0) {
+					SHARED_PTR<GpxPoint>& prev = gctx->finalPoints.at(gctx->finalPoints.size() - 1);
+					makeSegmentPointPrecise(gctx->ctx, prev->getLastRouteRes(), prev->lat, prev->lon, false);
 					lastStraightLine.push_back(gctx->getLastPoint());
 				}
+				straightPointStart = pnt;
 			}
 			lastStraightLine.push_back(LatLon(pnt->lat, pnt->lon));
 			i++;
