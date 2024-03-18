@@ -88,11 +88,11 @@ bool addSegment(int x31, int y31, RoutingContext* ctx, int indexNotFound, vector
 	}
 }
 
-void RoutePlannerFrontEnd::makeStartEndPointsPrecise(vector<SHARED_PTR<RouteSegmentResult>>& res,
+void RoutePlannerFrontEnd::makeStartEndPointsPrecise(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResult>>& res,
                                                      int startX, int startY, int endX, int endY) {
 	if (res.size() > 0) {
-		makeSegmentPointPrecise(res[0], startX, startY, true);
-		makeSegmentPointPrecise(res[res.size() - 1], endX, endY, false);
+		makeSegmentPointPrecise(ctx, res[0], startX, startY, true);
+		makeSegmentPointPrecise(ctx, res[res.size() - 1], endX, endY, false);
 	}
 }
 
@@ -202,7 +202,7 @@ void RoutePlannerFrontEnd::searchGpxRoute(SHARED_PTR<GpxRouteApproximation> &gct
 					}
 					if (routeFound && next->ind == gpxPoints.size() - 1) {
 						// last point - last route found
-						makeSegmentPointPrecise(start->routeToTarget[start->routeToTarget.size() - 1], next->lat, next->lon, false);
+						makeSegmentPointPrecise(gctx->ctx, start->routeToTarget[start->routeToTarget.size() - 1], next->lat, next->lon, false);
 					} else if (routeFound) {
 						// route is found - cut the end of the route and move to next iteration
 						// start.stepBackRoute = new ArrayList<RouteSegmentResult>();
@@ -238,7 +238,7 @@ void RoutePlannerFrontEnd::searchGpxRoute(SHARED_PTR<GpxRouteApproximation> &gct
 			if (prev) {
 				prev->routeToTarget.insert(prev->routeToTarget.end(), prev->stepBackRoute.begin(),
 										   prev->stepBackRoute.end());
-				makeSegmentPointPrecise(prev->routeToTarget[prev->routeToTarget.size() - 1], start->lat, start->lon,
+				makeSegmentPointPrecise(gctx->ctx, prev->routeToTarget[prev->routeToTarget.size() - 1], start->lat, start->lon,
 										false);
 				if (next) {
 					OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "NOT found route from: %s at %d",
@@ -267,13 +267,15 @@ void RoutePlannerFrontEnd::searchGpxRoute(SHARED_PTR<GpxRouteApproximation> &gct
 		acceptor(gctx->ctx->progress->cancelled ? nullptr : gctx);
 }
 
-void RoutePlannerFrontEnd::makeSegmentPointPrecise(SHARED_PTR<RouteSegmentResult>& routeSegmentResult, double lat, double lon, bool st) {
+void RoutePlannerFrontEnd::makeSegmentPointPrecise(RoutingContext* ctx, SHARED_PTR<RouteSegmentResult>& routeSegmentResult,
+												   double lat, double lon, bool st) {
 	int px = get31TileNumberX(lon);
 	int py = get31TileNumberY(lat);
-	return makeSegmentPointPrecise(routeSegmentResult, px, py, st);
+	return makeSegmentPointPrecise(ctx, routeSegmentResult, px, py, st);
 }
 
-void RoutePlannerFrontEnd::makeSegmentPointPrecise(SHARED_PTR<RouteSegmentResult>& routeSegmentResult, int px, int py, bool st) {
+void RoutePlannerFrontEnd::makeSegmentPointPrecise(RoutingContext* ctx, SHARED_PTR<RouteSegmentResult>& routeSegmentResult,
+												   int px, int py, bool st) {
 	int pind = st ? routeSegmentResult->getStartPointIndex() : routeSegmentResult->getEndPointIndex();
 
 	SHARED_PTR<RouteDataObject> r = std::make_shared<RouteDataObject>(routeSegmentResult->object);
@@ -328,6 +330,8 @@ void RoutePlannerFrontEnd::makeSegmentPointPrecise(SHARED_PTR<RouteSegmentResult
 		} else {
 			r->insert(pind, i.first, i.second);
 		}
+		// correct distance
+		calculateTimeSpeed(ctx, routeSegmentResult);
 	}
 }
 
@@ -602,8 +606,8 @@ bool RoutePlannerFrontEnd::findGpxRouteSegment(SHARED_PTR<GpxRouteApproximation>
 			// correct start point though don't change end point
 			// makeSegmentPointPrecise(res[0], start->lat, start->lon, true);
 			if (!prevRouteCalculated) {
-			 	// make first position precise
-			 	makeSegmentPointPrecise(res[0], start->lat, start->lon, true);
+				// make first position precise
+				makeSegmentPointPrecise(gctx->ctx, res[0], start->lat, start->lon, true);
 			} else {
 				if (res[0]->object->getId() == start->pnt->getRoad()->getId()) {
 					// start point could shift to +-1 due to direction
@@ -679,7 +683,7 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 			ctx->previouslyCalculatedRoute.clear();
 		}
 		auto res = searchRouteInternalPrepare(ctx, points[0], points[1], routeDirection); // BRP-ios (no-interpoints) (never)
-		makeStartEndPointsPrecise(res, points[0]->preciseX, points[0]->preciseY, points[1]->preciseX, points[1]->preciseY);
+		makeStartEndPointsPrecise(ctx, res, points[0]->preciseX, points[0]->preciseY, points[1]->preciseX, points[1]->preciseY);
 		return res;
 	}
 
@@ -723,8 +727,8 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 		local.progress = ctx->progress;
 
 		auto res = searchRouteInternalPrepare(&local, points[i], points[i + 1], routeDirection); // BRP-ios (interpoints)
-		// makeStartEndPointsPrecise(res, local.startX, local.startY, local.targetX, local.targetY); // compare points and local
-		makeStartEndPointsPrecise(res, points[i]->preciseX, points[i]->preciseY, points[i + 1]->preciseX, points[i + 1]->preciseY);
+		// makeStartEndPointsPrecise(&local, res, local.startX, local.startY, local.targetX, local.targetY); // compare points and local
+		makeStartEndPointsPrecise(&local, res, points[i]->preciseX, points[i]->preciseY, points[i + 1]->preciseX, points[i + 1]->preciseY);
 		results.insert(results.end(), res.begin(), res.end());
 
 		local.unloadAllData(ctx);
@@ -827,7 +831,7 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 			ctx->precalcRoute = routeDirection->adopt(ctx.get());
 		}
 		auto res = runRouting(ctx.get(), recalculationEnd); // iOS (no-interpoints)
-		makeStartEndPointsPrecise(res, startX, startY, endX, endY);
+		makeStartEndPointsPrecise(ctx.get(), res, startX, startY, endX, endY);
 		if (!res.empty()) {
 			printResults(ctx.get(), startX, startY, endX, endY, res);
 		}
@@ -944,7 +948,7 @@ HHNetworkRouteRes * RoutePlannerFrontEnd::calculateHHRoute(HHRoutePlanner & rout
 		if (res != nullptr && res->error == "") {
 			if (res->error == "") {
 				ctx->progress->hhIteration(RouteCalculationProgress::HHIteration::DONE);
-				makeStartEndPointsPrecise(res->detailed, startX, startY, endX, endY);
+				makeStartEndPointsPrecise(ctx, res->detailed, startX, startY, endX, endY);
 				return res;
 			} else {
 				OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "%s", res->error.c_str());

@@ -262,7 +262,13 @@ void splitRoadsAndAttachRoadSegments(RoutingContext* ctx, vector<SHARED_PTR<Rout
     }
 }
 
-void calculateTimeSpeed(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResult> >& result) {
+void calculateTimeSpeed(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResult>>& result) {
+    for (int i = 0; i < result.size(); i++) {
+        calculateTimeSpeed(ctx, result[i]);
+    }
+}
+
+void calculateTimeSpeed(RoutingContext* ctx, SHARED_PTR<RouteSegmentResult>& rr) {
     // Naismith's/Scarf rules are used to clarify time on uphills
     bool useNaismithRule = false;
     double scarfSeconds = 0; // Additional time as per Naismith/Scarf
@@ -276,8 +282,7 @@ void calculateTimeSpeed(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResul
         useNaismithRule = true;
     }
 
-    for (int i = 0; i < result.size(); i++) {
-        auto rr = result[i];
+    {
         auto road = rr->object;
         double distOnRoadToPass = 0;
         double speed = ctx->config->router->defineVehicleSpeed(road, rr->isForwardDirection());

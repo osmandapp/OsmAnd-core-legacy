@@ -34,6 +34,7 @@ bool foundTUturn(vector<int> turnList);
 void printRouteInfoSegments(vector<SHARED_PTR<RouteSegmentResult> >& result);
 string buildRouteMessagesFromInfo(UNORDERED(map) < string, UNORDERED(map) < string, string >> info, vector<string>& routeMessages);
 void calculateTimeSpeed(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResult> >& result);
+void calculateTimeSpeed(RoutingContext* ctx, SHARED_PTR<RouteSegmentResult>& result);
 vector<int> getUniqTurnTypes(const string& turnLanes);
 bool hasTurn(const string& turnLanes, int turnType);
 bool hasSharpOrReverseTurnLane(const string& turnLanes);
