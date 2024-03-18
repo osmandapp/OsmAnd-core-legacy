@@ -727,7 +727,6 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 		local.progress = ctx->progress;
 
 		auto res = searchRouteInternalPrepare(&local, points[i], points[i + 1], routeDirection); // BRP-ios (interpoints)
-		// makeStartEndPointsPrecise(&local, res, local.startX, local.startY, local.targetX, local.targetY); // compare points and local
 		makeStartEndPointsPrecise(&local, res, points[i]->preciseX, points[i]->preciseY, points[i + 1]->preciseX, points[i + 1]->preciseY);
 		results.insert(results.end(), res.begin(), res.end());
 
@@ -771,10 +770,16 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 				ctx->config->penaltyForReverseDirection /= 2; // relax reverse-penalty (only for inter-points)
 			}
 			ctx->progress->hhTargetsProgress(i, targetsX.size());
-			res = calculateHHRoute(routePlanner, ctx.get(), i == 0 ? startX : targetsX.at(i - 1),
-									i == 0 ? startY : targetsY.at(i - 1),
-									targetsX.at(i), targetsY.at(i), dir);
+			int sx = i == 0 ? ctx->startX : targetsX.at(i - 1);
+			int sy = i == 0 ? ctx->startY : targetsY.at(i - 1);
+			int ex = targetsX.at(i);
+			int ey = targetsY.at(i);
+			HHNetworkRouteRes* res = calculateHHRoute(routePlanner, ctx.get(), sx, sy, ex, ey, dir);
 			ctx->config->penaltyForReverseDirection = initialPenalty;
+			if (res) {
+				prepareResult(ctx.get(), res->detailed);
+				makeStartEndPointsPrecise(ctx.get(), res->detailed, sx, sy, ex, ey);
+			}
 			if (!r) {
 				r = res;
 			} else {
@@ -948,7 +953,7 @@ HHNetworkRouteRes * RoutePlannerFrontEnd::calculateHHRoute(HHRoutePlanner & rout
 		if (res != nullptr && res->error == "") {
 			if (res->error == "") {
 				ctx->progress->hhIteration(RouteCalculationProgress::HHIteration::DONE);
-				makeStartEndPointsPrecise(ctx, res->detailed, startX, startY, endX, endY);
+				// makeStartEndPointsPrecise(ctx, res->detailed, startX, startY, endX, endY); // called by parent
 				return res;
 			} else {
 				OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "%s", res->error.c_str());
@@ -1000,10 +1005,16 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchHHRoute(Routi
 				ctx->config->penaltyForReverseDirection /= 2; // relax reverse-penalty (only for inter-points)
 			}
 			ctx->progress->hhTargetsProgress(i, (int)targetsX.size());
-			HHNetworkRouteRes * res = calculateHHRoute(routePlanner, ctx, i == 0 ? ctx->startX : targetsX.at(i - 1),
-								i == 0 ? ctx->startY : targetsY.at(i - 1),
-								targetsX.at(i), targetsY.at(i), dir);
+			int sx = i == 0 ? ctx->startX : targetsX.at(i - 1);
+			int sy = i == 0 ? ctx->startY : targetsY.at(i - 1);
+			int ex = targetsX.at(i);
+			int ey = targetsY.at(i);
+			HHNetworkRouteRes* res = calculateHHRoute(routePlanner, ctx, sx, sy, ex, ey, dir);
 			ctx->config->penaltyForReverseDirection = initialPenalty;
+			if (res && !intermediatesEmpty) {
+				// makePrecise must be called inside native interpoints cycle
+				makeStartEndPointsPrecise(ctx, res->detailed, sx, sy, ex, ey);
+			}
 			if (!r) {
 				r = res;
 			} else {

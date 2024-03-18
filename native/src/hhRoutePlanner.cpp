@@ -362,6 +362,11 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
         return cancelledStatus();
     }
 
+// called directly by searchRoute() (ios)
+//    if (hctx->config->ROUTE_ALL_SEGMENTS) {
+//        route->detailed = prepareResult(hctx->rctx, route->detailed);
+//    }
+
     OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "%llu ms\n", timer.GetElapsedMs());
     printResults(hctx->rctx, startX, startY, endX, endY, route->detailed);
     OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
