@@ -417,10 +417,11 @@ void RoutePlannerFrontEnd::calculateGpxRoute(SHARED_PTR<GpxRouteApproximation>& 
 	for (int i = 0; i < gpxPoints.size() && !gctx->ctx->progress->isCancelled();) {
 		SHARED_PTR<GpxPoint>& pnt = gpxPoints[i];
 		if (!pnt->routeToTarget.empty()) {
-			LatLon startPoint = pnt->getFirstRouteRes()->getStartPoint();
+			SHARED_PTR<RouteSegmentResult> firstRouteRes = pnt->getFirstRouteRes();
+			LatLon startPoint = firstRouteRes->getStartPoint();
 			if (!lastStraightLine.empty()) {
-				makeSegmentPointPrecise(gctx->ctx, pnt->getFirstRouteRes(), pnt->lat, pnt->lon, true);
-				startPoint = pnt->getFirstRouteRes()->getStartPoint();
+				makeSegmentPointPrecise(gctx->ctx, firstRouteRes, pnt->lat, pnt->lon, true);
+				startPoint = firstRouteRes->getStartPoint();
 				lastStraightLine.push_back(startPoint);
 				addStraightLine(gctx, lastStraightLine, straightPointStart, reg);
 				lastStraightLine.clear();
@@ -440,7 +441,10 @@ void RoutePlannerFrontEnd::calculateGpxRoute(SHARED_PTR<GpxRouteApproximation>& 
 			if (lastStraightLine.empty()) {
 				if (gctx->result.size() > 0 && gctx->finalPoints.size() > 0) {
 					SHARED_PTR<GpxPoint>& prev = gctx->finalPoints.at(gctx->finalPoints.size() - 1);
-					makeSegmentPointPrecise(gctx->ctx, prev->getLastRouteRes(), prev->lat, prev->lon, false);
+					SHARED_PTR<RouteSegmentResult> lastRouteRes = prev->getLastRouteRes();
+					if (lastRouteRes) {
+						makeSegmentPointPrecise(gctx->ctx, lastRouteRes, prev->lat, prev->lon, false);
+					}
 					lastStraightLine.push_back(gctx->getLastPoint());
 				}
 				straightPointStart = pnt;
@@ -684,11 +688,10 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 	RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentPoint>>& points,
 	SHARED_PTR<PrecalculatedRouteDirection> routeDirection) {
 	if (points.size() <= 2) {
-		// never reached code
 		if (!useSmartRouteRecalculation) {
 			ctx->previouslyCalculatedRoute.clear();
 		}
-		auto res = searchRouteInternalPrepare(ctx, points[0], points[1], routeDirection); // BRP-ios (no-interpoints) (never)
+		auto res = searchRouteInternalPrepare(ctx, points[0], points[1], routeDirection); // BRP-ios (never reached code)
 		makeStartEndPointsPrecise(ctx, res, points[0]->preciseX, points[0]->preciseY, points[1]->preciseX, points[1]->preciseY);
 		return res;
 	}
