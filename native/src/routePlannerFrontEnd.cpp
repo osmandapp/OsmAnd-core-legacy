@@ -506,16 +506,33 @@ void RoutePlannerFrontEnd::addStraightLine(const SHARED_PTR<GpxRouteApproximatio
 void RoutePlannerFrontEnd::cleanupResultAndAddTurns(SHARED_PTR<GpxRouteApproximation>& gctx) {
 	// cleanup double joints
 	int LOOK_AHEAD = 4;
+	vector <SHARED_PTR<RouteSegmentResult>> deleted;
 	for (int i = 0; i < gctx->result.size() && !gctx->ctx->progress->isCancelled(); i++) {
 		SHARED_PTR<RouteSegmentResult>& s = gctx->result[i];
 		for (int j = i + 2; j <= i + LOOK_AHEAD && j < gctx->result.size(); j++) {
 			SHARED_PTR<RouteSegmentResult>& e = gctx->result[j];
 			if (e->getStartPoint().isEquals(s->getEndPoint())) {
 				while ((--j) != i) {
+					deleted.push_back(gctx->result.at(j));
 					gctx->result.erase(gctx->result.begin() + j);
 				}
 				break;
 			}
+		}
+	}
+	for (const auto& gpx : gctx->finalPoints) {
+		auto& route = gpx->routeToTarget; // modify
+		if (route.size() > 0) {
+			route.erase(std::remove_if(route.begin(), route.end(),
+				[deleted](SHARED_PTR<RouteSegmentResult> seg) {
+					for (const auto& del : deleted) {
+						if (del == seg) {
+							return true;
+						}
+					}
+					return false;
+				}
+			), route.end());
 		}
 	}
 	gctx->result.shrink_to_fit();
