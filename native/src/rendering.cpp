@@ -963,7 +963,7 @@ void drawPoint(MapDataObject* mObj, RenderingRuleSearchRequest* req, SkCanvas* c
 			py /= length;
 		}
 	}
-	RenderableObject* rObj;
+	RenderableObject* rObj = NULL;
 	if (rc->saveTextTile) {
 		rObj = new RenderableObject(mObj);
 		rObj->type = "point";
