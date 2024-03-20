@@ -201,6 +201,9 @@ struct GpxPoint {
 	GpxPoint(int32_t ind, double lat, double lon, double cumDist) : ind(ind), lat(lat), lon(lon), cumDist(cumDist){};
 
 	GpxPoint(const SHARED_PTR<GpxPoint>& p) : ind(p->ind), lat(p->lat), lon(p->lon), cumDist(p->cumDist){};
+
+	SHARED_PTR<RouteSegmentResult> getFirstRouteRes() { return routeToTarget.empty() ? nullptr : routeToTarget.at(0); }
+	SHARED_PTR<RouteSegmentResult> getLastRouteRes() { return routeToTarget.empty() ? nullptr : routeToTarget.at(routeToTarget.size() - 1); }
 };
 
 #endif /*_OSMAND_ROUTE_SEGMENT_H*/
