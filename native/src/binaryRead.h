@@ -1094,6 +1094,9 @@ bool closeBinaryMapFile(std::string inputName);
 
 void getIncompleteTransportRoutes(BinaryMapFile* file);
 
+void addToCache(BinaryMapFile * mapfile);
+void writeToCacheFile(const std::string& filePath);
+
 struct NetworkDBPoint;
 struct HHRoutingContext;
 struct HHRouteRegionPointsCtx;

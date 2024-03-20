@@ -26,6 +26,7 @@ using namespace std;
 using google::protobuf::internal::WireFormatLite;
 using google::protobuf::io::CodedInputStream;
 using google::protobuf::io::FileInputStream;
+using google::protobuf::io::FileOutputStream;
 
 // using namespace google::protobuf::internal;
 #define INT_MAXIMUM 0x7fffffff
@@ -37,6 +38,8 @@ static uint zoomOnlyForBasemaps = 11;
 static uint zoomMaxDetailedForCoastlines = 16;
 std::vector<BinaryMapFile*> openFiles;
 OsmAnd::OBF::OsmAndStoredIndex* cache = NULL;
+bool hasChanged = false;
+static const int VERSION = 2;
 
 #ifdef MALLOC_H
 #include <malloc.h>
@@ -3581,6 +3584,7 @@ bool initMapFilesFromCache(std::string inputName) {
 		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Native Cache file initialized: %s %llu", inputName.c_str(),
 						  timer.GetElapsedMs());
 		cache = c;
+        hasChanged = false;
 		return true;
 	}
 	return false;
@@ -3725,8 +3729,14 @@ BinaryMapFile* initBinaryMapFile(std::string inputName, bool useLive, bool routi
 			delete mapFile;
 			return NULL;
 		} else {
+            addToCache(mapFile);
 			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "Native File not initialized from cache: %s %llu ms",
 					inputName.c_str(), timer.GetElapsedMs());
+            
+            //FOR DEBUG ONLY
+            /*auto const pos = mapFile->inputName.find_last_of('/');
+            const std::string dir = mapFile->inputName.substr(0, pos);
+            writeToCacheFile(dir + "/ios.cache");*/
 		}
 	}
 
@@ -3734,6 +3744,112 @@ BinaryMapFile* initBinaryMapFile(std::string inputName, bool useLive, bool routi
 	return mapFile;
 }
 
+void addRouteSubregion(OsmAnd::OBF::RoutingPart* routing, RouteSubregion & sub, bool base)
+{
+    auto rpart = routing->add_subregions();
+    rpart->set_size(sub.length);
+    rpart->set_offset(sub.filePointer);
+    rpart->set_left(sub.left);
+    rpart->set_right(sub.right);
+    rpart->set_top(sub.top);
+    rpart->set_basemap(base);
+    rpart->set_bottom(sub.bottom);
+    if (sub.mapDataBlock > sub.filePointer)
+        rpart->set_shiftodata((unsigned int)(sub.mapDataBlock - sub.filePointer));
+    else
+        rpart->set_shiftodata(0);
+}
+
+void addToCache(BinaryMapFile * mapFile) {
+    hasChanged = true;
+    if (mapFile->routingIndexes.size() == 0 && mapFile->hhIndexes.size() == 0) {
+        hasChanged = false;
+        return;
+    }
+    if (!cache) {
+        cache = new OsmAnd::OBF::OsmAndStoredIndex();
+        cache->set_version(VERSION);
+        auto time_since_epoch = std::chrono::system_clock::now().time_since_epoch();
+        auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(time_since_epoch).count();
+        cache->set_datecreated(millis);
+    } else {
+        int found = -1;
+        for (int i = 0; i < cache->fileindex_size(); i++) {
+            auto fi = cache->fileindex(i);
+            if (mapFile->inputName == fi.filename()) {
+                found = i;
+            }
+        }
+        if (found >= 0) {
+            cache->mutable_fileindex()->DeleteSubrange(found, 1);
+        }
+    }
+    
+    struct stat stats;
+    stat(mapFile->inputName.c_str(), &stats);
+    
+    OsmAnd::OBF::FileIndex* fi = cache->add_fileindex();
+
+    auto d = mapFile->dateCreated;
+    if (d == 0) {
+        fi->set_datemodified(stats.st_mtime * 1000);
+    } else {
+        fi->set_datemodified(d);
+    }
+    fi->set_size(stats.st_size);
+    fi->set_version(mapFile->version);
+    fi->set_filename(mapFile->inputName.c_str());
+    for (SHARED_PTR<RoutingIndex> & index : mapFile->routingIndexes) {
+        OsmAnd::OBF::RoutingPart* routing = fi->add_routingindex();
+        routing->set_size(index->length);
+        routing->set_offset(index->filePointer);
+        routing->set_name(index->name.c_str());
+        
+        //read tree data here?
+        for (RouteSubregion & sub : index->subregions) {
+            addRouteSubregion(routing, sub, false);
+        }
+        
+        for (RouteSubregion & sub : index->basesubregions) {
+            addRouteSubregion(routing, sub, true);
+        }
+    }
+    
+    for (SHARED_PTR<HHRouteIndex> & index : mapFile->hhIndexes) {
+        OsmAnd::OBF::HHRoutingPart* routing = fi->add_hhroutingindex();
+        routing->set_size(index->length);
+        routing->set_offset(index->filePointer);
+        routing->set_edition(index->edition);
+        for (int i = 0; i < index->profileParams.size(); i++) {
+            const std::string p = index->profileParams.at(i);
+            if (!p.empty()) {
+                routing->add_profileparams(p);
+            }
+        }
+        routing->set_profile(index->profile);
+        routing->set_pointslength(index->top->length);
+        routing->set_pointsoffset(index->top->filePointer);
+        routing->set_bottom(index->top->bottom);
+        routing->set_top(index->top->top);
+        routing->set_left(index->top->left);
+        routing->set_right(index->top->right);
+    }
+}
+
 std::vector<BinaryMapFile*> getOpenMapFiles() {
 	return openFiles;
+}
+
+void writeToCacheFile(const std::string& filePath) {
+    if (cache && hasChanged) {
+        int fileDescriptor = open(filePath.c_str(), O_RDWR);
+        if (fileDescriptor < 0) {
+            OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "Cache file could not be written: %s", filePath.c_str());
+            return;
+        }
+
+        FileOutputStream output(fileDescriptor);
+        if (!cache->SerializeToZeroCopyStream(&output))
+            OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "Cache file could not be serialized: %s", filePath.c_str());
+    }
 }
