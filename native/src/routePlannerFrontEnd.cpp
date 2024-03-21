@@ -188,7 +188,6 @@ void RoutePlannerFrontEnd::searchGpxRoute(SHARED_PTR<GpxRouteApproximation> &gct
 		double routeDist = gctx->ctx->config->maxStepApproximation;
 		SHARED_PTR<GpxPoint> next = findNextGpxPointWithin(gpxPoints, start, routeDist);
 		bool routeFound = false;
-		bool stepBack = false;
 		if (next && initRoutingPoint(start, gctx, gctx->ctx->config->minPointApproximation)) {
 			while (routeDist >= gctx->ctx->config->minStepApproximation && !routeFound) {
 				routeFound = initRoutingPoint(next, gctx, gctx->ctx->config->minPointApproximation);
@@ -200,14 +199,11 @@ void RoutePlannerFrontEnd::searchGpxRoute(SHARED_PTR<GpxRouteApproximation> &gct
 							start->routeToTarget.clear();
 						}
 					}
-					if (routeFound && next->ind == gpxPoints.size() - 1) {
-						// last point - last route found
-						makeSegmentPointPrecise(gctx->ctx, start->routeToTarget[start->routeToTarget.size() - 1], next->lat, next->lon, false);
-					} else if (routeFound) {
+					if (routeFound && next->ind < gpxPoints.size() - 1) {
 						// route is found - cut the end of the route and move to next iteration
 						// start.stepBackRoute = new ArrayList<RouteSegmentResult>();
 						// boolean stepBack = true;
-						stepBack = stepBackAndFindPrevPointInRoute(gctx, gpxPoints, start, next);
+						bool stepBack = stepBackAndFindPrevPointInRoute(gctx, gpxPoints, start, next);
 						if (!stepBack) {
 							// not supported case (workaround increase maxStepApproximation)
 							OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
@@ -238,8 +234,6 @@ void RoutePlannerFrontEnd::searchGpxRoute(SHARED_PTR<GpxRouteApproximation> &gct
 			if (prev) {
 				prev->routeToTarget.insert(prev->routeToTarget.end(), prev->stepBackRoute.begin(),
 										   prev->stepBackRoute.end());
-				makeSegmentPointPrecise(gctx->ctx, prev->routeToTarget[prev->routeToTarget.size() - 1], start->lat, start->lon,
-										false);
 				if (next) {
 					OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "NOT found route from: %s at %d",
 									  start->pnt->getRoad()->getName().c_str(), start->pnt->getSegmentStart());
@@ -403,7 +397,13 @@ mainLoop:
 	}
 	start->routeToTarget.shrink_to_fit();
 	SHARED_PTR<RouteSegmentResult>& res = start->routeToTarget[segmendInd];
-	next->pnt = std::make_shared<RouteSegmentPoint>(res->object, res->getEndPointIndex(), 0);
+
+	int end = res->getEndPointIndex();
+	int beforeEnd = res->isForwardDirection() ? end - 1 : end + 1;
+	next->pnt = std::make_shared<RouteSegmentPoint>(res->object, beforeEnd, end, 0);
+	next->pnt->preciseX = next->pnt->getEndPointX();
+	next->pnt->preciseY = next->pnt->getEndPointY();
+
 	// OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "[Native] STEP BACK: %.5f %.5f	",
 	//   					next->pnt->getPreciseLatLon().lat, next->pnt->getPreciseLatLon().lon);
 	return true;
@@ -506,16 +506,33 @@ void RoutePlannerFrontEnd::addStraightLine(const SHARED_PTR<GpxRouteApproximatio
 void RoutePlannerFrontEnd::cleanupResultAndAddTurns(SHARED_PTR<GpxRouteApproximation>& gctx) {
 	// cleanup double joints
 	int LOOK_AHEAD = 4;
+	vector <SHARED_PTR<RouteSegmentResult>> deleted;
 	for (int i = 0; i < gctx->result.size() && !gctx->ctx->progress->isCancelled(); i++) {
 		SHARED_PTR<RouteSegmentResult>& s = gctx->result[i];
 		for (int j = i + 2; j <= i + LOOK_AHEAD && j < gctx->result.size(); j++) {
 			SHARED_PTR<RouteSegmentResult>& e = gctx->result[j];
 			if (e->getStartPoint().isEquals(s->getEndPoint())) {
 				while ((--j) != i) {
+					deleted.push_back(gctx->result.at(j));
 					gctx->result.erase(gctx->result.begin() + j);
 				}
 				break;
 			}
+		}
+	}
+	for (const auto& gpx : gctx->finalPoints) {
+		auto& route = gpx->routeToTarget; // modify
+		if (route.size() > 0) {
+			route.erase(std::remove_if(route.begin(), route.end(),
+				[deleted](SHARED_PTR<RouteSegmentResult> seg) {
+					for (const auto& del : deleted) {
+						if (del == seg) {
+							return true;
+						}
+					}
+					return false;
+				}
+			), route.end());
 		}
 	}
 	gctx->result.shrink_to_fit();
@@ -614,14 +631,10 @@ bool RoutePlannerFrontEnd::findGpxRouteSegment(SHARED_PTR<GpxRouteApproximation>
 		}
 		if (routeIsCorrect) {
 			// correct start point though don't change end point
-			// makeSegmentPointPrecise(res[0], start->lat, start->lon, true);
-			if (!prevRouteCalculated) {
-				// make first position precise
-				makeSegmentPointPrecise(gctx->ctx, res[0], start->lat, start->lon, true);
-			} else {
+			if (prevRouteCalculated) {
 				if (res[0]->object->getId() == start->pnt->getRoad()->getId()) {
 					// start point could shift to +-1 due to direction
-					res[0]->setStartPointIndex(start->pnt->getSegmentStart());
+					res[0]->setStartPointIndex(start->pnt->getSegmentEnd());
 					if (res[0]->object->getPointsLength() != start->pnt->getRoad()->getPointsLength()) {
 						res[0]->object = start->pnt->getRoad();
 					}
