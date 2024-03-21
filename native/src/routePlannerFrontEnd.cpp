@@ -147,6 +147,30 @@ bool RoutePlannerFrontEnd::hasSegment(vector<SHARED_PTR<RouteSegmentResult>>& re
 	return false;
 }
 
+vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRouteByPoints(RoutingContext* ctx,
+	SHARED_PTR<RouteSegmentPoint> start, SHARED_PTR<RouteSegmentPoint> end)
+{
+	if (!start || !end) {
+		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "searchRouteByPoints() got empty start/end");
+		return vector<SHARED_PTR<RouteSegmentResult>>();
+	}
+
+	vector<SHARED_PTR<RouteSegment>> results = searchRouteInternal(ctx, start, end, {}, {});
+
+	if (results.size() == 0) {
+		// OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "searchRouteByPoints() got empty results");
+		return vector<SHARED_PTR<RouteSegmentResult>>();
+	}
+
+	SHARED_PTR<RouteSegment> finalSegment = results[0];
+	ctx->finalRouteSegment = finalSegment;
+
+	vector<SHARED_PTR<RouteSegmentResult>> res = convertFinalSegmentToResults(ctx, finalSegment);
+	attachConnectedRoads(ctx, res);
+	prepareResult(ctx, res);
+	return res;
+}
+
 vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRouteInternalPrepare(
 	RoutingContext* ctx, SHARED_PTR<RouteSegmentPoint> start, SHARED_PTR<RouteSegmentPoint> end,
 	SHARED_PTR<PrecalculatedRouteDirection> routeDirection) {
@@ -619,7 +643,7 @@ bool RoutePlannerFrontEnd::findGpxRouteSegment(SHARED_PTR<GpxRouteApproximation>
 		gctx->routeDistCalculations += (target->cumDist - start->cumDist);
 		gctx->routeCalculations++;
 		RoutingContext* cp = new RoutingContext(gctx->ctx);
-		res = searchRouteInternalPrepare(cp, start->pnt, target->pnt, nullptr);
+		res = searchRouteByPoints(cp, start->pnt, target->pnt);
 		delete cp;
 		// BinaryRoutePlanner.printDebugMemoryInformation(gctx.ctx);
 		routeIsCorrect = !res.empty();

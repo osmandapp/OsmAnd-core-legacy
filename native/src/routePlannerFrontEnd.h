@@ -61,8 +61,9 @@ public:
                                            vector<SHARED_PTR<RouteSegmentPoint>>& points,
                                            SHARED_PTR<PrecalculatedRouteDirection> routeDirection);
     
+    vector<SHARED_PTR<RouteSegmentResult>> searchRouteByPoints(RoutingContext* ctx, SHARED_PTR<RouteSegmentPoint> start, SHARED_PTR<RouteSegmentPoint> end);
     vector<SHARED_PTR<RouteSegmentResult> > searchRouteInternalPrepare(RoutingContext* ctx, SHARED_PTR<RouteSegmentPoint> start, SHARED_PTR<RouteSegmentPoint> end, SHARED_PTR<PrecalculatedRouteDirection> routeDirection);
-    
+
     void setUseFastRecalculation(bool use) {
         useSmartRouteRecalculation = use;
     }
