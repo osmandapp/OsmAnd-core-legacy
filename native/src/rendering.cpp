@@ -342,10 +342,9 @@ int updatePaint(RenderingRuleSearchRequest* req, SkPaint* paint, int ind, int ar
 	return 1;
 }
 
-void renderText(MapDataObject* obj, RenderableObject* rObj, RenderingRuleSearchRequest* req,
-				RenderingContext* rc, std::string tag, std::string value, float xText, float yText, float lineLength,
-				SkPath* path, SHARED_PTR<IconDrawInfo> ico,
-				std::unordered_map<int64_t, std::unique_ptr<RenderableObject>>& renderableObjects) {
+void renderText(MapDataObject* obj, RenderableObject* rObj, RenderingRuleSearchRequest* req, RenderingContext* rc,
+				std::string tag, std::string value, float xText, float yText, float lineLength, SkPath* path,
+				SHARED_PTR<IconDrawInfo> ico, std::unordered_map<int64_t, RenderableObject*>& renderableObjects) {
 	std::vector<std::string>::iterator it = obj->namesOrder.begin();
 	uint k = 0;
 	while (it != obj->namesOrder.end()) {
@@ -412,7 +411,7 @@ void renderText(MapDataObject* obj, RenderableObject* rObj, RenderingRuleSearchR
 							dupInfo->secondOrder = ((obj->id % 10000) << 8) + k;
 							rc->textToDraw.push_back(dupInfo);
 							if (rObj != NULL && !renderableObjects.empty()) {
-								renderableObjects.emplace(dupInfo->object.id, std::move(rObj));
+								renderableObjects.insert({dupInfo->object.id, rObj});
 							}
 						}
 					}
@@ -426,7 +425,7 @@ void renderText(MapDataObject* obj, RenderableObject* rObj, RenderingRuleSearchR
 					info->secondOrder = ((obj->id % 10000) << 8) + k;
 					rc->textToDraw.push_back(info);
 					if (rObj != NULL && !renderableObjects.empty()) {
-						renderableObjects.emplace(info->object.id, std::move(rObj));
+						renderableObjects.insert({info->object.id, rObj});
 					}
 				}
 			}
@@ -614,7 +613,7 @@ int assignOnewayColor(MapDataObject* mObj, RenderingRuleSearchRequest* req, Rend
 
 void drawPolyline(MapDataObject* mObj, RenderingRuleSearchRequest* req, SkCanvas* cv, SkPaint* paint,
 				  RenderingContext* rc, tag_value pair, int layer, int drawOnlyShadow,
-				  std::unordered_map<int64_t, std::unique_ptr<RenderableObject>>& renderableObjects) {
+				  std::unordered_map<int64_t, RenderableObject*>& renderableObjects) {
 	size_t length = mObj->points.size();
 	if (length < 2) {
 		return;
@@ -795,7 +794,7 @@ bool contains(vector<pair<int, int>>& points, int x, int y) {
 
 void drawPolygon(MapDataObject* mObj, RenderingRuleSearchRequest* req, SkCanvas* cv, SkPaint* paint,
 				 RenderingContext* rc, tag_value pair, const MapDataObjectPrimitive& prim,
-				 std::unordered_map<int64_t, std::unique_ptr<RenderableObject>>& renderableObjects) {
+				 std::unordered_map<int64_t, RenderableObject*>& renderableObjects) {
 	size_t length = mObj->points.size();
 	if (length <= 2) {
 		return;
@@ -929,7 +928,7 @@ void saveAdditionalIcons(RenderingContext* rc, RenderableObject* rObj, std::stri
 
 void drawPoint(MapDataObject* mObj, RenderingRuleSearchRequest* req, SkCanvas* cv, SkPaint* paint, RenderingContext* rc,
 			   std::pair<std::string, std::string> pair, uint typeInd,
-			   std::unordered_map<int64_t, std::unique_ptr<RenderableObject>>& renderableObjects) {
+			   std::unordered_map<int64_t, RenderableObject*>& renderableObjects) {
 	std::string tag = pair.first;
 	std::string value = pair.second;
 
@@ -1013,7 +1012,7 @@ void drawPoint(MapDataObject* mObj, RenderingRuleSearchRequest* req, SkCanvas* c
 		if (ico->order >= 0) {
 			rc->iconsToDraw.push_back(ico);
 			if (rc->saveTextTile && rObj != NULL) {
-				renderableObjects.emplace(ico->object.id, std::move(rObj));
+				renderableObjects.insert({ico->object.id, rObj});
 			}
 		}
 	}
@@ -1026,7 +1025,7 @@ void drawPoint(MapDataObject* mObj, RenderingRuleSearchRequest* req, SkCanvas* c
 
 void drawObject(RenderingContext* rc, SkCanvas* cv, RenderingRuleSearchRequest* req, SkPaint* paint,
 				vector<MapDataObjectPrimitive>& array, int objOrder,
-				std::unordered_map<int64_t, std::unique_ptr<RenderableObject>>& renderableObjects) {
+				std::unordered_map<int64_t, RenderableObject*>& renderableObjects) {
 	// double polygonLimit = 100;
 	// float orderToSwitch = 0;
 	for (uint i = 0; i < array.size(); i++) {
@@ -1068,7 +1067,7 @@ SkRect makeRect(RenderingContext* rc, SHARED_PTR<IconDrawInfo>& icon, SkBitmap* 
 }
 
 void drawIconsOverCanvas(RenderingContext* rc, RenderingRuleSearchRequest* req, SkCanvas* canvas,
-						 std::unordered_map<int64_t, std::unique_ptr<RenderableObject>>& renderableObjects) {
+						 std::unordered_map<int64_t, RenderableObject*>& renderableObjects) {
 	std::sort(rc->iconsToDraw.begin(), rc->iconsToDraw.end(), iconOrder);
 	SkRect bounds = SkRect::MakeLTRB(0, 0, rc->getWidth(), rc->getHeight());
 	bounds.inset(-bounds.width() / 4, -bounds.height() / 4);
@@ -1110,7 +1109,7 @@ void drawIconsOverCanvas(RenderingContext* rc, RenderingRuleSearchRequest* req, 
 				if (rc->saveTextTile && !renderableObjects.empty()) {
 					auto it = renderableObjects.find(icon->object.id);
 					if (it != renderableObjects.end()) {
-						auto& rObj = it->second;
+						RenderableObject* rObj = it->second;
 						if (rObj->mainIcon != "") {
 							rObj->visible = true;
 							rObj->iconOrder = icon->order;
@@ -1426,10 +1425,9 @@ void saveTextTile(RenderingContext* rc, std::vector<MapDataObjectPrimitive> & ar
 	rc->textTile += result;
 }
 
-void updateTextTile(std::unordered_map<int64_t, std::unique_ptr<RenderableObject>>& renderableObjects,
-					RenderingContext* rc) {
+void updateTextTile(std::unordered_map<int64_t, RenderableObject*>& renderableObjects, RenderingContext* rc) {
 	for (auto& pair : renderableObjects) {
-		const auto& obj = pair.second;
+		const RenderableObject* obj = pair.second;
 		if (obj->visible) {
 			rc->textTile += obj->toJson() + ",";
 		}
@@ -1453,7 +1451,7 @@ void doRendering(std::vector<FoundMapDataObject>& mapDataObjects, SkCanvas* canv
 	sortObjectsByProperOrder(mapDataObjects, req, rc, polygonsArray, pointsArray, linesArray);
 	rc->lastRenderedKey = 0;
 
-	std::unordered_map<int64_t, std::unique_ptr<RenderableObject>> renderableObjects;
+	std::unordered_map<int64_t, RenderableObject*> renderableObjects;
 	// draw polygons
 	drawObject(rc, canvas, req, paint, polygonsArray, 0, renderableObjects);
 	rc->lastRenderedKey = DEFAULT_POLYGON_MAX;
@@ -1478,6 +1476,9 @@ void doRendering(std::vector<FoundMapDataObject>& mapDataObjects, SkCanvas* canv
 		updateTextTile(renderableObjects, rc);
 	}
 
+	for (auto& pair : renderableObjects) {
+		delete pair.second;
+	}
 	renderableObjects.clear();
 
 	delete paint;
