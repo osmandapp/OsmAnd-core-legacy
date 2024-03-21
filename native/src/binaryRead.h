@@ -1090,12 +1090,15 @@ BinaryMapFile* initBinaryMapFile(std::string inputName, bool useLive, bool routi
 
 bool initMapFilesFromCache(std::string inputName);
 
+bool cacheBinaryMapFileIfNeeded(const std::string& inputName, bool routingOnly);
+
+bool addToCache(BinaryMapFile* mapfile, bool routingOnly);
+
+bool writeMapFilesCache(const std::string& filePath);
+
 bool closeBinaryMapFile(std::string inputName);
 
 void getIncompleteTransportRoutes(BinaryMapFile* file);
-
-void addToCache(BinaryMapFile * mapfile);
-void writeToCacheFile(const std::string& filePath);
 
 struct NetworkDBPoint;
 struct HHRoutingContext;
