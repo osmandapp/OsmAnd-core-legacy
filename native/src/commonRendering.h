@@ -228,6 +228,27 @@ struct RenderingContext {
 	bool saveTextTile;
 	std::string textTile;
 
+	std::vector<RenderableObject*> renderableObjectsCache;
+
+	void addRenderableObjectToCache(RenderableObject* rObj) {
+		renderableObjectsCache.push_back(rObj);
+	}
+
+	void clearRenderableObjectsCache() {
+		for (RenderableObject* obj : renderableObjectsCache) {
+			delete obj;
+		}
+		renderableObjectsCache.clear();
+	}
+
+	RenderableObject* createRenderableObject(MapDataObject* mObj, std::string type) {
+		RenderableObject* rObj = new RenderableObject(mObj);
+		rObj->type = type;
+		addRenderableObjectToCache(rObj);
+
+		return rObj;
+	}
+
    public:
 	RenderingContext()
 		: preferredLocale(""), transliterate(false), density(1), screenDensityRatio(1),

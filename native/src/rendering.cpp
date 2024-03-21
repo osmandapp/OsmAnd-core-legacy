@@ -718,8 +718,7 @@ void drawPolyline(MapDataObject* mObj, RenderingRuleSearchRequest* req, SkCanvas
 		}
 		if (!drawOnlyShadow) {
 			if (rc->saveTextTile) {
-				RenderableObject* rObj = new RenderableObject(mObj);
-				rObj->type = "polyline";
+				RenderableObject* rObj = rc->createRenderableObject(mObj, "polyline");
 				renderText(mObj, rObj, req, rc, pair.first, pair.second, middlePoint.fX, middlePoint.fY, lineLen, &path,
 						   NULL, renderableObjects);
 			} else {
@@ -911,8 +910,7 @@ void drawPolygon(MapDataObject* mObj, RenderingRuleSearchRequest* req, SkCanvas*
 	// ignorePointArea = false;
 	if (!prim.pointAdded && (prim.area > MAX_V_AREA || addTextForSmallAreas) && !ignoreText) {
 		if (rc->saveTextTile) {
-			RenderableObject* rObj = new RenderableObject(mObj);
-			rObj->type = "polygon";
+			RenderableObject* rObj = rc->createRenderableObject(mObj, "polygon");
 			renderText(mObj, rObj, req, rc, pair.first, pair.second, xText, yText, 0, &path, NULL, renderableObjects);
 		} else {
 			renderText(mObj, NULL, req, rc, pair.first, pair.second, xText, yText, 0, &path, NULL, renderableObjects);
@@ -964,8 +962,7 @@ void drawPoint(MapDataObject* mObj, RenderingRuleSearchRequest* req, SkCanvas* c
 	}
 	RenderableObject* rObj = NULL;
 	if (rc->saveTextTile) {
-		rObj = new RenderableObject(mObj);
-		rObj->type = "point";
+		rObj = rc->createRenderableObject(mObj, "point");
 		rObj->iconX = mObj->getLabelX();
 		rObj->iconY = mObj->getLabelY();
 		rObj->mainIcon = resId;
@@ -1476,9 +1473,7 @@ void doRendering(std::vector<FoundMapDataObject>& mapDataObjects, SkCanvas* canv
 		updateTextTile(renderableObjects, rc);
 	}
 
-	for (auto& pair : renderableObjects) {
-		delete pair.second;
-	}
+	rc->clearRenderableObjectsCache();
 	renderableObjects.clear();
 
 	delete paint;
