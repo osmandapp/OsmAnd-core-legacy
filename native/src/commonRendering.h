@@ -189,6 +189,8 @@ struct RenderingContext {
 	int noHighwayOnewayArrows;
 	string defaultIconsDir;
 
+	std::vector<RenderableObject*> renderableObjectsCache;
+
    public:
 	// debug purpose
 	int pointCount;
@@ -227,6 +229,21 @@ struct RenderingContext {
 
 	bool saveTextTile;
 	std::string textTile;
+
+	void clearRenderableObjectsCache() {
+		for (RenderableObject* obj : renderableObjectsCache) {
+			delete obj;
+		}
+		renderableObjectsCache.clear();
+	}
+
+	RenderableObject* createRenderableObject(MapDataObject* mObj, std::string type) {
+		RenderableObject* rObj = new RenderableObject(mObj);
+		rObj->type = type;
+		renderableObjectsCache.push_back(rObj);
+
+		return rObj;
+	}
 
    public:
 	RenderingContext()
