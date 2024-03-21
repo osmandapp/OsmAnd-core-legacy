@@ -261,9 +261,6 @@ void initQueuesWithStartEnd(RoutingContext* ctx, SHARED_PTR<RouteSegmentPoint>& 
 
 bool checkIfGraphIsEmpty(RoutingContext* ctx, bool allowDirection, bool reverseWaySearch, SEGMENTS_QUEUE& graphSegments,
 						 SHARED_PTR<RouteSegmentPoint>& pnt, VISITED_MAP& visited, string msg) {
-	if (!allowDirection) {
-		return false;
-	}
 	if (allowDirection && graphSegments.empty()) {
 		if (pnt->others.size() > 0) {
 			vector<SHARED_PTR<RouteSegmentPoint>>::iterator pntIterator = pnt->others.begin();
@@ -291,18 +288,20 @@ bool checkIfGraphIsEmpty(RoutingContext* ctx, bool allowDirection, bool reverseW
 				}
 
 				if (!graphSegments.empty()) {
-					OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "Reiterate point with new start/destination ");
+					OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "Reiterate point with new %s",
+						!reverseWaySearch ? "start" : "destination");
 					printRoad("Reiterate point ", next);
-					break;
+					pnt->others.shrink_to_fit();
+					return true;
 				}
 			}
 			pnt->others.shrink_to_fit();
 			if (graphSegments.empty()) {
-				OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "Route is not found to selected target point.");
+				OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "ERROR: IllegalArgumentException(%s)", msg.c_str());
 			}
 		}
 	}
-	return graphSegments.empty();
+	return false;
 }
 
 bool containsKey(VISITED_MAP& visited, int64_t routePointId) { return visited.find(routePointId) != visited.end(); }
