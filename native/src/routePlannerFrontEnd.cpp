@@ -208,17 +208,18 @@ void RoutePlannerFrontEnd::searchGpxRoute(SHARED_PTR<GpxRouteApproximation> &gct
 		gctx->ctx->progress->updateTotalApproximateDistance(gpxPoints[gpxPoints.size() - 1]->cumDist);
 		start = gpxPoints[0];
 	}
+	float minPointApproximation = gctx->ctx->config->minPointApproximation;
 	while (start && !gctx->ctx->progress->isCancelled()) {
 		double routeDist = gctx->ctx->config->maxStepApproximation;
 		SHARED_PTR<GpxPoint> next = findNextGpxPointWithin(gpxPoints, start, routeDist);
 		bool routeFound = false;
-		if (next && initRoutingPoint(start, gctx, gctx->ctx->config->minPointApproximation)) {
+		if (next && initRoutingPoint(start, gctx, minPointApproximation)) {
 			while (routeDist >= gctx->ctx->config->minStepApproximation && !routeFound) {
-				routeFound = initRoutingPoint(next, gctx, gctx->ctx->config->minPointApproximation);
+				routeFound = initRoutingPoint(next, gctx, minPointApproximation);
 				if (routeFound) {
 					routeFound = findGpxRouteSegment(gctx, gpxPoints, start, next, prev != nullptr);
 					if (routeFound) {
-						routeFound = isRouteCloseToGpxPoints(gctx, gpxPoints, start, next);
+						routeFound = isRouteCloseToGpxPoints(minPointApproximation, gpxPoints, start, next);
 						if (!routeFound) {
 							start->routeToTarget.clear();
 						}
@@ -353,7 +354,7 @@ void RoutePlannerFrontEnd::makeSegmentPointPrecise(RoutingContext* ctx, SHARED_P
 	}
 }
 
-bool RoutePlannerFrontEnd::isRouteCloseToGpxPoints(SHARED_PTR<GpxRouteApproximation>& gctx, vector<SHARED_PTR<GpxPoint>>& gpxPoints,
+bool RoutePlannerFrontEnd::isRouteCloseToGpxPoints(float minPointApproximation, vector<SHARED_PTR<GpxPoint>>& gpxPoints,
 	                         SHARED_PTR<GpxPoint>& start, SHARED_PTR<GpxPoint>& next) {
 	bool routeIsClose = true;
 	for (SHARED_PTR<RouteSegmentResult> r : start->routeToTarget) {
@@ -366,7 +367,7 @@ bool RoutePlannerFrontEnd::isRouteCloseToGpxPoints(SHARED_PTR<GpxRouteApproximat
 			int startInd = std::max(0, start->ind - delta);
 			int nextInd = std::min((int)gpxPoints.size() - 1, next->ind + delta);
 			for (int k = startInd; !pointIsClosed && k < nextInd; k++) {
-				pointIsClosed = pointCloseEnough(gctx, point, gpxPoints[k], gpxPoints[k + 1]);
+				pointIsClosed = pointCloseEnough(minPointApproximation, point, gpxPoints[k], gpxPoints[k + 1]);
 			}
 			if (!pointIsClosed) {
 				routeIsClose = false;
@@ -683,7 +684,7 @@ bool RoutePlannerFrontEnd::findGpxRouteSegment(SHARED_PTR<GpxRouteApproximation>
 	return routeIsCorrect;
 }
 
-bool RoutePlannerFrontEnd::pointCloseEnough(SHARED_PTR<GpxRouteApproximation>& gctx, LatLon point,
+bool RoutePlannerFrontEnd::pointCloseEnough(float minPointApproximation, LatLon point,
                                             SHARED_PTR<GpxPoint>& gpxPoint, SHARED_PTR<GpxPoint>& gpxPointNext) {
 	LatLon gpxPointLL(gpxPoint->pnt ? gpxPoint->pnt->getPreciseLatLon().lat : gpxPoint->lat,
 					  gpxPoint->pnt ? gpxPoint->pnt->getPreciseLatLon().lon : gpxPoint->lon);
@@ -691,7 +692,7 @@ bool RoutePlannerFrontEnd::pointCloseEnough(SHARED_PTR<GpxRouteApproximation>& g
 						  gpxPointNext->pnt ? gpxPointNext->pnt->getPreciseLatLon().lon : gpxPointNext->lon);
 	std::pair<double, double> projection =
 		getProjection(point.lat, point.lon, gpxPointLL.lat, gpxPointLL.lon, gpxPointNextLL.lat, gpxPointNextLL.lon);
-	return getDistance(projection.first, projection.second, point.lat, point.lon) <= gctx->ctx->config->minPointApproximation;
+	return getDistance(projection.first, projection.second, point.lat, point.lon) <= minPointApproximation;
 }
 
 bool RoutePlannerFrontEnd::pointCloseEnough(SHARED_PTR<GpxRouteApproximation>& gctx, SHARED_PTR<GpxPoint>& ipoint,
