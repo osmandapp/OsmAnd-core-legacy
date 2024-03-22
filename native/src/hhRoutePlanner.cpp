@@ -201,7 +201,7 @@ SHARED_PTR<HHRoutingContext> HHRoutePlanner::initHCtx(HHRoutingConfig * c, int s
         OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Loading points... ");
     }
     hctx->pointsById = hctx->loadNetworkPoints();
-    hctx->stats.loadPointsTime = timer.GetElapsedMs();
+    hctx->stats.loadPointsTime += timer.GetElapsedMs();
     timer.Restart();
     if (c->STATS_VERBOSE_LEVEL > 0) {
         OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, " %zu - %.2fms\n", hctx->pointsById.size(), hctx->stats.loadPointsTime);
@@ -225,7 +225,7 @@ SHARED_PTR<HHRoutingContext> HHRoutePlanner::initHCtx(HHRoutingConfig * c, int s
         hctx->pointsRect.printStatsDistribution("Points distributed");
     }
     hctx->initialized = true;
-    hctx->stats.loadPointsTime = timer.GetElapsedMs();
+    hctx->stats.loadPointsTime += timer.GetElapsedMs();
     if (c->STATS_VERBOSE_LEVEL > 0) {
         OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, " %zu - %.2f ms\n", hctx->pointsById.size(), hctx->stats.loadPointsTime);
     }
@@ -334,7 +334,7 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
         hctx->unloadAllConnections();
     }
     
-	timer.Restart();
+    timer.Restart();
     prepareRouteResults(hctx, route, startX, startY, endX, endY);
     hctx->stats.prepTime += timer.GetElapsedMs();
 
@@ -350,16 +350,16 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
         return cancelledStatus();
     }
 
-	// prepareResult() will be called by searchRoute() (HH-ios)
+    // prepareResult() will be called by searchRoute() (HH-ios)
 
     printResults(hctx->rctx, startX, startY, endX, endY, route->detailed);
 
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
-		"Routing %llu ms (selected %s): last mile %.1f ms, load data %.1f ms (%d edges), routing %.1f ms (queue  - %.1f add ms + %.1f poll ms), prep result %.1f ms",
-			overallTimer.GetElapsedMs(), hctx->getRoutingInfo().c_str(), hctx->stats.searchPointsTime,
-			hctx->stats.loadEdgesTime + hctx->stats.loadPointsTime, hctx->stats.loadEdgesCnt, hctx->stats.routingTime,
-			hctx->stats.addQueueTime, hctx->stats.pollQueueTime, hctx->stats.prepTime
-	);
+    OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
+        "Routing %d ms: load/filter points %.f ms, last mile %.f ms, routing %.f ms (queue  - %.f ms, %.f ms - %d edges), prep result %.f ms (selected %s)",
+                    overallTimer.GetElapsedMs(), hctx->stats.loadPointsTime, hctx->stats.searchPointsTime,
+                    hctx->stats.routingTime, hctx->stats.addQueueTime + hctx->stats.pollQueueTime,
+                    hctx->stats.loadEdgesTime, hctx->stats.loadEdgesCnt, hctx->stats.prepTime,
+                    hctx->getRoutingInfo().c_str());
 
     return route;
 }
@@ -917,7 +917,7 @@ void HHRoutePlanner::addPointToQueue(const SHARED_PTR<HHRoutingContext> & hctx, 
     hctx->queueAdded.push_back(point);
     //OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Point added:%d %.2f %s", point->index, cost, reverse ? "rev" : "pos");
     queue->push(std::make_shared<NetworkDBPointCost>(point, cost, reverse)); // we need to add new object to not  remove / rebalance priority queue
-    hctx->stats.addQueueTime += timer.GetElapsedMs();
+    hctx->stats.addQueueTime += (double) timer.GetElapsedNanos() / 1000000;
     hctx->stats.addedVertices++;
     timer.Disable();
 }
@@ -931,7 +931,7 @@ void HHRoutePlanner::addConnectedToQueue(const SHARED_PTR<HHRoutingContext> & hc
     timer.Start();
     int cnt = hctx->loadNetworkSegmentPoint(point, reverse);
     hctx->stats.loadEdgesCnt += cnt;
-    hctx->stats.loadEdgesTime += timer.GetElapsedMs();
+    hctx->stats.loadEdgesTime += (double) timer.GetElapsedNanos() / 1000000;
     for (NetworkDBSegment * connected : point->conn(reverse)) {
         NetworkDBPoint * nextPoint = reverse ? connected->start : connected->end;
         if (!hctx->config->USE_CH && !hctx->config->USE_CH_SHORTCUTS && connected->shortcut) {
@@ -1037,7 +1037,7 @@ NetworkDBPoint * HHRoutePlanner::runRoutingWithInitQueue(const SHARED_PTR<HHRout
         queue->pop();
         NetworkDBPoint * point = pointCost->point;
         bool rev = pointCost->rev;
-        hctx->stats.pollQueueTime += timer.GetElapsedMs();
+        hctx->stats.pollQueueTime += (double) timer.GetElapsedNanos() / 1000000;
         hctx->stats.visitedVertices++;
         if (point->rt(!rev)->rtVisited) {
             if (hctx->stats.firstRouteVisitedVertices == 0) {
@@ -1369,8 +1369,10 @@ void HHRoutePlanner::filterPointsBasedOnConfiguration(const SHARED_PTR<HHRouting
         }
     }
     hctx->filterRoutingParameters = tm;
+    double time = timer.GetElapsedMs();
+    hctx->stats.loadPointsTime += time;
     if (hctx->config->STATS_VERBOSE_LEVEL > 0) {
-        OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "%d excluded from %zu, %.2llu ms\n", filtered, hctx->pointsById.size(), timer.GetElapsedMs());
+        OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "%d excluded from %zu, %.f ms\n", filtered, hctx->pointsById.size(), time);
     }
 }
 
