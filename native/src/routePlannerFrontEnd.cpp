@@ -96,7 +96,7 @@ void RoutePlannerFrontEnd::makeStartEndPointsPrecise(RoutingContext* ctx, vector
 	}
 }
 
-void addPrecalculatedToResult(SHARED_PTR<RouteSegment> recalculationEnd, vector<SHARED_PTR<RouteSegmentResult>> result) {
+void addPrecalculatedToResult(SHARED_PTR<RouteSegment> recalculationEnd, vector<SHARED_PTR<RouteSegmentResult>>& result) {
 	if (recalculationEnd) {
 		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "[Native] use precalculated route");
 		SHARED_PTR<RouteSegment> current = recalculationEnd;
@@ -115,8 +115,8 @@ void addPrecalculatedToResult(SHARED_PTR<RouteSegment> recalculationEnd, vector<
 	}
 }
 
-void copyAttachedToPreAttachedRoutes(vector<SHARED_PTR<RouteSegmentResult>> segments) {
-	for (auto seg : segments) {
+void copyAttachedToPreAttachedRoutes(vector<SHARED_PTR<RouteSegmentResult>>& segments) {
+	for (auto& seg : segments) {
 		seg->preAttachedRoutes = seg->attachedRoutes;
 	}
 }
