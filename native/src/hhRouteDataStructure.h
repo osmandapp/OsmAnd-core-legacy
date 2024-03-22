@@ -563,7 +563,10 @@ struct HHRoutingContext {
                 b.append(", ");
             }
             if (r->fileRegion != nullptr) {
-                b.append(r->file->inputName + " " + r->fileRegion->profile + " [" +
+                auto path = r->file->inputName;
+                auto pos = path.rfind('/'); // "/path/to/file" -> "file"
+                auto name = pos == std::string::npos ? path : path.substr(pos + 1);
+                b.append(name + " " + r->fileRegion->profile + " [" +
                         r->fileRegion->profileParams.at(r->routingProfile) + "]");
             } else {
                 b.append("unknown");

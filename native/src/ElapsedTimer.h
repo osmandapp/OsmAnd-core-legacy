@@ -19,6 +19,7 @@ class ElapsedTimer {
 	void Disable();
 
 	// starts new after reset or resumes previous run
+	void Restart();
 	void Start();
 	void Pause();
 	void Reset();

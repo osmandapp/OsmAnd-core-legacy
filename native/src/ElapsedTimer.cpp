@@ -19,6 +19,11 @@ void OsmAnd::ElapsedTimer::Reset() {
 	isRunning = false;
 }
 
+void OsmAnd::ElapsedTimer::Restart() {
+	Reset();
+	Start();
+}
+
 void OsmAnd::ElapsedTimer::Start() {
 	if (!isEnabled) return;
 	if (!isRunning) startPoint = high_resolution_clock::now();
