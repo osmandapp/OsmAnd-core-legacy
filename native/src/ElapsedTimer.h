@@ -26,6 +26,7 @@ class ElapsedTimer {
 
 	const high_resolution_clock::duration& GetElapsed();
 
+	uint64_t GetElapsedNanos();
 	uint64_t GetElapsedMicros();
 	uint64_t GetElapsedMs();
 };

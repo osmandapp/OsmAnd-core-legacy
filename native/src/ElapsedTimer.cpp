@@ -41,6 +41,11 @@ const high_resolution_clock::duration& OsmAnd::ElapsedTimer::GetElapsed() {
 	return elapsed;
 }
 
+uint64_t OsmAnd::ElapsedTimer::GetElapsedNanos() {
+	Pause();
+	return std::chrono::duration_cast<std::chrono::nanoseconds>(elapsed).count();
+}
+
 uint64_t OsmAnd::ElapsedTimer::GetElapsedMicros() {
 	Pause();
 	return std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
