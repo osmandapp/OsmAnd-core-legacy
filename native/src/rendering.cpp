@@ -719,6 +719,8 @@ void drawPolyline(MapDataObject* mObj, RenderingRuleSearchRequest* req, SkCanvas
 		if (!drawOnlyShadow) {
 			if (rc->saveTextTile) {
 				RenderableObject* rObj = rc->createRenderableObject(mObj, "polyline");
+				rObj->iconX = mObj->getLabelX();
+				rObj->iconY = mObj->getLabelY();
 				renderText(mObj, rObj, req, rc, pair.first, pair.second, middlePoint.fX, middlePoint.fY, lineLen, &path,
 						   NULL, renderableObjects);
 			} else {
