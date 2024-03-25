@@ -19,6 +19,11 @@ void OsmAnd::ElapsedTimer::Reset() {
 	isRunning = false;
 }
 
+void OsmAnd::ElapsedTimer::Restart() {
+	Reset();
+	Start();
+}
+
 void OsmAnd::ElapsedTimer::Start() {
 	if (!isEnabled) return;
 	if (!isRunning) startPoint = high_resolution_clock::now();
@@ -34,6 +39,11 @@ void OsmAnd::ElapsedTimer::Pause() {
 const high_resolution_clock::duration& OsmAnd::ElapsedTimer::GetElapsed() {
 	Pause();
 	return elapsed;
+}
+
+uint64_t OsmAnd::ElapsedTimer::GetElapsedNanos() {
+	Pause();
+	return std::chrono::duration_cast<std::chrono::nanoseconds>(elapsed).count();
 }
 
 uint64_t OsmAnd::ElapsedTimer::GetElapsedMicros() {

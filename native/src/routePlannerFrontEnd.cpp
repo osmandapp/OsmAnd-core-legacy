@@ -816,8 +816,8 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 				ctx->config->penaltyForReverseDirection /= 2; // relax reverse-penalty (only for inter-points)
 			}
 			ctx->progress->hhTargetsProgress(i, targetsX.size());
-			int sx = i == 0 ? ctx->startX : targetsX.at(i - 1);
-			int sy = i == 0 ? ctx->startY : targetsY.at(i - 1);
+			int sx = i == 0 ? startX : targetsX.at(i - 1);
+			int sy = i == 0 ? startY : targetsY.at(i - 1);
 			int ex = targetsX.at(i);
 			int ey = targetsY.at(i);
 			HHNetworkRouteRes* res = calculateHHRoute(routePlanner, ctx.get(), sx, sy, ex, ey, dir);
@@ -862,6 +862,9 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 		nctx->progress = ctx->progress;
 		vector<SHARED_PTR<RouteSegmentResult>> ls =
 			searchRoute(nctx, startX, startY, endX, endY, intermediatesX, intermediatesY); // iOS (interpoints) 2-phase
+		if (ls.size() == 0) {
+			return ls;
+		}
 		routeDirection =
 			PrecalculatedRouteDirection::build(ls, ctx->config->DEVIATION_RADIUS, ctx->config->router->maxSpeed);
 		ctx->calculationProgressFirstPhase =  ctx->progress->capture(ctx->progress);
