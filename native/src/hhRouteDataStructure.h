@@ -13,7 +13,7 @@ struct HHRoutingConfig
 	float HEURISTIC_COEFFICIENT = 0; // A* - 1, Dijkstra - 0
 	float DIJKSTRA_DIRECTION = 0; // 0 - 2 directions, 1 - positive, -1 - reverse
 			
-	double INITIAL_DIRECTION;
+	double INITIAL_DIRECTION = 0;
 	static const int CALCULATE_ALL_DETAILED = 3;
     static const int STATS_VERBOSE_LEVEL = 0;
     
@@ -33,14 +33,14 @@ struct HHRoutingConfig
 	double ALT_EXCLUDE_RAD_MULT_IN = 3; // skip some points to speed up calculation
 	double ALT_NON_UNIQUENESS = 0.7; // 0.7 - 30% of points must be unique
 			
-	double MAX_COST;
+	double MAX_COST = 0;
 	int MAX_DEPTH = -1; // max depth to go to
 	int MAX_SETTLE_POINTS = -1; // max points to settle
 			
-	bool USE_CH;
-	bool USE_CH_SHORTCUTS;
+	bool USE_CH = false;
+	bool USE_CH_SHORTCUTS = false;
 
-	bool USE_MIDPOINT;
+	bool USE_MIDPOINT = false;
 	int MIDPOINT_ERROR = 3;
 	int MIDPOINT_MAX_DEPTH = 20 + MIDPOINT_ERROR;
     double MAX_TIME_REITERATION_MS = 60000;
