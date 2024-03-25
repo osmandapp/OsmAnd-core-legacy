@@ -410,7 +410,7 @@ void renderText(MapDataObject* obj, RenderableObject* rObj, RenderingRuleSearchR
 							fillTextProperties(rc, dupInfo, req, x, y);
 							dupInfo->secondOrder = ((obj->id % 10000) << 8) + k;
 							rc->textToDraw.push_back(dupInfo);
-							if (rObj != NULL && !renderableObjects.empty()) {
+							if (rObj != NULL) {
 								renderableObjects.insert({dupInfo->object.id, rObj});
 							}
 						}
@@ -424,7 +424,7 @@ void renderText(MapDataObject* obj, RenderableObject* rObj, RenderingRuleSearchR
 					fillTextProperties(rc, info, req, xText, yText);
 					info->secondOrder = ((obj->id % 10000) << 8) + k;
 					rc->textToDraw.push_back(info);
-					if (rObj != NULL && !renderableObjects.empty()) {
+					if (rObj != NULL) {
 						renderableObjects.insert({info->object.id, rObj});
 					}
 				}
