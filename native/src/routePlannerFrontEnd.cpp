@@ -121,34 +121,6 @@ void copyAttachedToPreAttachedRoutes(vector<SHARED_PTR<RouteSegmentResult>>& seg
 	}
 }
 
-vector<SHARED_PTR<RouteSegmentResult>> runRouting(RoutingContext* ctx,
-	SHARED_PTR<RouteSegmentPoint> start, SHARED_PTR<RouteSegmentPoint> end, SHARED_PTR<RouteSegment> recalculationEnd)
-{
-	if (!start || !end) {
-		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "runRouting() got empty start/end");
-		return vector<SHARED_PTR<RouteSegmentResult>>();
-	}
-
-	refreshProgressDistance(ctx); // ctx.startX/etc already set by the caller
-
-	vector<SHARED_PTR<RouteSegment>> segments = searchRouteInternal(ctx, start, end, {}, {});
-
-	if (segments.empty()) {
-		// OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "runRouting() got empty segments");
-		return vector<SHARED_PTR<RouteSegmentResult>>();
-	}
-
-	SHARED_PTR<RouteSegment> finalSegment = ctx->finalRouteSegment = segments[0];
-	if (ctx->progress) ctx->progress->routingCalculatedTime += finalSegment->distanceFromStart;
-
-	vector<SHARED_PTR<RouteSegmentResult>> result = convertFinalSegmentToResults(ctx, finalSegment);
-	attachConnectedRoads(ctx, result); // native-only method
-	addPrecalculatedToResult(recalculationEnd, result);
-	copyAttachedToPreAttachedRoutes(result);
-	prepareResult(ctx, result);
-	return result;
-}
-
 vector<SHARED_PTR<RouteSegmentResult>> runRouting(RoutingContext* ctx, SHARED_PTR<RouteSegment> recalculationEnd) {
 	refreshProgressDistance(ctx);
 
@@ -177,7 +149,13 @@ bool RoutePlannerFrontEnd::hasSegment(vector<SHARED_PTR<RouteSegmentResult>>& re
 
 vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRouteInternalPrepare(
 	RoutingContext* ctx, SHARED_PTR<RouteSegmentPoint> start, SHARED_PTR<RouteSegmentPoint> end,
-	SHARED_PTR<PrecalculatedRouteDirection> routeDirection) {
+	SHARED_PTR<PrecalculatedRouteDirection> routeDirection)
+{
+	if (!start || !end) {
+		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "searchRouteInternalPreparerunRouting() got empty start/end");
+		return vector<SHARED_PTR<RouteSegmentResult>>();
+	}
+
 	auto recalculationEnd = getRecalculationEnd(ctx);
 	if (recalculationEnd) {
 		ctx->initStartAndTargetPoints(start, recalculationEnd);
@@ -187,7 +165,25 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRouteInternal
 	if (routeDirection) {
 		ctx->precalcRoute = routeDirection->adopt(ctx);
 	}
-	return runRouting(ctx, start, end, recalculationEnd);
+
+	refreshProgressDistance(ctx);
+
+	vector<SHARED_PTR<RouteSegment>> segments = searchRouteInternal(ctx, start, end, {}, {});
+
+	if (segments.empty()) {
+		// OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "searchRouteInternalPrepare() got empty segments");
+		return vector<SHARED_PTR<RouteSegmentResult>>();
+	}
+
+	SHARED_PTR<RouteSegment> finalSegment = ctx->finalRouteSegment = segments[0];
+	if (ctx->progress) ctx->progress->routingCalculatedTime += finalSegment->distanceFromStart;
+
+	vector<SHARED_PTR<RouteSegmentResult>> result = convertFinalSegmentToResults(ctx, finalSegment);
+	attachConnectedRoads(ctx, result); // native-only method
+	addPrecalculatedToResult(recalculationEnd, result);
+	copyAttachedToPreAttachedRoutes(result);
+	prepareResult(ctx, result);
+	return result;
 }
 
 double GpxRouteApproximation::distFromLastPoint(double lat, double lon) {
