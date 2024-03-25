@@ -10,57 +10,57 @@
 
 struct HHRoutingConfig
 {
-	float HEURISTIC_COEFFICIENT = 0; // A* - 1, Dijkstra - 0
-	float DIJKSTRA_DIRECTION = 0; // 0 - 2 directions, 1 - positive, -1 - reverse
-			
-	double INITIAL_DIRECTION;
-	static const int CALCULATE_ALL_DETAILED = 3;
+    float HEURISTIC_COEFFICIENT = 0; // A* - 1, Dijkstra - 0
+    float DIJKSTRA_DIRECTION = 0; // 0 - 2 directions, 1 - positive, -1 - reverse
+
+    double INITIAL_DIRECTION = 0;
+    static const int CALCULATE_ALL_DETAILED = 3;
     static const int STATS_VERBOSE_LEVEL = 0;
     
     int FULL_DIJKSTRA_NETWORK_RECALC = 10;
     double MAX_INC_COST_CF = 1.25;
     int MAX_START_END_REITERATIONS = 50;
-			
-	bool ROUTE_LAST_MILE = false;
-	bool ROUTE_ALL_SEGMENTS = false;
-	bool ROUTE_ALL_ALT_SEGMENTS = false;
-	bool PRELOAD_SEGMENTS = false;
-			
-	bool CALC_ALTERNATIVES = false;
-	bool USE_GC_MORE_OFTEN = false;
-	// TODO 3.1 HHRoutePlanner Alternative routes - could use distributions like 50% route (2 alt), 25%/75% route (1 alt)
-	double ALT_EXCLUDE_RAD_MULT = 0.3; // radius multiplier to exclude points
-	double ALT_EXCLUDE_RAD_MULT_IN = 3; // skip some points to speed up calculation
-	double ALT_NON_UNIQUENESS = 0.7; // 0.7 - 30% of points must be unique
-			
-	double MAX_COST;
-	int MAX_DEPTH = -1; // max depth to go to
-	int MAX_SETTLE_POINTS = -1; // max points to settle
-			
-	bool USE_CH;
-	bool USE_CH_SHORTCUTS;
 
-	bool USE_MIDPOINT;
-	int MIDPOINT_ERROR = 3;
-	int MIDPOINT_MAX_DEPTH = 20 + MIDPOINT_ERROR;
+    bool ROUTE_LAST_MILE = false;
+    bool ROUTE_ALL_SEGMENTS = false;
+    bool ROUTE_ALL_ALT_SEGMENTS = false;
+    bool PRELOAD_SEGMENTS = false;
+
+    bool CALC_ALTERNATIVES = false;
+    bool USE_GC_MORE_OFTEN = false;
+    // TODO 3.1 HHRoutePlanner Alternative routes - could use distributions like 50% route (2 alt), 25%/75% route (1 alt)
+    double ALT_EXCLUDE_RAD_MULT = 0.3; // radius multiplier to exclude points
+    double ALT_EXCLUDE_RAD_MULT_IN = 3; // skip some points to speed up calculation
+    double ALT_NON_UNIQUENESS = 0.7; // 0.7 - 30% of points must be unique
+
+    double MAX_COST = 0;
+    int MAX_DEPTH = -1; // max depth to go to
+    int MAX_SETTLE_POINTS = -1; // max points to settle
+
+    bool USE_CH = false;
+    bool USE_CH_SHORTCUTS = false;
+
+    bool USE_MIDPOINT = false;
+    int MIDPOINT_ERROR = 3;
+    int MIDPOINT_MAX_DEPTH = 20 + MIDPOINT_ERROR;
     double MAX_TIME_REITERATION_MS = 60000;
-	
+
 	HHRoutingConfig() {}
-	
+
 	static HHRoutingConfig * dijkstra(int direction) {
 		auto df = new HHRoutingConfig();
 		df->HEURISTIC_COEFFICIENT = 0;
 		df->DIJKSTRA_DIRECTION = direction;
 		return df;
 	}
-			
+
 	static HHRoutingConfig * astar(int direction) {
 		auto df = new HHRoutingConfig();
 		df->HEURISTIC_COEFFICIENT = 1;
 		df->DIJKSTRA_DIRECTION = direction;
 		return df;
 	}
-			
+
 	static HHRoutingConfig * ch() {
 		auto df = new HHRoutingConfig();
 		df->HEURISTIC_COEFFICIENT = 0;
@@ -69,7 +69,7 @@ struct HHRoutingConfig
 		df->DIJKSTRA_DIRECTION = 0;
 		return df;
 	}
-			
+
 	static HHRoutingConfig * midPoints(bool astar, int dir) {
 		auto df = new HHRoutingConfig();
 		df->HEURISTIC_COEFFICIENT = astar ? 1 : 0;
@@ -77,37 +77,37 @@ struct HHRoutingConfig
 		df->DIJKSTRA_DIRECTION = dir;
 		return df;
 	}
-	
+
 	void preloadSegments() {
 		PRELOAD_SEGMENTS = true;
 	}
-			
+
 	void calcAlternative() {
         CALC_ALTERNATIVES = true;
 	}
-			
+
 	void calcDetailed(int segments) {
         ROUTE_LAST_MILE = true;
         ROUTE_ALL_SEGMENTS = segments >= 1;
 		ROUTE_ALL_ALT_SEGMENTS = segments >= 2;
     }
-			
+
 	void useShortcuts() {
         USE_CH_SHORTCUTS = true;
     }
-			
+
 	void gc() {
         USE_GC_MORE_OFTEN = true;
     }
-			
+
     void maxCost(double cost) {
 		MAX_COST = cost;
     }
-			
+
     void maxDepth(int depth) {
 		MAX_DEPTH = depth;
     }
-			
+
     void maxSettlePoints(int maxPoints) {
         MAX_SETTLE_POINTS = maxPoints;
     }
