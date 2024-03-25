@@ -808,7 +808,6 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 	}
 	if (HH_ROUTING_CONFIG != nullptr && ctx->calculationMode != RouteCalculationMode::BASE) {
 		HHRoutePlanner routePlanner(ctx.get());
-		HHNetworkRouteRes * res;
 		HHNetworkRouteRes * r = nullptr;
 		double dir = ctx->config->initialDirection ;
 		for (int i = 0; i < targetsX.size(); i++) {
