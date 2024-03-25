@@ -314,7 +314,8 @@ void combineMultipolygonLine(std::vector<coordinates>& completedRings, std::vect
 							 coordinates& coordinates) {
 	if (coordinates.size() > 0) {
 		if (coordinates.at(0) == coordinates.at(coordinates.size() - 1)) {
-			completedRings.push_back(coordinates);
+			if (coordinates.size() > 2)
+				completedRings.push_back(coordinates);
 		} else {
 			bool add = true;
 			for (size_t k = 0; k < incompletedRings.size();) {
