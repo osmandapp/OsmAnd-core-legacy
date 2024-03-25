@@ -838,6 +838,9 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 		nctx->progress = ctx->progress;
 		vector<SHARED_PTR<RouteSegmentResult>> ls =
 			searchRoute(nctx, startX, startY, endX, endY, intermediatesX, intermediatesY); // iOS (interpoints) 2-phase
+		if (ls.size() == 0) {
+			return ls;
+		}
 		routeDirection =
 			PrecalculatedRouteDirection::build(ls, ctx->config->DEVIATION_RADIUS, ctx->config->router->maxSpeed);
 		ctx->calculationProgressFirstPhase =  ctx->progress->capture(ctx->progress);
