@@ -3833,7 +3833,6 @@ bool addToCache(BinaryMapFile* mapFile, bool routingOnly) {
 		routing->set_offset(index->filePointer);
 		routing->set_name(index->name.c_str());
 		
-		//read tree data here?
 		for (RouteSubregion & sub : index->subregions) {
 			addRouteSubregion(routing, sub, false);
 		}
@@ -3850,9 +3849,7 @@ bool addToCache(BinaryMapFile* mapFile, bool routingOnly) {
 		routing->set_edition(index->edition);
 		for (int i = 0; i < index->profileParams.size(); i++) {
 			const std::string p = index->profileParams.at(i);
-			if (!p.empty()) {
-				routing->add_profileparams(p);
-			}
+			routing->add_profileparams(p);
 		}
 		routing->set_profile(index->profile);
 		routing->set_pointslength(index->top->length);
