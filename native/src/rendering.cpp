@@ -410,7 +410,7 @@ void renderText(MapDataObject* obj, RenderableObject* rObj, RenderingRuleSearchR
 							fillTextProperties(rc, dupInfo, req, x, y);
 							dupInfo->secondOrder = ((obj->id % 10000) << 8) + k;
 							rc->textToDraw.push_back(dupInfo);
-							if (rObj != NULL && !renderableObjects.empty()) {
+							if (rObj != NULL) {
 								renderableObjects.insert({dupInfo->object.id, rObj});
 							}
 						}
@@ -424,7 +424,7 @@ void renderText(MapDataObject* obj, RenderableObject* rObj, RenderingRuleSearchR
 					fillTextProperties(rc, info, req, xText, yText);
 					info->secondOrder = ((obj->id % 10000) << 8) + k;
 					rc->textToDraw.push_back(info);
-					if (rObj != NULL && !renderableObjects.empty()) {
+					if (rObj != NULL) {
 						renderableObjects.insert({info->object.id, rObj});
 					}
 				}
@@ -719,6 +719,8 @@ void drawPolyline(MapDataObject* mObj, RenderingRuleSearchRequest* req, SkCanvas
 		if (!drawOnlyShadow) {
 			if (rc->saveTextTile) {
 				RenderableObject* rObj = rc->createRenderableObject(mObj, "polyline");
+				rObj->iconX = mObj->getLabelX();
+				rObj->iconY = mObj->getLabelY();
 				renderText(mObj, rObj, req, rc, pair.first, pair.second, middlePoint.fX, middlePoint.fY, lineLen, &path,
 						   NULL, renderableObjects);
 			} else {
