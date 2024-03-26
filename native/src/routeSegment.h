@@ -169,9 +169,10 @@ struct RouteSegmentPoint : RouteSegment {
 	}
 
 	RouteSegmentPoint(SHARED_PTR<RouteSegmentPoint>& pnt)
-		: RouteSegment(pnt->road, pnt->segmentStart),
-		  /*distSquare(pnt->distSquare),*/ preciseX(pnt->preciseX),
-		  preciseY(pnt->preciseY) {}
+		: RouteSegment(pnt->road, pnt->segmentStart, pnt->segmentEnd),
+		  preciseX(pnt->preciseX), preciseY(pnt->preciseY)
+		  /*, distSquare(pnt->distSquare)*/ { }
+
 	double dist;
 	int preciseX;
 	int preciseY;

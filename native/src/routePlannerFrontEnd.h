@@ -62,7 +62,7 @@ public:
                                            SHARED_PTR<PrecalculatedRouteDirection> routeDirection);
     
     vector<SHARED_PTR<RouteSegmentResult> > searchRouteInternalPrepare(RoutingContext* ctx, SHARED_PTR<RouteSegmentPoint> start, SHARED_PTR<RouteSegmentPoint> end, SHARED_PTR<PrecalculatedRouteDirection> routeDirection);
-    
+
     void setUseFastRecalculation(bool use) {
         useSmartRouteRecalculation = use;
     }
@@ -103,9 +103,9 @@ private:
                          const SHARED_PTR<RoutingIndex>& reg);
 	void cleanupResultAndAddTurns(SHARED_PTR<GpxRouteApproximation>& gctx);
 	void simplifyDouglasPeucker(vector<LatLon>& l, double eps, int start, int end, std::vector<bool>& include);
-	bool isRouteCloseToGpxPoints(SHARED_PTR<GpxRouteApproximation>& gctx, vector<SHARED_PTR<GpxPoint>>& gpxPoints,
+	bool isRouteCloseToGpxPoints(float minPointApproximation, vector<SHARED_PTR<GpxPoint>>& gpxPoints,
 	                         SHARED_PTR<GpxPoint>& start, SHARED_PTR<GpxPoint>& next);
-	bool pointCloseEnough(SHARED_PTR<GpxRouteApproximation>& gctx, LatLon point,
+	bool pointCloseEnough(float minPointApproximation, LatLon point,
 	                      SHARED_PTR<GpxPoint>& gpxPoint, SHARED_PTR<GpxPoint>& gpxPointNext);
 	bool pointCloseEnough(SHARED_PTR<GpxRouteApproximation>& gctx, SHARED_PTR<GpxPoint>& ipoint,
 	                      vector<SHARED_PTR<RouteSegmentResult>>& res);
