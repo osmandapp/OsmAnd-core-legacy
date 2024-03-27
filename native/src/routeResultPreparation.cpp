@@ -1001,11 +1001,6 @@ SHARED_PTR<TurnType> createKeepLeftRightTurnBasedOnTurnTypes(RoadSplitStructure&
             t = getActiveTurnType(rawLanes, leftSide, t);
         }
     }
-    
-    if (TurnType::isKeepDirectionTurn(t->getValue())) {
-                t->setSkipToSpeak(true);
-            }
-    
     t->setLanes(rawLanes);
     t->setPossibleLeftTurn(possiblyLeftTurn);
     t->setPossibleRightTurn(possiblyRightTurn);
@@ -2005,18 +2000,23 @@ void avoidKeepForThroughMoving(vector<SHARED_PTR<RouteSegmentResult> >& result) 
     }
 }
 
-void removeMuteGoAhead(vector<SHARED_PTR<RouteSegmentResult> >& result) {
+void muteAndRemoveTurns(vector<SHARED_PTR<RouteSegmentResult> >& result) {
     for (int i = 0; i < result.size(); i++) {
         auto & curr = result[i];
         auto & turnType = curr->turnType;
-        if (!turnType || !turnType->goAhead() || !turnType->isSkipToSpeak() || 
-                turnType->getLanes().empty()) {
+        if (!turnType) {
             continue;
         }
-        int cnt = turnType->countTurnTypeDirections(TurnType::C, true);
-        int cntAll = turnType->countTurnTypeDirections(TurnType::C, false);
-        if (cnt > 0 && cnt == cntAll && cnt >= 2 && (turnType->getLanes().size() - cnt) <= 1) {
-            curr->turnType = nullptr;
+        int active = turnType->getActiveCommonLaneTurn();
+        if (TurnType::isKeepDirectionTurn(active)) {
+            turnType->setSkipToSpeak(true);
+            if (turnType->goAhead() && !turnType->getLanes().empty()) {
+                int cnt = turnType->countTurnTypeDirections(TurnType::C, true);
+                int cntAll = turnType->countTurnTypeDirections(TurnType::C, false);
+                if (cnt == cntAll && cnt >= 2 && (turnType->getLanes().size() - cnt) <= 1) {
+                    curr->turnType = nullptr;
+                }
+			}
         }
     }
 }
@@ -2031,7 +2031,7 @@ void prepareTurnResults(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResul
     ignorePrecedingStraightsOnSameIntersection(ctx->leftSideNavigation, result);
     justifyUTurns(ctx->leftSideNavigation, result);
     avoidKeepForThroughMoving(result);
-    removeMuteGoAhead(result);
+    muteAndRemoveTurns(result);
     addTurnInfoDescriptions(result);
 }
 
