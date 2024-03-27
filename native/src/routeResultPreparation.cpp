@@ -2016,7 +2016,7 @@ void muteAndRemoveTurns(vector<SHARED_PTR<RouteSegmentResult> >& result) {
                 if (cnt == cntAll && cnt >= 2 && (turnType->getLanes().size() - cnt) <= 1) {
                     curr->turnType = nullptr;
                 }
-			}
+            }
         }
     }
 }
