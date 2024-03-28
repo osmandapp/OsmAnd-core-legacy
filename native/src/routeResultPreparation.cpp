@@ -959,7 +959,8 @@ SHARED_PTR<TurnType> createKeepLeftRightTurnBasedOnTurnTypes(RoadSplitStructure&
     std::pair<int, int> act = findActiveIndex(prevSegm, currentSegm, rawLanes, std::make_shared<RoadSplitStructure>(rs), turnLanes);
     int activeBeginIndex = act.first;
     int activeEndIndex = act.second;
-    if (rs.keepLeft || rs.keepRight) {
+    bool leftOrRightKeep = (rs.keepLeft && !rs.keepRight) || (!rs.keepLeft && rs.keepRight);
+    if (leftOrRightKeep) {
         if (activeBeginIndex == -1 || activeEndIndex == -1 || activeBeginIndex > activeEndIndex) {
             // something went wrong
             return createSimpleKeepLeftRightTurn(leftSide, prevSegm, currentSegm, rs);
