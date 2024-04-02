@@ -960,11 +960,11 @@ SHARED_PTR<TurnType> createKeepLeftRightTurnBasedOnTurnTypes(RoadSplitStructure&
     int activeBeginIndex = act.first;
     int activeEndIndex = act.second;
     bool leftOrRightKeep = (rs.keepLeft && !rs.keepRight) || (!rs.keepLeft && rs.keepRight);
+    if (activeBeginIndex == -1 || activeEndIndex == -1 || activeBeginIndex > activeEndIndex) {
+        // something went wrong
+        return createSimpleKeepLeftRightTurn(leftSide, prevSegm, currentSegm, rs);
+    }
     if (leftOrRightKeep) {
-        if (activeBeginIndex == -1 || activeEndIndex == -1 || activeBeginIndex > activeEndIndex) {
-            // something went wrong
-            return createSimpleKeepLeftRightTurn(leftSide, prevSegm, currentSegm, rs);
-        }
         for (int k = 0; k < rawLanes.size(); k++) {
             if (k >= activeBeginIndex && k <= activeEndIndex) {
                 rawLanes[k] |= 1;
@@ -1078,10 +1078,6 @@ SHARED_PTR<TurnType> attachKeepLeftInfoAndLanes(bool leftSide, SHARED_PTR<RouteS
     RoadSplitStructure rs = calculateRoadSplitStructure(prevSegm, currentSegm, attachedRoutes, turnLanesPrevSegm);
     if(rs.roadsOnLeft  + rs.roadsOnRight == 0) {
         return nullptr;
-    }
-    
-    if (turnLanesPrevSegm.empty()) {
-        turnLanesPrevSegm = getVirtualTurnLanes(prevSegm);
     }
     
     // turn lanes exist
@@ -2005,13 +2001,13 @@ void muteAndRemoveTurns(vector<SHARED_PTR<RouteSegmentResult> >& result) {
     for (int i = 0; i < result.size(); i++) {
         auto & curr = result[i];
         auto & turnType = curr->turnType;
-        if (!turnType) {
+        if (!turnType || turnType->getLanes().empty()) {
             continue;
         }
         int active = turnType->getActiveCommonLaneTurn();
         if (TurnType::isKeepDirectionTurn(active)) {
             turnType->setSkipToSpeak(true);
-            if (turnType->goAhead() && !turnType->getLanes().empty()) {
+            if (turnType->goAhead()) {
                 int cnt = turnType->countTurnTypeDirections(TurnType::C, true);
                 int cntAll = turnType->countTurnTypeDirections(TurnType::C, false);
                 if (cnt == cntAll && cnt >= 2 && (turnType->getLanes().size() - cnt) <= 1) {
@@ -2173,23 +2169,6 @@ SHARED_PTR<TurnType> getActiveTurnType(const vector<int>& lanes, bool leftSide, 
         t->setSkipToSpeak(true);
     }
     return t;
-}
-
-string getVirtualTurnLanes(SHARED_PTR<RouteSegmentResult>& segm) {
-    SHARED_PTR<TurnType> t = segm->turnType;
-    if (!t) {
-        return "";
-    }
-    vector<int> lanes = t->getLanes();
-    string turnLanes = TurnType::convertLanesToOsmString(lanes, true, false);
-    if (!turnLanes.empty()) {
-        vector<int> uniq = getUniqTurnTypes(turnLanes);
-        // if we have 2 and more active directions
-        if (uniq.size() >= 2) {
-            return turnLanes;
-        }
-    }
-    return "";
 }
 
 int getTurnByAngle(double angle) {

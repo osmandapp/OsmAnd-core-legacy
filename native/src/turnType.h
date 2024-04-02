@@ -59,12 +59,10 @@ public:
 	static vector<int> lanesFromString(string lanesString);
     
     string toString();
-    string toOsmString();
 
     static void collectTurnTypes(int lane, vector<int>& uniqArr);
     static int orderFromLeftToRight(int type);
     static int convertType(string lane);
-    static string convertLanesToOsmString(vector<int> lns, bool onlyActive, bool withCombine);
 
     // calculated Clockwise head rotation if previous direction to NORTH
     inline float getTurnAngle() {

@@ -43,6 +43,5 @@ SHARED_PTR<TurnType> getActiveTurnType(const vector<int>& lanes, bool leftSide, 
 bool hasAllowedLanes(int mainTurnType, vector<int>& lanesArray, int startActiveIndex, int endActiveIndex);
 int countOccurrences(const string& haystack, char needle);
 int highwaySpeakPriority(const string& highway);
-string getVirtualTurnLanes(SHARED_PTR<RouteSegmentResult>& segm);
 int getTurnByAngle(double angle);
 #endif /*_OSMAND_ROUTE_RESULT_PREPARATION_H*/
