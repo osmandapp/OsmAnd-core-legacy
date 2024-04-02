@@ -5,6 +5,7 @@
 #include "routingContext.h"
 #include "hhRouteDataStructure.h"
 #include "hhRoutePlanner.h"
+//#include "MissingMapsCalculator.h"
 
 struct RouteSegmentResult;
 struct RouteSegmentPoint;
@@ -44,8 +45,11 @@ class RoutePlannerFrontEnd {
     
     HHRoutingConfig * HH_ROUTING_CONFIG = nullptr;
     
+  //  MissingMapsCalculator * missingMapsCalculator = nullptr;
+    
 public:
     bool USE_ONLY_HH_ROUTING = false;
+    bool CALCULATE_MISSING_MAPS = true;
     
     RoutePlannerFrontEnd() : useSmartRouteRecalculation(true) {
     }
