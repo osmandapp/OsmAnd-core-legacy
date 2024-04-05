@@ -44,4 +44,6 @@ bool hasAllowedLanes(int mainTurnType, vector<int>& lanesArray, int startActiveI
 int countOccurrences(const string& haystack, char needle);
 int highwaySpeakPriority(const string& highway);
 int getTurnByAngle(double angle);
+bool isSwitchToMotorwayLink(SHARED_PTR<RouteSegmentResult>& curr, SHARED_PTR<RouteSegmentResult>& prev);
+bool twiceRoadPresent(vector<SHARED_PTR<RouteSegmentResult> >& result, int i);
 #endif /*_OSMAND_ROUTE_RESULT_PREPARATION_H*/

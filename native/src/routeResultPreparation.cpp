@@ -1068,13 +1068,13 @@ bool containsAll(vector<int> a, vector<int> b) {
 	return true;
 }
 
-SHARED_PTR<TurnType> attachKeepLeftInfoAndLanes(bool leftSide, SHARED_PTR<RouteSegmentResult>& prevSegm, SHARED_PTR<RouteSegmentResult>& currentSegm) {
+SHARED_PTR<TurnType> attachKeepLeftInfoAndLanes(bool leftSide, SHARED_PTR<RouteSegmentResult>& prevSegm, SHARED_PTR<RouteSegmentResult>& currentSegm, bool twiceRoadPresent) {
     auto attachedRoutes = currentSegm->getAttachedRoutes(currentSegm->getStartPointIndex());
     if (attachedRoutes.empty()) {
         return nullptr;
     }
     // keep left/right
-    string turnLanesPrevSegm = getTurnLanesString(prevSegm);
+    string turnLanesPrevSegm = twiceRoadPresent ? "" : getTurnLanesString(prevSegm);
     RoadSplitStructure rs = calculateRoadSplitStructure(prevSegm, currentSegm, attachedRoutes, turnLanesPrevSegm);
     if(rs.roadsOnLeft  + rs.roadsOnRight == 0) {
         return nullptr;
@@ -1108,10 +1108,8 @@ SHARED_PTR<TurnType> getTurnInfo(vector<SHARED_PTR<RouteSegmentResult> >& result
     SHARED_PTR<TurnType> t = nullptr;
 	if (prev != nullptr)
 	{
-		// add description about turn
 		// avoid small zigzags is covered at (search for "zigzags")
 		float bearingDist = DIST_BEARING_DETECT;
-		// could be || noAttachedRoads, boolean noAttachedRoads = rr.getAttachedRoutes(rr.getStartPointIndex()).size() == 0;
 		if (UNMATCHED_HIGHWAY_TYPE == rr->object->getHighway()) {
 			bearingDist = DIST_BEARING_DETECT_UNMATCHED;
 		}
@@ -1119,6 +1117,7 @@ SHARED_PTR<TurnType> getTurnInfo(vector<SHARED_PTR<RouteSegmentResult> >& result
 		 rr->getBearingBegin(rr->getStartPointIndex(),std::min(rr->distance, bearingDist)));
         
         string turnTag = getTurnString(rr);
+        bool twRoadPresent = twiceRoadPresent(result, i);
         if (!turnTag.empty()) {
             int fromTag = TurnType::convertType(turnTag);
             if (!TurnType::isSlightTurn(fromTag)) {
@@ -1127,7 +1126,7 @@ SHARED_PTR<TurnType> getTurnInfo(vector<SHARED_PTR<RouteSegmentResult> >& result
                 t = getActiveTurnType(lanes, leftSide, t);
                 t->setLanes(lanes);
             } else if (fromTag != TurnType::C) {
-                t = attachKeepLeftInfoAndLanes(leftSide, prev, rr);
+                t = attachKeepLeftInfoAndLanes(leftSide, prev, rr, twRoadPresent);
                 if (t) {
                     SHARED_PTR<TurnType> mainTurnType = TurnType::ptrValueOf(fromTag, leftSide);
                     const vector<int>& lanes = t->getLanes();
@@ -1169,7 +1168,7 @@ SHARED_PTR<TurnType> getTurnInfo(vector<SHARED_PTR<RouteSegmentResult> >& result
             t = getActiveTurnType(lanes, leftSide, t);
 			t->setLanes(lanes);
 		} else {
-			t = attachKeepLeftInfoAndLanes(leftSide, prev, rr);
+			t = attachKeepLeftInfoAndLanes(leftSide, prev, rr, twRoadPresent);
 		}
 		if (t) {
 			t->setTurnAngle((float) -mpi);
@@ -1986,6 +1985,9 @@ void avoidKeepForThroughMoving(vector<SHARED_PTR<RouteSegmentResult> >& result) 
         if (!turnType->keepLeft() && !turnType->keepRight()) {
             continue;
         }
+        if (isSwitchToMotorwayLink(curr, result[i - 1])) {
+            continue;
+        }
         int tt = TurnType::C;
         int cnt = turnType->countTurnTypeDirections(tt, true);
         int cntAll = turnType->countTurnTypeDirections(tt, false);
@@ -2006,8 +2008,15 @@ void muteAndRemoveTurns(vector<SHARED_PTR<RouteSegmentResult> >& result) {
         }
         int active = turnType->getActiveCommonLaneTurn();
         if (TurnType::isKeepDirectionTurn(active)) {
+            if (i > 0 && isSwitchToMotorwayLink(curr, result[i - 1])) {
+                continue;
+            }
             turnType->setSkipToSpeak(true);
             if (turnType->goAhead()) {
+                int uniqDirections = turnType->countDirections();
+                if (uniqDirections >= 3) {
+                    continue;
+                }
                 int cnt = turnType->countTurnTypeDirections(TurnType::C, true);
                 int cntAll = turnType->countTurnTypeDirections(TurnType::C, false);
                 if (cnt == cntAll && cnt >= 2 && (turnType->getLanes().size() - cnt) <= 1) {
@@ -2193,6 +2202,40 @@ int getTurnByAngle(double angle) {
         turnType = TurnType::TU;
     }
     return turnType;
+}
+
+bool isSwitchToMotorwayLink(SHARED_PTR<RouteSegmentResult>& curr, SHARED_PTR<RouteSegmentResult>& prev) {
+    if (isMotorway(curr) && isMotorway(prev)) {
+        string c = curr->object->getHighway();
+        return !c.empty() && c.find("_link") != std::string::npos;
+    }
+    return false;
+}
+
+bool twiceRoadPresent(vector<SHARED_PTR<RouteSegmentResult> >& result, int i) {
+    if (i > 0 && i < result.size() - 1) {
+        SHARED_PTR<RouteSegmentResult> & prev = result.at(i - 1);
+        string turnLanes = getTurnLanesString(prev);
+        if (turnLanes.empty()) {
+            return false;
+        }
+        SHARED_PTR<RouteSegmentResult> & curr = result.at(i);
+        SHARED_PTR<RouteSegmentResult> & next = result.at(i + 1);
+        if (prev->object->getId() == curr->object->getId()) {
+            vector<SHARED_PTR<RouteSegmentResult>> attachedRoutes = next->getAttachedRoutes(next->getStartPointIndex());
+            //check if turn lanes allowed for next segment
+            return attachedRoutes.size() > 0;
+        } else {
+            vector<SHARED_PTR<RouteSegmentResult>> attachedRoutes = curr->getAttachedRoutes(curr->getStartPointIndex());
+            for (SHARED_PTR<RouteSegmentResult> & attach : attachedRoutes) {
+                if (attach->object->getId() == prev->object->getId()) {
+                    //check if road the continue in attached roads
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
 }
 
 #endif /*_OSMAND_ROUTE_RESULT_PREPARATION_CPP*/

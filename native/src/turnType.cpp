@@ -180,6 +180,26 @@ int TurnType::countTurnTypeDirections(int type, bool onlyActive) {
     return cnt;
 }
 
+int TurnType::countDirections() {
+    std::set<int> directions;
+    for (int h = 0; h < lanes.size(); h++) {
+        int primary = getPrimaryTurn(lanes[h]);
+        if (primary == 0) {
+            primary = C;
+        }
+        directions.insert(primary);
+        int secondary = getSecondaryTurn(lanes[h]);
+        if (secondary > 0) {
+            directions.insert(secondary);
+        }
+        int tertiary = getTertiaryTurn(lanes[h]);
+        if (tertiary > 0) {
+            directions.insert(tertiary);
+        }
+    }
+    return (int)directions.size();
+}
+
 string TurnType::toString() {
 	string vl;
 	if (isRoundAbout()) {

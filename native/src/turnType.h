@@ -275,6 +275,7 @@ public:
     }
     
     int countTurnTypeDirections(int type, bool onlyActive);
+    int countDirections();
     
     static int getPrev(int turn) {        
         for (int i = sizeof(TURNS_ORDER) / sizeof(TURNS_ORDER[0]) - 1; i >= 0; i--) {
