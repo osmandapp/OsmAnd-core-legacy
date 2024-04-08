@@ -7,6 +7,7 @@
 #include "routeSegment.h"
 #include "routeSegmentResult.h"
 #include "routingConfiguration.h"
+#include "gpxSegmentsApproximation.h"
 
 SHARED_PTR<RoutingContext> RoutePlannerFrontEnd::buildRoutingContext(
 	SHARED_PTR<RoutingConfiguration> config, RouteCalculationMode rm /*= RouteCalculationMode::NORMAL*/) {
