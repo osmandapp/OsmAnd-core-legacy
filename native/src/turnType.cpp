@@ -180,6 +180,26 @@ int TurnType::countTurnTypeDirections(int type, bool onlyActive) {
     return cnt;
 }
 
+int TurnType::countDirections() {
+    std::set<int> directions;
+    for (int h = 0; h < lanes.size(); h++) {
+        int primary = getPrimaryTurn(lanes[h]);
+        if (primary == 0) {
+            primary = C;
+        }
+        directions.insert(primary);
+        int secondary = getSecondaryTurn(lanes[h]);
+        if (secondary > 0) {
+            directions.insert(secondary);
+        }
+        int tertiary = getTertiaryTurn(lanes[h]);
+        if (tertiary > 0) {
+            directions.insert(tertiary);
+        }
+    }
+    return (int)directions.size();
+}
+
 string TurnType::toString() {
 	string vl;
 	if (isRoundAbout()) {
@@ -342,72 +362,6 @@ int TurnType::convertType(string lane) {
 		//			continue;
 	}
 	return turn;
-}
-
-string TurnType::convertLanesToOsmString(vector<int> lns, bool onlyActive, bool withCombine) {
-        if (lns.size() > 0) {
-            string s = "";
-            int cnt = 0;
-            for (int h = 0; h < lns.size(); h++) {
-                if (onlyActive && lns[h] % 2 == 0) {
-                    continue;
-                }
-                int pt = TurnType::getPrimaryTurn(lns[h]);
-                if (pt == 0) {
-                    pt = 1;
-                }
-                string primary = TurnType::valueOf(pt, false).toOsmString();
-                if (primary.empty()) {
-                    // something wrong
-                    return "";
-                }
-                if (cnt > 0) {
-                    s.append("|");
-                }
-                s.append(primary);
-                if (withCombine) {
-                    int st = TurnType::getSecondaryTurn(lns[h]);
-                    int tt = TurnType::getTertiaryTurn(lns[h]);
-                    if (st != 0) {
-                        s.append(";").append(TurnType::valueOf(st, false).toOsmString());
-                    }
-                    if (tt != 0) {
-                        s.append(";").append(TurnType::valueOf(tt, false).toOsmString());
-                    }
-                }
-                cnt++;
-            }
-            if (!s.empty()) {
-                return s;
-            }
-        }
-        return "";
-    }
-
-string TurnType::toOsmString() {
-    switch (value) {
-        case KL:
-        case KR:
-        case C:
-            return "through";
-        case TL:
-            return "left";
-        case TSLL:
-            return "slight_left";
-        case TSHL:
-            return "sharp_left";
-        case TR:
-            return "right";
-        case TSLR:
-            return "slight_right";
-        case TSHR:
-            return "sharp_right";
-        case TU:
-        case TRU:
-            return "reverse";
-        default:
-            return "";
-    }
 }
 
 #endif /*_OSMAND_TURN_TYPE_CPP*/
