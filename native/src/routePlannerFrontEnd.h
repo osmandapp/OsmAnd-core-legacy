@@ -40,8 +40,8 @@ typedef std::function<bool(const std::shared_ptr<GpxRouteApproximation>& approxi
 
 class RoutePlannerFrontEnd {
     
-    bool useSmartRouteRecalculation;
-    
+    bool useSmartRouteRecalculation = true;
+
     HHRoutingConfig * HH_ROUTING_CONFIG = nullptr;
     
 public:
@@ -89,8 +89,11 @@ public:
 
 	void makeStartEndPointsPrecise(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResult>>& res, int startX, int startY, int endX, int endY);
 
+	void setUseGeometryBasedApproximation(bool enabled) { useGeometryBasedApproximation = enabled; }
+
 private:
-	
+	bool useGeometryBasedApproximation = false;
+
 	SHARED_PTR<GpxPoint> findNextGpxPointWithin(vector<SHARED_PTR<GpxPoint>>& gpxPoints, SHARED_PTR<GpxPoint>& start,
 												double dist);
 	bool findGpxRouteSegment(SHARED_PTR<GpxRouteApproximation>& gctx, vector<SHARED_PTR<GpxPoint>>& gpxPoints,
