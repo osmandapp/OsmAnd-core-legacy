@@ -58,6 +58,10 @@ public:
         HH_ROUTING_CONFIG = hhConfig;
     }
     
+    HHRoutingConfig* getHHRoutingConfig() {
+        return HH_ROUTING_CONFIG;
+    }
+    
     vector<SHARED_PTR<RouteSegmentResult> > searchRoute(RoutingContext* ctx,
                                            vector<SHARED_PTR<RouteSegmentPoint>>& points,
                                            SHARED_PTR<PrecalculatedRouteDirection> routeDirection);
