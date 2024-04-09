@@ -47,12 +47,6 @@ class RouteCalculationProgress {
 
 	int maxLoadedTiles;
 	bool requestPrivateAccessRouting;
-    /*
-     // vectors
-     public boolean requestMapsToUpdate;
-     public List<WorldRegion> mapsToUpdate;
-     public List<WorldRegion> missingMaps;
-     */
 
    public:
 	RouteCalculationProgress()
