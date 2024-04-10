@@ -454,10 +454,9 @@ vector<SHARED_PTR<RouteSegment>> searchRouteInternal(RoutingContext* ctx, SHARED
                 if (result.empty()) {
                     while (!graphSegments->empty()) {
                         SHARED_PTR<RouteSegmentCost> pc = graphSegments->top();
-                        SHARED_PTR<RouteSegment> segment = cst->segment;
                         graphSegments->pop();
-                        if (segment->isFinalSegment) {
-                            result.push_back(segment);
+                        if (pc->segment->isFinalSegment) {
+                            result.push_back(pc->segment);
                             break;
                         }
                     }
