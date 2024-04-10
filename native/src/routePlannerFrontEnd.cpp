@@ -545,6 +545,7 @@ void RoutePlannerFrontEnd::cleanupResultAndAddTurns(SHARED_PTR<GpxRouteApproxima
 			}
 		}
 	}
+	vector <SHARED_PTR<GpxPoint>> emptyFinalPoints;
 	for (const auto& gpx : gctx->finalPoints) {
 		auto& route = gpx->routeToTarget; // modify
 		if (route.size() > 0) {
@@ -558,7 +559,23 @@ void RoutePlannerFrontEnd::cleanupResultAndAddTurns(SHARED_PTR<GpxRouteApproxima
 					return false;
 				}
 			), route.end());
+			if (route.empty()) {
+				emptyFinalPoints.push_back(gpx);
+			}
 		}
+	}
+	if (emptyFinalPoints.size() > 0) {
+		auto& fp = gctx->finalPoints; // modify
+		fp.erase(std::remove_if(fp.begin(), fp.end(),
+			[emptyFinalPoints](SHARED_PTR<GpxPoint> pnt) {
+				for (const auto& del : emptyFinalPoints) {
+					if (del == pnt) {
+						return true;
+					}
+				}
+				return false;
+			}
+		), fp.end());
 	}
 	gctx->result.shrink_to_fit();
 	for (SHARED_PTR<RouteSegmentResult> r : gctx->result) {
