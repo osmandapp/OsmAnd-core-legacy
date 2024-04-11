@@ -1080,6 +1080,9 @@ void loadTransportRoutes(BinaryMapFile* file, vector<int32_t> filePointers, UNOR
 
 void searchRouteSubregions(SearchQuery* q, std::vector<RouteSubregion>& tempResult, bool basemap, bool geocoding);
 
+bool searchRouteSubregionsForBinaryMapFile(BinaryMapFile* file,
+                                           SearchQuery* q);
+
 void searchRouteDataForSubRegion(SearchQuery* q, std::vector<RouteDataObject*>& list, RouteSubregion* sub,
 								 bool geocoding);
 

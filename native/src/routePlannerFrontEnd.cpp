@@ -820,6 +820,7 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 	}
 	targetsX.push_back(endX);
 	targetsY.push_back(endY);
+    
 	if (needRequestPrivateAccessRouting(ctx.get(), targetsX, targetsY)) {
 		ctx->progress->requestPrivateAccessRouting = true;
 	}
