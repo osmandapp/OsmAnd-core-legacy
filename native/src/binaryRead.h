@@ -1082,10 +1082,7 @@ void searchRouteSubregions(SearchQuery* q, std::vector<RouteSubregion>& tempResu
 
 bool searchRouteSubregionsForBinaryMapFile(BinaryMapFile* file,
                                            SearchQuery* q,
-                                           std::vector<RouteSubregion>& tempResult,
-                                           bool basemap,
-                                           bool geocoding,
-                                           bool checkAndInit);
+                                           std::vector<RouteSubregion>& tempResult);
 
 void searchRouteDataForSubRegion(SearchQuery* q, std::vector<RouteDataObject*>& list, RouteSubregion* sub,
 								 bool geocoding);

@@ -2767,13 +2767,10 @@ void checkAndInitRouteRegionRules(int fileInd, const SHARED_PTR<RoutingIndex>& r
 
 bool searchRouteSubregionsForBinaryMapFile(BinaryMapFile* file,
                                            SearchQuery* q,
-                                           std::vector<RouteSubregion>& tempResult,
-                                           bool basemap,
-                                           bool geocoding,
-                                           bool checkAndInit) {
+                                           std::vector<RouteSubregion>& tempResult) {
     for (const auto& routeIndex : file->routingIndexes) {
         bool contains = false;
-        std::vector<RouteSubregion>& subs = basemap ? routeIndex->basesubregions : routeIndex->subregions;
+        std::vector<RouteSubregion>& subs = routeIndex->subregions;
         for (std::vector<RouteSubregion>::iterator subreg = subs.begin(); subreg != subs.end(); subreg++) {
             if (subreg->right >= (uint)q->left && (uint)q->right >= subreg->left &&
                 subreg->bottom >= (uint)q->top && (uint)q->bottom >= subreg->top) {
@@ -2783,15 +2780,12 @@ bool searchRouteSubregionsForBinaryMapFile(BinaryMapFile* file,
         if (contains) {
             FileInputStream* nt = NULL;
             CodedInputStream* cis = NULL;
-            searchRouteRegion(&cis, &nt, file, q, routeIndex, subs, tempResult, geocoding);
+            searchRouteRegion(&cis, &nt, file, q, routeIndex, subs, tempResult, false);
             if (cis != NULL) {
                 delete cis;
             }
             if (nt != NULL) {
                 delete nt;
-            }
-            if (checkAndInit) {
-                checkAndInitRouteRegionRules(geocoding ? file->getGeocodingFD() : file->getRouteFD(), routeIndex);
             }
         }
         return contains;
