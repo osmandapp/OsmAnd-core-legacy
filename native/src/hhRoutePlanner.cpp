@@ -266,6 +266,7 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
     bool recalc = false;
     double firstIterationTime = 0;
     int iteration = 0;
+    int calcCount = 0;
     do {
         timer.Restart();
         progress->hhIteration(RouteCalculationProgress::HHIteration::ROUTING);
@@ -277,6 +278,7 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
             firstIterationTime = hctx->stats.routingTime;
         }
         NetworkDBPoint * finalPnt = runRoutingPointsToPoints(hctx, stPoints, endPoints);
+        calcCount++;
         if (progress->isCancelled()) {
             return cancelledStatus();
         }
@@ -297,7 +299,7 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
         }
         hctx->stats.routingTime += time;
         if (recalc) {
-            if (hctx->stats.prepTime + hctx->stats.routingTime > hctx->config->MAX_TIME_REITERATION_MS) {
+            if (calcCount > hctx->config->MAX_COUNT_REITERATION) {
                 HHNetworkRouteRes * res = new HHNetworkRouteRes("Too many route recalculations (maps are outdated).");
                 return res;
             }
