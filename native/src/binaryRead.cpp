@@ -2766,8 +2766,8 @@ void checkAndInitRouteRegionRules(int fileInd, const SHARED_PTR<RoutingIndex>& r
 }
 
 bool searchRouteSubregionsForBinaryMapFile(BinaryMapFile* file,
-                                           SearchQuery* q,
-                                           std::vector<RouteSubregion>& tempResult) {
+                                           SearchQuery* q) {
+    std::vector<RouteSubregion> tempResult;
     for (const auto& routeIndex : file->routingIndexes) {
         bool contains = false;
         std::vector<RouteSubregion>& subs = routeIndex->subregions;
@@ -2787,8 +2787,8 @@ bool searchRouteSubregionsForBinaryMapFile(BinaryMapFile* file,
             if (nt != NULL) {
                 delete nt;
             }
+            return true;
         }
-        return contains;
     }
     return false;
 }
