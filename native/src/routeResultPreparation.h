@@ -47,4 +47,6 @@ int getTurnByAngle(double angle);
 bool isSwitchToMotorwayLink(SHARED_PTR<RouteSegmentResult>& curr);
 bool twiceRoadPresent(vector<SHARED_PTR<RouteSegmentResult> >& result, int i);
 void setActiveTurns(vector<int> & rawLanes, int activeBeginIndex, int activeEndIndex);
+bool isKeepTurn(SHARED_PTR<TurnType> t);
+bool isHighSpeakPriority(SHARED_PTR<RouteSegmentResult>& curr);
 #endif /*_OSMAND_ROUTE_RESULT_PREPARATION_H*/
