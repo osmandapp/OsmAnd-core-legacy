@@ -87,7 +87,7 @@ enum PART_INDEXES {
 	ADDRESS_INDEX,
 	TRANSPORT_INDEX,
 	ROUTING_INDEX,
-    HH_INDEX
+	HH_INDEX
 };
 
 struct BinaryPartIndex {
@@ -140,101 +140,101 @@ struct RoutingIndex : BinaryPartIndex {
 };
 
 struct HHRoutePointsBox {
-    uint64_t length;
-    uint64_t filePointer;
-    int32_t left, right, bottom, top;
-    bool init;
-    
-    HHRoutePointsBox(): length(0), filePointer(0), left(0), right(0), bottom(0), top(0), init(false) {
-    }
+	uint64_t length;
+	uint64_t filePointer;
+	int32_t left, right, bottom, top;
+	bool init;
+	
+	HHRoutePointsBox(): length(0), filePointer(0), left(0), right(0), bottom(0), top(0), init(false) {
+	}
 
-    SkRect getSkRect() {
-        SkRect qr = SkRect::MakeLTRB(left, top, right, bottom);
-        return qr;
-    }
+	SkRect getSkRect() {
+		SkRect qr = SkRect::MakeLTRB(left, top, right, bottom);
+		return qr;
+	}
 
-    bool contains(int x, int y) {
-        return x >= left && x <= right && y >= top && y <= bottom;
-    }
+	bool contains(int x, int y) {
+		return x >= left && x <= right && y >= top && y <= bottom;
+	}
 };
 
 struct HHRouteBlockSegments {
-    int idRangeStart;
-    int32_t idRangeLength;
-    int profileId;
-    uint64_t length;
-    uint64_t filePointer;
-    
-    ~HHRouteBlockSegments() {
-        for (auto & s : sublist) {
-            delete s;
-        }
-    }
-    
-    std::vector<HHRouteBlockSegments *> sublist;
+	int idRangeStart;
+	int32_t idRangeLength;
+	int profileId;
+	uint64_t length;
+	uint64_t filePointer;
+	
+	~HHRouteBlockSegments() {
+		for (auto & s : sublist) {
+			delete s;
+		}
+	}
+	
+	std::vector<HHRouteBlockSegments *> sublist;
 };
 
 struct TagValuePair {
-    std::string tag;
-    std::string value;
-    int32_t additionalAttribute;
-    
-    TagValuePair(string tag, string value, int32_t additionalAttribute): tag(tag), value(value), additionalAttribute(additionalAttribute) {
-    }
+	std::string tag;
+	std::string value;
+	int32_t additionalAttribute;
+	
+	TagValuePair(string tag, string value, int32_t additionalAttribute): tag(tag), value(value), additionalAttribute(additionalAttribute) {
+	}
 };
 
 struct HHRouteIndex : BinaryPartIndex {
-    //HHRouteRegion
-    uint64_t edition;
-    std::string profile;
-    std::vector<std::string> profileParams;
-    SHARED_PTR<HHRoutePointsBox> top;
-    // not stored in cache
-    std::vector<HHRouteBlockSegments *> segments;
-    SkRect * rect;
-    std::vector<TagValuePair> encodingRules;
-    
-    HHRouteIndex() : BinaryPartIndex(HH_INDEX), edition(0), profile(""), rect(nullptr) {
-    }
-    
-    ~HHRouteIndex() {
-        for (auto & s : segments) {
-            delete s;
-        }
-        delete rect;
-    }
-    
-    SkRect * getSkRect() {
-        if (rect == nullptr) {
-            if (!top) {
-                rect = new SkRect();
-            } else {
-                rect = new SkRect(top->getSkRect());
-            }
-        }
-        return rect;
-    }
-    
-    double intersectionArea(SkRect b) {
-        if (rect == nullptr) {
-            rect = getSkRect();
-        }
-        double xleft = std::max(std::min(rect->left(), rect->right()), std::min(b.left(), b.right()));
-        double xright = std::min(std::max(rect->left(), rect->right()), std::max(b.left(), b.right()));
-        double ytop = std::max(std::min(rect->top(), rect->bottom()), std::min(b.top(), b.bottom()));
-        double ybottom = std::min(std::max(rect->top(), rect->bottom()), std::max(b.top(), b.bottom()));
-        if (xright <= xleft || ybottom <= ytop) {
-            return 0;
-        }
-        double intersectionArea = (xright - xleft) * (ybottom - ytop);
-        return intersectionArea;
-    }
-    
-    HHRouteBlockSegments * createHHRouteBlockSegments() {
-        // all segments stored in std::vector<HHRouteBlockSegments *> segments
-        HHRouteBlockSegments * np = new HHRouteBlockSegments();
-        return np;
-    }
+	//HHRouteRegion
+	uint64_t edition;
+	std::string profile;
+	std::vector<std::string> profileParams;
+	SHARED_PTR<HHRoutePointsBox> top;
+	// not stored in cache
+	std::vector<HHRouteBlockSegments *> segments;
+	SkRect * rect;
+	std::vector<TagValuePair> encodingRules;
+	
+	HHRouteIndex() : BinaryPartIndex(HH_INDEX), edition(0), profile(""), rect(nullptr) {
+	}
+	
+	~HHRouteIndex() {
+		for (auto & s : segments) {
+			delete s;
+		}
+		delete rect;
+	}
+	
+	SkRect * getSkRect() {
+		if (rect == nullptr) {
+			if (!top) {
+				rect = new SkRect();
+			} else {
+				rect = new SkRect(top->getSkRect());
+			}
+		}
+		return rect;
+	}
+	
+	double intersectionArea(SkRect b) {
+		if (rect == nullptr) {
+			rect = getSkRect();
+		}
+		double xleft = std::max(std::min(rect->left(), rect->right()), std::min(b.left(), b.right()));
+		double xright = std::min(std::max(rect->left(), rect->right()), std::max(b.left(), b.right()));
+		double ytop = std::max(std::min(rect->top(), rect->bottom()), std::min(b.top(), b.bottom()));
+		double ybottom = std::min(std::max(rect->top(), rect->bottom()), std::max(b.top(), b.bottom()));
+		if (xright <= xleft || ybottom <= ytop) {
+			return 0;
+		}
+		double intersectionArea = (xright - xleft) * (ybottom - ytop);
+		return intersectionArea;
+	}
+	
+	HHRouteBlockSegments * createHHRouteBlockSegments() {
+		// all segments stored in std::vector<HHRouteBlockSegments *> segments
+		HHRouteBlockSegments * np = new HHRouteBlockSegments();
+		return np;
+	}
 };
 
 struct RouteDataObject {
@@ -887,13 +887,13 @@ struct BinaryMapFile {
 	std::vector<SHARED_PTR<RoutingIndex>> routingIndexes;
 	std::vector<SHARED_PTR<TransportIndex>> transportIndexes;
 	std::vector<SHARED_PTR<BinaryPartIndex>> indexes;
-    std::vector<SHARED_PTR<HHRouteIndex>> hhIndexes;
+	std::vector<SHARED_PTR<HHRouteIndex>> hhIndexes;
 	UNORDERED(map)<uint64_t, shared_ptr<IncompleteTransportRoute>> incompleteTransportRoutes;
 	bool incompleteLoaded = false;
 	int fd = -1;
 	int routefd = -1;
 	int geocodingfd = -1;
-    int hhfd = -1;
+	int hhfd = -1;
 	bool basemap;
 	bool external;
 	bool roadOnly;
@@ -934,13 +934,13 @@ struct BinaryMapFile {
 		}
 		return geocodingfd;
 	}
-    
-    int getHhFD() {
-        if (hhfd <= 0) {
-            hhfd = openFile();
-        }
-        return hhfd;
-    }
+	
+	int getHhFD() {
+		if (hhfd <= 0) {
+			hhfd = openFile();
+		}
+		return hhfd;
+	}
 
 	bool isBasemap() {
 		return basemap;
@@ -1081,7 +1081,7 @@ void loadTransportRoutes(BinaryMapFile* file, vector<int32_t> filePointers, UNOR
 void searchRouteSubregions(SearchQuery* q, std::vector<RouteSubregion>& tempResult, bool basemap, bool geocoding);
 
 bool searchRouteSubregionsForBinaryMapFile(BinaryMapFile* file,
-                                           SearchQuery* q);
+										   SearchQuery* q);
 
 void searchRouteDataForSubRegion(SearchQuery* q, std::vector<RouteDataObject*>& list, RouteSubregion* sub,
 								 bool geocoding);

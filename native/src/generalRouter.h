@@ -525,7 +525,7 @@ class GeneralRouter {
 	/**
 	 * return routing speed in m/s for vehicle for specified road
 	 */
-    double defineRoutingSpeed(const SHARED_PTR<RouteDataObject>& road, bool dir);
+	double defineRoutingSpeed(const SHARED_PTR<RouteDataObject>& road, bool dir);
 
 	/*
 	 * return transition penalty between different road classes in seconds
@@ -577,15 +577,15 @@ class GeneralRouter {
 	 * Calculate turn time
 	 */
 	double calculateTurnTime(const SHARED_PTR<RouteSegment>& segment, const SHARED_PTR<RouteSegment>& prev);
-    
-    MAP_STR_STR getParameterValues() {
-        return parameterValues;        
-    }
-    
-    std::vector<std::string> serializeParameterValues(MAP_STR_STR vls);
+	
+	MAP_STR_STR getParameterValues() {
+		return parameterValues;        
+	}
+	
+	std::vector<std::string> serializeParameterValues(MAP_STR_STR vls);
 
 	void printRules();
-    
+	
 	void setProfile(GeneralRouterProfile prof) {
 		profile = prof;
 	};
