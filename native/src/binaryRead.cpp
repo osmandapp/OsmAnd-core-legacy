@@ -1445,15 +1445,30 @@ bool initMapStructure(CodedInputStream* input, BinaryMapFile* file, bool useLive
                 }
                 break;
             }
+			case OsmAnd::OBF::OsmAndStructure::kPoiIndexFieldNumber: {
+				uint64_t len;
+				uint64_t filePointer = input->TotalBytesRead();
+				readInt(input, &len);
+				input->Seek(filePointer + len);
+				break;
+			}
+			case OsmAnd::OBF::OsmAndStructure::kAddressIndexFieldNumber: {
+				uint64_t len;
+				uint64_t filePointer = input->TotalBytesRead();
+				readInt(input, &len);
+				input->Seek(filePointer + len);
+				break;
+			}
 			case OsmAnd::OBF::OsmAndStructure::kVersionConfirmFieldNumber: {
 				DO_((WireFormatLite::ReadPrimitive<uint32_t, WireFormatLite::TYPE_UINT32>(input, &versionConfirm)));
 				break;
 			}
 			default: {
 				if (WireFormatLite::GetTagWireType(tag) == WireFormatLite::WIRETYPE_END_GROUP) {
-					return true;
-				}
-				if (!skipUnknownFields(input, tag)) {
+					// finish
+				} else if (!skipUnknownFields(input, tag)) {
+					OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error,
+						  "Skipping unknown %d fields has failed. ", WireFormatLite::GetTagFieldNumber(tag));
 					return false;
 				}
 				break;
