@@ -1445,20 +1445,6 @@ bool initMapStructure(CodedInputStream* input, BinaryMapFile* file, bool useLive
                 }
                 break;
             }
-			case OsmAnd::OBF::OsmAndStructure::kPoiIndexFieldNumber: {
-				uint64_t len;
-				uint64_t filePointer = input->TotalBytesRead();
-				readInt(input, &len);
-				input->Seek(filePointer + len);
-				break;
-			}
-			case OsmAnd::OBF::OsmAndStructure::kAddressIndexFieldNumber: {
-				uint64_t len;
-				uint64_t filePointer = input->TotalBytesRead();
-				readInt(input, &len);
-				input->Seek(filePointer + len);
-				break;
-			}
 			case OsmAnd::OBF::OsmAndStructure::kVersionConfirmFieldNumber: {
 				DO_((WireFormatLite::ReadPrimitive<uint32_t, WireFormatLite::TYPE_UINT32>(input, &versionConfirm)));
 				break;
