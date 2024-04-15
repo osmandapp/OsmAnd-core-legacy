@@ -3646,9 +3646,14 @@ BinaryMapFile* initBinaryMapFile(std::string inputName, bool useLive, bool routi
 		stat(inputName.c_str(), &stats);
 		for (int i = 0; i < cache->fileindex_size(); i++) {
 			OsmAnd::OBF::FileIndex fi = cache->fileindex(i);
-			if (hasEnding(inputName, fi.filename()) && fi.size() == stats.st_size) {
-				fo = cache->mutable_fileindex(i);
-				break;
+			if (hasEnding(inputName, fi.filename())) {
+				if (fi.size() == stats.st_size) {
+					fo = cache->mutable_fileindex(i);
+					break;
+				} else {
+					OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "Native file and cache %s have different sizes %llu != %llu",
+						  inputName.c_str(), fi.size(), stats.st_size);
+				}
 			}
 		}
 	}
