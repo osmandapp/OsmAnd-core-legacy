@@ -996,13 +996,13 @@ bool readRegionSegmentHeader(CodedInputStream* input, HHRouteBlockSegments * blo
 				break;
 			default:
 				if (!skipUnknownFields(input, tag)) {
-                    input->PopLimit(oldLimit);
+					input->PopLimit(oldLimit);
 					return false;
 				}
 				break;
 		}
 	}
-    input->PopLimit(oldLimit);
+	input->PopLimit(oldLimit);
 	return false;
 }
 
