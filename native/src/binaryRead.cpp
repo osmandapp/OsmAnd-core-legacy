@@ -996,12 +996,14 @@ bool readRegionSegmentHeader(CodedInputStream* input, HHRouteBlockSegments * blo
 				break;
 			default:
 				if (!skipUnknownFields(input, tag)) {
+					input->PopLimit(oldLimit);
 					return false;
 				}
 				break;
 		}
 	}
-	return true;
+	input->PopLimit(oldLimit);
+	return false;
 }
 
 bool readStringTable(CodedInputStream* input, std::vector<std::string>& list) {
