@@ -43,7 +43,7 @@ struct HHRoutingConfig
 	bool USE_MIDPOINT = false;
 	int MIDPOINT_ERROR = 3;
 	int MIDPOINT_MAX_DEPTH = 20 + MIDPOINT_ERROR;
-	double MAX_COUNT_REITERATION = 500;
+	double MAX_COUNT_REITERATION = 50;
 
 	HHRoutingConfig() {}
 
