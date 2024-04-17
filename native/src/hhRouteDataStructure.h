@@ -134,8 +134,11 @@ struct NetworkDBPoint {
 	
 	SHARED_PTR<NetworkDBPointRouteInfo> rtRev;
 	SHARED_PTR<NetworkDBPointRouteInfo> rtPos;
+
 	std::vector<NetworkDBSegment *> connected;
 	std::vector<NetworkDBSegment *> connectedReverse;
+	bool isConnectedSet, isConnectedReverseSet; // dreaming of C++17 std::optional
+
 	std::vector<TagValuePair> tagValues;
 	
 	~NetworkDBPoint() {
@@ -163,7 +166,9 @@ struct NetworkDBPoint {
 	
 	void markSegmentsNotLoaded() {
 		connected.clear();
+		isConnectedSet = false;
 		connectedReverse.clear();
+		isConnectedReverseSet = false;
 	}
 	
 	LatLon getPoint() {
@@ -192,7 +197,10 @@ struct NetworkDBPoint {
 	}
 	
 	NetworkDBSegment * getSegment(const NetworkDBPoint * target, bool dir) const;
-	
+
+	bool isConnSet(bool rev) {
+		return rev ? isConnectedReverseSet : isConnectedSet;
+	}
 	std::vector<NetworkDBSegment *> conn(bool rev) {
 		return rev ? connectedReverse : connected;
 	}
@@ -200,9 +208,11 @@ struct NetworkDBPoint {
 	void connectedSet(bool rev, std::vector<NetworkDBSegment *> l) {
 		if (rev) {
 			connectedReverse = l;
-			} else {
-				connected = l;
-			}
+			isConnectedReverseSet = true;
+		} else {
+			connected = l;
+			isConnectedSet = true;
+		}
 	}
 	
 	int chInd() {
@@ -590,7 +600,7 @@ struct HHRoutingContext {
 	}
 	
 	int32_t loadNetworkSegmentPoint(NetworkDBPoint * point, bool reverse) {
-		if (point->conn(reverse).size() > 0) {
+		if (point->isConnSet(reverse)) {
 			return 0;
 		}
 		short mapId = point->mapId;
