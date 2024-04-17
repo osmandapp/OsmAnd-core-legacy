@@ -888,7 +888,7 @@ SHARED_PTR<TurnType> createSimpleKeepLeftRightTurn(bool leftSide, SHARED_PTR<Rou
         lanes = createCombinedTurnTypeForSingleLane(rs, deviation);
         t->setLanes(lanes);
         int active = t->getActiveCommonLaneTurn();
-        if (!TurnType::isKeepDirectionTurn(active)) {
+        if (!TurnType::isKeepDirectionTurn(active) || !TurnType::isKeepDirectionTurn(t->getValue())) {
             t = TurnType::ptrValueOf(t->getActiveCommonLaneTurn(), leftSide);
         }
     } else {
