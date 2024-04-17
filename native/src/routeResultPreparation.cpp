@@ -686,7 +686,13 @@ int highwaySpeakPriority(const string& highway) {
         return MAX_SPEAK_PRIORITY;
     }
     if (endsWith(highway, "_link")  || endsWith(highway, "unclassified") || endsWith(highway, "road")
-        || endsWith(highway, "living_street") || endsWith(highway, "residential") || endsWith(highway, "tertiary"))  {
+        || endsWith(highway, "living_street") || endsWith(highway, "residential"))  {
+        return 3;
+    }
+    if (endsWith(highway, "tertiary")) {
+        return 2;
+    }
+    if (endsWith(highway, "secondary")) {
         return 1;
     }
     return 0;
@@ -2047,6 +2053,9 @@ void avoidKeepForThroughMoving(vector<SHARED_PTR<RouteSegmentResult> >& result) 
         if (isSwitchToMotorwayLink(curr)) {
             continue;
         }
+        if (isKeepTurn(turnType) && isHighSpeakPriority(curr)) {
+            continue;
+        }
         int tt = TurnType::C;
         int cnt = turnType->countTurnTypeDirections(tt, true);
         int cntAll = turnType->countTurnTypeDirections(tt, false);
@@ -2068,6 +2077,9 @@ void muteAndRemoveTurns(vector<SHARED_PTR<RouteSegmentResult> >& result) {
         int active = turnType->getActiveCommonLaneTurn();
         if (TurnType::isKeepDirectionTurn(active)) {
             if (i > 0 && isSwitchToMotorwayLink(curr)) {
+                continue;
+            }
+            if (isKeepTurn(turnType) && isHighSpeakPriority(curr)) {
                 continue;
             }
             turnType->setSkipToSpeak(true);
@@ -2295,6 +2307,22 @@ bool twiceRoadPresent(vector<SHARED_PTR<RouteSegmentResult> >& result, int i) {
         }
     }
     return false;
+}
+
+bool isKeepTurn(SHARED_PTR<TurnType> t) {
+    return t->keepLeft() || t->keepRight();
+}
+
+bool isHighSpeakPriority(SHARED_PTR<RouteSegmentResult>& curr) {
+    vector<SHARED_PTR<RouteSegmentResult>> attachedRoutes = curr->getAttachedRoutes(curr->getStartPointIndex());
+    string h = curr->object->getHighway();
+    for (SHARED_PTR<RouteSegmentResult> & attach : attachedRoutes) {
+        string c = attach->object->getHighway();
+        if(highwaySpeakPriority(h) >= highwaySpeakPriority(c)) {
+			return true;
+		}
+	}
+	return false;
 }
 
 #endif /*_OSMAND_ROUTE_RESULT_PREPARATION_CPP*/

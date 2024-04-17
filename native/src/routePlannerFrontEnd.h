@@ -46,6 +46,7 @@ class RoutePlannerFrontEnd {
     
 public:
     bool USE_ONLY_HH_ROUTING = false;
+    bool CALCULATE_MISSING_MAPS = true;
     
     RoutePlannerFrontEnd() : useSmartRouteRecalculation(true) {
     }
