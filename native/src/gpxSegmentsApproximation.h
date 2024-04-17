@@ -1,29 +1,30 @@
 #ifndef _OSMAND_GPX_SEGMENTS_APPROXIMATION_H
 #define _OSMAND_GPX_SEGMENTS_APPROXIMATION_H
 
-class GpxSegmentsApproximation {
+#include "routePlannerFrontEnd.h"
 
-private:
-	const int LOOKUP_AHEAD = 10;
-	const bool TEST_SHIFT_GPX_POINTS = false;
-	const double DILUTE_BY_SEGMENT_DISTANCE = 0.001; // add a fraction of seg dist to pnt-to-gpx dist (0.001)
+class GpxSegmentsApproximation {
+    constexpr static int LOOKUP_AHEAD = 10;
+    constexpr static double DILUTE_BY_SEGMENT_DISTANCE = 0.001; // add a fraction of seg dist to pnt-to-gpx dist (0.001)
 
 public:
-//	public GpxRouteApproximation fastGpxApproximation(RoutePlannerFrontEnd frontEnd, GpxRouteApproximation gctx,
-//	                                                    List<GpxPoint> gpxPoints) throws IOException {
+    static void fastGpxApproximation(RoutePlannerFrontEnd* frontEnd, SHARED_PTR<GpxRouteApproximation>& gctx,
+                                     std::vector<SHARED_PTR<GpxPoint>>& gpxPoints);
 
 private:
-//	private boolean initRoutingPoint(RoutePlannerFrontEnd frontEnd, GpxRouteApproximation gctx, GpxPoint start,
-//	                                 double distThreshold) throws IOException {
+    static double minDistResult(SHARED_PTR<RouteSegmentResult>& res, double minDistSqr,
+                                const SHARED_PTR<RouteSegmentPoint>& pnt,
+                                const SHARED_PTR<GpxPoint>& loc);
 
-//	private double minDistResult(RouteSegmentResult[] res, double minDistSqr, RouteSegmentPoint pnt, GpxPoint loc) {
+    static double sumPntDistanceSqr(const SHARED_PTR<RouteSegmentPoint>& pnt, int start, int end);
 
-//	private double sumPntDistanceSqr(RouteSegmentPoint pnt, int start, int end) {
+    static SHARED_PTR<GpxPoint>& findNextRoutablePoint(RoutePlannerFrontEnd* frontEnd,
+                                                       SHARED_PTR<GpxRouteApproximation>& gctx,
+                                                       double distThreshold,
+                                                       std::vector<SHARED_PTR<GpxPoint>>& gpxPoints,
+                                                       int searchStart);
 
-//	private GpxPoint findNextRoutablePoint(RoutePlannerFrontEnd frontEnd, GpxRouteApproximation gctx,
-//	                                       double distThreshold, List<GpxPoint> gpxPoints, int searchStart) throws IOException {
-
-//	private void initGpxPointsXY31(List<GpxPoint> gpxPoints) {
+    static void initGpxPointsXY31(std::vector<SHARED_PTR<GpxPoint>>& gpxPoints);
 };
 
 #endif

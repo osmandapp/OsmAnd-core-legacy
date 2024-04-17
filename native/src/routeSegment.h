@@ -192,6 +192,8 @@ struct GpxPoint {
 	int32_t ind;
 	double lat;
 	double lon;
+	int x31, y31;
+
 	double cumDist;
 	SHARED_PTR<RouteSegmentPoint> pnt;
 	vector<SHARED_PTR<RouteSegmentResult>> routeToTarget;

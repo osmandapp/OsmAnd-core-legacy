@@ -110,6 +110,11 @@ struct RouteSegmentResult {
 		updateCapacity();
 	}
 
+	inline int getStartPointX() { return object->getPoint31XTile(startPointIndex); }
+	inline int getStartPointY() { return object->getPoint31YTile(startPointIndex); }
+	inline int getEndPointY() { return object->getPoint31YTile(endPointIndex); }
+	inline int getEndPointX() { return object->getPoint31XTile(endPointIndex); }
+
 	inline bool isForwardDirection() {
 		return endPointIndex - startPointIndex > 0;
 	}
