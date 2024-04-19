@@ -1717,7 +1717,7 @@ void printAdditionalPointInfo(SHARED_PTR<RouteSegmentResult>& res) {
     }
 }
 
-const static bool PRINT_TO_CONSOLE_ROUTE_INFORMATION_TO_TEST = true;
+const static bool PRINT_TO_CONSOLE_ROUTE_INFORMATION_TO_TEST = false;
 
 void printResults(RoutingContext* ctx, int startX, int startY, int endX, int endY,
 				  vector<SHARED_PTR<RouteSegmentResult>>& result) {

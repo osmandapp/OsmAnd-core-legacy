@@ -15,7 +15,7 @@ struct HHRoutingConfig
 
 	double INITIAL_DIRECTION = 0;
 	static const int CALCULATE_ALL_DETAILED = 3;
-	static const int STATS_VERBOSE_LEVEL = 1;
+	static const int STATS_VERBOSE_LEVEL = 0;
 	
 	int FULL_DIJKSTRA_NETWORK_RECALC = 10;
 	double MAX_INC_COST_CF = 1.25;
