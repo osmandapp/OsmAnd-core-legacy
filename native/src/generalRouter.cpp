@@ -589,13 +589,11 @@ double GeneralRouter::calculateTurnTime(const SHARED_PTR<RouteSegment>& segment,
 std::vector<std::string> GeneralRouter::serializeParameterValues(MAP_STR_STR vls) {
 	std::vector<std::string> ls;
 	for (auto const& e : vls) {
-		const auto & it = parameters.find(e.first);
-		if (it != parameters.end()) {
-			if (it->second.type == RoutingParameterType::BOOLEAN) {
+		auto val = e.second;
+		if (val.empty() || "true" == val || "false" == val) {
 				ls.push_back(e.first);
-			} else {
-				ls.push_back(e.first + "=" + e.second);
-			}
+		} else {
+				ls.push_back(e.first + "=" + val);
 		}
 	}
 	return ls;
