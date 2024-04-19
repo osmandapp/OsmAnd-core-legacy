@@ -19,4 +19,5 @@ extern void OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel level, const char* msg, .
 	vprintf(msg, args);
 	printf("\n");
 	va_end(args);
+	fflush(stdout);
 }
