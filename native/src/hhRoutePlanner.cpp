@@ -300,7 +300,7 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
 		hctx->stats.routingTime += time;
 		if (recalc) {
 			if (calcCount > hctx->config->MAX_COUNT_REITERATION) {
-				HHNetworkRouteRes * res = new HHNetworkRouteRes("Too many route recalculations (maps are outdated).");
+				HHNetworkRouteRes * res = new HHNetworkRouteRes("Too many recalculations (outdated maps or unsupported parameters).");
 				return res;
 			}
 			hctx->clearVisited(stPoints, endPoints);
