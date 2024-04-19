@@ -12,7 +12,7 @@ class HHRoutePlanner {
 public:
 	HHRoutePlanner(RoutingContext * ctx);
 	
-	int DEBUG_VERBOSE_LEVEL = 0;
+	int DEBUG_VERBOSE_LEVEL = 1;
 	int DEBUG_ALT_ROUTE_SELECTION = -1;
 	bool ASSERT_COST_INCREASING = false;
 	bool ASSERT_AND_CORRECT_DIST_SMALLER = true;
