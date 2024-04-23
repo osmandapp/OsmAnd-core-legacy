@@ -723,12 +723,15 @@ void HHRoutePlanner::recalculateNetworkCluster(const SHARED_PTR<HHRoutingContext
 			} else {
 				resUnique.insert(std::pair<int64_t, SHARED_PTR<RouteSegment>>(pntId, o));
 				auto it = hctx->pointsByGeo.find(calcRPId(o, o->getSegmentStart(), o->getSegmentEnd()));
-				//NetworkDBPoint * p = hctx->pointsByGeo.get();
 				if (it == hctx->pointsByGeo.end()) {
 					OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "Error calculations new final boundary not found");
 					continue;
 				}
 				NetworkDBPoint * p = it->second;
+                p->startX = o->getStartPointX();
+                p->startY = o->getStartPointY();
+                p->endX = o->getEndPointX();
+                p->endY = o->getEndPointY();
 				float routeTime = o->getDistanceFromStart() + calcRoutingSegmentTimeOnlyDist(hctx->rctx->config->router, o) / 2 + 1;
 				NetworkDBSegment * c = start->getSegment(p, true);
 				if (c != nullptr) {
