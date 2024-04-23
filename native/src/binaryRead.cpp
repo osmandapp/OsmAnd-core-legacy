@@ -39,7 +39,7 @@ static uint zoomMaxDetailedForCoastlines = 16;
 std::vector<BinaryMapFile*> openFiles;
 OsmAnd::OBF::OsmAndStoredIndex* cache = NULL;
 bool cacheHasChanged = false;
-static const int CACHE_VERSION = 1;
+static const int CACHE_VERSION = 4;
 
 #ifdef MALLOC_H
 #include <malloc.h>
@@ -3830,6 +3830,7 @@ bool addToCache(BinaryMapFile* mapFile, bool routingOnly) {
 		return false;
 	}
 	cacheHasChanged = true;
+	auto mapFileName = getFileName(mapFile->inputName);
 	if (!cache) {
 		cache = new OsmAnd::OBF::OsmAndStoredIndex();
 		cache->set_version(CACHE_VERSION);
@@ -3839,9 +3840,10 @@ bool addToCache(BinaryMapFile* mapFile, bool routingOnly) {
 	} else {
 		int found = -1;
 		for (int i = 0; i < cache->fileindex_size(); i++) {
-			auto fi = cache->fileindex(i);
-			if (mapFile->inputName == fi.filename()) {
+			auto fi = cache->mutable_fileindex(i);
+			if (mapFileName == fi->filename()) {
 				found = i;
+				break;
 			}
 		}
 		if (found >= 0) {
@@ -3851,7 +3853,7 @@ bool addToCache(BinaryMapFile* mapFile, bool routingOnly) {
 	
 	struct stat stats;
 	stat(mapFile->inputName.c_str(), &stats);
-	
+
 	OsmAnd::OBF::FileIndex* fi = cache->add_fileindex();
 
 	auto d = mapFile->dateCreated;
@@ -3862,7 +3864,7 @@ bool addToCache(BinaryMapFile* mapFile, bool routingOnly) {
 	}
 	fi->set_size(stats.st_size);
 	fi->set_version(mapFile->version);
-	fi->set_filename(mapFile->inputName.c_str());
+	fi->set_filename(mapFileName.c_str());
 	for (SHARED_PTR<RoutingIndex> & index : mapFile->routingIndexes) {
 		OsmAnd::OBF::RoutingPart* routing = fi->add_routingindex();
 		routing->set_size(index->length);
@@ -3904,7 +3906,7 @@ std::vector<BinaryMapFile*> getOpenMapFiles() {
 
 bool writeMapFilesCache(const std::string& filePath) {
 	if (cache && cacheHasChanged) {
-		int fileDescriptor = open(filePath.c_str(), O_RDWR | O_APPEND | O_CREAT, 0644);
+		int fileDescriptor = open(filePath.c_str(), O_CREAT | O_TRUNC | O_WRONLY, 0644);
 		if (fileDescriptor < 0) {
 			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "Cache file could not be written: %s", filePath.c_str());
 			return false;

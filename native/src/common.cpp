@@ -503,6 +503,11 @@ void trimspec(std::string &text) {
 	}
 }
 
+std::string getFileName(const std::string& filePath) {
+    size_t found = filePath.find_last_of("/\\");
+    return found != std::string::npos ? filePath.substr(found + 1) : filePath;
+}
+
 std::string RenderableObject::toJson() const {
 	json::JSON j;
 	// general
