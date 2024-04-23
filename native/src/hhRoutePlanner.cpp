@@ -728,10 +728,10 @@ void HHRoutePlanner::recalculateNetworkCluster(const SHARED_PTR<HHRoutingContext
 					continue;
 				}
 				NetworkDBPoint * p = it->second;
-                p->startX = o->getStartPointX();
-                p->startY = o->getStartPointY();
-                p->endX = o->getEndPointX();
-                p->endY = o->getEndPointY();
+				p->startX = o->getStartPointX();
+				p->startY = o->getStartPointY();
+				p->endX = o->getEndPointX();
+				p->endY = o->getEndPointY();
 				float routeTime = o->getDistanceFromStart() + calcRoutingSegmentTimeOnlyDist(hctx->rctx->config->router, o) / 2 + 1;
 				NetworkDBSegment * c = start->getSegment(p, true);
 				if (c != nullptr) {
