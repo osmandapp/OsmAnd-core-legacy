@@ -510,6 +510,11 @@ void RoutePlannerFrontEnd::calculateGpxRoute(SHARED_PTR<GpxRouteApproximation>& 
 	if (!lastStraightLine.empty()) {
 		addStraightLine(gctx, lastStraightLine, straightPointStart, reg);
 	}
+
+	if (useGeometryBasedApproximation) {
+		prepareResult(gctx->ctx, gctx->result); // not required by classic method
+	}
+
 	// clean turns to recaculate them
 	cleanupResultAndAddTurns(gctx);
 }
