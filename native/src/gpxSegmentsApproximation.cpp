@@ -23,11 +23,10 @@ void GpxSegmentsApproximation::fastGpxApproximation(RoutePlannerFrontEnd* frontE
         for (int j = start; j < end; j++) {
             SHARED_PTR<RouteSegmentResult> res = nullptr;
             double minDistSqr = std::numeric_limits<double>::infinity();
-            const auto& ps = gpxPoints.at(j); // TODO const?
+            const auto& ps = gpxPoints.at(j);
             minDistSqr = minDistResult(res, minDistSqr, currentPoint->pnt, ps);
             if (!currentPoint->pnt->others.empty() /* != null */) {
                 for (const auto& oth : currentPoint->pnt->others) {
-                    // TODO const?
                     minDistSqr = minDistResult(res, minDistSqr, oth, ps);
                 }
             }
@@ -45,7 +44,7 @@ void GpxSegmentsApproximation::fastGpxApproximation(RoutePlannerFrontEnd* frontE
             currentPoint = findNextRoutablePoint(frontEnd, gctx, minPointApproximation, gpxPoints, nextIndex);
             continue;
         }
-        currentPoint->routeToTarget.clear(); // = new ArrayList<RouteSegmentResult>(); TODO clear !?
+        currentPoint->routeToTarget.clear(); // = new ArrayList<RouteSegmentResult>()
         currentPoint->routeToTarget.push_back(fres);
         currentPoint->targetInd = minNextInd;
 
@@ -108,7 +107,6 @@ double GpxSegmentsApproximation::minDistResult(SHARED_PTR<RouteSegmentResult>& r
     // https://test.osmand.net/map/?start=52.481439,13.386036&end=52.483094,13.386060&profile=rescuetrack&params=rescuetrack,geoapproximation#18/52.48234/13.38672
     dist += sumPntDistanceSqr(pnt, pnt->getSegmentStart(), segmentEnd) * DILUTE_BY_SEGMENT_DISTANCE;
 
-    // TODO try !res ...
     if ((res == nullptr || dist < minDistSqr) && segmentEnd >= 0) {
         minDistSqr = dist;
         res = std::make_shared<RouteSegmentResult>(pnt->getRoad(), pnt->getSegmentStart(), segmentEnd);
@@ -150,6 +148,6 @@ SHARED_PTR<GpxPoint>& GpxSegmentsApproximation::findNextRoutablePoint(RoutePlann
 void GpxSegmentsApproximation::initGpxPointsXY31(std::vector<SHARED_PTR<GpxPoint>>& gpxPoints) {
     for (auto& p : gpxPoints) {
         p->x31 = get31TileNumberX(p->lon);
-        p->y31 = get31TileNumberX(p->lat);
+        p->y31 = get31TileNumberY(p->lat);
     }
 }
