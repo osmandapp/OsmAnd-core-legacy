@@ -12,7 +12,7 @@ void GpxSegmentsApproximation::fastGpxApproximation(RoutePlannerFrontEnd* frontE
     initGpxPointsXY31(gpxPoints);
 
     float minPointApproximation = gctx->ctx->config->minPointApproximation;
-    SHARED_PTR<GpxPoint>& currentPoint = findNextRoutablePoint(frontEnd, gctx, minPointApproximation, gpxPoints, 0);
+    SHARED_PTR<GpxPoint> currentPoint = findNextRoutablePoint(frontEnd, gctx, minPointApproximation, gpxPoints, 0);
 
     while (currentPoint != nullptr && currentPoint->pnt != nullptr) {
         double minDistSqrSegment = 0;
@@ -77,8 +77,6 @@ void GpxSegmentsApproximation::fastGpxApproximation(RoutePlannerFrontEnd* frontE
     OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, // TODO get back ::Info
                       "Native Geo-Based Approximation took %.2f seconds (%d route points searched)",
                       static_cast<double>(timer.GetElapsedMs()) / 1000.0, gctx->routePointsSearched);
-
-    fflush(stdout);
 }
 
 double GpxSegmentsApproximation::minDistResult(SHARED_PTR<RouteSegmentResult>& res, double minDistSqr,
@@ -130,7 +128,7 @@ double GpxSegmentsApproximation::sumPntDistanceSqr(const SHARED_PTR<RouteSegment
     return dist * dist;
 }
 
-SHARED_PTR<GpxPoint>& GpxSegmentsApproximation::findNextRoutablePoint(RoutePlannerFrontEnd* frontEnd,
+const SHARED_PTR<GpxPoint>& GpxSegmentsApproximation::findNextRoutablePoint(RoutePlannerFrontEnd* frontEnd,
                                                                       SHARED_PTR<GpxRouteApproximation>& gctx,
                                                                       double distThreshold,
                                                                       std::vector<SHARED_PTR<GpxPoint>>& gpxPoints,
