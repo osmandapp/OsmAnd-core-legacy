@@ -434,7 +434,6 @@ jfieldID jfield_RoutingContext_calculationProgress = NULL;
 jfieldID jfield_RoutingContext_calculationMode = NULL;
 jfieldID jfield_RoutingContext_alertFasterRoadToVisitedSegments = NULL;
 jfieldID jfield_RoutingContext_alertSlowerSegmentedWasVisitedEarlier = NULL;
-jfieldID jfield_RoutingContext_hhNativeFilter = NULL;
 
 jclass jclass_RouteCalculationMode = NULL;
 jclass jclass_RoutePlannerFrontEnd = NULL;
@@ -539,6 +538,7 @@ jfieldID jfield_GeneralRouter_heightObstacles = NULL;
 jfieldID jfield_GeneralRouter_shortestRoute = NULL;
 jfieldID jfield_GeneralRouter_objectAttributes = NULL;
 jfieldID jfield_GeneralRouter_hhNativeFilter = NULL;
+jfieldID jfield_GeneralRouter_hhNativeParameterValues = NULL;
 jmethodID jmethod_GeneralRouter_getImpassableRoadIds = NULL;
 
 jclass jclass_RouteAttributeContext = NULL;
@@ -988,6 +988,7 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jfield_GeneralRouter_objectAttributes = getFid(env, jclass_GeneralRouter, "objectAttributes",
 												   "[Lnet/osmand/router/GeneralRouter$RouteAttributeContext;");
 	jfield_GeneralRouter_hhNativeFilter = getFid(env, jclass_GeneralRouter, "hhNativeFilter", "[Ljava/lang/String;");
+	jfield_GeneralRouter_hhNativeParameterValues = getFid(env, jclass_GeneralRouter, "hhNativeParameterValues", "[Ljava/lang/String;");
 	jmethod_GeneralRouter_getImpassableRoadIds = env->GetMethodID(jclass_GeneralRouter, "getImpassableRoadIds", "()[J");
 
 	jclass_RenderedObject = findGlobalClass(env, "net/osmand/NativeLibrary$RenderedObject");
@@ -1639,6 +1640,12 @@ void parseRouteConfiguration(JNIEnv* ienv, SHARED_PTR<RoutingConfiguration> rCon
 		string key = filter[i];
 		string val = filter[i + 1];
 		rConfig->router->hhNativeFilter.insert(std::make_pair(key, val));
+	}
+
+	vector<string> params = convertJArrayToStrings(
+		ienv, (jobjectArray)ienv->GetObjectField(router, jfield_GeneralRouter_hhNativeParameterValues));
+	for (int i = 0; i < params.size(); i += 2) {
+		rConfig->router->insertParameterValues(params[i], params[i + 1]);
 	}
 
 	// Map<String, String> attributes; // Attributes are not sync not used for calculation

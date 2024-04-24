@@ -581,6 +581,10 @@ class GeneralRouter {
 	MAP_STR_STR getParameterValues() {
 		return parameterValues;        
 	}
+
+	void insertParameterValues(string key, string val) {
+		parameterValues.insert(std::make_pair(key, val));
+	}
 	
 	std::vector<std::string> serializeParameterValues(MAP_STR_STR vls);
 

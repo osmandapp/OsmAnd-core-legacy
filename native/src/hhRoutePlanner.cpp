@@ -358,7 +358,7 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
 
 	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
 		"Routing %d ms: load/filter points %.f ms, last mile %.f ms, routing %.f ms (queue  - %.f ms, %.f ms - %d edges), prep result %.f ms (selected %s)",
-					overallTimer.GetElapsedMs(), hctx->stats.loadPointsTime, hctx->stats.searchPointsTime,
+					(int)overallTimer.GetElapsedMs(), hctx->stats.loadPointsTime, hctx->stats.searchPointsTime,
 					hctx->stats.routingTime, hctx->stats.addQueueTime + hctx->stats.pollQueueTime,
 					hctx->stats.loadEdgesTime, hctx->stats.loadEdgesCnt, hctx->stats.prepTime,
 					hctx->getRoutingInfo().c_str());
@@ -414,10 +414,10 @@ HHNetworkRouteRes * HHRoutePlanner::prepareRouteResults(const SHARED_PTR<HHRouti
 			} else {
 				if (hctx->config->STATS_VERBOSE_LEVEL > 0) {
 					OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
-									  "\nRoute %lld [%d] -> %lld [%d] %s - hh dist %.2f s, detail %.2f s (%.1f%%) segments %d ( end %.5f/%.5f - %lld ) ",
-									  s->start->index, s->start->chInd(), s->end->index, s->end->chInd(), s->shortcut ? "sh" : "bs",
+									  "\nRoute %d [%d] -> %d [%d] %s - hh dist %.2f s, detail %.2f s (%.1f%%) segments %d ( end %.5f/%.5f - %u ) ",
+									  (int)s->start->index, s->start->chInd(), (int)s->end->index, s->end->chInd(), s->shortcut ? "sh" : "bs",
 									  s->dist, routeSegment.rtTimeDetailed, 100 * (1 - routeSegment.rtTimeDetailed / s->dist),
-									  segments, get31LatitudeY(s->end->startY), get31LongitudeX(s->end->startX), s->end->roadId / 64);
+									  segments, get31LatitudeY(s->end->startY), get31LongitudeX(s->end->startX), (unsigned int)(s->end->roadId / 64));
 				}
 			}
 		}
@@ -491,8 +491,8 @@ void HHRoutePlanner::findFirstLastSegments(const SHARED_PTR<HHRoutingContext> & 
 			LatLon l = startP->getPreciseLatLon();
 			auto & r = startP->road;
 			if (hctx->config->STATS_VERBOSE_LEVEL > 0) {
-				OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Reiterate with next start point: %d (%.5f %.5f): %lld %s",
-								  startP->segmentStart, l.lat, l.lon, r->getId() / 64, r->getName().c_str());
+				OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Reiterate with next start point: %d (%.5f %.5f): %u %s",
+								  startP->segmentStart, l.lat, l.lon, (unsigned int)(r->getId() / 64), r->getName().c_str());
 			}
 			startReiterate++;
 			found = false;
@@ -510,8 +510,8 @@ void HHRoutePlanner::findFirstLastSegments(const SHARED_PTR<HHRoutingContext> & 
 			LatLon l = endP->getPreciseLatLon();
 			auto & r = endP->road;
 			if (hctx->config->STATS_VERBOSE_LEVEL > 0) {
-				OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Reiterate with next end point: %d (%.5f %.5f): %lld %s",
-								  endP->segmentStart, l.lat, l.lon, r->getId() / 64, r->getName().c_str());
+				OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Reiterate with next end point: %d (%.5f %.5f): %u %s",
+								  endP->segmentStart, l.lat, l.lon, (unsigned int)(r->getId() / 64), r->getName().c_str());
 			}
 			endReiterate++;
 			found = false;
@@ -723,12 +723,15 @@ void HHRoutePlanner::recalculateNetworkCluster(const SHARED_PTR<HHRoutingContext
 			} else {
 				resUnique.insert(std::pair<int64_t, SHARED_PTR<RouteSegment>>(pntId, o));
 				auto it = hctx->pointsByGeo.find(calcRPId(o, o->getSegmentStart(), o->getSegmentEnd()));
-				//NetworkDBPoint * p = hctx->pointsByGeo.get();
 				if (it == hctx->pointsByGeo.end()) {
 					OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "Error calculations new final boundary not found");
 					continue;
 				}
 				NetworkDBPoint * p = it->second;
+				p->startX = o->getStartPointX();
+				p->startY = o->getStartPointY();
+				p->endX = o->getEndPointX();
+				p->endY = o->getEndPointY();
 				float routeTime = o->getDistanceFromStart() + calcRoutingSegmentTimeOnlyDist(hctx->rctx->config->router, o) / 2 + 1;
 				NetworkDBSegment * c = start->getSegment(p, true);
 				if (c != nullptr) {
@@ -785,8 +788,8 @@ bool HHRoutePlanner::retrieveSegmentsGeometry(const SHARED_PTR<HHRoutingContext>
 			if (f.size() == 0) {
 				bool full = hctx->config->FULL_DIJKSTRA_NETWORK_RECALC-- > 0;
 				OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
-								  "Route not found (%srecalc) %lld -> %lld",
-								  full ? "dijkstra+" : "", s.segment->start->index, s.segment->end->index);
+								  "Route not found (%srecalc) %d -> %d",
+								  full ? "dijkstra+" : "", (int)s.segment->start->index, (int)s.segment->end->index);
 				if (full) {
 					recalculateNetworkCluster(hctx, s.segment->start);
 				}
@@ -801,8 +804,8 @@ bool HHRoutePlanner::retrieveSegmentsGeometry(const SHARED_PTR<HHRoutingContext>
 			if ((distanceFromStart + MAX_INC_COST_CORR) > (s.segment->dist + MAX_INC_COST_CORR) * hctx->config->MAX_INC_COST_CF) {
 				if (DEBUG_VERBOSE_LEVEL > 0) {
 					OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
-									  "Route cost increased (%.2f > %.2f) between %lld -> %lld: recalculate route\n",
-									  distanceFromStart, s.segment->dist, s.segment->start->index, s.segment->end->index);
+									  "Route cost increased (%.2f > %.2f) between %d -> %d: recalculate route\n",
+									  distanceFromStart, s.segment->dist, (int)s.segment->start->index, (int)s.segment->end->index);
 				}
 				s.segment->dist = distanceFromStart;
 				return true;
@@ -848,8 +851,8 @@ std::vector<SHARED_PTR<RouteSegment>> HHRoutePlanner::runDetailedRouting(const S
 		return f; // no logging it's same as end of previos segment
 	} else if (end == nullptr) {
 		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
-						  "End point is not present in detailed maps: Point %lld (%lld %d-%d)",
-						  endS->index, endS->roadId/64, endS->start, endS->end);
+						  "End point is not present in detailed maps: Point %u (%u %d-%d)",
+						  (unsigned int)endS->index, (unsigned int)(endS->roadId/64), (int)endS->start, (int)endS->end);
 		return f;
 	}
 	double oldP = hctx->rctx->config->penaltyForReverseDirection;
@@ -906,13 +909,13 @@ void HHRoutePlanner::addPointToQueue(const SHARED_PTR<HHRoutingContext> & hctx, 
 	timer.Start();
 	if (DEBUG_VERBOSE_LEVEL > 2) {
 		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
-						  "Add  Point %lld to visit - cost %.2f (%.2f prev, %.2f dist) > prev cost %.2f \n", point->index,
+						  "Add  Point %u to visit - cost %.2f (%.2f prev, %.2f dist) > prev cost %.2f \n", (unsigned int)point->index,
 						  cost, parent == nullptr ? 0 : parent->rt(reverse)->rtDistanceFromStart, segmentDist, point->rt(reverse)->rtCost);
 	}
 	if (point->rt(reverse)->rtVisited) {
 		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error,
-						  "Point %lld (%lld %d-%d) visited - cost %.2f > prev cost %.2f",
-						  point->index, point->roadId / 64, point->start, point->end, cost, point->rt(reverse)->rtCost);
+						  "Point %u (%u %d-%d) visited - cost %.2f > prev cost %.2f",
+						  (unsigned int)point->index, (unsigned int)point->roadId / 64, point->start, point->end, cost, point->rt(reverse)->rtCost);
 		return;
 	}
 	point->setCostParentRt(reverse, cost, parent, segmentDist);
@@ -957,16 +960,16 @@ void HHRoutePlanner::addConnectedToQueue(const SHARED_PTR<HHRoutingContext> & hc
 			&& smallestSegmentCost(hctx, point, nextPoint) - connected->dist >  1) {
 			double sSegmentCost = smallestSegmentCost(hctx, point, nextPoint);
 			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
-							  "Incorrect distance Point %lld -> Point %lld: db = %.2f > fastest %.2f",
-							  point->index, nextPoint->index, connected->dist, sSegmentCost);
+							  "Incorrect distance Point %u -> Point %u: db = %.2f > fastest %.2f",
+							  (unsigned int)point->index, (unsigned int)nextPoint->index, connected->dist, sSegmentCost);
 			connected->dist = sSegmentCost;
 		}
 		double cost = point->rt(reverse)->rtDistanceFromStart  + connected->dist + hctx->distanceToEnd(reverse, nextPoint);
 		if (ASSERT_COST_INCREASING && point->rt(reverse)->rtCost - cost > 1) {
 			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error,
-							  "Point %lld (%lld %d-%d) (cost %.2f) -> %lld (cost %.2f) st=%.2f-> + %.2f, toend=%.2f->%.2f: ",
-							  point->index, point->roadId / 64, point->start, point->end, point->rt(reverse)->rtCost,
-							  nextPoint->index, cost, point->rt(reverse)->rtDistanceFromStart, connected->dist,
+							  "Point %u (%u %d-%d) (cost %.2f) -> %u (cost %.2f) st=%.2f-> + %.2f, toend=%.2f->%.2f: ",
+							  (unsigned int)point->index, (unsigned int)point->roadId / 64, point->start, point->end, point->rt(reverse)->rtCost,
+							  (unsigned int)nextPoint->index, cost, point->rt(reverse)->rtDistanceFromStart, connected->dist,
 							  point->rt(reverse)->rtDistanceToEnd, hctx->distanceToEnd(reverse, nextPoint));
 			return;
 		}
@@ -1104,9 +1107,9 @@ void HHRoutePlanner::printPoint(NetworkDBPoint * p, bool rev) const {
 			pind = p->rt(rev)->rtRouteToPoint->index;
 			pchInd = p->rt(rev)->rtRouteToPoint->chInd();
 		}
-		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Visit Point %s %lld [%d] (from %lld [%lld]) (cost %.1f s) %.5f/%.5f - %lld",
-						  rev ? "<-" : "->", p->index, p->chInd(), pind, pchInd, p->rt(rev)->rtCost,
-						  get31LatitudeY(p->startY), get31LongitudeX(p->startX), p->roadId / 64);
+		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Visit Point %s %u [%d] (from %u [%u]) (cost %.1f s) %.5f/%.5f - %u",
+						  rev ? "<-" : "->", (unsigned int)p->index, p->chInd(), (unsigned int)pind, (unsigned int)pchInd, p->rt(rev)->rtCost,
+						  get31LatitudeY(p->startY), get31LongitudeX(p->startX), (unsigned int)p->roadId / 64);
 	}
 }
 
