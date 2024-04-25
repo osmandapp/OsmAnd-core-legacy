@@ -96,7 +96,7 @@ public:
 	bool initRoutingPoint(SHARED_PTR<GpxPoint>& start, SHARED_PTR<GpxRouteApproximation>& gctx, double distThreshold);
 
 private:
-	bool useGeometryBasedApproximation = true; // just for iOS test
+	bool useGeometryBasedApproximation = false;
 
 	SHARED_PTR<GpxPoint> findNextGpxPointWithin(vector<SHARED_PTR<GpxPoint>>& gpxPoints, SHARED_PTR<GpxPoint>& start,
 												double dist);
