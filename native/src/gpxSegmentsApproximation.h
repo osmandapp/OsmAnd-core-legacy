@@ -18,11 +18,11 @@ private:
 
     static double sumPntDistanceSqr(const SHARED_PTR<RouteSegmentPoint>& pnt, int start, int end);
 
-    static const SHARED_PTR<GpxPoint>& findNextRoutablePoint(RoutePlannerFrontEnd* frontEnd,
-                                                       SHARED_PTR<GpxRouteApproximation>& gctx,
-                                                       double distThreshold,
-                                                       std::vector<SHARED_PTR<GpxPoint>>& gpxPoints,
-                                                       int searchStart);
+    static SHARED_PTR<GpxPoint> findNextRoutablePoint(RoutePlannerFrontEnd* frontEnd,
+                                                      SHARED_PTR<GpxRouteApproximation>& gctx,
+                                                      double distThreshold,
+                                                      std::vector<SHARED_PTR<GpxPoint>>& gpxPoints,
+                                                      int searchStart);
 
     static void initGpxPointsXY31(std::vector<SHARED_PTR<GpxPoint>>& gpxPoints);
 };
