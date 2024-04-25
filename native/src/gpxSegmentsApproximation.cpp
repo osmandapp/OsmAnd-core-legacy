@@ -50,7 +50,6 @@ void GpxSegmentsApproximation::fastGpxApproximation(RoutePlannerFrontEnd* frontE
 
         currentPoint = gpxPoints.at(minNextInd); // next point
 
-        // std::vector<SHARED_PTR<RouteSegment>> sg = gctx->ctx->loadRouteSegment(fres->getEndPointX(), fres->getEndPointY());
         auto sgVectorSharedRouteSegment = gctx->ctx->loadRouteSegment(fres->getEndPointX(), fres->getEndPointY());
 
         for (const auto& sg : sgVectorSharedRouteSegment) {
@@ -58,15 +57,11 @@ void GpxSegmentsApproximation::fastGpxApproximation(RoutePlannerFrontEnd* frontE
                 auto p = std::make_shared<RouteSegmentPoint>(sg->getRoad(), sg->getSegmentStart(), sg->getSegmentEnd(),
                                                              0);
                 if (currentPoint->pnt == nullptr) {
-                    // TODO log
                     currentPoint->pnt = p;
                 }
                 else {
-                    if (currentPoint->pnt->others.empty()) {
-                        // TODO log
-                    }
-                    // if (currentPoint->pnt->others == null) {
-                    //     currentPoint->pnt->others = new ArrayList<>();
+                    // if (currentPoint.pnt.others == null) {
+                    //     currentPoint.pnt.others = new ArrayList<>();
                     // }
                     currentPoint->pnt->others.push_back(p);
                 }
@@ -74,7 +69,7 @@ void GpxSegmentsApproximation::fastGpxApproximation(RoutePlannerFrontEnd* frontE
         }
     }
 
-    OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, // TODO get back ::Info
+    OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
                       "Native Geo-Based Approximation took %.2f seconds (%d route points searched)",
                       static_cast<double>(timer.GetElapsedMs()) / 1000.0, gctx->routePointsSearched);
 }
