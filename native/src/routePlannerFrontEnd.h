@@ -40,8 +40,8 @@ typedef std::function<bool(const std::shared_ptr<GpxRouteApproximation>& approxi
 
 class RoutePlannerFrontEnd {
     
-    bool useSmartRouteRecalculation;
-    
+    bool useSmartRouteRecalculation = true;
+
     HHRoutingConfig * HH_ROUTING_CONFIG = nullptr;
     
 public:
@@ -85,18 +85,23 @@ public:
 	vector<SHARED_PTR<GpxPoint>> generateGpxPoints(SHARED_PTR<GpxRouteApproximation>& gctx, const vector<pair<double, double>>& locationsHolder);
 	
 	void searchGpxRoute(SHARED_PTR<GpxRouteApproximation>& gctx, vector<SHARED_PTR<GpxPoint>>& gpxPoints, GpxRouteApproximationCallback acceptor = nullptr);
+	void searchGpxSegments(SHARED_PTR<GpxRouteApproximation>& gctx, vector<SHARED_PTR<GpxPoint>>& gpxPoints, GpxRouteApproximationCallback acceptor = nullptr);
+	void searchGpxRouteByRouting(SHARED_PTR<GpxRouteApproximation>& gctx, vector<SHARED_PTR<GpxPoint>>& gpxPoints, GpxRouteApproximationCallback acceptor = nullptr);
 	static bool hasSegment(vector<SHARED_PTR<RouteSegmentResult>>& result, SHARED_PTR<RouteSegment>& current);
 	HHRoutingConfig* setDefaultRoutingConfig();
 
 	void makeStartEndPointsPrecise(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResult>>& res, int startX, int startY, int endX, int endY);
 
+	void setUseGeometryBasedApproximation(bool enabled) { useGeometryBasedApproximation = enabled; }
+	bool initRoutingPoint(SHARED_PTR<GpxPoint>& start, SHARED_PTR<GpxRouteApproximation>& gctx, double distThreshold);
+
 private:
-	
+	bool useGeometryBasedApproximation = false;
+
 	SHARED_PTR<GpxPoint> findNextGpxPointWithin(vector<SHARED_PTR<GpxPoint>>& gpxPoints, SHARED_PTR<GpxPoint>& start,
 												double dist);
 	bool findGpxRouteSegment(SHARED_PTR<GpxRouteApproximation>& gctx, vector<SHARED_PTR<GpxPoint>>& gpxPoints,
 							 SHARED_PTR<GpxPoint>& start, SHARED_PTR<GpxPoint>& target, bool prevRouteCalculated);
-	bool initRoutingPoint(SHARED_PTR<GpxPoint>& start, SHARED_PTR<GpxRouteApproximation>& gctx, double distThreshold);
 	bool stepBackAndFindPrevPointInRoute(SHARED_PTR<GpxRouteApproximation>& gctx, vector<SHARED_PTR<GpxPoint>>& gpxPoints,
 										 SHARED_PTR<GpxPoint>& start, SHARED_PTR<GpxPoint>& next);
 	void calculateGpxRoute(SHARED_PTR<GpxRouteApproximation>& gctx, vector<SHARED_PTR<GpxPoint>>& gpxPoints);

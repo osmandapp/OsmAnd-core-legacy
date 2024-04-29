@@ -7,6 +7,7 @@
 #include "routeSegment.h"
 #include "routeSegmentResult.h"
 #include "routingConfiguration.h"
+#include "gpxSegmentsApproximation.h"
 
 SHARED_PTR<RoutingContext> RoutePlannerFrontEnd::buildRoutingContext(
 	SHARED_PTR<RoutingConfiguration> config, RouteCalculationMode rm /*= RouteCalculationMode::NORMAL*/) {
@@ -197,7 +198,35 @@ LatLon GpxRouteApproximation::getLastPoint() {
 	return result[result.size() - 1]->getEndPoint();
 }
 
-void RoutePlannerFrontEnd::searchGpxRoute(SHARED_PTR<GpxRouteApproximation> &gctx, vector<SHARED_PTR<GpxPoint>>& gpxPoints, GpxRouteApproximationCallback acceptor) {
+void RoutePlannerFrontEnd::searchGpxRoute(SHARED_PTR<GpxRouteApproximation>& gctx,
+                                          vector<SHARED_PTR<GpxPoint>>& gpxPoints,
+                                          GpxRouteApproximationCallback acceptor) {
+	if (useGeometryBasedApproximation) {
+		searchGpxSegments(gctx, gpxPoints, acceptor);
+	}
+	else {
+		searchGpxRouteByRouting(gctx, gpxPoints, acceptor);
+	}
+}
+
+void RoutePlannerFrontEnd::searchGpxSegments(SHARED_PTR<GpxRouteApproximation>& gctx,
+                                             vector<SHARED_PTR<GpxPoint>>& gpxPoints,
+                                             GpxRouteApproximationCallback acceptor) {
+	if (!gctx->ctx->progress) {
+		gctx->ctx->progress = std::make_shared<RouteCalculationProgress>();
+	}
+
+	GpxSegmentsApproximation().fastGpxApproximation(this, gctx, gpxPoints);
+	calculateGpxRoute(gctx, gpxPoints);
+
+	if (acceptor) {
+		acceptor(gctx->ctx->progress->cancelled ? nullptr : gctx);
+	}
+}
+
+void RoutePlannerFrontEnd::searchGpxRouteByRouting(SHARED_PTR<GpxRouteApproximation>& gctx,
+                                                   vector<SHARED_PTR<GpxPoint>>& gpxPoints,
+                                                   GpxRouteApproximationCallback acceptor) {
 	if (!gctx->ctx->progress) {
 		gctx->ctx->progress = std::make_shared<RouteCalculationProgress>();
 	}
@@ -481,6 +510,11 @@ void RoutePlannerFrontEnd::calculateGpxRoute(SHARED_PTR<GpxRouteApproximation>& 
 	if (!lastStraightLine.empty()) {
 		addStraightLine(gctx, lastStraightLine, straightPointStart, reg);
 	}
+
+	if (useGeometryBasedApproximation) {
+		prepareResult(gctx->ctx, gctx->result); // not required by classic method
+	}
+
 	// clean turns to recaculate them
 	cleanupResultAndAddTurns(gctx);
 }

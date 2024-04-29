@@ -1837,9 +1837,8 @@ extern "C" JNIEXPORT jboolean JNICALL Java_net_osmand_NativeLibrary_nativeNeedRe
 }
 
 extern "C" JNIEXPORT jobject JNICALL Java_net_osmand_NativeLibrary_nativeSearchGpxRoute(JNIEnv* ienv, jobject obj,
-																						jobject jCtx,
-																						jobjectArray jGpxPoints,
-																						jobjectArray regions) {
+	jobject jCtx, jobjectArray jGpxPoints, jobjectArray regions, bool useGeo)
+{
 	vector<SHARED_PTR<GpxPoint>> gpxPoints;
 	for (int i = 0; i < ienv->GetArrayLength(jGpxPoints); i++) {
 		jobject jGpxPoint = ienv->GetObjectArrayElement(jGpxPoints, i);
@@ -1854,6 +1853,7 @@ extern "C" JNIEXPORT jobject JNICALL Java_net_osmand_NativeLibrary_nativeSearchG
 	RoutingContext* c = getRoutingContext(ienv, jCtx, NO_DIRECTION, false, progress);
 	SHARED_PTR<GpxRouteApproximation> r = shared_ptr<GpxRouteApproximation>(new GpxRouteApproximation(c));
 	SHARED_PTR<RoutePlannerFrontEnd> rpfe = shared_ptr<RoutePlannerFrontEnd>(new RoutePlannerFrontEnd());
+	rpfe->setUseGeometryBasedApproximation(useGeo);
 	rpfe->searchGpxRoute(r, gpxPoints);
 	jobject jResult = ienv->NewObject(jclass_GpxRouteApproximationResult, jmethod_GpxRouteApproximationResult_init);
 	UNORDERED(map)<int64_t, int> indexes;
