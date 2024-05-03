@@ -39,7 +39,7 @@ static uint zoomMaxDetailedForCoastlines = 16;
 std::vector<BinaryMapFile*> openFiles;
 OsmAnd::OBF::OsmAndStoredIndex* cache = NULL;
 bool cacheHasChanged = false;
-static const int CACHE_VERSION = 4;
+static const int CACHE_VERSION = 4;// synchronize with CachedOsmandIndexes.java VERSION
 
 #ifdef MALLOC_H
 #include <malloc.h>
