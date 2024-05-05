@@ -1130,7 +1130,7 @@ void loadJniRenderingContext(JNIEnv* env) {
 
 	jclass_nativeGpxPointApproximation = findGlobalClass(env, "net/osmand/NativeLibrary$NativeGpxPointApproximation");
 	jmethod_nativeGpxPointApproximation_init =
-		env->GetMethodID(jclass_nativeGpxPointApproximation, "<init>", "(IDDD)V");
+		env->GetMethodID(jclass_nativeGpxPointApproximation, "<init>", "(IDDDI)V");
 	jmethod_nativeGpxPointApproximation_addRouteToTarget = env->GetMethodID(
 		jclass_nativeGpxPointApproximation, "addRouteToTarget", "(Lnet/osmand/router/RouteSegmentResult;)V");
 	jfield_nativeGpxPointApproximation_lat = getFid(env, jclass_nativeGpxPointApproximation, "lat", "D");
@@ -1739,7 +1739,7 @@ void addLongField(JNIEnv* ienv, jobject obj, jfieldID fid, jlong val) {
 jobject convertGpxPointToJava(JNIEnv* ienv, SHARED_PTR<GpxPoint> result, UNORDERED(map) < int64_t, int > &indexes,
 							  jobjectArray regions) {
 	jobject jGpxPoint = ienv->NewObject(jclass_nativeGpxPointApproximation, jmethod_nativeGpxPointApproximation_init,
-										result->ind, result->lat, result->lon, result->cumDist);
+										result->ind, result->lat, result->lon, result->cumDist, result->targetInd);
 	for (uint i = 0; i < result->routeToTarget.size(); i++) {
 		jobject resobj = convertRouteSegmentResultToJava(ienv, result->routeToTarget[i], indexes, regions);
 		ienv->CallVoidMethod(jGpxPoint, jmethod_nativeGpxPointApproximation_addRouteToTarget, resobj);
