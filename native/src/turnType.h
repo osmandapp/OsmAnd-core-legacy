@@ -84,7 +84,11 @@ public:
     inline int getExitOut() {
         return exitOut;
     }
-    
+
+    inline void setExitOut(int exitOut) {
+        this->exitOut = exitOut;
+    }
+
     inline bool isRoundAbout() {
         return value == RNDB || value == RNLB;
     }

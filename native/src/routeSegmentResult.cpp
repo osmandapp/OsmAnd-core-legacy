@@ -236,6 +236,7 @@ void RouteSegmentResult::readFromBundle(SHARED_PTR<RouteDataBundle>& bundle) {
 	if (!turnTypeStr.empty()) {
 		auto tt = TurnType::fromString(turnTypeStr, leftSide);
 		turnType = TurnType::ptrValueOf(tt.getValue(), tt.isLeftSide());
+		turnType->setExitOut(tt.getExitOut());
 		turnType->setSkipToSpeak(bundle->getBool("skipTurn", turnType->isSkipToSpeak()));
 		turnType->setTurnAngle(bundle->getFloat("turnAngle", turnType->getTurnAngle()));
 		auto turnLanes = TurnType::lanesFromString(bundle->getString("turnLanes", ""));
