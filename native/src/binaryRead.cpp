@@ -39,7 +39,7 @@ static uint zoomMaxDetailedForCoastlines = 16;
 std::vector<BinaryMapFile*> openFiles;
 OsmAnd::OBF::OsmAndStoredIndex* cache = NULL;
 bool cacheHasChanged = false;
-static const int CACHE_VERSION = 4;// synchronize with CachedOsmandIndexes.java VERSION
+static const int CACHE_VERSION = 5;// synchronize with CachedOsmandIndexes.java VERSION
 
 #ifdef MALLOC_H
 #include <malloc.h>
@@ -3865,6 +3865,28 @@ bool addToCache(BinaryMapFile* mapFile, bool routingOnly) {
 	fi->set_size(stats.st_size);
 	fi->set_version(mapFile->version);
 	fi->set_filename(mapFileName.c_str());
+
+	for (SHARED_PTR<TransportIndex> & index : mapFile->transportIndexes) {
+		OsmAnd::OBF::TransportPart* transport = fi->add_transportindex();
+		transport->set_size(index->length);
+		transport->set_offset(index->filePointer);
+		transport->set_name(index->name.c_str());
+
+		transport->set_left(index->left);
+		transport->set_right(index->right);
+		transport->set_top(index->top);
+		transport->set_bottom(index->bottom);
+
+		transport->set_stopstablelength(index->stopsFileLength);
+		transport->set_stopstableoffset(index->stopsFileOffset);
+
+		transport->set_incompleterouteslength(index->incompleteRoutesLength);
+		transport->set_incompleteroutesoffset(index->incompleteRoutesOffset);
+
+		transport->set_stringtablelength(index->stringTable->length);
+		transport->set_stringtableoffset(index->stringTable->fileOffset);
+	}
+
 	for (SHARED_PTR<RoutingIndex> & index : mapFile->routingIndexes) {
 		OsmAnd::OBF::RoutingPart* routing = fi->add_routingindex();
 		routing->set_size(index->length);
@@ -3897,6 +3919,7 @@ bool addToCache(BinaryMapFile* mapFile, bool routingOnly) {
 		routing->set_left(index->top->left);
 		routing->set_right(index->top->right);
 	}
+
 	return true;
 }
 
