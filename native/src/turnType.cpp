@@ -116,7 +116,7 @@ TurnType TurnType::fromString(string s, bool leftSide) {
 		return valueOf(OFFR, leftSide);
 	} else if (s.find("EXIT") == 0 || s.find("RNDB") == 0 || s.find("RNLB") == 0) {
 		int val = -1;
-		if (sscanf(s.c_str(), "xxxx%d", &val) != EOF) {
+		if (sscanf(s.c_str(), "%*[^0-9]%d", &val) != EOF) {
 			int type = s.find("RNLB") != string::npos ? RNLB : RNDB;
 			return getExitTurn(type, val, 0, leftSide);
 		}
