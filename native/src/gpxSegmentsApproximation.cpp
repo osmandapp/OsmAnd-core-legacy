@@ -35,6 +35,10 @@ void GpxSegmentsApproximation::fastGpxApproximation(RoutePlannerFrontEnd* frontE
                 minDistSqrSegment = minDistSqr;
                 minNextInd = j;
             }
+            if (getDistance(currentPoint->lat, currentPoint->lon,
+                            gpxPoints.at(j)->lat, gpxPoints.at(j)->lon) > minPointApproximation) {
+                break; // avoid shortcutting of loops
+            }
         }
         if (minNextInd < 0) {
             break;
