@@ -19,7 +19,7 @@ struct GpxRouteApproximation {
 	int routePointsSearched = 0;
 	int routeDistCalculations = 0;
 	vector<SHARED_PTR<GpxPoint>> finalPoints;
-	vector<SHARED_PTR<RouteSegmentResult>> result;
+	vector<SHARED_PTR<RouteSegmentResult>> fullRoute;
 	int routeDistance;
 	int routeGapDistance;
 	int routeDistanceUnmatched;
@@ -32,7 +32,7 @@ struct GpxRouteApproximation {
 	}
 
 	double distFromLastPoint(double lat, double lon);
-
+	void reconstructFinalPointsFromFullRoute();
 	LatLon getLastPoint();
 };
 
