@@ -188,14 +188,57 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRouteInternal
 }
 
 double GpxRouteApproximation::distFromLastPoint(double lat, double lon) {
-	if (result.size() > 0) {
+	if (fullRoute.size() > 0) {
 		return getDistance(getLastPoint().lat, getLastPoint().lon, lat, lon);
 	}
 	return 0;
 }
 
 LatLon GpxRouteApproximation::getLastPoint() {
-	return result[result.size() - 1]->getEndPoint();
+	return fullRoute[fullRoute.size() - 1]->getEndPoint();
+}
+
+void GpxRouteApproximation::reconstructFinalPointsFromFullRoute() {
+	// create gpx-to-final index map, clear routeToTarget(s)
+	UNORDERED(map)<int, int> gpxIndexFinalIndex;
+	for (int i = 0; i < finalPoints.size(); i++) {
+		gpxIndexFinalIndex.insert(std::make_pair(finalPoints.at(i)->ind, i));
+		finalPoints.at(i)->routeToTarget.clear();
+	}
+
+	// reconstruct routeToTarget from scratch
+	int lastIndex = 0;
+	for (const auto& seg : fullRoute) {
+		int index = seg->getGpxPointIndex();
+		if (index == -1) {
+			index = lastIndex;
+		} else {
+			lastIndex = index;
+		}
+		finalPoints.at(gpxIndexFinalIndex.at(index))->routeToTarget.push_back(seg);
+	}
+
+	// finally remove finalPoints with empty route
+	vector <SHARED_PTR<GpxPoint>> emptyFinalPoints;
+	for (const auto& gpx : this->finalPoints) {
+		const auto& route = gpx->routeToTarget;
+		if (route.empty()) {
+			emptyFinalPoints.push_back(gpx);
+		}
+	}
+	if (emptyFinalPoints.size() > 0) {
+		auto& fp = this->finalPoints; // modify
+		fp.erase(std::remove_if(fp.begin(), fp.end(),
+			[emptyFinalPoints](SHARED_PTR<GpxPoint> pnt) {
+				for (const auto& del : emptyFinalPoints) {
+					if (del == pnt) {
+						return true;
+					}
+				}
+				return false;
+			}
+		), fp.end());
+	}
 }
 
 void RoutePlannerFrontEnd::searchGpxRoute(SHARED_PTR<GpxRouteApproximation>& gctx,
@@ -207,6 +250,7 @@ void RoutePlannerFrontEnd::searchGpxRoute(SHARED_PTR<GpxRouteApproximation>& gct
 	else {
 		searchGpxRouteByRouting(gctx, gpxPoints, acceptor);
 	}
+	gctx->reconstructFinalPointsFromFullRoute();
 }
 
 void RoutePlannerFrontEnd::searchGpxSegments(SHARED_PTR<GpxRouteApproximation>& gctx,
@@ -306,11 +350,11 @@ void RoutePlannerFrontEnd::searchGpxRouteByRouting(SHARED_PTR<GpxRouteApproximat
 		gctx->ctx->progress->timeToCalculate.Pause();
 	}
 	calculateGpxRoute(gctx, gpxPoints);
-	if (!gctx->result.empty() && !gctx->ctx->progress->isCancelled()) {
+//	if (!gctx->fullRoute.empty() && !gctx->ctx->progress->isCancelled()) {
 //		RouteResultPreparation.printResults(gctx->ctx, gpxPoints[0]->lat, gpxPoints[0]->lon,
-//											 gctx->result);
+//											 gctx->fullRoute);
 //        OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, gctx.toString();
-	}
+//	}
 	if (acceptor)
 		acceptor(gctx->ctx->progress->cancelled ? nullptr : gctx);
 }
@@ -431,7 +475,9 @@ mainLoop:
 				if (nextInd == rr->getStartPointIndex()) {
 					segmendInd--;
 				} else {
-					start->stepBackRoute.push_back(std::make_shared<RouteSegmentResult>(rr->object, nextInd, rr->getEndPointIndex()));
+					SHARED_PTR<RouteSegmentResult> seg = std::make_shared<RouteSegmentResult>(rr->object, nextInd, rr->getEndPointIndex());
+					seg->setGpxPointIndex(start->ind);
+					start->stepBackRoute.push_back(seg);
 					rr->setEndPointIndex(nextInd);
 				}
 				search = false;
@@ -488,12 +534,12 @@ void RoutePlannerFrontEnd::calculateGpxRoute(SHARED_PTR<GpxRouteApproximation>& 
 								  gctx->distFromLastPoint(pnt->lat, pnt->lon), pnt->lat, pnt->lon);
 			}
 			gctx->finalPoints.push_back(pnt);
-			gctx->result.insert(gctx->result.end(), pnt->routeToTarget.begin(), pnt->routeToTarget.end());
+			gctx->fullRoute.insert(gctx->fullRoute.end(), pnt->routeToTarget.begin(), pnt->routeToTarget.end());
 			i = pnt->targetInd;
 		} else {
 			// add straight line from i -> i+1
 			if (lastStraightLine.empty()) {
-				if (gctx->result.size() > 0 && gctx->finalPoints.size() > 0) {
+				if (gctx->fullRoute.size() > 0 && gctx->finalPoints.size() > 0) {
 					SHARED_PTR<GpxPoint>& prev = gctx->finalPoints.at(gctx->finalPoints.size() - 1);
 					SHARED_PTR<RouteSegmentResult> lastRouteRes = prev->getLastRouteRes();
 					if (lastRouteRes) {
@@ -512,7 +558,7 @@ void RoutePlannerFrontEnd::calculateGpxRoute(SHARED_PTR<GpxRouteApproximation>& 
 	}
 
 	if (useGeometryBasedApproximation) {
-		prepareResult(gctx->ctx, gctx->result); // not required by classic method
+		prepareResult(gctx->ctx, gctx->fullRoute); // not required by classic method
 	}
 
 	// clean turns to recaculate them
@@ -553,73 +599,41 @@ void RoutePlannerFrontEnd::addStraightLine(const SHARED_PTR<GpxRouteApproximatio
 	strPnt->routeToTarget.clear();
 	strPnt->straightLine = true;
 	SHARED_PTR<RouteSegmentResult> rsr = std::make_shared<RouteSegmentResult>(rdo, 0, rdo->getPointsLength() - 1);
+	rsr->setGpxPointIndex(strPnt->ind);
 	strPnt->routeToTarget.push_back(rsr);
 
 	prepareResult(gctx->ctx, strPnt->routeToTarget);
 
 	// VIEW: comment to see road without straight connections
 	gctx->finalPoints.push_back(strPnt);
-	gctx->result.insert(gctx->result.end(), strPnt->routeToTarget.begin(), strPnt->routeToTarget.end());
+	gctx->fullRoute.insert(gctx->fullRoute.end(), strPnt->routeToTarget.begin(), strPnt->routeToTarget.end());
 }
 
 void RoutePlannerFrontEnd::cleanupResultAndAddTurns(SHARED_PTR<GpxRouteApproximation>& gctx) {
 	// cleanup double joints
 	int LOOK_AHEAD = 4;
-	vector <SHARED_PTR<RouteSegmentResult>> deleted;
-	for (int i = 0; i < gctx->result.size() && !gctx->ctx->progress->isCancelled(); i++) {
-		SHARED_PTR<RouteSegmentResult>& s = gctx->result[i];
-		for (int j = i + 2; j <= i + LOOK_AHEAD && j < gctx->result.size(); j++) {
-			SHARED_PTR<RouteSegmentResult>& e = gctx->result[j];
+	for (int i = 0; i < gctx->fullRoute.size() && !gctx->ctx->progress->isCancelled(); i++) {
+		SHARED_PTR<RouteSegmentResult>& s = gctx->fullRoute[i];
+		for (int j = i + 2; j <= i + LOOK_AHEAD && j < gctx->fullRoute.size(); j++) {
+			SHARED_PTR<RouteSegmentResult>& e = gctx->fullRoute[j];
 			if (e->getStartPoint().isEquals(s->getEndPoint())) {
 				while ((--j) != i) {
-					deleted.push_back(gctx->result.at(j));
-					gctx->result.erase(gctx->result.begin() + j);
+					gctx->fullRoute.erase(gctx->fullRoute.begin() + j);
 				}
 				break;
 			}
 		}
 	}
-	vector <SHARED_PTR<GpxPoint>> emptyFinalPoints;
-	for (const auto& gpx : gctx->finalPoints) {
-		auto& route = gpx->routeToTarget; // modify
-		if (route.size() > 0) {
-			route.erase(std::remove_if(route.begin(), route.end(),
-				[deleted](SHARED_PTR<RouteSegmentResult> seg) {
-					for (const auto& del : deleted) {
-						if (del == seg) {
-							return true;
-						}
-					}
-					return false;
-				}
-			), route.end());
-			if (route.empty()) {
-				emptyFinalPoints.push_back(gpx);
-			}
-		}
-	}
-	if (emptyFinalPoints.size() > 0) {
-		auto& fp = gctx->finalPoints; // modify
-		fp.erase(std::remove_if(fp.begin(), fp.end(),
-			[emptyFinalPoints](SHARED_PTR<GpxPoint> pnt) {
-				for (const auto& del : emptyFinalPoints) {
-					if (del == pnt) {
-						return true;
-					}
-				}
-				return false;
-			}
-		), fp.end());
-	}
-	gctx->result.shrink_to_fit();
-	for (SHARED_PTR<RouteSegmentResult> r : gctx->result) {
+	gctx->fullRoute.shrink_to_fit();
+
+	for (SHARED_PTR<RouteSegmentResult> r : gctx->fullRoute) {
 		r->turnType = nullptr;
 		r->description = "";
 	}
 	if (!gctx->ctx->progress->isCancelled()) {
-		prepareTurnResults(gctx->ctx, gctx->result);
+		prepareTurnResults(gctx->ctx, gctx->fullRoute);
 	}
-	for (SHARED_PTR<RouteSegmentResult> r : gctx->result) {
+	for (SHARED_PTR<RouteSegmentResult> r : gctx->fullRoute) {
 		r->attachedRoutes.clear();
 		r->preAttachedRoutes.clear();
 	}
@@ -724,6 +738,9 @@ bool RoutePlannerFrontEnd::findGpxRouteSegment(SHARED_PTR<GpxRouteApproximation>
 					// System.out.println("??? not found " + start.pnt.getRoad().getId() + " instead "
 					// + res.get(0).getObject().getId());
 				}
+			}
+			for (SHARED_PTR<RouteSegmentResult>& seg : res) {
+				seg->setGpxPointIndex(start->ind);
 			}
 			start->routeToTarget = res;
 			start->targetInd = target->ind;
