@@ -22,6 +22,7 @@ struct RouteSegmentResult {
 	int startPointIndex;
 	int endPointIndex;
 	bool leftSide = false;
+	int gpxPointIndex = -1; // used by approximation to reconstruct finalPoints.routeToTarget
 
 	void collectRules(UNORDERED_map<RouteTypeRule, uint32_t>& rules, vector<RouteTypeRule>& insertOrder, vector<uint32_t>& types);
 	vector<uint32_t> convertTypes(vector<uint32_t>& types, UNORDERED_map<RouteTypeRule, uint32_t>& rules);
@@ -91,7 +92,15 @@ struct RouteSegmentResult {
 		int oldLength = attachedRoutesFrontEnd.size();
 		attachedRoutesFrontEnd.resize(min(oldLength, capacity));
 	}
-		
+
+	inline int getGpxPointIndex() {
+		return gpxPointIndex;
+	}
+
+	inline void setGpxPointIndex(int gpxPointIndex) {
+		this->gpxPointIndex = gpxPointIndex;
+	}
+
 	inline int getStartPointIndex() const {
 		return startPointIndex;
 	}

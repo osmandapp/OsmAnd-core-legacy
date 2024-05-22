@@ -48,6 +48,7 @@ void GpxSegmentsApproximation::fastGpxApproximation(RoutePlannerFrontEnd* frontE
             currentPoint = findNextRoutablePoint(frontEnd, gctx, minPointApproximation, gpxPoints, nextIndex);
             continue;
         }
+        fres->setGpxPointIndex(currentPoint->ind);
         currentPoint->routeToTarget.clear(); // = new ArrayList<RouteSegmentResult>()
         currentPoint->routeToTarget.push_back(fres);
         currentPoint->targetInd = minNextInd;
