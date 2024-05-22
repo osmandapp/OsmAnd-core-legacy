@@ -100,7 +100,17 @@ class RoutingRulesHandler {
 	static void addSubclause(RoutingRule* rr, RouteAttributeContext& ctx, SHARED_PTR<GeneralRouter>& currentRouter) {
 		bool no = "ifnot" == rr->tagName;
 		if (!rr->param.empty()) {
-			ctx.getLastRule()->registerAndParamCondition(rr->param, no);
+			if (rr->param.find(",") != std::string::npos) {
+				vector<string> params = split_string(rr->param, ",");
+				for (string & p : params) {
+					p = trim(p);
+					if (!p.empty()) {
+						ctx.getLastRule()->registerAndParamCondition(p, no);
+					}
+				}
+			} else {
+				ctx.getLastRule()->registerAndParamCondition(rr->param, no);
+			}
 		}
 		if (!rr->t.empty()) {
 			ctx.getLastRule()->registerAndTagValueCondition(currentRouter.get(), rr->t, rr->v, no);
