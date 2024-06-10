@@ -811,7 +811,7 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jmethod_RouteSegmentResult_init =
 		env->GetMethodID(jclass_RouteSegmentResult, "<init>",
 						 "(Lnet/osmand/binary/RouteDataObject;"
-						 "II[[Lnet/osmand/router/RouteSegmentResult;FFFFLnet/osmand/router/TurnType;)V");
+						 "II[[Lnet/osmand/router/RouteSegmentResult;FFFFILnet/osmand/router/TurnType;)V");
 
 	jclass_TurnType = findGlobalClass(env, "net/osmand/router/TurnType");
 	jmethod_TurnType_init = env->GetMethodID(jclass_TurnType, "<init>", "(IIFZ[IZZ)V");
@@ -1370,7 +1370,7 @@ jobject convertRouteSegmentResultToJava(JNIEnv* ienv, SHARED_PTR<RouteSegmentRes
 	}
 	jobject resobj = ienv->NewObject(jclass_RouteSegmentResult, jmethod_RouteSegmentResult_init, robj,
 									 r->getStartPointIndex(), r->getEndPointIndex(), ar, r->segmentTime, r->routingTime,
-									 r->segmentSpeed, r->distance, turnType);
+									 r->segmentSpeed, r->distance, r->getGpxPointIndex(), turnType);
 	if (reg != NULL) {
 		ienv->DeleteLocalRef(reg);
 	}
@@ -1864,8 +1864,8 @@ extern "C" JNIEXPORT jobject JNICALL Java_net_osmand_NativeLibrary_nativeSearchG
 		ienv->DeleteLocalRef(oreg);
 		indexes[(fp << 31) + ln] = t;
 	}
-	for (uint i = 0; i < r->result.size(); i++) {
-		jobject resobj = convertRouteSegmentResultToJava(ienv, r->result[i], indexes, regions);
+	for (uint i = 0; i < r->fullRoute.size(); i++) {
+		jobject resobj = convertRouteSegmentResultToJava(ienv, r->fullRoute[i], indexes, regions);
 		ienv->CallVoidMethod(jResult, jmethod_GpxRouteApproximationResult_addResultSegment, resobj);
 		ienv->DeleteLocalRef(resobj);
 	}

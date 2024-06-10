@@ -133,7 +133,7 @@ void validateAllPointsConnected(vector<SHARED_PTR<RouteSegmentResult> >& result)
         auto pr = result[i - 1];
         double d = measuredDist31(pr->object->pointsX[pr->getEndPointIndex()], pr->object->pointsY[pr->getEndPointIndex()], rr->object->pointsX[rr->getStartPointIndex()], rr->object->pointsY[rr->getStartPointIndex()]);
         if (d > 0) {
-            OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "Points are not connected: %p(%d) -> %p(%d) %f meters", pr->object.get(), pr->getEndPointIndex(), rr->object.get(), rr->getStartPointIndex(), d);
+            OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "Points are not connected: %p(%d) -> %p(%d) %f meters", pr->object.get(), pr->getEndPointIndex(), rr->object.get(), rr->getStartPointIndex(), d);
         }
     }
 }

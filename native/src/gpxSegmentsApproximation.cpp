@@ -35,6 +35,10 @@ void GpxSegmentsApproximation::fastGpxApproximation(RoutePlannerFrontEnd* frontE
                 minDistSqrSegment = minDistSqr;
                 minNextInd = j;
             }
+            if (getDistance(currentPoint->lat, currentPoint->lon,
+                            gpxPoints.at(j)->lat, gpxPoints.at(j)->lon) > minPointApproximation) {
+                break; // avoid shortcutting of loops
+            }
         }
         if (minNextInd < 0) {
             break;
@@ -44,6 +48,7 @@ void GpxSegmentsApproximation::fastGpxApproximation(RoutePlannerFrontEnd* frontE
             currentPoint = findNextRoutablePoint(frontEnd, gctx, minPointApproximation, gpxPoints, nextIndex);
             continue;
         }
+        fres->setGpxPointIndex(currentPoint->ind);
         currentPoint->routeToTarget.clear(); // = new ArrayList<RouteSegmentResult>()
         currentPoint->routeToTarget.push_back(fres);
         currentPoint->targetInd = minNextInd;
