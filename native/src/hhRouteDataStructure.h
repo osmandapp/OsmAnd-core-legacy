@@ -43,7 +43,7 @@ struct HHRoutingConfig
 	bool USE_MIDPOINT = false;
 	int MIDPOINT_ERROR = 3;
 	int MIDPOINT_MAX_DEPTH = 20 + MIDPOINT_ERROR;
-	int MAX_COUNT_REITERATION = 100;
+	int MAX_COUNT_REITERATION = 30; // 3 is enough for 90%, 30 is for 10% (100-750km with 1.5m months live updates)
 
 	HHRoutingConfig() {}
 

@@ -910,6 +910,7 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 		if (r && (r->isCorrect() || USE_ONLY_HH_ROUTING)) {
 			return r->detailed; // exit-point
 		}
+		ctx->unloadAllData();
 	}
 	double maxDistance = measuredDist31(startX, startY, endX, endY);
 	if (!intermediatesEmpty) {
@@ -1150,6 +1151,7 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchHHRoute(Routi
 			attachConnectedRoads(ctx, r->detailed);
 			return r->detailed;
 		}
+		ctx->unloadAllData();
 	}
 	return {};
 }
