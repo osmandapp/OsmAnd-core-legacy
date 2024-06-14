@@ -278,6 +278,10 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
 			firstIterationTime = hctx->stats.routingTime;
 		}
 		NetworkDBPoint * finalPnt = runRoutingPointsToPoints(hctx, stPoints, endPoints);
+		if (finalPnt == nullptr) {
+			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "finalPnt is null (stop)");
+			return new HHNetworkRouteRes("No finalPnt found (points might be filtered by params)");
+		}
 		calcCount++;
 		if (progress->isCancelled()) {
 			return cancelledStatus();
@@ -300,6 +304,7 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
 		hctx->stats.routingTime += time;
 		if (recalc) {
 			if (calcCount > hctx->config->MAX_COUNT_REITERATION) {
+				OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Too many recalculations (stop)");
 				HHNetworkRouteRes * res = new HHNetworkRouteRes("Too many recalculations (outdated maps or unsupported parameters).");
 				return res;
 			}
@@ -343,7 +348,7 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
 	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Prepare results (turns, alt routes)... prepTime %.f ms", hctx->stats.prepTime);
 	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
 					  "Found final route - cost %.2f (detailed %.2f, %.1f%%), %zu depth ( first met %d, visited %d (%d unique) of %d added vertices )",
-					  route->getHHRoutingTime(), route->getHHRoutingDetailed(), 100 * (1 - route->getHHRoutingDetailed() / route->getHHRoutingTime()),
+					  route->getHHRoutingTime(), route->getHHRoutingDetailed(), 100 * (1 - route->getHHRoutingDetailed() / (route->getHHRoutingTime() + 0.01)),
 					  route->segments.size(), hctx->stats.firstRouteVisitedVertices, hctx->stats.visitedVertices, hctx->stats.uniqueVisitedVertices,
 					  hctx->stats.addedVertices);
 	hctx->stats.prepTime += altRoutes;
@@ -593,12 +598,17 @@ UNORDERED_map<int64_t, NetworkDBPoint *> HHRoutePlanner::initStart(const SHARED_
 		pnts.insert(std::pair<int64_t, NetworkDBPoint *>(dualPoint->index, dualPoint));
 		return pnts;
 	}
+	int savedMaxVisited = hctx->rctx->config->MAX_VISITED;
+	int savedPlanRoadDirectrion = hctx->rctx->config->planRoadDirection;
+	float savedHeuristicCoefficient = hctx->rctx->config->heurCoefficient;
 	hctx->rctx->config->MAX_VISITED = MAX_POINTS_CLUSTER_ROUTING;
 	hctx->rctx->config->planRoadDirection = reverse ? -1 : 1;
 	hctx->rctx->config->heurCoefficient = 0; // dijkstra
 	hctx->rctx->unloadAllData(); // needed for proper multidijsktra work
 	std::vector<SHARED_PTR<RouteSegment>> frs = searchRouteInternal(hctx->rctx, reverse ? nullptr : s, reverse ? s : nullptr, hctx->boundaries, {});
-	hctx->rctx->config->MAX_VISITED = -1;
+	hctx->rctx->config->heurCoefficient = savedHeuristicCoefficient;
+	hctx->rctx->config->planRoadDirection = savedPlanRoadDirectrion;
+	hctx->rctx->config->MAX_VISITED = savedMaxVisited;
 	if (!frs.empty()) {
 		std::set<int64_t> set;
 		for (auto & o : frs) {
