@@ -536,11 +536,11 @@ struct RouteDataObject {
 		return restrictions[i].type;
 	}
 
-	inline long getRestrictionId(int i) {
+	inline int64_t getRestrictionId(int i) {
 		return restrictions[i].to;
 	}
 
-	inline long getRestrictionVia(int i) {
+	inline int64_t getRestrictionVia(int i) {
 		return restrictions[i].via;
 	}
 
