@@ -86,8 +86,8 @@ struct CombineAreaRoutePoint {
 
 vector<int> getPossibleTurns(vector<int>& oLanes, bool onlyPrimary, bool uniqueFromActive);
 
-long getPoint(const SHARED_PTR<RouteDataObject>& road, int pointInd) {
-    return (((long) road->pointsX[pointInd]) << 31) + (long) road->pointsY[pointInd];
+int64_t getPoint(const SHARED_PTR<RouteDataObject>& road, int pointInd) {
+    return (((int64_t) road->pointsX[pointInd]) << 31) + (int64_t) road->pointsY[pointInd];
 }
 
 bool isMotorway(const SHARED_PTR<RouteSegmentResult>& s) {
@@ -139,14 +139,14 @@ void validateAllPointsConnected(vector<SHARED_PTR<RouteSegmentResult> >& result)
 }
 
 // try to attach all segments except with current id
-void attachSegments(RoutingContext* ctx, const SHARED_PTR<RouteSegment>& routeSegment, const SHARED_PTR<RouteDataObject>& road, const SHARED_PTR<RouteSegmentResult>& rr, long previousRoadId, int pointInd, long prevL, long nextL) {
+void attachSegments(RoutingContext* ctx, const SHARED_PTR<RouteSegment>& routeSegment, const SHARED_PTR<RouteDataObject>& road, const SHARED_PTR<RouteSegmentResult>& rr, int64_t previousRoadId, int pointInd, int64_t prevL, int64_t nextL) {
     if (routeSegment->road->getId() != road->getId() && routeSegment->road->getId() != previousRoadId) {
         auto addRoad = routeSegment->road;
         //checkAndInitRouteRegion(ctx, addRoad); ? TODO
         // Future: restrictions can be considered as well
         int oneWay = ctx->config->router->isOneWay(addRoad);
         if (oneWay >= 0 && routeSegment->getSegmentStart() < addRoad->getPointsLength() - 1) {
-            long pointL = getPoint(addRoad, routeSegment->getSegmentStart() + 1);
+            int64_t pointL = getPoint(addRoad, routeSegment->getSegmentStart() + 1);
             if (pointL != nextL && pointL != prevL) {
                 // if way contains same segment (nodes) as different way (do not attach it)
                 auto rsr = std::make_shared<RouteSegmentResult>(addRoad, routeSegment->getSegmentStart(), addRoad->getPointsLength() - 1);
@@ -154,7 +154,7 @@ void attachSegments(RoutingContext* ctx, const SHARED_PTR<RouteSegment>& routeSe
             }
         }
         if (oneWay <= 0 && routeSegment->getSegmentStart() > 0) {
-            long pointL = getPoint(addRoad, routeSegment->getSegmentStart() - 1);
+            int64_t pointL = getPoint(addRoad, routeSegment->getSegmentStart() - 1);
             // if way contains same segment (nodes) as different way (do not attach it)
             if (pointL != nextL && pointL != prevL) {
                 auto rsr = std::make_shared<RouteSegmentResult>(addRoad, routeSegment->getSegmentStart(), 0);
@@ -167,14 +167,14 @@ void attachSegments(RoutingContext* ctx, const SHARED_PTR<RouteSegment>& routeSe
 void attachRoadSegments(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResult> >& result, int routeInd, int pointInd, bool plus) {
     auto rr = result[routeInd];
     auto road = rr->object;
-    long nextL = pointInd < road->getPointsLength() - 1 ? getPoint(road, pointInd + 1) : 0;
-    long prevL = pointInd > 0 ? getPoint(road, pointInd - 1) : 0;
+    int64_t nextL = pointInd < road->getPointsLength() - 1 ? getPoint(road, pointInd + 1) : 0;
+    int64_t prevL = pointInd > 0 ? getPoint(road, pointInd - 1) : 0;
     
     // attach additional roads to represent more information about the route
     SHARED_PTR<RouteSegmentResult> previousResult = nullptr;
-    
+
     // by default make same as this road id
-    long previousRoadId = road->getId();
+    int64_t previousRoadId = road->getId();
     if (pointInd == rr->getStartPointIndex() && routeInd > 0) {
         previousResult = result[routeInd - 1];
         previousRoadId = previousResult->object->getId();
