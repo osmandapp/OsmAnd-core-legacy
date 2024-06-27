@@ -15,6 +15,7 @@ static const bool ASSERT_CHECKS = true;
 static const bool PRINT_ROUTING_ALERTS = false;
 static const bool DEBUG_BREAK_EACH_SEGMENT = false;
 static const bool DEBUG_PRECISE_DIST_MEASUREMENT = false;
+static const float MIN_COST_TOLERANCE = 2.0; // required due to imprecise nature of squareRootDist31
 
 // Check issue #8649
 static const double GPS_POSSIBLE_ERROR = 7;
@@ -398,7 +399,7 @@ vector<SHARED_PTR<RouteSegment>> searchRouteInternal(RoutingContext* ctx, SHARED
 				OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug,  " %d >> Already visited by minimum", segment->segmentEnd);
 			}
 			skipSegment = true;
-		} else if (cst->segCost + 0.1 < minCost[forwardSearch ? 1 : 0] && ASSERT_CHECKS && ctx->calculationMode != RouteCalculationMode::COMPLEX) {
+		} else if (cst->segCost + MIN_COST_TOLERANCE < minCost[forwardSearch ? 1 : 0] && ASSERT_CHECKS && ctx->calculationMode != RouteCalculationMode::COMPLEX) {
 			if (ctx->config->heurCoefficient <= 1) {
 				//throw new IllegalStateException(cst.cost + " < ???  " + minCost[forwardSearch ? 1 : 0]);
 				OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error,  " %f + < ???  %f ", cst->segCost, minCost[forwardSearch ? 1 : 0]);
