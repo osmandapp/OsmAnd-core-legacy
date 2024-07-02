@@ -15,7 +15,7 @@ static const bool ASSERT_CHECKS = true;
 static const bool PRINT_ROUTING_ALERTS = false;
 static const bool DEBUG_BREAK_EACH_SEGMENT = false;
 static const bool DEBUG_PRECISE_DIST_MEASUREMENT = false;
-static const float MIN_COST_TOLERANCE = 2.0; // required due to imprecise nature of squareRootDist31
+static const float SQUARE_DISTANCE_INACCURACY = 1.00004f; // from 0.0015% to 0.0036% according to tests
 
 // Check issue #8649
 static const double GPS_POSSIBLE_ERROR = 7;
@@ -399,7 +399,9 @@ vector<SHARED_PTR<RouteSegment>> searchRouteInternal(RoutingContext* ctx, SHARED
 				OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug,  " %d >> Already visited by minimum", segment->segmentEnd);
 			}
 			skipSegment = true;
-		} else if (cst->segCost + MIN_COST_TOLERANCE < minCost[forwardSearch ? 1 : 0] && ASSERT_CHECKS && ctx->calculationMode != RouteCalculationMode::COMPLEX) {
+		} else if (ASSERT_CHECKS && ctx->calculationMode != RouteCalculationMode::COMPLEX &&
+				std::max(cst->segCost + 0.1f, cst->segCost * SQUARE_DISTANCE_INACCURACY) < minCost[forwardSearch ? 1 : 0]
+		) {
 			if (ctx->config->heurCoefficient <= 1) {
 				//throw new IllegalStateException(cst.cost + " < ???  " + minCost[forwardSearch ? 1 : 0]);
 				OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error,  " %f + < ???  %f ", cst->segCost, minCost[forwardSearch ? 1 : 0]);
