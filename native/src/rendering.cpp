@@ -821,8 +821,16 @@ void drawPolygon(MapDataObject* mObj, RenderingRuleSearchRequest* req, SkCanvas*
 	std::vector<std::pair<int, int>> ps;
 	uint prevCross = 0;
 
+	float minX = -1, maxX = -1, minY = -1, maxY = -1;
+	std::vector<std::pair<int, int>> poly;
+
 	for (; i < length; i++) {
 		calcPoint(mObj->points.at(i), rc);
+		minX = minX == -1 ? rc->calcX : std::min(minX, rc->calcX);
+		minY = minY == -1 ? rc->calcY : std::min(minY, rc->calcY);
+		maxX = maxX == -1 ? rc->calcX : std::max(maxX, rc->calcX);
+		maxY = maxY == -1 ? rc->calcY : std::max(maxY, rc->calcY);
+		poly.push_back(std::make_pair<int, int>((int)rc->calcX, (int)rc->calcY));
 		if (i == 0) {
 			path.moveTo(rc->calcX, rc->calcY);
 		} else {
@@ -863,6 +871,10 @@ void drawPolygon(MapDataObject* mObj, RenderingRuleSearchRequest* req, SkCanvas*
 			prevCross = cross;
 		}
 	}
+
+	SkRect bbox = SkRect::MakeLTRB(minX, minY, maxX, maxY);
+	SHARED_PTR<PolygonDrawInfo> pdi = std::make_shared<PolygonDrawInfo>(mObj, poly, bbox);
+	rc->polygonsIntersect.insert(pdi, bbox);
 
 	xText /= length;
 	yText /= length;
@@ -1449,6 +1461,10 @@ void doRendering(std::vector<FoundMapDataObject>& mapDataObjects, SkCanvas* canv
 
 	sortObjectsByProperOrder(mapDataObjects, req, rc, polygonsArray, pointsArray, linesArray);
 	rc->lastRenderedKey = 0;
+
+	SkRect bounds = SkRect::MakeLTRB(INT_MIN, INT_MIN, INT_MAX, INT_MAX);
+	quad_tree<SHARED_PTR<PolygonDrawInfo>> boundsIntersect(bounds, 4, 0.6);
+	rc->polygonsIntersect = quad_tree<SHARED_PTR<PolygonDrawInfo>>(boundsIntersect);
 
 	std::unordered_map<int64_t, RenderableObject*> renderableObjects;
 	// draw polygons

@@ -2315,7 +2315,7 @@ extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_searchRe
 
 		SkRect bbox = SkRect::MakeXYWH(x - 2, y - 2, 4, 4);
 		results->textIntersect.query_in_box(bbox, searchText);
-		bool intersects = false;
+		bool textIntersects = false;
 		for (uint32_t i = 0; i < searchText.size(); i++) {
 			if (SkRect::Intersects(searchText[i]->bounds, bbox) &&
 				((searchText[i]->visible && !searchText[i]->drawOnPath && !searchText[i]->path) || notvisible)) {
@@ -2323,7 +2323,7 @@ extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_searchRe
 					ienv, &searchText[i]->object, searchText[i]->text, searchText[i]->bounds, searchText[i]->textOrder,
 					searchText[i]->visible, searchText[i]->drawOnPath || searchText[i]->path);
 				collected.push_back(jo);
-				intersects = true;
+				textIntersects = true;
 			}
 		}
 		vector<SHARED_PTR<IconDrawInfo>> icons;
@@ -2338,9 +2338,41 @@ extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_searchRe
 				ienv->DeleteLocalRef(nm);
 
 				collected.push_back(jo);
-				intersects = true;
 			}
 		}
+		
+		vector<SHARED_PTR<PolygonDrawInfo>> polygons;
+		results->polygonsIntersect.query_in_box(bbox, polygons);
+		for (SHARED_PTR<PolygonDrawInfo> & p : polygons) {
+			if (SkRect::Intersects(p->bbox, bbox)) {
+				if (!contains(p->poly, x, y)) {
+					continue;
+				}
+				std::string name = "";
+				for (auto const& n : p->object.objectNames) {
+					name = n.second;
+					break;					
+				}
+				jobject jo = convertRenderedObjectToJava(ienv, &p->object, name, p->bbox, 0, true, true);
+				collected.push_back(jo);
+
+				//add additional text info inside polygon
+				if (!textIntersects) {
+					vector<SHARED_PTR<TextDrawInfo>> searchText;
+					results->textIntersect.query_in_box(p->bbox, searchText);
+					for (uint32_t i = 0; i < searchText.size(); i++) {
+						if (!searchText[i]->drawOnPath && !searchText[i]->path && SkRect::Intersects(searchText[i]->bounds, p->bbox) && contains(p->poly, searchText[i]->centerX, searchText[i]->centerY)) {
+							jobject jo = convertRenderedObjectToJava(
+								ienv, &searchText[i]->object, searchText[i]->text, searchText[i]->bounds, searchText[i]->textOrder,
+								searchText[i]->visible, false);
+							collected.push_back(jo);
+							textIntersects = true;
+						}
+					}
+				}
+			}
+		}
+		fflush(stdout);
 		jobjectArray res = ienv->NewObjectArray(collected.size(), jclass_RenderedObject, NULL);
 		for (uint i = 0; i < collected.size(); i++) {
 			jobject robj = collected[i];

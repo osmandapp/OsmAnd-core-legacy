@@ -18,6 +18,7 @@ RenderingContextResults::RenderingContextResults(RenderingContext* rc) {
 	this->height = rc->height;
 	this->textIntersect = rc->textIntersect;
 	this->iconsIntersect = rc->iconsIntersect;
+	this->polygonsIntersect = rc->polygonsIntersect;	
 }
 
 TextDrawInfo::TextDrawInfo(std::string itext, MapDataObject* mo)
@@ -153,4 +154,10 @@ std::string RenderingContext::getTranslatedString(const std::string& src) {
 
 std::string RenderingContext::getReshapedString(const std::string& src) {
 	return src;
+}
+
+PolygonDrawInfo::PolygonDrawInfo(MapDataObject* obj, std::vector<std::pair<int, int>> poly, SkRect bbox) {
+	object = *obj;
+	this->poly = poly;
+	this->bbox = bbox;
 }

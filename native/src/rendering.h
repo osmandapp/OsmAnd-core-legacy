@@ -11,5 +11,6 @@
 
 void doRendering(std::vector<FoundMapDataObject> &mapDataObjects, SkCanvas *canvas, RenderingRuleSearchRequest *req,
 				 RenderingContext *rc);
+bool contains(vector<pair<int, int>>& points, int x, int y);
 
 #endif

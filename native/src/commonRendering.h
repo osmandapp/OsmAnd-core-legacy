@@ -160,6 +160,14 @@ struct TextDrawInfo {
 	float intersectionSizeFactor;
 };
 
+struct PolygonDrawInfo {
+	MapDataObject object;
+	std::vector<std::pair<int, int>> poly;
+	SkRect bbox;
+	int order;
+	PolygonDrawInfo(MapDataObject* mo, std::vector<std::pair<int, int>> poly, SkRect bbox);
+};
+
 static const int TILE_SIZE = 256;
 struct RenderingContextResults;
 struct RenderingContext {
@@ -219,6 +227,7 @@ struct RenderingContext {
 	std::vector<SHARED_PTR<IconDrawInfo>> iconsToDraw;
 	quad_tree<SHARED_PTR<TextDrawInfo>> textIntersect;
 	quad_tree<SHARED_PTR<IconDrawInfo>> iconsIntersect;
+	quad_tree<SHARED_PTR<PolygonDrawInfo>> polygonsIntersect;
 
 	// not expect any shadow
 	int shadowLevelMin;
@@ -420,6 +429,7 @@ struct RenderingContextResults {
 
 	quad_tree<SHARED_PTR<TextDrawInfo>> textIntersect;
 	quad_tree<SHARED_PTR<IconDrawInfo>> iconsIntersect;
+	quad_tree<SHARED_PTR<PolygonDrawInfo>> polygonsIntersect;
 
 	RenderingContextResults(RenderingContext* context);
 };
