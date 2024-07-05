@@ -967,6 +967,9 @@ struct BinaryMapFile {
 		if (geocodingfd >= 0) {
 			close(geocodingfd);
 		}
+		if (hhfd >= 0) {
+			close(hhfd);
+		}
 	}
 };
 
