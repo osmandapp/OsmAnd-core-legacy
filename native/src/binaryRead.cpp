@@ -2819,7 +2819,6 @@ void searchRouteSubregions(SearchQuery* q, std::vector<RouteSubregion>& tempResu
 				if (nt != NULL) {
 					delete nt;
 				}
-				OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "XXX search-route-subregions (%d)", geocoding);
 				checkAndInitRouteRegionRules(geocoding ? file->getGeocodingFD() : file->getRouteFD(), routeIndex);
 			}
 		}
@@ -3228,7 +3227,6 @@ ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, 
 void initInputForRouteFile(CodedInputStream** inputStream, FileInputStream** fis, BinaryMapFile* file, uint32_t seek,
 						   bool geocoding) {
 	if (*inputStream == 0) {
-		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "XXX init-input-for-route-file (%d)", geocoding);
 		lseek(geocoding ? file->getGeocodingFD() : file->getRouteFD(), 0, SEEK_SET);  // seek 0 or seek (*routeIndex)->filePointer
 		*fis = new FileInputStream(geocoding ? file->getGeocodingFD() : file->getRouteFD());
 		(*fis)->SetCloseOnDelete(false);
@@ -3577,7 +3575,6 @@ void searchRouteDataForSubRegion(SearchQuery* q, std::vector<RouteDataObject*>& 
 			if (rs && (rs->name != routingIndex->name || rs->filePointer != routingIndex->filePointer)) {
 				continue;
 			}
-			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "XXX search-route-data-for-sub-region (%d)", geocoding);
 			searchRouteSubRegion(geocoding ? file->getGeocodingFD() : file->getRouteFD(), list, routingIndex, sub);
 			return;
 		}
