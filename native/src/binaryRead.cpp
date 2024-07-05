@@ -142,7 +142,7 @@ void RouteDataObject::processConditionalTags(const tm& time) {
 		auto& r = region->quickGetEncodingRule(types[i]);
 		if (r.conditional()) {
 			uint32_t vl = r.conditionalValue(time);
-			if (vl > 0) {
+			if (vl > 0 && region->hasEncodingRule(vl)) {
 				auto& rtr = region->quickGetEncodingRule(vl);
 				std::string nonCondTag = rtr.getTag();
 				uint32_t ks = 0;

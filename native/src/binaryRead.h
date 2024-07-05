@@ -137,6 +137,10 @@ struct RoutingIndex : BinaryPartIndex {
 	RouteTypeRule& quickGetEncodingRule(uint32_t id) {
 		return routeEncodingRules[id];
 	}
+    
+    bool hasEncodingRule(uint32_t id) {
+        return id < routeEncodingRules.size();
+    }
 };
 
 struct HHRoutePointsBox {
