@@ -1971,7 +1971,7 @@ bool searchTransportTreeBounds(CodedInputStream* input, int pleft, int pright, i
 	req->numberOfReadSubtrees++;
 	int tag;
 	while ((tag = input->ReadTag()) != 0) {
-		if (req->publisher->isCancelled()) {
+		if (req->isCancelled()) {
 			return false;
 		}
 
@@ -2478,7 +2478,7 @@ bool searchMapTreeBounds(CodedInputStream* input, MapTreeBounds* current, MapTre
 	req->numberOfReadSubtrees++;
 	int oceanTag = -1;
 	while ((tag = input->ReadTag()) != 0) {
-		if (req->publisher->isCancelled()) {
+		if (req->isCancelled()) {
 			return false;
 		}
 		if (init == 0xf) {
@@ -2573,7 +2573,7 @@ bool readMapDataBlocks(CodedInputStream* input, SearchQuery* req, MapTreeBounds*
 	int tag;
 	std::vector<MapDataObject*> results;
 	while ((tag = input->ReadTag()) != 0) {
-		if (req->publisher->isCancelled()) {
+		if (req->isCancelled()) {
 			return false;
 		}
 		switch (WireFormatLite::GetTagFieldNumber(tag)) {
@@ -2661,7 +2661,7 @@ bool sortTreeBounds(const MapTreeBounds& i, const MapTreeBounds& j) {
 void searchMapData(CodedInputStream* input, MapRoot* root, MapIndex* ind, SearchQuery* req) {
 	// search
 	for (std::vector<MapTreeBounds>::iterator i = root->bounds.begin(); i != root->bounds.end(); i++) {
-		if (req->publisher->isCancelled()) {
+		if (req->isCancelled()) {
 			return;
 		}
 		if (i->right < (uint)req->left || i->left > (uint)req->right || i->top > (uint)req->bottom ||
@@ -2677,7 +2677,7 @@ void searchMapData(CodedInputStream* input, MapRoot* root, MapIndex* ind, Search
 		sort(foundSubtrees.begin(), foundSubtrees.end(), sortTreeBounds);
 		uint32_t length;
 		for (std::vector<MapTreeBounds>::iterator tree = foundSubtrees.begin(); tree != foundSubtrees.end(); tree++) {
-			if (req->publisher->isCancelled()) {
+			if (req->isCancelled()) {
 				return;
 			}
 			input->Seek(tree->mapDataBlock);
@@ -2798,7 +2798,7 @@ bool searchRouteSubregionsForBinaryMapFile(BinaryMapFile* file,
 
 void searchRouteSubregions(SearchQuery* q, std::vector<RouteSubregion>& tempResult, bool basemap, bool geocoding) {
 	vector<BinaryMapFile*>::iterator i = openFiles.begin();
-	for (; i != openFiles.end() && !q->publisher->isCancelled(); i++) {
+	for (; i != openFiles.end() && !q->isCancelled(); i++) {
 		BinaryMapFile* file = *i;
 		for (const auto& routeIndex : file->routingIndexes) {
 			bool contains = false;
@@ -2850,7 +2850,7 @@ void readRouteDataAsMapObjects(SearchQuery* q, BinaryMapFile* file, std::vector<
 	//std::vector<SHARED_PTR<RoutingIndex>>::iterator routeIndex = file->routingIndexes.begin();
 	for (const auto& routeIndex : file->routingIndexes) {
 	//for (; routeIndex != file->routingIndexes.end(); routeIndex++) {
-		if (q->publisher->isCancelled()) {
+		if (q->isCancelled()) {
 			break;
 		}
 		bool contains = false;
@@ -2886,7 +2886,7 @@ void readMapObjects(SearchQuery* q, BinaryMapFile* file) {
 	for (const auto& mapIndex : file->mapIndexes) {
 		for (std::vector<MapRoot>::iterator mapLevel = mapIndex->levels.begin(); mapLevel != mapIndex->levels.end();
 			 mapLevel++) {
-			if (q->publisher->isCancelled()) {
+			if (q->isCancelled()) {
 				break;
 			}
 
@@ -2936,7 +2936,7 @@ void readMapObjectsForRendering(SearchQuery* q, std::vector<FoundMapDataObject>&
 								std::vector<FoundMapDataObject>& basemapCoastLines, int& count, bool& basemapExists,
 								int& renderedState) {
 	vector<BinaryMapFile*>::iterator i = openFiles.begin();
-	for (; i != openFiles.end() && !q->publisher->isCancelled(); i++) {
+	for (; i != openFiles.end() && !q->isCancelled(); i++) {
 		BinaryMapFile* file = *i;
 		basemapExists |= file->isBasemap();
 	}
@@ -2966,13 +2966,13 @@ void readMapObjectsForRendering(SearchQuery* q, std::vector<FoundMapDataObject>&
 		sbottom = ((q->bottom >> shift) + 1) << shift;
 	}
 	UNORDERED(set)<uint64_t> deletedIds;
-	for (; i != openFiles.end() && !q->publisher->isCancelled(); i++) {
+	for (; i != openFiles.end() && !q->isCancelled(); i++) {
 		BinaryMapFile* file = *i;
 		if (q->req != NULL) {
 			q->req->clearState();
 		}
 		q->publisher->clear();
-		if (!q->publisher->isCancelled()) {
+		if (!q->isCancelled()) {
 			bool basemap = file->isBasemap();
 			bool external = file->isExternal();
 
@@ -3100,7 +3100,7 @@ ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, 
 	bool objectsFromRoutingSectionRead = false;
 	if (q->zoom >= zoomOnlyForBasemaps) {
 		vector<BinaryMapFile*>::iterator i = openFiles.begin();
-		for (; i != openFiles.end() && !q->publisher->isCancelled(); i++) {
+		for (; i != openFiles.end() && !q->isCancelled(); i++) {
 			BinaryMapFile* file = *i;
 			// false positive case when we have 2 sep maps Country-roads & Country
 			if (file->isRoadOnly()) {
@@ -3119,7 +3119,7 @@ ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, 
 	}
 
 	// sort results/ analyze coastlines and publish back to publisher
-	if (q->publisher->isCancelled()) {
+	if (q->isCancelled()) {
 		deleteObjects(coastLines);
 		deleteObjects(tempResult);
 		deleteObjects(basemapCoastLines);
@@ -3566,10 +3566,10 @@ void searchRouteDataForSubRegion(SearchQuery* q, std::vector<RouteDataObject*>& 
 								 bool geocoding) {
 	vector<BinaryMapFile*>::iterator i = openFiles.begin();
 	const auto& rs = sub->routingIndex;
-	for (; i != openFiles.end() && !q->publisher->isCancelled(); i++) {
+	for (; i != openFiles.end() && !q->isCancelled(); i++) {
 		BinaryMapFile* file = *i;
 		for (const auto& routingIndex : file->routingIndexes) {
-			if (q->publisher->isCancelled()) {
+			if (q->isCancelled()) {
 				break;
 			}
 			if (rs && (rs->name != routingIndex->name || rs->filePointer != routingIndex->filePointer)) {
