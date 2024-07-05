@@ -1018,27 +1018,27 @@ struct ResultPublisher {
 
 struct SearchQuery {
 	RenderingRuleSearchRequest* req;
-	int left;
-	int right;
-	int top;
-	int bottom;
-	int oceanLeft;
-	int oceanRight;
-	int oceanTop;
-	int oceanBottom;
-	uint zoom;
+	int left = 0;
+	int right = 0;
+	int top = 0;
+	int bottom = 0;
+	int oceanLeft = 0;
+	int oceanRight = 0;
+	int oceanTop = 0;
+	int oceanBottom = 0;
+	uint zoom = 0;
 	ResultPublisher* publisher;
 
 	coordinates cacheCoordinates;
-	uint ocean;
-	uint oceanTiles;
+	uint ocean = 0;
+	uint oceanTiles = 0;
 
-	uint numberOfVisitedObjects;
-	uint numberOfAcceptedObjects;
-	uint numberOfReadSubtrees;
-	uint numberOfAcceptedSubtrees;
+	uint numberOfVisitedObjects = 0;
+	uint numberOfAcceptedObjects = 0;
+	uint numberOfReadSubtrees = 0;
+	uint numberOfAcceptedSubtrees = 0;
 
-	int limit;
+	int limit = 0;
 
 	vector<SHARED_PTR<TransportStop>> transportResults;
 
