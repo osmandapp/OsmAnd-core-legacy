@@ -1056,9 +1056,13 @@ struct SearchQuery {
 		limit = -1;
 	}
 	SearchQuery(int l, int r, int t, int b) : left(l), right(r), top(t), bottom(b) {
+		req = nullptr;
+		publisher = nullptr;
 	}
 
 	SearchQuery() {
+		req = nullptr;
+		publisher = nullptr;
 		numberOfAcceptedObjects = numberOfVisitedObjects = 0;
 		numberOfAcceptedSubtrees = numberOfReadSubtrees = 0;
 		oceanTiles = 0;
@@ -1067,7 +1071,11 @@ struct SearchQuery {
 	}
 
 	bool publish(MapDataObject* obj, MapIndex* ind, int8_t zoom) {
-		return publisher->publish(FoundMapDataObject(obj, ind, zoom));
+		return publisher && publisher->publish(FoundMapDataObject(obj, ind, zoom));
+	}
+
+	bool isCancelled() {
+		return publisher && publisher->isCancelled();
 	}
 };
 
