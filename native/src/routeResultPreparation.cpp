@@ -2094,6 +2094,8 @@ void muteAndRemoveTurns(vector<SHARED_PTR<RouteSegmentResult> >& result) {
                     curr->turnType = nullptr;
                 }
             }
+        } else if (turnType->goAhead()) {
+            turnType->setSkipToSpeak(true);
         }
     }
 }
