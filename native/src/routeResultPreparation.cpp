@@ -117,11 +117,13 @@ void ignorePrecedingStraightsOnSameIntersection(bool leftside, vector<SHARED_PTR
         if (currentSegment) {
             distanceToNextTurn += currentSegment->distance;
             if (currentSegment->turnType &&
-                currentSegment->turnType->getValue() == TurnType::C && distanceToNextTurn <= 100) {
-                result[i]->turnType->setSkipToSpeak(true);
+                currentSegment->turnType->getValue() == TurnType::C && distanceToNextTurn <= 200) {
+                currentSegment->turnType->setSkipToSpeak(true);
             } else {
                 nextSegment = currentSegment;
-                distanceToNextTurn = 999999;
+                if (currentSegment->turnType) {
+                    distanceToNextTurn = 999999;
+                }
             }
         }
     }
