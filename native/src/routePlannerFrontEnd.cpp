@@ -245,32 +245,29 @@ void RoutePlannerFrontEnd::searchGpxRoute(SHARED_PTR<GpxRouteApproximation>& gct
                                           vector<SHARED_PTR<GpxPoint>>& gpxPoints,
                                           GpxRouteApproximationCallback acceptor) {
 	if (useGeometryBasedApproximation) {
-		searchGpxSegments(gctx, gpxPoints, acceptor);
+		searchGpxSegments(gctx, gpxPoints);
 	}
 	else {
-		searchGpxRouteByRouting(gctx, gpxPoints, acceptor);
+		searchGpxRouteByRouting(gctx, gpxPoints);
 	}
 	gctx->reconstructFinalPointsFromFullRoute();
+	if (acceptor) {
+		acceptor(gctx->ctx->progress->cancelled ? nullptr : gctx);
+	}
 }
 
 void RoutePlannerFrontEnd::searchGpxSegments(SHARED_PTR<GpxRouteApproximation>& gctx,
-                                             vector<SHARED_PTR<GpxPoint>>& gpxPoints,
-                                             GpxRouteApproximationCallback acceptor) {
+                                             vector<SHARED_PTR<GpxPoint>>& gpxPoints) {
 	if (!gctx->ctx->progress) {
 		gctx->ctx->progress = std::make_shared<RouteCalculationProgress>();
 	}
 
 	GpxSegmentsApproximation().fastGpxApproximation(this, gctx, gpxPoints);
 	calculateGpxRoute(gctx, gpxPoints);
-
-	if (acceptor) {
-		acceptor(gctx->ctx->progress->cancelled ? nullptr : gctx);
-	}
 }
 
 void RoutePlannerFrontEnd::searchGpxRouteByRouting(SHARED_PTR<GpxRouteApproximation>& gctx,
-                                                   vector<SHARED_PTR<GpxPoint>>& gpxPoints,
-                                                   GpxRouteApproximationCallback acceptor) {
+                                                   vector<SHARED_PTR<GpxPoint>>& gpxPoints) {
 	if (!gctx->ctx->progress) {
 		gctx->ctx->progress = std::make_shared<RouteCalculationProgress>();
 	}
@@ -355,8 +352,6 @@ void RoutePlannerFrontEnd::searchGpxRouteByRouting(SHARED_PTR<GpxRouteApproximat
 //											 gctx->fullRoute);
 //        OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, gctx.toString();
 //	}
-	if (acceptor)
-		acceptor(gctx->ctx->progress->cancelled ? nullptr : gctx);
 }
 
 void RoutePlannerFrontEnd::makeSegmentPointPrecise(RoutingContext* ctx, SHARED_PTR<RouteSegmentResult>& routeSegmentResult,

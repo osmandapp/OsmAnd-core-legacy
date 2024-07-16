@@ -85,8 +85,8 @@ public:
 	vector<SHARED_PTR<GpxPoint>> generateGpxPoints(SHARED_PTR<GpxRouteApproximation>& gctx, const vector<pair<double, double>>& locationsHolder);
 	
 	void searchGpxRoute(SHARED_PTR<GpxRouteApproximation>& gctx, vector<SHARED_PTR<GpxPoint>>& gpxPoints, GpxRouteApproximationCallback acceptor = nullptr);
-	void searchGpxSegments(SHARED_PTR<GpxRouteApproximation>& gctx, vector<SHARED_PTR<GpxPoint>>& gpxPoints, GpxRouteApproximationCallback acceptor = nullptr);
-	void searchGpxRouteByRouting(SHARED_PTR<GpxRouteApproximation>& gctx, vector<SHARED_PTR<GpxPoint>>& gpxPoints, GpxRouteApproximationCallback acceptor = nullptr);
+	void searchGpxSegments(SHARED_PTR<GpxRouteApproximation>& gctx, vector<SHARED_PTR<GpxPoint>>& gpxPoints);
+	void searchGpxRouteByRouting(SHARED_PTR<GpxRouteApproximation>& gctx, vector<SHARED_PTR<GpxPoint>>& gpxPoints);
 	static bool hasSegment(vector<SHARED_PTR<RouteSegmentResult>>& result, SHARED_PTR<RouteSegment>& current);
 	HHRoutingConfig* setDefaultRoutingConfig();
 
