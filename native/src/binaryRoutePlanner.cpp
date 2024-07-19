@@ -398,7 +398,9 @@ vector<SHARED_PTR<RouteSegment>> searchRouteInternal(RoutingContext* ctx, SHARED
 				OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug,  " %d >> Already visited by minimum", segment->segmentEnd);
 			}
 			skipSegment = true;
-		} else if (cst->segCost + 0.1 < minCost[forwardSearch ? 1 : 0] && ASSERT_CHECKS && ctx->calculationMode != RouteCalculationMode::COMPLEX) {
+		} else if (cst->segCost + 2.0 < minCost[forwardSearch ? 1 : 0] && ASSERT_CHECKS && ctx->calculationMode != RouteCalculationMode::COMPLEX) {
+			// squareRootDist is inaccurate by 0.0015%-0.0036% according to tests
+			// think about multiplier * 1.00004f instead of the const (2.0)
 			if (ctx->config->heurCoefficient <= 1) {
 				//throw new IllegalStateException(cst.cost + " < ???  " + minCost[forwardSearch ? 1 : 0]);
 				OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error,  " %f + < ???  %f ", cst->segCost, minCost[forwardSearch ? 1 : 0]);
