@@ -569,8 +569,8 @@ RoadSplitStructure calculateRoadSplitStructure(SHARED_PTR<RouteSegmentResult>& p
     return rs;
 }
 
-std::pair<int, int> findActiveIndex(SHARED_PTR<RouteSegmentResult> prevSegm, SHARED_PTR<RouteSegmentResult> currentSegm, vector<int> rawLanes, SHARED_PTR<RoadSplitStructure> rs, string turnLanes) {
-    pair<int, int> pair(-1 ,-1);
+std::array<int,3> findActiveIndex(SHARED_PTR<RouteSegmentResult> prevSegm, SHARED_PTR<RouteSegmentResult> currentSegm, vector<int> rawLanes, SHARED_PTR<RoadSplitStructure> rs, string turnLanes) {
+    std::array<int,3> pair = { -1, -1, 0 };
     if (turnLanes.empty()) {
         return pair;
     }
@@ -592,7 +592,8 @@ std::pair<int, int> findActiveIndex(SHARED_PTR<RouteSegmentResult> prevSegm, SHA
             int s = TurnType::getSecondaryTurn(rawLanes[i]);
             int t = TurnType::getTertiaryTurn(rawLanes[i]);
             if (p == startDirection || s == startDirection || t == startDirection) {
-                pair.first = i;
+                pair[0] = i;
+                pair[2] = startDirection;
                 break;
             }
         }
@@ -601,7 +602,7 @@ std::pair<int, int> findActiveIndex(SHARED_PTR<RouteSegmentResult> prevSegm, SHA
             int s = TurnType::getSecondaryTurn(rawLanes[i]);
             int t = TurnType::getTertiaryTurn(rawLanes[i]);
             if (p == endDirection || s == endDirection || t == endDirection) {
-                pair.second = i;
+                pair[1] = i;
                 break;
             }
         }
@@ -632,9 +633,9 @@ vector<int> getTurnLanesInfo(SHARED_PTR<RouteSegmentResult>& prevSegm, SHARED_PT
         lanesArray = calculateRawTurnLanes(turnLanes, mainTurnType);
     }
     bool isSet = false;
-    std::pair<int, int> act = findActiveIndex(prevSegm, currentSegm, lanesArray, nullptr, turnLanes);
-    int startIndex = act.first;
-    int endIndex = act.second;
+    std::array<int, 3> act = findActiveIndex(prevSegm, currentSegm, lanesArray, nullptr, turnLanes);
+    int startIndex = act[0];
+    int endIndex = act[1];
     if (startIndex != -1 && endIndex != -1) {
         if (hasAllowedLanes(mainTurnType, lanesArray, startIndex, endIndex)) {
             for (int k = startIndex; k <= endIndex; k++) {
@@ -960,52 +961,17 @@ int inferSlightTurnFromActiveLanes(vector<int>& oLanes, bool mostLeft, bool most
     return infer;
 }
 
-void setActiveTurns(vector<int> & rawLanes, int activeBeginIndex, int activeEndIndex) {
-    vector<int> secondaryIndex;
-    int activeTurn = 0;
-    for (int k = 0; k < rawLanes.size(); k++) {
-        bool hasSecondary = false;
-        if (k >= activeBeginIndex && k <= activeEndIndex) {
-            int secondary = TurnType::getSecondaryTurn(rawLanes[k]);
-            if (secondary > 0) {
-                hasSecondary = true;
-            }
-            if (hasSecondary) {
-                secondaryIndex.push_back(k);
-            } else
-                activeTurn = TurnType::getPrimaryTurn(rawLanes[k]);
-            rawLanes[k] |= 1;
-        }
+void setActiveLanesRange(vector<int> & rawLanes, int activeBeginIndex, int activeEndIndex, int activeTurn) {
+    for (int k = activeBeginIndex; k < rawLanes.size() && k <= activeEndIndex; k++) {
+        rawLanes[k] |= 1;
     }
-    if (secondaryIndex.size() > 0) {
-        if (activeTurn == 0) {
-            // rough guess
-            if (activeBeginIndex == 0) {
-                activeTurn = TurnType::getPrimaryTurn(rawLanes[activeBeginIndex]);
-            } else {
-                activeTurn = TurnType::getPrimaryTurn(rawLanes[activeEndIndex]);
-            }
-        }
-        for (int k : secondaryIndex) {
-            int p = TurnType::getPrimaryTurn(rawLanes[k]);
-            if (activeTurn == p) {
-                rawLanes[k] |= 1;
-                continue;
-            }
-            int s = TurnType::getSecondaryTurn(rawLanes[k]);
-            if (activeTurn == s) {
+    for (int k = activeBeginIndex; k < rawLanes.size() && k <= activeEndIndex; k++) {
+        if(TurnType::getPrimaryTurn(rawLanes[k]) != activeTurn) {
+            if(TurnType::getSecondaryTurn(rawLanes[k]) == activeTurn) {
                 TurnType::setSecondaryToPrimary(rawLanes, k);
-                rawLanes[k] |= 1;
-                continue;
-            }
-            int t = TurnType::getTertiaryTurn(rawLanes[k]);
-            if (activeTurn == t) {
+            } else if(TurnType::getTertiaryTurn(rawLanes[k]) == activeTurn) {
                 TurnType::setTertiaryToPrimary(rawLanes, k);
-                rawLanes[k] |= 1;
-                continue;
             }
-            // in any case need to set active
-            rawLanes[k] |= 1;
         }
     }
 }
@@ -1029,16 +995,17 @@ SHARED_PTR<TurnType> createKeepLeftRightTurnBasedOnTurnTypes(RoadSplitStructure&
         }
     }
     
-    std::pair<int, int> act = findActiveIndex(prevSegm, currentSegm, rawLanes, std::make_shared<RoadSplitStructure>(rs), turnLanes);
-    int activeBeginIndex = act.first;
-    int activeEndIndex = act.second;
+    std::array<int, 3> act = findActiveIndex(prevSegm, currentSegm, rawLanes, std::make_shared<RoadSplitStructure>(rs), turnLanes);
+    int activeBeginIndex = act[0];
+    int activeEndIndex = act[1];
+    int activeTurn = act[2];
     bool leftOrRightKeep = (rs.keepLeft && !rs.keepRight) || (!rs.keepLeft && rs.keepRight);
     if (activeBeginIndex == -1 || activeEndIndex == -1 || activeBeginIndex > activeEndIndex) {
         // something went wrong
         return createSimpleKeepLeftRightTurn(leftSide, prevSegm, currentSegm, rs);
     }
     if (leftOrRightKeep) {
-        setActiveTurns(rawLanes, activeBeginIndex, activeEndIndex);
+        setActiveLanesRange(rawLanes, activeBeginIndex, activeEndIndex, activeTurn);
         int tp = inferSlightTurnFromActiveLanes(rawLanes, rs.keepLeft, rs.keepRight);
         // Checking to see that there is only one unique turn
         if (tp != 0) {
@@ -1065,7 +1032,7 @@ SHARED_PTR<TurnType> createKeepLeftRightTurnBasedOnTurnTypes(RoadSplitStructure&
         }
     } else {
         if (activeBeginIndex != -1 && activeEndIndex != -1) {
-            setActiveTurns(rawLanes, activeBeginIndex, activeEndIndex);
+            setActiveLanesRange(rawLanes, activeBeginIndex, activeEndIndex, activeTurn);
             t = getActiveTurnType(rawLanes, leftSide, t);
         }
     }
