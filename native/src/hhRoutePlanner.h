@@ -27,7 +27,7 @@ public:
 	
 	HHRoutingConfig * prepareDefaultRoutingConfig(HHRoutingConfig * c);
 	HHNetworkRouteRes * runRouting(int startX, int startY, int endX, int endY, HHRoutingConfig * config);
-	
+
 private:
 	double smallestSegmentCost(const SHARED_PTR<HHRoutingContext> & hctx, NetworkDBPoint * st, NetworkDBPoint * end) const;
 	bool retrieveSegmentsGeometry(const SHARED_PTR<HHRoutingContext> & hctx, HHNetworkRouteRes * route, bool routeSegments, SHARED_PTR<RouteCalculationProgress> progress);
@@ -69,7 +69,6 @@ private:
 							  NetworkDBPoint *> & endPoints, SHARED_PTR<RouteCalculationProgress> & progress);
 	HHNetworkRouteRes * cancelledStatus() const;
 	void filterPointsBasedOnConfiguration(const SHARED_PTR<HHRoutingContext> & hctx);
-	
 };
 
 #endif /*_OSMAND_HH_ROUTE_PLANNER_H*/

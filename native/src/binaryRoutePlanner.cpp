@@ -1,7 +1,6 @@
 #include "binaryRoutePlanner.h"
 
 #include <functional>
-#include <iterator>
 #include <queue>
 
 #include "Logging.h"
@@ -612,6 +611,22 @@ bool checkIfOppositeSegmentWasVisited(RoutingContext* ctx, bool reverseWaySearch
 	return false;
 }
 
+bool ignoreObstaclesOnStartEndPoints(RoutingContext* ctx, int64_t roadId, short segmentInd, bool dir) {
+	if (roadId == ctx->startRoadId) {
+		int ignoreIndex = dir ? ctx->startSegmentIndEnd : ctx->startSegmentInd;
+		if (segmentInd == ignoreIndex) {
+			return true;
+		}
+	}
+	if (roadId == ctx->targetRoadId) {
+		int ignoreIndex = dir ? ctx->targetSegmentInd : ctx->targetSegmentIndEnd;
+		if (segmentInd == ignoreIndex) {
+			return true;
+		}
+	}
+	return false;
+}
+
 double calculateRouteSegmentTime(RoutingContext* ctx, bool reverseWaySearch, SHARED_PTR<RouteSegment> segment) {
 	SHARED_PTR<RouteDataObject> road = segment->getRoad();
 	// store <segment> in order to not have unique <segment, direction> in visitedSegments
@@ -620,6 +635,12 @@ double calculateRouteSegmentTime(RoutingContext* ctx, bool reverseWaySearch, SHA
 
 	// calculate point and try to load neighbor ways if they are not loaded
 	double distTimeOnRoadToPass = calcRoutingSegmentTimeOnlyDist(ctx->config->router, segment);
+
+	// ignore obstacles at start/end points (but still consider for all other segments of the route)
+	if (ignoreObstaclesOnStartEndPoints(ctx, road->getId(), segmentInd, prevSegmentInd > segmentInd)) {
+		return distTimeOnRoadToPass;
+	}
+
 	// calculate possible obstacle plus time
 	double obstacle = ctx->config->router->defineRoutingObstacle(road, segmentInd, prevSegmentInd > segmentInd);
 	if (obstacle < 0) {
@@ -1265,6 +1286,9 @@ vector<SHARED_PTR<RouteSegmentResult>> searchRouteInternal(RoutingContext* ctx, 
 	} else {
 		// OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "End point was found %lld [Native]", end->road->id / 64);
 	}
+
+	ctx->initStartAndTargetPoints(start, end); // update ctx with fresh start-end details
+
 	vector<SHARED_PTR<RouteSegment>> results = searchRouteInternal(ctx, start, end, {}, {});
 	SHARED_PTR<RouteSegment> finalSegment = nullptr;
 	if (results.size() > 0) {
