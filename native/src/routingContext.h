@@ -90,6 +90,7 @@ struct RoutingContext {
 	int startY;
 	int64_t startRoadId;
 	int startSegmentInd;
+	int startSegmentIndEnd;
 	bool startTransportStop;
 
 	int targetX;
@@ -98,6 +99,7 @@ struct RoutingContext {
     std::vector<int> intermediatesY;
 	int64_t targetRoadId;
 	int targetSegmentInd;
+	int targetSegmentIndEnd;
 	bool targetTransportStop;
 	bool publicTransport;
     int dijkstraMode;
@@ -522,6 +524,7 @@ struct RoutingContext {
 		targetY = end->preciseY;
 		targetRoadId = end->road->id;
 		targetSegmentInd = end->segmentStart;
+		targetSegmentIndEnd = end->segmentEnd;
 	}
 
 	void initStartAndTargetPoints(SHARED_PTR<RouteSegmentPoint> start, SHARED_PTR<RouteSegmentPoint> end) {
@@ -530,6 +533,7 @@ struct RoutingContext {
 		startY = start->preciseY;
 		startRoadId = start->road->id;
 		startSegmentInd = start->segmentStart;
+		startSegmentIndEnd = start->segmentEnd;
 	}
 
 	void connectPoint(SHARED_PTR<RoutingSubregionTile> subRegTile, SHARED_PTR<RouteDataObject> ro,

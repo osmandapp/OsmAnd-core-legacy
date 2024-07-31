@@ -419,6 +419,7 @@ jfieldID jfield_RoutingContext_startX = NULL;
 jfieldID jfield_RoutingContext_startY = NULL;
 jfieldID jfield_RoutingContext_startRoadId = NULL;
 jfieldID jfield_RoutingContext_startSegmentInd = NULL;
+jfieldID jfield_RoutingContext_startSegmentIndEnd = NULL;
 jfieldID jfield_RoutingContext_startTransportStop = NULL;
 jfieldID jfield_RoutingContext_targetX = NULL;
 jfieldID jfield_RoutingContext_targetY = NULL;
@@ -426,6 +427,7 @@ jfieldID jfield_RoutingContext_intermediatesX = NULL;
 jfieldID jfield_RoutingContext_intermediatesY = NULL;
 jfieldID jfield_RoutingContext_targetRoadId = NULL;
 jfieldID jfield_RoutingContext_targetSegmentInd = NULL;
+jfieldID jfield_RoutingContext_targetSegmentIndEnd = NULL;
 jfieldID jfield_RoutingContext_targetTransportStop = NULL;
 jfieldID jfield_RoutingContext_publicTransport = NULL;
 jfieldID jfield_RoutingContext_config = NULL;
@@ -822,6 +824,7 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jfield_RoutingContext_startY = getFid(env, jclass_RoutingContext, "startY", "I");
 	jfield_RoutingContext_startRoadId = getFid(env, jclass_RoutingContext, "startRoadId", "J");
 	jfield_RoutingContext_startSegmentInd = getFid(env, jclass_RoutingContext, "startSegmentInd", "I");
+	jfield_RoutingContext_startSegmentIndEnd = getFid(env, jclass_RoutingContext, "startSegmentIndEnd", "I");
 	jfield_RoutingContext_startTransportStop = getFid(env, jclass_RoutingContext, "startTransportStop", "Z");
 	jfield_RoutingContext_targetX = getFid(env, jclass_RoutingContext, "targetX", "I");
 	jfield_RoutingContext_targetY = getFid(env, jclass_RoutingContext, "targetY", "I");
@@ -829,6 +832,7 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jfield_RoutingContext_intermediatesY = getFid(env, jclass_RoutingContext, "intermediatesY", "[I");
 	jfield_RoutingContext_targetRoadId = getFid(env, jclass_RoutingContext, "targetRoadId", "J");
 	jfield_RoutingContext_targetSegmentInd = getFid(env, jclass_RoutingContext, "targetSegmentInd", "I");
+	jfield_RoutingContext_targetSegmentIndEnd = getFid(env, jclass_RoutingContext, "targetSegmentIndEnd", "I");
 	jfield_RoutingContext_targetTransportStop = getFid(env, jclass_RoutingContext, "targetTransportStop", "Z");
 	jfield_RoutingContext_publicTransport = getFid(env, jclass_RoutingContext, "publicTransport", "Z");
 	jfield_RoutingContext_nativeRoutingContext = getFid(env, jclass_RoutingContext, "nativeRoutingContext", "J");
@@ -1765,6 +1769,7 @@ RoutingContext* getRoutingContext(JNIEnv* ienv, jobject jCtx, jfloat initDirecti
 	c->startY = ienv->GetIntField(jCtx, jfield_RoutingContext_startY);
 	c->startRoadId = ienv->GetLongField(jCtx, jfield_RoutingContext_startRoadId);
 	c->startSegmentInd = ienv->GetIntField(jCtx, jfield_RoutingContext_startSegmentInd);
+	c->startSegmentIndEnd = ienv->GetIntField(jCtx, jfield_RoutingContext_startSegmentIndEnd);
 	c->startTransportStop = ienv->GetBooleanField(jCtx, jfield_RoutingContext_startTransportStop);
 	c->targetX = ienv->GetIntField(jCtx, jfield_RoutingContext_targetX);
 	c->targetY = ienv->GetIntField(jCtx, jfield_RoutingContext_targetY);
@@ -1786,6 +1791,7 @@ RoutingContext* getRoutingContext(JNIEnv* ienv, jobject jCtx, jfloat initDirecti
 	ienv->ReleaseIntArrayElements(intermediateX, intermediateXF, 0);
 	c->targetRoadId = ienv->GetLongField(jCtx, jfield_RoutingContext_targetRoadId);
 	c->targetSegmentInd = ienv->GetIntField(jCtx, jfield_RoutingContext_targetSegmentInd);
+	c->targetSegmentIndEnd = ienv->GetIntField(jCtx, jfield_RoutingContext_targetSegmentIndEnd);
 	jmethodID getOrdinalValueMethod = ienv->GetMethodID(jclass_RouteCalculationMode, "ordinal", "()I");
 	jobject calculationMode = ienv->GetObjectField(jCtx, jfield_RoutingContext_calculationMode);
 	jint value = ienv->CallIntMethod(calculationMode, getOrdinalValueMethod);

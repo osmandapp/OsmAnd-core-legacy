@@ -431,8 +431,8 @@ HHNetworkRouteRes * HHRoutePlanner::prepareRouteResults(const SHARED_PTR<HHRouti
 }
 
 void HHRoutePlanner::findFirstLastSegments(const SHARED_PTR<HHRoutingContext> & hctx, int startX, int startY, int endX, int endY,
-										   UNORDERED_map<int64_t, NetworkDBPoint *> & stPoints,
-										   UNORDERED_map<int64_t, NetworkDBPoint *> & endPoints) {
+                                           UNORDERED_map<int64_t, NetworkDBPoint *> & stPoints,
+                                           UNORDERED_map<int64_t, NetworkDBPoint *> & endPoints) {
 	OsmAnd::ElapsedTimer timer;
 	timer.Start();
 	if (hctx->config->STATS_VERBOSE_LEVEL > 0) {
@@ -485,6 +485,7 @@ void HHRoutePlanner::findFirstLastSegments(const SHARED_PTR<HHRoutingContext> & 
 				break;
 			}
 		}
+		hctx->rctx->initStartAndTargetPoints(startP, endP);
 		double prev = hctx->rctx->config->initialDirection;
 		hctx->rctx->config->initialDirection = hctx->config->INITIAL_DIRECTION;
 		hctx->boundaries.insert(std::pair<int64_t, SHARED_PTR<RouteSegment>>(calcRPId(endP, endP->getSegmentEnd(), endP->getSegmentStart()), nullptr));
