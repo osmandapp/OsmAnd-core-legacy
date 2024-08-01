@@ -49,4 +49,5 @@ bool twiceRoadPresent(vector<SHARED_PTR<RouteSegmentResult> >& result, int i);
 void setActiveTurns(vector<int> & rawLanes, int activeBeginIndex, int activeEndIndex);
 bool isKeepTurn(SHARED_PTR<TurnType> t);
 bool isHighSpeakPriority(SHARED_PTR<RouteSegmentResult>& curr);
+bool isForkByLanes(SHARED_PTR<RouteSegmentResult>&  curr, SHARED_PTR<RouteSegmentResult>&  prev);
 #endif /*_OSMAND_ROUTE_RESULT_PREPARATION_H*/

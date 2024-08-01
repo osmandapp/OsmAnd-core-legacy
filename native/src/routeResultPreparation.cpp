@@ -2058,6 +2058,9 @@ void avoidKeepForThroughMoving(vector<SHARED_PTR<RouteSegmentResult> >& result) 
         if (isKeepTurn(turnType) && isHighSpeakPriority(curr)) {
             continue;
         }
+        if (isForkByLanes(curr, result[i - 1])) {
+            continue;
+        }
         int tt = TurnType::C;
         int cnt = turnType->countTurnTypeDirections(tt, true);
         int cntAll = turnType->countTurnTypeDirections(tt, false);
@@ -2325,6 +2328,17 @@ bool isHighSpeakPriority(SHARED_PTR<RouteSegmentResult>& curr) {
 		}
 	}
 	return false;
+}
+
+bool isForkByLanes(SHARED_PTR<RouteSegmentResult>& curr, SHARED_PTR<RouteSegmentResult>& prev) {
+    //check for Y-intersections with many lanes
+    if (countLanesMinOne(curr) < countLanesMinOne(prev)) {
+        vector<SHARED_PTR<RouteSegmentResult>> attachedRoutes = curr->getAttachedRoutes(curr->getStartPointIndex());
+        if (attachedRoutes.size() == 1) {
+            return countLanesMinOne(attachedRoutes.at(0)) >= 2;
+        }
+    }
+    return false;
 }
 
 #endif /*_OSMAND_ROUTE_RESULT_PREPARATION_CPP*/
