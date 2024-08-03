@@ -581,6 +581,12 @@ double GeneralRouter::calculateTurnTime(const SHARED_PTR<RouteSegment>& segment,
 			totalPenalty += sharpTurn;
 		} else if (diff > M_PI / 3) {
 			totalPenalty += slightTurn;
+		} else if (diff > M_PI / 3 / 2) {
+			// increase sensitivity for highway *_link
+			std::string prevHighway = prev->getRoad()->getHighway();
+			std::string nextHighway = segment->getRoad()->getHighway();
+			if (prevHighway.length() > 0 && endsWith(prevHighway, "_link")) totalPenalty += slightTurn;
+			if (nextHighway.length() > 0 && endsWith(nextHighway, "_link")) totalPenalty += slightTurn;
 		}
 	}
 	return totalPenalty;
