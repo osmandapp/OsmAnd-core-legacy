@@ -577,11 +577,12 @@ double GeneralRouter::calculateTurnTime(const SHARED_PTR<RouteSegment>& segment,
 		double a2 = prev->getRoad()->directionRoute(prev->getSegmentEnd(), !prev->isPositive());
 		double diff = abs(alignAngleDifference(a1 - a2 - M_PI));
 		if (diff > M_PI / 1.5f) {
-			totalPenalty += sharpTurn; // >120 degree (like U-turn)
+			totalPenalty += sharpTurn; // >120 degree (U-turn)
 		} else if (diff > M_PI / 3.0f) {
-			totalPenalty += slightTurn; // >60 degree (fixed penalty)
+			totalPenalty += slightTurn; // >60 degree (standard)
 		} else if (diff > M_PI / 6.0f) {
-			totalPenalty += slightTurn * diff * 3.0f / M_PI; // >30 (linear penalty)
+			totalPenalty += slightTurn / 2.0f; // >30 degree (light)
+			// totalPenalty += slightTurn * diff * 3.0f / M_PI; // to think
 		}
 	}
 	return totalPenalty;
