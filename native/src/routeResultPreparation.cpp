@@ -1449,6 +1449,28 @@ vector<int> getPossibleTurnsFromActiveLanes(vector<int>& oLanes, bool onlyPrimar
     return getPossibleTurns(oLanes, onlyPrimary, true);
 }
 
+void replaceConfusingKeepTurnsWithLaneTurn(SHARED_PTR<RouteSegmentResult> & currentSegment, bool leftSide) {
+    if (!currentSegment->turnType) {
+        return;
+    }
+    int currentTurn = currentSegment->turnType->getValue();
+    int activeTurn = currentSegment->turnType->getActiveCommonLaneTurn();
+    bool changeToActive = false;
+    if (TurnType::isKeepDirectionTurn(currentTurn) && !TurnType::isKeepDirectionTurn(activeTurn)) {
+        if (TurnType::isLeftTurn(currentTurn) && !TurnType::isLeftTurn(activeTurn)) {
+            changeToActive = true;
+        }
+        if (TurnType::isRightTurn(currentTurn) && !TurnType::isRightTurn(activeTurn)) {
+            changeToActive = true;
+        }
+    }
+    if (changeToActive) {
+        SHARED_PTR<TurnType> turn = TurnType::ptrValueOf(activeTurn, leftSide);
+        turn->setLanes(currentSegment->turnType->getLanes());
+        currentSegment->turnType = turn;
+    }
+}
+
 void determineTurnsToMerge(bool leftside, vector<SHARED_PTR<RouteSegmentResult> >& result) {
     SHARED_PTR<RouteSegmentResult> nextSegment = nullptr;
     double dist = 0;
@@ -1470,6 +1492,7 @@ void determineTurnsToMerge(bool leftside, vector<SHARED_PTR<RouteSegmentResult> 
                     mergeTurnLanes(leftside, currentSegment, nextSegment);
                     inferCommonActiveLane(currentSegment->turnType, nextSegment->turnType);
                     merged = true;
+                    replaceConfusingKeepTurnsWithLaneTurn(currentSegment, leftside);
                 }
             }
             if (!merged) {
