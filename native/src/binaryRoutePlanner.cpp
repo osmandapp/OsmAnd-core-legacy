@@ -623,7 +623,7 @@ double calculateRouteSegmentTime(RoutingContext* ctx, bool reverseWaySearch, SHA
 	// calculate possible obstacle plus time
 	double obstacle = ctx->config->router->defineRoutingObstacle(road, segmentInd, prevSegmentInd > segmentInd);
 	if (obstacle < 0) {
-		if (segment.distanceFromStart > 0) { // ignore obstacle on first point for very first segment
+		if (segment->distanceFromStart > 0) { // ignore obstacle on first point for very first segment
 			return -1;
 		}
 	}
