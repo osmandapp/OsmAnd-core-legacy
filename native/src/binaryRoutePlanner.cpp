@@ -623,7 +623,9 @@ double calculateRouteSegmentTime(RoutingContext* ctx, bool reverseWaySearch, SHA
 	// calculate possible obstacle plus time
 	double obstacle = ctx->config->router->defineRoutingObstacle(road, segmentInd, prevSegmentInd > segmentInd);
 	if (obstacle < 0) {
-		return -1;
+		if (segment.distanceFromStart > 0) { // ignore obstacle on first point for very first segment
+			return -1;
+		}
 	}
 	double heightObstacle = ctx->config->router->defineHeightObstacle(road, segmentInd, prevSegmentInd);
 	if (heightObstacle < 0) {
@@ -647,7 +649,11 @@ void processRouteSegment(RoutingContext* ctx, bool reverseWaySearch, SEGMENTS_QU
 		currentSegment = nextCurrentSegment;
 		nextCurrentSegment.reset();
 
-		// 1. calculate obstacle for passing this segment
+		// 1. check if segment was already visited in opposite direction
+		// We check before we calculate segmentTime (to not calculate it twice with opposite and calculate turns onto each segment).
+		bool bothDirVisited = checkIfOppositeSegmentWasVisited(ctx, reverseWaySearch, graphSegments, currentSegment, oppositeSegments, boundaries, excludedKeys);
+		
+		// 2. calculate obstacle for passing this segment (after visiting cause obstacle is at the end of the segment)
 		float segmentAndObstaclesTime = (float)calculateRouteSegmentTime(ctx, reverseWaySearch, currentSegment);
 		if (segmentAndObstaclesTime < 0) {
 			// directionAllowed = false;
@@ -655,10 +661,7 @@ void processRouteSegment(RoutingContext* ctx, bool reverseWaySearch, SEGMENTS_QU
 		}
 		// calculate new start segment time as we're going to assign to put to visited segments
 		float distFromStartPlusSegmentTime = currentSegment->distanceFromStart + segmentAndObstaclesTime;
-		// 2. check if segment was already visited in opposite direction
-		// We check before we calculate segmentTime (to not calculate it twice with opposite and calculate turns
-		// onto each segment).
-		bool bothDirVisited = checkIfOppositeSegmentWasVisited(ctx, reverseWaySearch, graphSegments, currentSegment, oppositeSegments, boundaries, excludedKeys);
+		
 
 		// 3. upload segment itself to visited segments
 		int64_t nextPntId = calculateRoutePointId(currentSegment);
