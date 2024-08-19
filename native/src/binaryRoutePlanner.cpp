@@ -621,11 +621,12 @@ double calculateRouteSegmentTime(RoutingContext* ctx, bool reverseWaySearch, SHA
 	// calculate point and try to load neighbor ways if they are not loaded
 	double distTimeOnRoadToPass = calcRoutingSegmentTimeOnlyDist(ctx->config->router, segment);
 	// calculate possible obstacle plus time
-	double obstacle = ctx->config->router->defineRoutingObstacle(road, segmentInd, prevSegmentInd > segmentInd);
+	double obstacle = 0;
+	if (segment->distanceFromStart >= 0 || !reverseWaySearch) { // ignore last point for reverse
+		obstacle = ctx->config->router->defineRoutingObstacle(road, segmentInd, prevSegmentInd > segmentInd);
+	}
 	if (obstacle < 0) {
-		if (segment->distanceFromStart > 0) { // ignore obstacle on first point for very first segment
-			return -1;
-		}
+		return -1;
 	}
 	double heightObstacle = ctx->config->router->defineHeightObstacle(road, segmentInd, prevSegmentInd);
 	if (heightObstacle < 0) {
