@@ -116,7 +116,7 @@ struct RoutingContext {
 
 	MAP_SUBREGION_TILES subregionTiles;
 	UNORDERED(map)<int64_t, std::vector<SHARED_PTR<RoutingSubregionTile>>> indexedSubregions;
-    vector<BinaryMapFile *> mapIndexReaderFilter;
+	vector<BinaryMapFile *> mapIndexReaderFilter;
 
 	int alertFasterRoadToVisitedSegments;
 	int alertSlowerSegmentedWasVisitedEarlier;
@@ -171,7 +171,7 @@ struct RoutingContext {
 		}
 		subregionTiles = MAP_SUBREGION_TILES();
 		indexedSubregions = UNORDERED(map)<int64_t, std::vector<SHARED_PTR<RoutingSubregionTile>>>();
-        mapIndexReaderFilter.clear();
+		mapIndexReaderFilter.clear();
 	}
     
     void breakChain() {

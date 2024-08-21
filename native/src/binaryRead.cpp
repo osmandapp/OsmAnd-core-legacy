@@ -2800,10 +2800,10 @@ void searchRouteSubregions(SearchQuery* q, std::vector<RouteSubregion>& tempResu
 	vector<BinaryMapFile*>::iterator i = openFiles.begin();
 	for (; i != openFiles.end() && !q->isCancelled(); i++) {
 		BinaryMapFile* file = *i;
-        bool isLiveUpdate = file->hhIndexes.size() == 0;
-        if (!isLiveUpdate && mapIndexReaderFilter.size() > 0 && std::find(mapIndexReaderFilter.begin(), mapIndexReaderFilter.end(), file) == mapIndexReaderFilter.end()) {
-            continue;
-        }
+		bool isLiveUpdate = file->hhIndexes.size() == 0;
+		if (!isLiveUpdate && mapIndexReaderFilter.size() > 0 && std::find(mapIndexReaderFilter.begin(), mapIndexReaderFilter.end(), file) == mapIndexReaderFilter.end()) {
+			continue;
+		}
 		for (const auto& routeIndex : file->routingIndexes) {
 			bool contains = false;
 			std::vector<RouteSubregion>& subs = basemap ? routeIndex->basesubregions : routeIndex->subregions;
