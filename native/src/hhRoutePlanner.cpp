@@ -123,6 +123,13 @@ SHARED_PTR<HHRoutingContext> HHRoutePlanner::selectBestRoutingFiles(int startX, 
 	if (allMatched) {
 		return currentCtx;
 	}
+	if (groups.size() > 1) {
+		for (SHARED_PTR<HHRouteRegionPointsCtx> reg : regions) {
+			if (std::find(hctx->rctx->mapIndexReaderFilter.begin(), hctx->rctx->mapIndexReaderFilter.end(), reg->file) == hctx->rctx->mapIndexReaderFilter.end()) {
+				hctx->rctx->mapIndexReaderFilter.push_back(reg->file);
+			}
+		}
+	}
 	return initNewContext(hctx->rctx, regions);
 }
 
