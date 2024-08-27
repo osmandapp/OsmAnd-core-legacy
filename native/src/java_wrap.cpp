@@ -14,6 +14,7 @@
 #include "java_wrap.h"
 #include "rendering.h"
 #include "routePlannerFrontEnd.h"
+#include "routeResultPreparation.h"
 #include "routingContext.h"
 #include "transportRoutePlanner.h"
 #include "transportRouteResult.h"
@@ -1893,6 +1894,10 @@ extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_nativeRo
 		r = rpfe.searchHHRoute(c); // HH-cpp: routePlannerFrontEnd.cpp -> hhRoutePlanner.cpp
 	} else {
 		r = searchRouteInternal(c, false); // BRP-cpp: do direct call to binaryRoutePlanner.cpp
+		// FIXME need better enabler for RouteResultPreparationNativeTest
+		attachConnectedRoads(c, r);
+		copyAttachedToPreAttachedRoutes(r);
+		prepareResult(c, r);
 	}
 	UNORDERED(map)<int64_t, int> indexes;
 	for (int t = 0; t < ienv->GetArrayLength(regions); t++) {
