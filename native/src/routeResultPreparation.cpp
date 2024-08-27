@@ -95,6 +95,19 @@ bool isMotorway(const SHARED_PTR<RouteSegmentResult>& s) {
     return "motorway" == h || "motorway_link" == h  || "trunk" == h || "trunk_link" == h;
 }
 
+bool isSpeedyMotorway(SHARED_PTR<RouteSegmentResult>& s) {
+    const string h = s->object->getHighway();
+    if ("motorway" == h || "motorway_link" == h) {
+        return true; // motorways are usually well-organized
+    }
+    const float INDICATOR_OF_CITY_TRUNK = 50.0f / 3600 * 1000; // 50 km/h in m/s
+    const float maxSpeed = s->object->getMaximumSpeed(s->isForwardDirection());
+    if ("trunk" == h || "trunk_link" == h) {
+        return maxSpeed > INDICATOR_OF_CITY_TRUNK; // detect out-of-city trunks
+    }
+    return false; // follow strict Traffic Rules (turn from the leftmost/rightmost lane)
+}
+
 bool isPrimary(const SHARED_PTR<RouteSegmentResult>& s) {
     string h = s->object->getHighway();
     return "primary" == h || "primary_link" == h;
@@ -660,7 +673,7 @@ vector<int> getTurnLanesInfo(SHARED_PTR<RouteSegmentResult>& prevSegm, SHARED_PT
         int primaryTurn = TurnType::getPrimaryTurn(lanesArray[ind]);
         int st = TurnType::getSecondaryTurn(lanesArray[ind]);
         if (leftTurn) {
-            if (!TurnType::isLeftTurn(primaryTurn)) {
+            if (primaryTurn != mainTurnType) {
                 // This was just to make sure that there's no bad data.
                 TurnType::setPrimaryTurnAndReset(lanesArray, ind, TurnType::TL);
                 TurnType::setSecondaryTurn(lanesArray, ind, primaryTurn);
@@ -669,7 +682,7 @@ vector<int> getTurnLanesInfo(SHARED_PTR<RouteSegmentResult>& prevSegm, SHARED_PT
                 lanesArray[ind] |= 1;
             }
         } else {
-            if (!TurnType::isRightTurn(primaryTurn)) {
+            if (primaryTurn != mainTurnType) {
                 // This was just to make sure that there's no bad data.
                 TurnType::setPrimaryTurnAndReset(lanesArray, ind, TurnType::TR);
                 TurnType::setSecondaryTurn(lanesArray, ind, primaryTurn);
@@ -896,10 +909,29 @@ SHARED_PTR<TurnType> createSimpleKeepLeftRightTurn(bool leftSide, SHARED_PTR<Rou
         }
     } else {
         bool ltr = rs.leftLanes < rs.rightLanes;
-        // active lanes
+        // set and activate adjacent lanes
+        bool isUnrestricted = isSpeedyMotorway(currentSegm);
+        bool isLeftTurn = TurnType::isLeftTurn(mainLaneType);
+        bool isRightTurn = TurnType::isRightTurn(mainLaneType);
+        bool isSameRoad = currentSegm->object->getId() == prevSegm->object->getId();
         for(int i = 0; i < min(prevLanesCount, currentLanesCount); i++) {
+            bool isOutermostLane = false;
             int ind = ltr ? i : (int) lanes.size() - i - 1;
-            lanes[ind] = (mainLaneType << 1) + 1;
+            lanes[ind] = (mainLaneType << 1); // inactive
+
+            if (isLeftTurn) {
+                isOutermostLane = (ltr && i == 0) || ind == 0;
+            } else if (isRightTurn) {
+                isOutermostLane = (!ltr && i == 0) || ind == lanes.size() - 1;
+            }
+
+            if (isSameRoad || isUnrestricted || isOutermostLane || mainLaneType == TurnType::C) {
+                // activate all lanes in case of same road (think about name/ref match)
+                // activate all adjacent lanes on highways and "speedy" trunks
+                // activate corresponding leftmost/rightmost lane (strict)
+                // activate weird case of (rs.keepLeft && rs.keepRight)
+                lanes[ind] |= 1;
+            }
         }
         // left lanes
         for(int i = 0; i < min(prevLanesCount, rs.leftLanes); i++) {
@@ -927,7 +959,7 @@ SHARED_PTR<TurnType> createSimpleKeepLeftRightTurn(bool leftSide, SHARED_PTR<Rou
             }
         }
 
-        // Fill All left empty slots with inactive C
+        // Fill all remaining empty slots with inactive C
         for (int i = 0; i < prevLanesCount; i++) {
             if (lanes[i] == 0) {
                 lanes[i] = TurnType::C << 1;
