@@ -120,6 +120,4 @@ private:
 	HHNetworkRouteRes* calculateHHRoute(HHRoutePlanner & routePlanner, RoutingContext* ctx, int startX, int startY, int endX, int endY, double dir);
 };
 
-void copyAttachedToPreAttachedRoutes(vector<SHARED_PTR<RouteSegmentResult>>& segments); // used for turn-lanes tests
-
 #endif /*_OSMAND_ROUTE_PLANNER_FRONT_END_H*/
