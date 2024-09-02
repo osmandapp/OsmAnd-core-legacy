@@ -896,7 +896,7 @@ SHARED_PTR<TurnType> createSimpleKeepLeftRightTurn(bool leftSide, SHARED_PTR<Rou
     bool oneLane = currentLanesCount == 1 && prevLanesCount == 1;
     vector<int> lanes(prevLanesCount);
     if (oneLane) {
-        vector<int> lanes = createCombinedTurnTypeForSingleLane(rs, deviation);
+        lanes = createCombinedTurnTypeForSingleLane(rs, deviation);
         t->setLanes(lanes);
         int active = t->getActiveCommonLaneTurn();
         if (active > 0 && (!TurnType::isKeepDirectionTurn(active) || !TurnType::isKeepDirectionTurn(t->getValue()))) {
@@ -934,39 +934,31 @@ SHARED_PTR<TurnType> createSimpleKeepLeftRightTurn(bool leftSide, SHARED_PTR<Rou
         
         // active lanes
         int startActive = std::max(0, ltr ? 0 : (int)lanes.size() - mainType.lanes);
-        int endActive = std::min((int)lanes.size(), startActive + mainType.lanes);
-        for (int i = startActive; i < endActive; i++) {
+        int endActive = std::min((int)lanes.size(), startActive + mainType.lanes) - 1;
+        for (int i = startActive; i <= endActive; i++) {
             lanes[i] = (mainType.turnType << 1) + 1;
         }
         int ind = 0;
         for (const AttachedRoadInfo & i : rs.leftLanesInfo) {
-            for (int k = 0; k < i.lanes; k++) {
+            for (int k = 0; k < i.lanes && ind <= startActive; k++, ind++) {
                 if (lanes[ind] == 0) {
                     lanes[ind] = i.turnType << 1;
                 } else if (TurnType::getSecondaryTurn(lanes[ind]) == 0) {
                     TurnType::setSecondaryTurn(lanes, ind, i.turnType);
                 } else {
                     TurnType::setTertiaryTurn(lanes, ind, i.turnType);
-                }
-                ind++;
-                if (ind > startActive) {
-                    break;
                 }
             }
         }
         ind = (int)lanes.size() - 1;
         for (const AttachedRoadInfo & i : rs.rightLanesInfo) {
-            for (int k = 0; k < i.lanes; k++) {
+            for (int k = 0; k < i.lanes && ind >= endActive; k++, ind--) {
                 if (lanes[ind] == 0) {
                     lanes[ind] = i.turnType << 1;
                 } else if (TurnType::getSecondaryTurn(lanes[ind]) == 0) {
                     TurnType::setSecondaryTurn(lanes, ind, i.turnType);
                 } else {
                     TurnType::setTertiaryTurn(lanes, ind, i.turnType);
-                }
-                ind--;
-                if (ind < endActive) {
-                    break;
                 }
             }
         }
