@@ -26,7 +26,7 @@ vector<int> parseLanes(const SHARED_PTR<RouteDataObject>& ro, double dirToNorthE
 void avoidKeepForThroughMoving(vector<SHARED_PTR<RouteSegmentResult> >& result);
 void muteAndRemoveTurns(vector<SHARED_PTR<RouteSegmentResult> >& result);
 void prepareTurnResults(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResult> >& result);
-SHARED_PTR<TurnType> getTurnByCurrentTurns(std::vector<AttachedRoadInfo> & lanesInfo, vector<int>& rawLanes,
+SHARED_PTR<TurnType> getTurnByCurrentTurns(std::vector<SHARED_PTR<AttachedRoadInfo>> & lanesInfo, vector<int>& rawLanes,
 										   int keepTurnType, bool leftSide);
 void checkTotalRoutingTime(vector<SHARED_PTR<RouteSegmentResult> > result, float cmp);
 bool containsAll(vector<int> a, vector<int> b);

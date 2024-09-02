@@ -29,9 +29,9 @@ struct RoadSplitStructure {
     bool keepLeft = false;
     bool keepRight = false;
     bool speak = false;
-    vector<AttachedRoadInfo> leftLanesInfo;
+    vector<SHARED_PTR<AttachedRoadInfo>> leftLanesInfo;
     int leftLanes = 0;
-    vector<AttachedRoadInfo> rightLanesInfo;
+    vector<SHARED_PTR<AttachedRoadInfo>> rightLanesInfo;
     int rightLanes = 0;
     int roadsOnLeft = 0;
     int addRoadsOnLeft = 0;
@@ -41,13 +41,13 @@ struct RoadSplitStructure {
     int rightMaxPrio = 0;
     
     bool allAreStraight() {
-        for (const AttachedRoadInfo & angle : leftLanesInfo) {
-            if (abs(angle.attachedAngle) > TURN_SLIGHT_DEGREE) {
+        for (const SHARED_PTR<AttachedRoadInfo> & angle : leftLanesInfo) {
+            if (abs(angle->attachedAngle) > TURN_SLIGHT_DEGREE) {
                 return false;
             }
         }
-        for (const AttachedRoadInfo & angle : rightLanesInfo) {
-            if (abs(angle.attachedAngle) > TURN_SLIGHT_DEGREE) {
+        for (const SHARED_PTR<AttachedRoadInfo> & angle : rightLanesInfo) {
+            if (abs(angle->attachedAngle) > TURN_SLIGHT_DEGREE) {
                 return false;
             }
         }
@@ -518,12 +518,12 @@ RoadSplitStructure calculateRoadSplitStructure(SHARED_PTR<RouteSegmentResult>& p
         bool smallStraightVariation = mpi < TURN_DEGREE_MIN;
         bool smallTargetVariation = abs(ex) < TURN_DEGREE_MIN;
         bool verySharpTurn = abs(ex) > 150;
-        AttachedRoadInfo ai;
-        ai.speakPriority = highwaySpeakPriority(attached->object->getHighway());
-        ai.attachedOnTheRight = ex >= 0;
-        ai.attachedAngle = deviation;
-        ai.parsedLanes = parseTurnLanes(attached->object, attached->getBearingBegin() * M_PI / 180);;
-        ai.lanes = lanes;
+        SHARED_PTR<AttachedRoadInfo> ai = std::make_shared<AttachedRoadInfo>();
+        ai->speakPriority = highwaySpeakPriority(attached->object->getHighway());
+        ai->attachedOnTheRight = ex >= 0;
+        ai->attachedAngle = deviation;
+        ai->parsedLanes = parseTurnLanes(attached->object, attached->getBearingBegin() * M_PI / 180);;
+        ai->lanes = lanes;
 
         if (!verySharpTurn || hasSharpOrReverseLane) {
             double attachedAngle = normalizeDegrees360(attached->getBearingBegin());
@@ -555,10 +555,10 @@ RoadSplitStructure calculateRoadSplitStructure(SHARED_PTR<RouteSegmentResult>& p
             }
         }
         
-        if (!turnLanesPrevSegm.empty() || ai.speakPriority != MAX_SPEAK_PRIORITY ||
+        if (!turnLanesPrevSegm.empty() || ai->speakPriority != MAX_SPEAK_PRIORITY ||
             speakPriority == MAX_SPEAK_PRIORITY) {
             if (smallTargetVariation || smallStraightVariation) {
-                if (ai.attachedOnTheRight) {
+                if (ai->attachedOnTheRight) {
                     rs.keepLeft = true;
                     rs.rightLanes += lanes;
                     rs.rightMaxPrio = std::max(rs.rightMaxPrio, highwaySpeakPriority(attached->object->getHighway()));
@@ -569,7 +569,7 @@ RoadSplitStructure calculateRoadSplitStructure(SHARED_PTR<RouteSegmentResult>& p
                     rs.leftMaxPrio = std::max(rs.leftMaxPrio, highwaySpeakPriority(attached->object->getHighway()));
                     rs.leftLanesInfo.push_back(ai);
                 }
-                rs.speak = rs.speak || ai.speakPriority <= speakPriority;
+                rs.speak = rs.speak || ai->speakPriority <= speakPriority;
             }
         }
     }
@@ -797,11 +797,11 @@ bool foundTUturn(vector<int> turnList) {
 vector<int> createCombinedTurnTypeForSingleLane(RoadSplitStructure & rs, double currentDeviation) {
     vector<double> attachedAngles;
     attachedAngles.push_back(currentDeviation);
-    for (const AttachedRoadInfo & l : rs.leftLanesInfo) {
-        attachedAngles.push_back(l.attachedAngle);
+    for (const SHARED_PTR<AttachedRoadInfo> & l : rs.leftLanesInfo) {
+        attachedAngles.push_back(l->attachedAngle);
     }
-    for (const AttachedRoadInfo & l : rs.rightLanesInfo) {
-        attachedAngles.push_back(l.attachedAngle);
+    for (const SHARED_PTR<AttachedRoadInfo> & l : rs.rightLanesInfo) {
+        attachedAngles.push_back(l->attachedAngle);
     }
     std::sort(attachedAngles.begin(), attachedAngles.end(), std::greater<double>{});
     int size = (int) attachedAngles.size();
@@ -848,16 +848,16 @@ vector<int> createCombinedTurnTypeForSingleLane(RoadSplitStructure & rs, double 
     return lanes;
 }
 
-void synteticAssignTurnTypes(RoadSplitStructure & rs, int mainLaneType, vector<AttachedRoadInfo> & roads, bool left) {
-    auto comparatorByAngle = [left](const AttachedRoadInfo& o1, const AttachedRoadInfo& o2) {
-            return (left ? 1 : -1) * (o1.attachedAngle < o2.attachedAngle ? -1 : (o1.attachedAngle > o2.attachedAngle ? 1 : 0));
+void synteticAssignTurnTypes(RoadSplitStructure & rs, int mainLaneType, vector<SHARED_PTR<AttachedRoadInfo>> & roads, bool left) {
+    auto comparatorByAngle = [left](const SHARED_PTR<AttachedRoadInfo>& o1, const SHARED_PTR<AttachedRoadInfo>& o2) {
+            return (left ? 1 : -1) * (o1->attachedAngle < o2->attachedAngle ? -1 : (o1->attachedAngle > o2->attachedAngle ? 1 : 0));
     };
-    vector<AttachedRoadInfo> & col = left ? rs.leftLanesInfo : rs.rightLanesInfo;
+    vector<SHARED_PTR<AttachedRoadInfo>> & col = left ? rs.leftLanesInfo : rs.rightLanesInfo;
     std::sort(col.begin(), col.end(), comparatorByAngle);
     int type = mainLaneType;
     for (int i = (int)col.size() - 1; i >= 0; i--) {
-        AttachedRoadInfo & info = col[i];
-        int turnByAngle = getTurnByAngle(info.attachedAngle);
+        SHARED_PTR<AttachedRoadInfo> & info = col[i];
+        int turnByAngle = getTurnByAngle(info->attachedAngle);
         if (left && turnByAngle >= type) {
             type = TurnType::getPrev(type);
         } else if (!left && turnByAngle <= type) {
@@ -865,7 +865,7 @@ void synteticAssignTurnTypes(RoadSplitStructure & rs, int mainLaneType, vector<A
         } else {
             type = turnByAngle;
         }
-        info.turnType = type;
+        info->turnType = type;
         roads.push_back(info);
     }
 }
@@ -904,61 +904,61 @@ SHARED_PTR<TurnType> createSimpleKeepLeftRightTurn(bool leftSide, SHARED_PTR<Rou
         }
     } else {
         bool ltr = rs.leftLanes < rs.rightLanes;
-        vector<AttachedRoadInfo> roads;
-        AttachedRoadInfo mainType;
-        mainType.lanes = currentLanesCount;
-        mainType.speakPriority = highwaySpeakPriority(currentSegm->object->getHighway());
-        mainType.turnType = mainLaneType;
+        vector<SHARED_PTR<AttachedRoadInfo>> roads;
+        SHARED_PTR<AttachedRoadInfo> mainType = std::make_shared<AttachedRoadInfo>();
+        mainType->lanes = currentLanesCount;
+        mainType->speakPriority = highwaySpeakPriority(currentSegm->object->getHighway());
+        mainType->turnType = mainLaneType;
         roads.push_back(mainType);
         
         synteticAssignTurnTypes(rs, mainLaneType, roads, true);
         synteticAssignTurnTypes(rs, mainLaneType, roads, false);
         // sort important last
-        std::sort(roads.begin(), roads.end(), [](const AttachedRoadInfo& o1, const AttachedRoadInfo& o2) {
-            if (o1.speakPriority == o2.speakPriority) {
-                return o1.lanes > o2.lanes;  // Descending order for lanes
+        std::sort(roads.begin(), roads.end(), [](const SHARED_PTR<AttachedRoadInfo>& o1, const SHARED_PTR<AttachedRoadInfo>& o2) {
+            if (o1->speakPriority == o2->speakPriority) {
+                return o1->lanes > o2->lanes;  // Descending order for lanes
             }
-            return o1.speakPriority > o2.speakPriority;  // Descending order for speakPriority
+            return o1->speakPriority > o2->speakPriority;  // Descending order for speakPriority
         });
-        for (AttachedRoadInfo & i : roads) {
+        for (SHARED_PTR<AttachedRoadInfo> & i : roads) {
             int sumLanes = 0;
-            for (const AttachedRoadInfo & l : roads) {
-                sumLanes += l.lanes;
+            for (const SHARED_PTR<AttachedRoadInfo> & l : roads) {
+                sumLanes += l->lanes;
             }
             if (sumLanes < 2 * lanes.size()) {
                 // max 2 attached per lane is enough
                 break;
             }
-            i.lanes = 1; // if not enough reset to 1 lane
+            i->lanes = 1; // if not enough reset to 1 lane
         }
         
         // active lanes
-        int startActive = std::max(0, ltr ? 0 : (int)lanes.size() - mainType.lanes);
-        int endActive = std::min((int)lanes.size(), startActive + mainType.lanes) - 1;
+        int startActive = std::max(0, ltr ? 0 : (int)lanes.size() - mainType->lanes);
+        int endActive = std::min((int)lanes.size(), startActive + mainType->lanes) - 1;
         for (int i = startActive; i <= endActive; i++) {
-            lanes[i] = (mainType.turnType << 1) + 1;
+            lanes[i] = (mainType->turnType << 1) + 1;
         }
         int ind = 0;
-        for (const AttachedRoadInfo & i : rs.leftLanesInfo) {
-            for (int k = 0; k < i.lanes && ind <= startActive; k++, ind++) {
+        for (const SHARED_PTR<AttachedRoadInfo> & i : rs.leftLanesInfo) {
+            for (int k = 0; k < i->lanes && ind <= startActive; k++, ind++) {
                 if (lanes[ind] == 0) {
-                    lanes[ind] = i.turnType << 1;
+                    lanes[ind] = i->turnType << 1;
                 } else if (TurnType::getSecondaryTurn(lanes[ind]) == 0) {
-                    TurnType::setSecondaryTurn(lanes, ind, i.turnType);
+                    TurnType::setSecondaryTurn(lanes, ind, i->turnType);
                 } else {
-                    TurnType::setTertiaryTurn(lanes, ind, i.turnType);
+                    TurnType::setTertiaryTurn(lanes, ind, i->turnType);
                 }
             }
         }
         ind = (int)lanes.size() - 1;
-        for (const AttachedRoadInfo & i : rs.rightLanesInfo) {
-            for (int k = 0; k < i.lanes && ind >= endActive; k++, ind--) {
+        for (const SHARED_PTR<AttachedRoadInfo> & i : rs.rightLanesInfo) {
+            for (int k = 0; k < i->lanes && ind >= endActive; k++, ind--) {
                 if (lanes[ind] == 0) {
-                    lanes[ind] = i.turnType << 1;
+                    lanes[ind] = i->turnType << 1;
                 } else if (TurnType::getSecondaryTurn(lanes[ind]) == 0) {
-                    TurnType::setSecondaryTurn(lanes, ind, i.turnType);
+                    TurnType::setSecondaryTurn(lanes, ind, i->turnType);
                 } else {
-                    TurnType::setTertiaryTurn(lanes, ind, i.turnType);
+                    TurnType::setTertiaryTurn(lanes, ind, i->turnType);
                 }
             }
         }
@@ -1078,12 +1078,12 @@ SHARED_PTR<TurnType> createKeepLeftRightTurnBasedOnTurnTypes(RoadSplitStructure&
     return t;
 }
 
-SHARED_PTR<TurnType> getTurnByCurrentTurns(std::vector<AttachedRoadInfo> & otherSideLanesInfo, vector<int>& rawLanes,
+SHARED_PTR<TurnType> getTurnByCurrentTurns(std::vector<SHARED_PTR<AttachedRoadInfo>> & otherSideLanesInfo, vector<int>& rawLanes,
 										   int keepTurnType, bool leftSide) {
     vector<int> otherSideTurns;
 	if (!otherSideLanesInfo.empty()) {
-		for (AttachedRoadInfo & li : otherSideLanesInfo) {
-			for (int i : li.parsedLanes) {
+		for (SHARED_PTR<AttachedRoadInfo> & li : otherSideLanesInfo) {
+			for (int i : li->parsedLanes) {
 				TurnType::collectTurnTypes(i, otherSideTurns);
 			}
 		}
