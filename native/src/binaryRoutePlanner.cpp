@@ -44,8 +44,8 @@ void printRoad(const char* prefix, RouteSegment* segment) {
 			parent = parent + ", name ('" + parentName + "')";
 		}
 	}
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "%s Road (%lld) %s ind=%d->%d ds=%f es=%f pend=%d %s",
-					  prefix, segment->getRoad()->id / 64, name.c_str(), segment->getSegmentStart(), segment->getSegmentEnd(),
+	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "%s Road (%u) %s ind=%d->%d ds=%f es=%f pend=%d %s",
+					  prefix, (unsigned int)(segment->getRoad()->id / 64), name.c_str(), segment->getSegmentStart(), segment->getSegmentEnd(),
 					  segment->distanceFromStart, segment->distanceToEnd,
 					  parentRoute != nullptr ? parentRoute->segmentEnd : 0,
 					  parent.c_str());
@@ -370,6 +370,10 @@ vector<SHARED_PTR<RouteSegment>> searchRouteInternal(RoutingContext* ctx, SHARED
 			result.push_back(segment);
 			if (ctx->dijkstraMode != 0) {
 				skipSegment = true;
+				auto& visitedSegments = (forwardSearch ? visitedDirectSegments : visitedOppositeSegments);
+				if (!containsKey(visitedSegments, calculateRoutePointId(segment))) {
+					visitedSegments[calculateRoutePointId(segment)] = segment; // insert_or_assign
+				}
 			} else {
 				break;
 			}
