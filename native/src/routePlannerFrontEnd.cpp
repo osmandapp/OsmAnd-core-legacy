@@ -7,7 +7,10 @@
 #include "routeSegment.h"
 #include "routeSegmentResult.h"
 #include "routingConfiguration.h"
-#include "gpxSegmentsApproximation.h"
+#include "gpxRouteApproximation.h"
+#include "gpxMultiSegmentsApproximation.h"
+#include "gpxSimplePointsMatchApproximation.h"
+#include "gpxAdvancedPointsMatchApproximation.h"
 
 SHARED_PTR<RoutingContext> RoutePlannerFrontEnd::buildRoutingContext(
 	SHARED_PTR<RoutingConfiguration> config, RouteCalculationMode rm /*= RouteCalculationMode::NORMAL*/) {
@@ -262,7 +265,7 @@ void RoutePlannerFrontEnd::searchGpxSegments(SHARED_PTR<GpxRouteApproximation>& 
 		gctx->ctx->progress = std::make_shared<RouteCalculationProgress>();
 	}
 
-	GpxSegmentsApproximation().fastGpxApproximation(this, gctx, gpxPoints);
+	GpxSimplePointsMatchApproximation().gpxApproximation(this, gctx, gpxPoints);
 	calculateGpxRoute(gctx, gpxPoints);
 }
 

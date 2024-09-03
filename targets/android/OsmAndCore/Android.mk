@@ -74,8 +74,11 @@ LOCAL_SRC_FILES := \
 	$(OSMAND_CORE_RELATIVE)/src/hhRouteDataStructure.cpp \
 	$(OSMAND_CORE_RELATIVE)/src/hhRoutePlanner.cpp \
 	$(OSMAND_CORE_RELATIVE)/src/NetworkDBPointRouteInfo.cpp \
-	$(OSMAND_CORE_RELATIVE)/src/gpxSegmentsApproximation.cpp
-	
+	$(OSMAND_CORE_RELATIVE)/src/gpxRouteApproximation.cpp \
+	$(OSMAND_CORE_RELATIVE)/src/gpxMultiSegmentsApproximation.cpp \
+	$(OSMAND_CORE_RELATIVE)/src/gpxSimplePointsMatchApproximation.cpp \
+	$(OSMAND_CORE_RELATIVE)/src/gpxAdvancedPointsMatchApproximation.cpp
+
 ifdef OSMAND_PROFILE_NATIVE_OPERATIONS
 	LOCAL_CFLAGS += \
 		-DOSMAND_NATIVE_PROFILING
