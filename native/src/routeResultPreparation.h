@@ -10,6 +10,7 @@ const string UNMATCHED_HIGHWAY_TYPE = "unmatched";
 struct RouteSegmentResult;
 struct FinalRouteSegment;
 struct CombineAreaRoutePoint;
+struct AttachedRoadInfo;
 
 bool segmentLineBelongsToPolygon(CombineAreaRoutePoint& p, CombineAreaRoutePoint& n,
                                  vector<CombineAreaRoutePoint>& originalWay);
@@ -25,7 +26,7 @@ vector<int> parseLanes(const SHARED_PTR<RouteDataObject>& ro, double dirToNorthE
 void avoidKeepForThroughMoving(vector<SHARED_PTR<RouteSegmentResult> >& result);
 void muteAndRemoveTurns(vector<SHARED_PTR<RouteSegmentResult> >& result);
 void prepareTurnResults(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResult> >& result);
-SHARED_PTR<TurnType> getTurnByCurrentTurns(std::vector<std::vector<int>> lanesInfo, vector<int>& rawLanes,
+SHARED_PTR<TurnType> getTurnByCurrentTurns(std::vector<SHARED_PTR<AttachedRoadInfo>> & lanesInfo, vector<int>& rawLanes,
 										   int keepTurnType, bool leftSide);
 void checkTotalRoutingTime(vector<SHARED_PTR<RouteSegmentResult> > result, float cmp);
 bool containsAll(vector<int> a, vector<int> b);
@@ -44,7 +45,7 @@ bool hasAllowedLanes(int mainTurnType, vector<int>& lanesArray, int startActiveI
 int countOccurrences(const string& haystack, char needle);
 int highwaySpeakPriority(const string& highway);
 int getTurnByAngle(double angle);
-bool isSwitchToMotorwayLink(SHARED_PTR<RouteSegmentResult>& curr);
+bool isSwitchToLink(SHARED_PTR<RouteSegmentResult>& curr, SHARED_PTR<RouteSegmentResult>& prev);
 bool twiceRoadPresent(vector<SHARED_PTR<RouteSegmentResult> >& result, int i);
 void setActiveTurns(vector<int> & rawLanes, int activeBeginIndex, int activeEndIndex);
 bool isKeepTurn(SHARED_PTR<TurnType> t);
