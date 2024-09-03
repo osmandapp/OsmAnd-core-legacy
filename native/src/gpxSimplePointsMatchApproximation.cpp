@@ -1,7 +1,7 @@
-#include <vector>
+#include "gpxSimplePointsMatchApproximation.h"
+#include "gpxRouteApproximation.h"
 
 #include "routePlannerFrontEnd.h"
-#include "gpxSimplePointsMatchApproximation.h"
 
 void GpxSimplePointsMatchApproximation::gpxApproximation(RoutePlannerFrontEnd* frontEnd,
                                                     SHARED_PTR<GpxRouteApproximation>& gctx,
@@ -136,7 +136,7 @@ SHARED_PTR<GpxPoint> GpxSimplePointsMatchApproximation::findNextRoutablePoint(Ro
                                                                      std::vector<SHARED_PTR<GpxPoint>>& gpxPoints,
                                                                      int searchStart) {
     for (int i = searchStart; i < gpxPoints.size(); i++) {
-        if (frontEnd->initRoutingPoint(gpxPoints.at(i), gctx, distThreshold)) {
+        if (gctx->initRoutingPoint(gpxPoints.at(i), gctx, distThreshold)) {
             return gpxPoints.at(i);
         }
     }

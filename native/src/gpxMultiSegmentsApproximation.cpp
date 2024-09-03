@@ -2,9 +2,9 @@
 
 // GpxMultiSegmentsApproximation (port)
 
+// TODO: switch between methods (pass from Java)
 // TODO: port GpxMultiSegmentsApproximation class
 // TODO: port GpxPoint.object and generateGpxPoints()
 // TODO: review Java commits to calculateGpxRoute() method
 
-// TODO: separate GpxRouteApproximation from routePlannetFrontend
-// TODO: implement switch between algorithms
+// DONE: separate GpxRouteApproximation from routePlannetFrontend

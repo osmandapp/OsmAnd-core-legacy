@@ -12,16 +12,18 @@
 #include "binaryRoutePlanner.h"
 #include "java_renderRules.h"
 #include "java_wrap.h"
+
 #include "rendering.h"
 #include "routePlannerFrontEnd.h"
 #include "routingContext.h"
 #include "transportRoutePlanner.h"
 #include "transportRouteResult.h"
 #include "transportRouteResultSegment.h"
-#include "transportRouteSegment.h"
+// #include "transportRouteSegment.h"
 #include "transportRoutingConfiguration.h"
 #include "transportRoutingContext.h"
 #include "hhRouteDataStructure.h"
+#include "gpxRouteApproximation.h"
 #include "Logging.h"
 
 JavaVM* globalJVM = NULL;
