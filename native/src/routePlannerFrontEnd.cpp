@@ -1,3 +1,4 @@
+#include <gpxMultiSegmentsApproximation.h>
 #ifndef _OSMAND_ROUTE_PLANNER_FRONT_END_CPP
 #define _OSMAND_ROUTE_PLANNER_FRONT_END_CPP
 
@@ -659,7 +660,7 @@ void RoutePlannerFrontEnd::searchGpxRoute(SHARED_PTR<GpxRouteApproximation>& gct
 				GpxSimplePointsMatchApproximation().gpxApproximation(this, gctx, gpxPoints);
 				break;
 			case GPX_OSM_MULTISEGMENT_SCAN_ALGORITHM:
-				// under construction
+				GpxMultiSegmentsApproximation(this, gctx, gpxPoints).gpxApproximation();
 				break;
 			case GPX_OSM_ADVANCED_POINTS_MATCH_ALGORITHM:
 				// under construction
