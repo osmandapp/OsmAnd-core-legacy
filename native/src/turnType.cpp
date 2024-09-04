@@ -39,14 +39,14 @@ SHARED_PTR<TurnType> TurnType::ptrStraight() {
 
 int TurnType::getActiveCommonLaneTurn() {
 	if (lanes.empty()) {
-		return C;
+		return -1;
 	}
 	for (int i = 0; i < lanes.size(); i++) {
 		if (lanes[i] % 2 == 1) {
 			return getPrimaryTurn(lanes[i]);
 		}
 	}
-	return C;
+	return -1;
 }
 
 string TurnType::toXmlString() {
