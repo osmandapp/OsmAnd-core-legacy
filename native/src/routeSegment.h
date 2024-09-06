@@ -64,15 +64,15 @@ struct RouteSegment {
 	inline uint16_t getSegmentStart() { return segmentStart; }
 
 	inline uint16_t getSegmentEnd() { return segmentEnd; }
-    
+
     inline int getStartPointX() { return road->getPoint31XTile(segmentStart); }
 
     inline int getStartPointY() { return road->getPoint31YTile(segmentStart); }
-    
+
     inline int getEndPointY() { return road->getPoint31YTile(segmentEnd); }
-    
+
     inline int getEndPointX() { return road->getPoint31XTile(segmentEnd); }
-    
+
     float getDistanceFromStart() { return distanceFromStart; }
 
 	inline bool isPositive() { return segmentEnd > segmentStart; }
@@ -84,7 +84,7 @@ struct RouteSegment {
 	inline SHARED_PTR<RouteSegment> getParentRoute();
 	inline bool isNull();
 
-	static SHARED_PTR<RouteSegment> initRouteSegment(SHARED_PTR<RouteSegment>& th, bool positiveDirection) {
+	static SHARED_PTR<RouteSegment> initRouteSegment(const SHARED_PTR<RouteSegment>& th, bool positiveDirection) {
 		if (th->segmentStart == 0 && !positiveDirection) {
 			return SHARED_PTR<RouteSegment>();
 		}
@@ -146,6 +146,28 @@ struct RouteSegment {
 		  distanceFromStart(0),
 		  distanceToEnd(0),
 		  isFinalSegment(false) {}
+
+	virtual ~RouteSegment() = default;
+
+	virtual std::string toString() {
+		std::string dst;
+		if (road != nullptr) {
+			int x = road->getPoint31XTile(segmentStart);
+			int y = road->getPoint31YTile(segmentStart);
+			int xe = road->getPoint31XTile(segmentEnd);
+			int ye = road->getPoint31YTile(segmentEnd);
+			dst = std::to_string(((int)(squareRootDist31(x, y, xe, ye) * 10)) / 10.0f) + " m";
+		}
+		if (distanceFromStart != 0) {
+			dst = "dstStart=" + std::to_string((int)(distanceFromStart * 10) / 10.0f);
+		}
+		std::string rd;
+		if (road != nullptr) {
+			rd = road->toString();
+		}
+		std::string ss = "[" + std::to_string(segmentStart) + "-" + std::to_string(segmentEnd) + "]";
+		return rd + " " + ss + " " + dst;
+	}
 };
 
 inline bool RouteSegment::isNull() {
@@ -179,6 +201,15 @@ struct RouteSegmentPoint : RouteSegment {
 	vector<SHARED_PTR<RouteSegmentPoint>> others;
 
 	LatLon getPreciseLatLon() { return LatLon(get31LatitudeY(preciseY), get31LongitudeX(preciseX)); }
+
+	std::string toString() override {
+		std::stringstream ss;
+		ss
+			<< segmentStart << " "
+			<< "(" << getPreciseLatLon().lat << "," << getPreciseLatLon().lon << ")"
+			<< ": Road(" << road->getId() / 64 << ")";
+		return ss.str(); // String.format("%d (%s): %s", segStart, getPreciseLatLon(), road);
+	}
 };
 
 struct FinalRouteSegment : RouteSegment {

@@ -792,6 +792,10 @@ struct RouteDataObject {
 		}
 		return false;
 	}
+
+	std::string toString() {
+		return "Road(" + std::to_string(getId() / 64) + ")";
+	}
 };
 
 struct IndexStringTable {
