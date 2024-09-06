@@ -8,7 +8,7 @@
 
 // TODO: switch between methods (pass from Java)
 // DONE: port GpxMultiSegmentsApproximation class
-// TODO: port GpxPoint.object and generateGpxPoints()
+// DONE: port GpxPoint.object and generateGpxPoints()
 // TODO: review Java commits to calculateGpxRoute() method
 // DONE: separate GpxRouteApproximation from routePlannetFrontend
 
@@ -225,7 +225,7 @@ SHARED_PTR<RouteSegmentPoint> GpxMultiSegmentsApproximation::initStartPoint(cons
 bool GpxMultiSegmentsApproximation::initRoutingPoint(const SHARED_PTR<GpxPoint>& start, float distThreshold) const {
     if (start != nullptr && start->pnt == nullptr) {
         gctx->routePointsSearched++;
-        double gpxDir = 0; // start->object->directionRoute(start->ind, true); // TODO port GpxPoint.object from Java !
+        double gpxDir = start->object->directionRoute(start->ind, true);
         SHARED_PTR<RouteSegmentPoint> rsp = findRouteSegment(start->x31, start->y31, gctx->ctx);
         if (rsp == nullptr || getDistance(get31LatitudeY(rsp->preciseY), get31LongitudeX(rsp->preciseX),
                                           start->lat, start->lon) > distThreshold) {

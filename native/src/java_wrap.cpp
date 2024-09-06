@@ -1841,20 +1841,21 @@ extern "C" JNIEXPORT jboolean JNICALL Java_net_osmand_NativeLibrary_nativeNeedRe
 extern "C" JNIEXPORT jobject JNICALL Java_net_osmand_NativeLibrary_nativeSearchGpxRoute(JNIEnv* ienv, jobject obj,
 	jobject jCtx, jobjectArray jGpxPoints, jobjectArray regions, bool useGeo)
 {
-	vector<SHARED_PTR<GpxPoint>> gpxPoints;
-	for (int i = 0; i < ienv->GetArrayLength(jGpxPoints); i++) {
-		jobject jGpxPoint = ienv->GetObjectArrayElement(jGpxPoints, i);
-		SHARED_PTR<GpxPoint> gp = shared_ptr<GpxPoint>(
-			new GpxPoint(i, ienv->GetDoubleField(jGpxPoint, jfield_nativeGpxPointApproximation_lat),
-						 ienv->GetDoubleField(jGpxPoint, jfield_nativeGpxPointApproximation_lon),
-						 ienv->GetDoubleField(jGpxPoint, jfield_nativeGpxPointApproximation_cumDist)));
-		gpxPoints.push_back(gp);
-		ienv->DeleteLocalRef(jGpxPoint);
-	}
 	jobject progress = ienv->GetObjectField(jCtx, jfield_RoutingContext_calculationProgress);
 	RoutingContext* c = getRoutingContext(ienv, jCtx, NO_DIRECTION, false, progress);
 	SHARED_PTR<GpxRouteApproximation> r = shared_ptr<GpxRouteApproximation>(new GpxRouteApproximation(c));
 	SHARED_PTR<RoutePlannerFrontEnd> rpfe = shared_ptr<RoutePlannerFrontEnd>(new RoutePlannerFrontEnd());
+
+	std::vector<std::pair<double, double>> coordinates;
+	for (int i = 0; i < ienv->GetArrayLength(jGpxPoints); i++) {
+		jobject jGpxPoint = ienv->GetObjectArrayElement(jGpxPoints, i);
+		double lat = ienv->GetDoubleField(jGpxPoint, jfield_nativeGpxPointApproximation_lat);
+		double lon = ienv->GetDoubleField(jGpxPoint, jfield_nativeGpxPointApproximation_lon);
+		coordinates.push_back(std::pair<double, double>(lat, lon));
+		ienv->DeleteLocalRef(jGpxPoint);
+	}
+	std::vector<SHARED_PTR<GpxPoint>> gpxPoints = rpfe->generateGpxPoints(r, coordinates);
+
 	rpfe->setUseGeometryBasedApproximation(useGeo);
 	rpfe->searchGpxRoute(r, gpxPoints);
 	jobject jResult = ienv->NewObject(jclass_GpxRouteApproximationResult, jmethod_GpxRouteApproximationResult_init);

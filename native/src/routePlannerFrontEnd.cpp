@@ -489,8 +489,10 @@ SHARED_PTR<RouteSegmentResult> RoutePlannerFrontEnd::generateStraightLineSegment
 	auto rdo = make_shared<RouteDataObject>(reg);
 	unsigned long size = points.size();
 
-	vector<uint32_t> x(size);
-	vector<uint32_t> y(size);
+	vector<uint32_t> x;
+	vector<uint32_t> y;
+	x.reserve(size);
+	y.reserve(size);
 	double distance = 0;
 	double distOnRoadToPass = 0;
 	pair<double, double> prev = {NAN, NAN};
@@ -521,12 +523,14 @@ SHARED_PTR<RouteSegmentResult> RoutePlannerFrontEnd::generateStraightLineSegment
 
 std::vector<SHARED_PTR<GpxPoint>> RoutePlannerFrontEnd::generateGpxPoints(SHARED_PTR<GpxRouteApproximation>& gctx, const std::vector<std::pair<double, double>>& locationsHolder)
 {
-	vector<SHARED_PTR<GpxPoint>> gpxPoints(locationsHolder.size());
 	SHARED_PTR<GpxPoint> prev = nullptr;
+	vector<SHARED_PTR<GpxPoint>> gpxPoints(locationsHolder.size());
+	SHARED_PTR<RouteDataObject> o = generateStraightLineSegment(0, locationsHolder)->object;
 	for(int i = 0; i < locationsHolder.size(); i++)
 	{
 		const auto loc = locationsHolder[i];
 		auto p = make_shared<GpxPoint>(i, loc.first, loc.second, prev != nullptr ? getDistance(loc.first, loc.second, prev->lat, prev->lon) + prev->cumDist : 0);
+		p->object = o;
 		gpxPoints[i] = p;
 		gctx->routeDistance = (int) p->cumDist;
 		prev = p;
