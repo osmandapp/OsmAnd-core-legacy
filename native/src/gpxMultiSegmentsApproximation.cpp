@@ -28,7 +28,9 @@ GpxMultiSegmentsApproximation::GpxMultiSegmentsApproximation(const SHARED_PTR<Gp
 }
 
 void GpxMultiSegmentsApproximation::debugln(const std::string& line) {
-    OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "%s", line.c_str());
+    if (DEBUG) {
+        OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "%s", line.c_str());
+    }
 }
 
 GpxMultiSegmentsApproximation::RouteSegmentAppr::RouteSegmentAppr(int start, const SHARED_PTR<RouteSegmentPoint>& pnt)
