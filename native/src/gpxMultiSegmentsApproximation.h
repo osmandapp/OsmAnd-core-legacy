@@ -29,15 +29,13 @@ public:
     void gpxApproximation();
 
 private:
-    class RouteSegmentAppr {
-    public:
+    struct RouteSegmentAppr {
         const SHARED_PTR<RouteSegment> segment;
         const SHARED_PTR<RouteSegmentAppr> parent;
         const int gpxStart;
         int gpxLen = 0;
         double maxDistToGpx = 0;
 
-    public:
         RouteSegmentAppr(int start, const SHARED_PTR<RouteSegmentPoint>& pnt);
         RouteSegmentAppr(const SHARED_PTR<RouteSegmentAppr>& parent, const SHARED_PTR<RouteSegment>& segment);
         int gpxNext() const;

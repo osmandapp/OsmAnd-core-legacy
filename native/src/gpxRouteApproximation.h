@@ -18,13 +18,13 @@ struct GpxRouteApproximation {
 	int routeDistCalculations = 0;
 	vector<SHARED_PTR<GpxPoint>> finalPoints;
 	vector<SHARED_PTR<RouteSegmentResult>> fullRoute;
-	int routeDistance;
-	int routeGapDistance;
-	int routeDistanceUnmatched;
+	// int routeDistance = 0;
+	// int routeGapDistance = 0;
+	// int routeDistanceUnmatched = 0;
 
-	void setRouter(RoutePlannerFrontEnd* router);
 	GpxRouteApproximation(RoutingContext* rctx);
 	GpxRouteApproximation(const GpxRouteApproximation& gctx);
+	void setRouter(RoutePlannerFrontEnd* router);
 
 	void searchGpxRouteByRouting(SHARED_PTR<GpxRouteApproximation>& gctx, vector<SHARED_PTR<GpxPoint>>& gpxPoints);
 

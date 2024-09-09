@@ -530,7 +530,7 @@ std::vector<SHARED_PTR<GpxPoint>> RoutePlannerFrontEnd::generateGpxPoints(SHARED
 		auto p = make_shared<GpxPoint>(i, loc.first, loc.second, prev != nullptr ? getDistance(loc.first, loc.second, prev->lat, prev->lon) + prev->cumDist : 0);
 		p->object = o;
 		gpxPoints[i] = p;
-		gctx->routeDistance = (int) p->cumDist;
+		// gctx->routeDistance = (int) p->cumDist;
 		prev = p;
 	}
 	return gpxPoints;

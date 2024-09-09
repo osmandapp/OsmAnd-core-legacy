@@ -5,12 +5,6 @@
 #include "binaryRoutePlanner.h"
 #include "routeCalculationProgress.h"
 
-// setRouter() must be called by router before approximation
-// both constructors are saved "as is" for iOS compatibility
-void GpxRouteApproximation::setRouter(RoutePlannerFrontEnd* router) {
-	this->router = router;
-}
-
 GpxRouteApproximation::GpxRouteApproximation(RoutingContext* rctx) {
 	ctx = rctx;
 }
@@ -18,7 +12,13 @@ GpxRouteApproximation::GpxRouteApproximation(RoutingContext* rctx) {
 GpxRouteApproximation::GpxRouteApproximation(const GpxRouteApproximation& gctx) {
 	ctx = gctx.ctx;
 	router = gctx.router;
-	routeDistance = gctx.routeDistance;
+	// routeDistance = gctx.routeDistance;
+}
+
+// setRouter() must be called by router before approximation
+// both constructors are saved "as is" for iOS compatibility
+void GpxRouteApproximation::setRouter(RoutePlannerFrontEnd* router) {
+	this->router = router;
 }
 
 void GpxRouteApproximation::searchGpxRouteByRouting(SHARED_PTR<GpxRouteApproximation>& gctx,
@@ -204,7 +204,10 @@ double GpxRouteApproximation::distFromLastPoint(double lat, double lon) {
 }
 
 LatLon GpxRouteApproximation::getLastPoint() {
-	return fullRoute[fullRoute.size() - 1]->getEndPoint();
+	if (fullRoute.size() > 0) {
+		return fullRoute[fullRoute.size() - 1]->getEndPoint();
+	}
+	throw std::out_of_range("getLastPoint(): fullRoute is empty");
 }
 
 void GpxRouteApproximation::reconstructFinalPointsFromFullRoute() {
@@ -387,7 +390,7 @@ void GpxRouteApproximation::calculateGpxRoute(SHARED_PTR<GpxRouteApproximation>&
 				lastStraightLine.clear();
 			}
 			if (gctx->distFromLastPoint(startPoint.lat, startPoint.lon) > 1) {
-				gctx->routeGapDistance += gctx->distFromLastPoint(startPoint.lat, startPoint.lon);
+				// gctx->routeGapDistance += gctx->distFromLastPoint(startPoint.lat, startPoint.lon);
 				OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
 								  "????? gap of route point = %f lat = %f lon = %f, gap of actual gpxPoint = %f, lat = %f lon = %f ",
 								  gctx->distFromLastPoint(startPoint.lat, startPoint.lon), startPoint.lat, startPoint.lon,
@@ -449,7 +452,7 @@ void GpxRouteApproximation::addStraightLine(const SHARED_PTR<GpxRouteApproximati
 		y.push_back(get31TileNumberY(l.lat));
 		if (t >= 0) {
 			double dist = squareRootDist31(x[t], y[t], x[t + 1], y[t + 1]);
-			gctx->routeDistanceUnmatched += dist;
+			// gctx->routeDistanceUnmatched += dist;
 		}
 	}
 	rdo->pointsX = x;
