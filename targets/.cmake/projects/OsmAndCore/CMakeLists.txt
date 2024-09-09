@@ -109,7 +109,6 @@ add_library(osmand SHARED
 	"${ROOT}/src/gpxRouteApproximation.cpp"
 	"${ROOT}/src/gpxMultiSegmentsApproximation.cpp"
 	"${ROOT}/src/gpxSimplePointsMatchApproximation.cpp"
-	"${ROOT}/src/gpxAdvancedPointsMatchApproximation.cpp"
 	${pd_sources}
 )
 

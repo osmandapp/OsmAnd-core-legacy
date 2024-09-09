@@ -59,7 +59,7 @@ private:
         SHARED_PTR<RouteSegmentAppr>,
         std::vector<SHARED_PTR<RouteSegmentAppr>>,
         decltype(METRICS_COMPARATOR)
-    > queue;
+    > queue; // initialized in constructor
 
     std::unordered_set<int64_t> visited;
 
