@@ -82,10 +82,10 @@ private:
                                                         const SHARED_PTR<RouteSegmentPoint>& rsp);
     static void debugln(const std::string& line);
     SHARED_PTR<RouteSegmentAppr>& peakMinFromQueue(const SHARED_PTR<RouteSegmentAppr>& bestRoute,
-                                                   SHARED_PTR<RouteSegmentAppr>& bestNext);
+                                                   SHARED_PTR<RouteSegmentAppr>& bestNextMutableRef); // ref -> ref
     double gpxDist(int gpxL1, int gpxL2) const;
     static void wrapupRoute(const std::vector<SHARED_PTR<GpxPoint>>& gpxPoints,
-                            SHARED_PTR<RouteSegmentAppr>& bestRoute);
+                            const SHARED_PTR<RouteSegmentAppr>& bestRouteConst);
 };
 
 #endif

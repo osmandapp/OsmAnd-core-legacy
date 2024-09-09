@@ -253,19 +253,21 @@ double GpxMultiSegmentsApproximation::gpxDist(int gpxL1, int gpxL2) const {
 }
 
 SHARED_PTR<GpxMultiSegmentsApproximation::RouteSegmentAppr>& GpxMultiSegmentsApproximation::peakMinFromQueue(
-    const SHARED_PTR<RouteSegmentAppr>& bestRoute, SHARED_PTR<RouteSegmentAppr>& bestNext) {
-    while (!queue.empty() && bestNext == nullptr) {
-        bestNext = queue.top();
+    const SHARED_PTR<RouteSegmentAppr>& bestRoute, SHARED_PTR<RouteSegmentAppr>& bestNextMutableRef) {
+    while (!queue.empty() && bestNextMutableRef == nullptr) {
+        bestNextMutableRef = queue.top();
         queue.pop();
-        if ((bestRoute != nullptr && gpxDist(bestRoute->gpxNext(), bestNext->gpxNext()) > MAX_DEPTH_ROLLBACK)) {
-            bestNext = nullptr;
+        if ((bestRoute != nullptr && gpxDist(bestRoute->gpxNext(), bestNextMutableRef->gpxNext()) >
+            MAX_DEPTH_ROLLBACK)) {
+            bestNextMutableRef = nullptr;
         }
     }
-    return bestNext;
+    return bestNextMutableRef;
 }
 
 void GpxMultiSegmentsApproximation::wrapupRoute(const std::vector<SHARED_PTR<GpxPoint>>& gpxPoints,
-                                                SHARED_PTR<RouteSegmentAppr>& bestRoute) {
+                                                const SHARED_PTR<RouteSegmentAppr>& bestRouteConst) {
+    SHARED_PTR<RouteSegmentAppr> bestRoute = bestRouteConst;
     if (bestRoute->parent == nullptr) {
         return;
     }
