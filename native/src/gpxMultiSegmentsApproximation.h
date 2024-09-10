@@ -32,13 +32,14 @@ public:
 private:
     struct RouteSegmentAppr {
         const SHARED_PTR<RouteSegment> segment;
-        const SHARED_PTR<RouteSegmentAppr> parent; // clone
+        const SHARED_PTR<RouteSegmentAppr> parent;
         const int gpxStart;
         int gpxLen = 0;
         double maxDistToGpx = 0;
 
         RouteSegmentAppr(int start, const SHARED_PTR<RouteSegmentPoint>& pnt);
         RouteSegmentAppr(const SHARED_PTR<RouteSegmentAppr>& parent, const SHARED_PTR<RouteSegment>& segment);
+
         int gpxNext() const;
         double metric() const;
         std::string toString() const;
@@ -61,6 +62,8 @@ private:
     > queue; // initialized in constructor
 
     std::unordered_set<int64_t> visited;
+
+    std::vector<std::weak_ptr<RouteSegmentAppr>> garbageValidationList;
 
 private:
     void loadConnections(const SHARED_PTR<RouteSegmentAppr>& last,
