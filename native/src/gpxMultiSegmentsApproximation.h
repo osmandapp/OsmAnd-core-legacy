@@ -21,7 +21,7 @@ class GpxMultiSegmentsApproximation {
     static constexpr bool PRIORITY_ALGORITHM = !EAGER_ALGORITHM;
     static constexpr int ROUTE_POINTS = 12;
     static constexpr int GPX_MAX = 30;
-    static constexpr bool DEBUG = false;
+    static constexpr bool VERBOSE = false; // DEBUG
 
 public:
     GpxMultiSegmentsApproximation(const SHARED_PTR<GpxRouteApproximation>& gctx,

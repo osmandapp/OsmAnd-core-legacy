@@ -46,7 +46,7 @@ GpxMultiSegmentsApproximation::~GpxMultiSegmentsApproximation() {
 }
 
 void GpxMultiSegmentsApproximation::debugln(const std::string& line) {
-    if (DEBUG) {
+    if (VERBOSE) {
         OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "%s", line.c_str());
     }
 }
@@ -110,7 +110,7 @@ void GpxMultiSegmentsApproximation::addSegmentInternal(const SHARED_PTR<RouteSeg
                                                        const SHARED_PTR<RouteSegment>& sg,
                                                        std::vector<SHARED_PTR<RouteSegmentAppr>>& connected) {
     bool accept = approximateSegment(last, sg, connected);
-    if (!accept && DEBUG) {
+    if (!accept && VERBOSE) {
         debugln("** " + sg->toString() + " - not accepted");
     }
 }
@@ -189,14 +189,14 @@ bool GpxMultiSegmentsApproximation::addConnected(const SHARED_PTR<RouteSegmentAp
         double dist = squareRootDist31((int)pp_x, (int)pp_y, c->segment->getEndPointX(), c->segment->getEndPointY());
         c->maxDistToGpx = std::max(c->maxDistToGpx, dist);
         if (dist > minPointApproximation) {
-            if (DEBUG) {
+            if (VERBOSE) {
                 debugln("** " + c->toString() + " - ignore " + std::to_string(dist));
             }
             return false;
         }
     }
     connected.push_back(c);
-    if (DEBUG) {
+    if (VERBOSE) {
         debugln("** " + c->toString() + " - accept");
     }
     return true;
@@ -316,7 +316,7 @@ void GpxMultiSegmentsApproximation::wrapupRoute(const std::vector<SHARED_PTR<Gpx
         lastRes = routeRes;
     }
     std::reverse(res.begin(), res.end());
-    if (DEBUG) {
+    if (VERBOSE) {
         debugln("ROUTE " + std::to_string(startInd) + " -> " + std::to_string(last) + ":");
         for (const SHARED_PTR<RouteSegmentResult>& r : res) {
             debugln(" " + r->toString());
@@ -366,7 +366,7 @@ void GpxMultiSegmentsApproximation::gpxApproximation() {
         }
         bestNext = peakMinFromQueue(bestRoute, bestNext); // try to revert to MAX_DEPTH_ROLLBACK if bestNext null
         if (bestNext != nullptr) {
-            if (DEBUG) {
+            if (VERBOSE) {
                 int ind = bestNext->gpxStart + bestNext->gpxLen;
                 std::string ll = std::to_string(gpxPoints.at(ind)->lat) + "," + std::to_string(gpxPoints.at(ind)->lon);
                 debugln(bestNext->toString() + " " + ll);
