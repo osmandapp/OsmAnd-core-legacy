@@ -26,12 +26,13 @@ class GpxMultiSegmentsApproximation {
 public:
     GpxMultiSegmentsApproximation(const SHARED_PTR<GpxRouteApproximation>& gctx,
                                   const std::vector<SHARED_PTR<GpxPoint>>& gpxPoints);
+    ~GpxMultiSegmentsApproximation();
     void gpxApproximation();
 
 private:
     struct RouteSegmentAppr {
         const SHARED_PTR<RouteSegment> segment;
-        const SHARED_PTR<RouteSegmentAppr> parent;
+        const SHARED_PTR<RouteSegmentAppr> parent; // clone
         const int gpxStart;
         int gpxLen = 0;
         double maxDistToGpx = 0;

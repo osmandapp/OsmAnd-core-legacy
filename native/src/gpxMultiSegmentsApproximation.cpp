@@ -44,7 +44,7 @@ GpxMultiSegmentsApproximation::RouteSegmentAppr::RouteSegmentAppr(const SHARED_P
                                                                   const SHARED_PTR<RouteSegment>& segment)
     :
     segment{segment},
-    parent{parent},
+    parent{std::make_shared<RouteSegmentAppr>(*parent)}, // avoid cyclic refs
     gpxStart{parent->gpxStart + parent->gpxLen} {
 }
 
@@ -68,6 +68,9 @@ void GpxMultiSegmentsApproximation::loadConnections(const SHARED_PTR<RouteSegmen
     connected.clear();
     if (last->parent == nullptr) {
         const SHARED_PTR<RouteSegmentPoint> pnt = std::dynamic_pointer_cast<RouteSegmentPoint>(last->segment);
+        if (pnt == nullptr) {
+            throw std::bad_cast();
+        }
         addSegmentInternal(last, pnt, connected);
         if (true /* pnt.others != null */) {
             for (const SHARED_PTR<RouteSegmentPoint>& o : pnt->others) {
