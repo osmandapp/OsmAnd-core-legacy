@@ -32,13 +32,13 @@ public:
 private:
     struct RouteSegmentAppr {
         const SHARED_PTR<RouteSegment> segment;
-        const SHARED_PTR<RouteSegmentAppr> parent;
+        const RouteSegmentAppr* parent;
         const int gpxStart;
         int gpxLen = 0;
         double maxDistToGpx = 0;
 
         RouteSegmentAppr(int start, const SHARED_PTR<RouteSegmentPoint>& pnt);
-        RouteSegmentAppr(const SHARED_PTR<RouteSegmentAppr>& parent, const SHARED_PTR<RouteSegment>& segment);
+        RouteSegmentAppr(const RouteSegmentAppr* parent, const SHARED_PTR<RouteSegment>& segment);
 
         int gpxNext() const;
         double metric() const;
@@ -52,44 +52,40 @@ private:
     const float initDist;
 
     const std::function<
-        bool (const SHARED_PTR<RouteSegmentAppr>& o1, const SHARED_PTR<RouteSegmentAppr>& o2)
+        bool (const RouteSegmentAppr* o1, const RouteSegmentAppr* o2)
     > METRICS_COMPARATOR;
 
     std::priority_queue<
-        SHARED_PTR<RouteSegmentAppr>,
-        std::vector<SHARED_PTR<RouteSegmentAppr>>,
+        RouteSegmentAppr*,
+        std::vector<RouteSegmentAppr*>,
         decltype(METRICS_COMPARATOR)
     > queue; // initialized in constructor
 
+    std::vector<RouteSegmentAppr*> garbage;
+
     std::unordered_set<int64_t> visited;
 
-    std::vector<std::weak_ptr<RouteSegmentAppr>> garbageValidationList;
-
 private:
-    void loadConnections(const SHARED_PTR<RouteSegmentAppr>& last,
-                         std::vector<SHARED_PTR<RouteSegmentAppr>>& connected);
-    void addSegmentInternal(const SHARED_PTR<RouteSegmentAppr>& last, const SHARED_PTR<RouteSegment>& sg,
-                            std::vector<SHARED_PTR<RouteSegmentAppr>>& connected);
-    void addSegment(const SHARED_PTR<RouteSegmentAppr>& last, const SHARED_PTR<RouteSegment>& sg,
-                    std::vector<SHARED_PTR<RouteSegmentAppr>>& connected);
-    bool approximateSegment(const SHARED_PTR<RouteSegmentAppr>& parent, const SHARED_PTR<RouteSegment>& sg,
-                            std::vector<SHARED_PTR<RouteSegmentAppr>>& connected);
-    bool addConnected(const SHARED_PTR<RouteSegmentAppr>& parent, const SHARED_PTR<RouteSegmentAppr>& c,
-                      std::vector<SHARED_PTR<RouteSegmentAppr>>& connected);
-    void visit(const SHARED_PTR<RouteSegmentAppr>& r);
-    bool isVisited(const SHARED_PTR<RouteSegmentAppr>& r);
-    static int64_t calculateRoutePointId(const SHARED_PTR<RouteSegmentAppr>& segm);
+    void loadConnections(const RouteSegmentAppr* last, std::vector<RouteSegmentAppr*>& connected);
+    void addSegmentInternal(const RouteSegmentAppr* last, const SHARED_PTR<RouteSegment>& sg,
+                            std::vector<RouteSegmentAppr*>& connected);
+    void addSegment(const RouteSegmentAppr* last, const SHARED_PTR<RouteSegment>& sg,
+                    std::vector<RouteSegmentAppr*>& connected);
+    bool approximateSegment(const RouteSegmentAppr* parent, const SHARED_PTR<RouteSegment>& sg,
+                            std::vector<RouteSegmentAppr*>& connected);
+    bool addConnected(const RouteSegmentAppr* parent, RouteSegmentAppr* c, std::vector<RouteSegmentAppr*>& connected);
+    void visit(const RouteSegmentAppr* r);
+    bool isVisited(const RouteSegmentAppr* r);
+    static int64_t calculateRoutePointId(const RouteSegmentAppr* segm);
     static void initGpxPointsXY31(const std::vector<SHARED_PTR<GpxPoint>>& gpxPoints);
     SHARED_PTR<GpxPoint> findNextRoutablePoint(int searchStart) const;
     bool initRoutingPoint(const SHARED_PTR<GpxPoint>& start, float distThreshold) const;
     static SHARED_PTR<RouteSegmentPoint> initStartPoint(const SHARED_PTR<GpxPoint>& start, double gpxDir,
                                                         const SHARED_PTR<RouteSegmentPoint>& rsp);
     static void debugln(const std::string& line);
-    SHARED_PTR<RouteSegmentAppr>& peakMinFromQueue(const SHARED_PTR<RouteSegmentAppr>& bestRoute,
-                                                   SHARED_PTR<RouteSegmentAppr>& bestNextMutableRef); // ref -> ref
+    RouteSegmentAppr* peakMinFromQueue(const RouteSegmentAppr* bestRoute, RouteSegmentAppr* bestNext);
     double gpxDist(int gpxL1, int gpxL2) const;
-    static void wrapupRoute(const std::vector<SHARED_PTR<GpxPoint>>& gpxPoints,
-                            const SHARED_PTR<RouteSegmentAppr>& bestRouteConst);
+    static void wrapupRoute(const std::vector<SHARED_PTR<GpxPoint>>& gpxPoints, const RouteSegmentAppr* bestRoute);
 };
 
 #endif
