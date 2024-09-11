@@ -304,6 +304,9 @@ void GpxMultiSegmentsApproximation::wrapupRoute(const std::vector<SHARED_PTR<Gpx
             debugln(" " + r->toString());
         }
     }
+    for (auto& r : res) {
+        r->setGpxPointIndex(startInd); // required for reconstructFinalPointsFromFullRoute()
+    }
     gpxPoints.at(startInd)->routeToTarget = res;
     gpxPoints.at(startInd)->targetInd = last;
 }
