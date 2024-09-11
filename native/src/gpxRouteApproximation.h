@@ -18,6 +18,8 @@ struct GpxRouteApproximation {
 	int routeDistCalculations = 0;
 	vector<SHARED_PTR<GpxPoint>> finalPoints;
 	vector<SHARED_PTR<RouteSegmentResult>> fullRoute;
+
+	// Used only in Java:
 	// int routeDistance = 0;
 	// int routeGapDistance = 0;
 	// int routeDistanceUnmatched = 0;

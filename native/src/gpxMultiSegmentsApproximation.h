@@ -50,18 +50,10 @@ private:
     const std::vector<SHARED_PTR<GpxPoint>>& gpxPoints;
     const float minPointApproximation;
     const float initDist;
+    const std::function<bool (const RouteSegmentAppr* o1, const RouteSegmentAppr* o2)> METRICS_COMPARATOR;
+    std::priority_queue<RouteSegmentAppr*, std::vector<RouteSegmentAppr*>, decltype(METRICS_COMPARATOR)> queue;
 
-    const std::function<
-        bool (const RouteSegmentAppr* o1, const RouteSegmentAppr* o2)
-    > METRICS_COMPARATOR;
-
-    std::priority_queue<
-        RouteSegmentAppr*,
-        std::vector<RouteSegmentAppr*>,
-        decltype(METRICS_COMPARATOR)
-    > queue; // initialized in constructor
-
-    std::vector<RouteSegmentAppr*> garbage;
+    std::vector<RouteSegmentAppr*> garbage; // internal collector for allocated instances
 
     std::unordered_set<int64_t> visited;
 
@@ -86,6 +78,9 @@ private:
     RouteSegmentAppr* peakMinFromQueue(const RouteSegmentAppr* bestRoute, RouteSegmentAppr* bestNext);
     double gpxDist(int gpxL1, int gpxL2) const;
     static void wrapupRoute(const std::vector<SHARED_PTR<GpxPoint>>& gpxPoints, const RouteSegmentAppr* bestRoute);
+
+    RouteSegmentAppr* allocateRouteSegmentAppr(int start, const SHARED_PTR<RouteSegmentPoint>& pnt);
+    RouteSegmentAppr* allocateRouteSegmentAppr(const RouteSegmentAppr* parent, const SHARED_PTR<RouteSegment>& segment);
 };
 
 #endif

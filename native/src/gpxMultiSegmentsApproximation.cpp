@@ -102,9 +102,8 @@ void GpxMultiSegmentsApproximation::addSegment(const RouteSegmentAppr* last, con
     if (sg == nullptr) {
         return;
     }
-    if (sg->getRoad()->getId() != last->segment->road->getId() ||
-        std::min(sg->getSegmentStart(), sg->getSegmentEnd()) !=
-        std::min(last->segment->getSegmentStart(), last->segment->getSegmentEnd())) {
+    if (sg->getRoad()->getId() != last->segment->road->getId() || std::min(sg->getSegmentStart(), sg->getSegmentEnd())
+        != std::min(last->segment->getSegmentStart(), last->segment->getSegmentEnd())) {
         addSegmentInternal(last, sg, connected);
     }
 }
@@ -112,9 +111,7 @@ void GpxMultiSegmentsApproximation::addSegment(const RouteSegmentAppr* last, con
 bool GpxMultiSegmentsApproximation::approximateSegment(const RouteSegmentAppr* parent,
                                                        const SHARED_PTR<RouteSegment>& sg,
                                                        std::vector<RouteSegmentAppr*>& connected) {
-    auto* c = new RouteSegmentAppr(parent, sg);
-    garbage.push_back(c);
-
+    auto* c = allocateRouteSegmentAppr(parent, sg);
     int pointInd = c->gpxStart + 1;
     bool added = false;
 
@@ -141,9 +138,7 @@ bool GpxMultiSegmentsApproximation::approximateSegment(const RouteSegmentAppr* p
             return added;
         }
         if (dist > MIN_BRANCHING_DIST && dist > c->maxDistToGpx && c->gpxLen > 0) {
-            auto* altShortBranch = new RouteSegmentAppr(parent, sg);
-            garbage.push_back(altShortBranch);
-
+            auto* altShortBranch = allocateRouteSegmentAppr(parent, sg);
             altShortBranch->maxDistToGpx = c->maxDistToGpx;
             altShortBranch->gpxLen = c->gpxLen;
             added |= addConnected(parent, altShortBranch, connected);
@@ -323,9 +318,7 @@ void GpxMultiSegmentsApproximation::gpxApproximation() {
         return;
     }
 
-    auto* last = new RouteSegmentAppr(0, currentPoint->pnt);
-    garbage.push_back(last);
-
+    auto* last = allocateRouteSegmentAppr(0, currentPoint->pnt);
     std::vector<RouteSegmentAppr*> connected;
     RouteSegmentAppr* bestRoute = nullptr;
 
@@ -376,8 +369,7 @@ void GpxMultiSegmentsApproximation::gpxApproximation() {
                 debugln(
                     "\n!!! " + std::to_string(pnt->ind) + " " + std::to_string(pnt->lat) + "," +
                     std::to_string(pnt->lon) + " " + pnt->pnt->toString());
-                last = new RouteSegmentAppr(pnt->ind, pnt->pnt);
-                garbage.push_back(last);
+                last = allocateRouteSegmentAppr(pnt->ind, pnt->pnt);
                 bestRoute = nullptr;
             }
         }
@@ -390,4 +382,18 @@ void GpxMultiSegmentsApproximation::gpxApproximation() {
     OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
                       "Native Multi-Segments Approximation took %.2f seconds (%d route points searched)",
                       static_cast<double>(timer.GetElapsedMs()) / 1000.0, gctx->routePointsSearched);
+}
+
+GpxMultiSegmentsApproximation::RouteSegmentAppr* GpxMultiSegmentsApproximation::allocateRouteSegmentAppr(
+    int start, const SHARED_PTR<RouteSegmentPoint>& pnt) {
+    auto* p = new RouteSegmentAppr(start, pnt);
+    garbage.push_back(p);
+    return p;
+}
+
+GpxMultiSegmentsApproximation::RouteSegmentAppr* GpxMultiSegmentsApproximation::allocateRouteSegmentAppr(
+    const RouteSegmentAppr* parent, const SHARED_PTR<RouteSegment>& segment) {
+    auto* p = new RouteSegmentAppr(parent, segment);
+    garbage.push_back(p);
+    return p;
 }

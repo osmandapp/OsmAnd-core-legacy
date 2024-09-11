@@ -108,8 +108,8 @@ void GpxRouteApproximation::searchGpxRouteByRouting(SHARED_PTR<GpxRouteApproxima
 bool GpxRouteApproximation::initRoutingPoint(SHARED_PTR<GpxPoint>& start, SHARED_PTR<GpxRouteApproximation>& gctx, double distThreshold) {
 	if (start && !start->pnt) {
 		gctx->routePointsSearched++;
-		SHARED_PTR<RouteSegmentPoint> rsp =
-			findRouteSegment(get31TileNumberX(start->lon), get31TileNumberY(start->lat), gctx->ctx);
+		SHARED_PTR<RouteSegmentPoint> rsp = findRouteSegment(get31TileNumberX(start->lon), get31TileNumberY(start->lat),
+		                                                     gctx->ctx);
 		if (rsp) {
 			LatLon point = rsp->getPreciseLatLon();
 			if (getDistance(point.lat, point.lon, start->lat, start->lon) < distThreshold) {

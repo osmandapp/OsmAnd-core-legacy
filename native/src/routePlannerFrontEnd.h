@@ -26,7 +26,7 @@ public:
 
     constexpr static int GPX_OSM_POINTS_MATCH_ALGORITHM = 1;
     constexpr static int GPX_OSM_MULTISEGMENT_SCAN_ALGORITHM = 2;
-    int GPX_SEGMENT_ALGORITHM = GPX_OSM_MULTISEGMENT_SCAN_ALGORITHM; // TODO should be switchable from JNI
+    int GPX_SEGMENT_ALGORITHM = GPX_OSM_MULTISEGMENT_SCAN_ALGORITHM;
 
     RoutePlannerFrontEnd();
     RoutePlannerFrontEnd(HHRoutingConfig * hhConfig);
