@@ -191,7 +191,10 @@ struct RouteSegmentResult {
 		}
 		return res;
 	}
-	
+
+	std::string toString() {
+		return object->toString() + ": " + std::to_string(startPointIndex) + "-" + std::to_string(endPointIndex);
+	}
 };
 
 #endif /*_OSMAND_ROUTE_SEGMENT_RESULT_H*/

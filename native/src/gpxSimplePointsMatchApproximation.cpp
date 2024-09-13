@@ -1,9 +1,9 @@
-#include <vector>
+#include "gpxSimplePointsMatchApproximation.h"
+#include "gpxRouteApproximation.h"
 
-#include "gpxSegmentsApproximation.h"
 #include "routePlannerFrontEnd.h"
 
-void GpxSegmentsApproximation::fastGpxApproximation(RoutePlannerFrontEnd* frontEnd,
+void GpxSimplePointsMatchApproximation::gpxApproximation(RoutePlannerFrontEnd* frontEnd,
                                                     SHARED_PTR<GpxRouteApproximation>& gctx,
                                                     std::vector<SHARED_PTR<GpxPoint>>& gpxPoints) {
     OsmAnd::ElapsedTimer timer;
@@ -79,7 +79,7 @@ void GpxSegmentsApproximation::fastGpxApproximation(RoutePlannerFrontEnd* frontE
                       static_cast<double>(timer.GetElapsedMs()) / 1000.0, gctx->routePointsSearched);
 }
 
-double GpxSegmentsApproximation::minDistResult(SHARED_PTR<RouteSegmentResult>& res, double minDistSqr,
+double GpxSimplePointsMatchApproximation::minDistResult(SHARED_PTR<RouteSegmentResult>& res, double minDistSqr,
                                                const SHARED_PTR<RouteSegmentPoint>& pnt,
                                                const SHARED_PTR<GpxPoint>& loc) {
     int segmentEnd = -1;
@@ -112,7 +112,7 @@ double GpxSegmentsApproximation::minDistResult(SHARED_PTR<RouteSegmentResult>& r
     return minDistSqr;
 }
 
-double GpxSegmentsApproximation::sumPntDistanceSqr(const SHARED_PTR<RouteSegmentPoint>& pnt, int start, int end) {
+double GpxSimplePointsMatchApproximation::sumPntDistanceSqr(const SHARED_PTR<RouteSegmentPoint>& pnt, int start, int end) {
     if (start == end) {
         return 0;
     }
@@ -130,13 +130,13 @@ double GpxSegmentsApproximation::sumPntDistanceSqr(const SHARED_PTR<RouteSegment
     return dist * dist;
 }
 
-SHARED_PTR<GpxPoint> GpxSegmentsApproximation::findNextRoutablePoint(RoutePlannerFrontEnd* frontEnd,
+SHARED_PTR<GpxPoint> GpxSimplePointsMatchApproximation::findNextRoutablePoint(RoutePlannerFrontEnd* frontEnd,
                                                                      SHARED_PTR<GpxRouteApproximation>& gctx,
                                                                      double distThreshold,
                                                                      std::vector<SHARED_PTR<GpxPoint>>& gpxPoints,
                                                                      int searchStart) {
     for (int i = searchStart; i < gpxPoints.size(); i++) {
-        if (frontEnd->initRoutingPoint(gpxPoints.at(i), gctx, distThreshold)) {
+        if (gctx->initRoutingPoint(gpxPoints.at(i), gctx, distThreshold)) {
             return gpxPoints.at(i);
         }
     }
@@ -144,7 +144,7 @@ SHARED_PTR<GpxPoint> GpxSegmentsApproximation::findNextRoutablePoint(RoutePlanne
     return nullptr;
 }
 
-void GpxSegmentsApproximation::initGpxPointsXY31(std::vector<SHARED_PTR<GpxPoint>>& gpxPoints) {
+void GpxSimplePointsMatchApproximation::initGpxPointsXY31(std::vector<SHARED_PTR<GpxPoint>>& gpxPoints) {
     for (auto& p : gpxPoints) {
         p->x31 = get31TileNumberX(p->lon);
         p->y31 = get31TileNumberY(p->lat);

@@ -106,7 +106,9 @@ add_library(osmand SHARED
 	"${ROOT}/src/hhRouteDataStructure.cpp"
 	"${ROOT}/src/hhRoutePlanner.cpp"
 	"${ROOT}/src/NetworkDBPointRouteInfo.cpp"
-	"${ROOT}/src/gpxSegmentsApproximation.cpp"
+	"${ROOT}/src/gpxRouteApproximation.cpp"
+	"${ROOT}/src/gpxMultiSegmentsApproximation.cpp"
+	"${ROOT}/src/gpxSimplePointsMatchApproximation.cpp"
 	${pd_sources}
 )
 

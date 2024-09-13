@@ -10,6 +10,8 @@ const string UNMATCHED_HIGHWAY_TYPE = "unmatched";
 struct RouteSegmentResult;
 struct FinalRouteSegment;
 struct CombineAreaRoutePoint;
+struct RouteDataObject;
+struct TurnType;
 struct AttachedRoadInfo;
 
 bool segmentLineBelongsToPolygon(CombineAreaRoutePoint& p, CombineAreaRoutePoint& n,
