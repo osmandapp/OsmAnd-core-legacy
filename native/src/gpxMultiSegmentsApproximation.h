@@ -78,6 +78,8 @@ private:
     RouteSegmentAppr* peakMinFromQueue(const RouteSegmentAppr* bestRoute, RouteSegmentAppr* bestNext);
     double gpxDist(int gpxL1, int gpxL2) const;
     static void wrapupRoute(const std::vector<SHARED_PTR<GpxPoint>>& gpxPoints, const RouteSegmentAppr* bestRoute);
+    double calcOnewayPenalty(const SHARED_PTR<RouteSegment>& shared);
+    bool shouldAllowGpxLoops(const RouteSegmentAppr* last);
 
     RouteSegmentAppr* allocateRouteSegmentAppr(int start, const SHARED_PTR<RouteSegmentPoint>& pnt);
     RouteSegmentAppr* allocateRouteSegmentAppr(const RouteSegmentAppr* parent, const SHARED_PTR<RouteSegment>& segment);

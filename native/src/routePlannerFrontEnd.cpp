@@ -670,7 +670,7 @@ void RoutePlannerFrontEnd::searchGpxRoute(SHARED_PTR<GpxRouteApproximation>& gct
 		gctx->searchGpxRouteByRouting(gctx, gpxPoints);
 	}
 
-	gctx->calculateGpxRoute(gctx, gpxPoints);
+	gctx->calculateGpxRouteResult(gctx, gpxPoints);
 	gctx->reconstructFinalPointsFromFullRoute();
 
 	if (acceptor) {

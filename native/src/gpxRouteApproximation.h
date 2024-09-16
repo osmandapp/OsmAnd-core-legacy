@@ -47,7 +47,8 @@ struct GpxRouteApproximation {
 							 SHARED_PTR<GpxPoint>& start, SHARED_PTR<GpxPoint>& target, bool prevRouteCalculated);
 	bool stepBackAndFindPrevPointInRoute(SHARED_PTR<GpxRouteApproximation>& gctx, vector<SHARED_PTR<GpxPoint>>& gpxPoints,
 										 SHARED_PTR<GpxPoint>& start, SHARED_PTR<GpxPoint>& next);
-	void calculateGpxRoute(SHARED_PTR<GpxRouteApproximation>& gctx, vector<SHARED_PTR<GpxPoint>>& gpxPoints);
+	void calculateGpxRouteResult(SHARED_PTR<GpxRouteApproximation>& gctx, vector<SHARED_PTR<GpxPoint>>& gpxPoints);
+	void cleanDoubleJoints(const SHARED_PTR<GpxRouteApproximation>& gctx);
 	void addStraightLine(const SHARED_PTR<GpxRouteApproximation>& gctx, vector<LatLon>& lastStraightLine, const SHARED_PTR<GpxPoint>& strPnt,
                          const SHARED_PTR<RoutingIndex>& reg);
 	void simplifyDouglasPeucker(vector<LatLon>& l, double eps, int start, int end, std::vector<bool>& include);
