@@ -103,12 +103,17 @@ void GpxMultiSegmentsApproximation::addSegment(const RouteSegmentAppr* last, con
         return;
     }
 
-    bool allowLoops = shouldAllowGpxLoops(last);
+    int oneway = gctx->ctx->config->router->isOneWay(sg->getRoad());
+    if ((sg->isPositive() && oneway < 0) || (!sg->isPositive() && oneway > 0)) {
+        // don't allow passing wrong way
+        return;
+    }
 
+    // 1. different roads; 2. different segments; 3. auto-detected GPX loops
     if (sg->getRoad()->getId() != last->segment->road->getId()
-        || (allowLoops && sg->getSegmentStart() != last->segment->getSegmentStart())
-        || std::min(sg->getSegmentStart(), sg->getSegmentEnd()) !=
-        std::min(last->segment->getSegmentStart(), last->segment->getSegmentEnd())
+        || std::min(sg->getSegmentStart(), sg->getSegmentEnd()) != std::min(
+            last->segment->getSegmentStart(), last->segment->getSegmentEnd())
+        || (sg->getSegmentStart() != last->segment->getSegmentStart() && shouldAllowGpxLoops(last))
     ) {
         addSegmentInternal(last, sg, connected);
     }
@@ -186,20 +191,11 @@ bool GpxMultiSegmentsApproximation::addConnected(const RouteSegmentAppr* parent,
             return false;
         }
     }
-    c->maxDistToGpx += calcOnewayPenalty(c->segment); // do penalize but don't ignore/forbid
     connected.push_back(c);
     if (VERBOSE) {
         debugln("** " + c->toString() + " - accept");
     }
     return true;
-}
-
-double GpxMultiSegmentsApproximation::calcOnewayPenalty(const SHARED_PTR<RouteSegment>& sg) {
-    int oneway = gctx->ctx->config->router->isOneWay(sg->getRoad());
-    if ((sg->isPositive() && oneway < 0) || (!sg->isPositive() && oneway > 0)) {
-        return minPointApproximation;
-    }
-    return 0;
 }
 
 void GpxMultiSegmentsApproximation::visit(const RouteSegmentAppr* r) {
