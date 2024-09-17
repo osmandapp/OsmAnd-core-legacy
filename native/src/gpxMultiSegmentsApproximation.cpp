@@ -102,8 +102,16 @@ void GpxMultiSegmentsApproximation::addSegment(const RouteSegmentAppr* last, con
     if (sg == nullptr) {
         return;
     }
-    if (sg->getRoad()->getId() != last->segment->road->getId() || std::min(sg->getSegmentStart(), sg->getSegmentEnd())
-        != std::min(last->segment->getSegmentStart(), last->segment->getSegmentEnd())) {
+
+    int oneway = gctx->ctx->config->router->isOneWay(sg->getRoad());
+    if ((sg->isPositive() && oneway < 0) || (!sg->isPositive() && oneway > 0)) {
+        // don't allow passing wrong way
+        return;
+    }
+
+    if (sg->getRoad()->getId() != last->segment->road->getId()
+        || sg->getSegmentStart() != last->segment->getSegmentStart()
+    ) {
         addSegmentInternal(last, sg, connected);
     }
 }
@@ -112,10 +120,8 @@ bool GpxMultiSegmentsApproximation::approximateSegment(const RouteSegmentAppr* p
                                                        const SHARED_PTR<RouteSegment>& sg,
                                                        std::vector<RouteSegmentAppr*>& connected) {
     auto* c = allocateRouteSegmentAppr(parent, sg);
-    int pointInd = c->gpxStart + 1;
     bool added = false;
-
-    for (; pointInd < gpxPoints.size(); pointInd++) {
+    for (int pointInd = c->gpxStart + 1; pointInd < gpxPoints.size(); pointInd++) {
         const SHARED_PTR<GpxPoint>& p = gpxPoints.at(pointInd);
         if (p->x31 == c->segment->getEndPointX() && p->y31 == c->segment->getEndPointY()) {
             c->gpxLen++;
@@ -273,7 +279,7 @@ void GpxMultiSegmentsApproximation::wrapupRoute(const std::vector<SHARED_PTR<Gpx
     }
     std::vector<SHARED_PTR<RouteSegmentResult>> res;
     int startInd = 0;
-    int last = bestRoute->gpxNext();
+    int last = std::min(bestRoute->gpxNext(), (int)(gpxPoints.size() - 1));
     // combining segments doesn't seem to have any effect on tests
     SHARED_PTR<RouteSegmentResult> lastRes = nullptr;
     while (bestRoute != nullptr && bestRoute->parent != nullptr) {
@@ -374,7 +380,9 @@ void GpxMultiSegmentsApproximation::gpxApproximation() {
             }
         }
     }
-
+    if (bestRoute == nullptr || bestRoute->gpxNext() < last->gpxNext()) {
+        bestRoute = last; // prefer the farthest end-of-the-route
+    }
     if (bestRoute != nullptr) {
         wrapupRoute(gpxPoints, bestRoute);
     }

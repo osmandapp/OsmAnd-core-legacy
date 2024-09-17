@@ -372,7 +372,7 @@ mainLoop:
 	return true;
 }
 
-void GpxRouteApproximation::calculateGpxRoute(SHARED_PTR<GpxRouteApproximation>& gctx, vector<SHARED_PTR<GpxPoint>>& gpxPoints) {
+void GpxRouteApproximation::calculateGpxRouteResult(SHARED_PTR<GpxRouteApproximation>& gctx, vector<SHARED_PTR<GpxPoint>>& gpxPoints) {
 	auto reg = std::make_shared<RoutingIndex>();
 	reg->initRouteEncodingRule(0, "highway", UNMATCHED_HIGHWAY_TYPE);
 	vector<LatLon> lastStraightLine;
@@ -421,15 +421,35 @@ void GpxRouteApproximation::calculateGpxRoute(SHARED_PTR<GpxRouteApproximation>&
 	}
 
 	if (router->useGeometryBasedApproximation) {
-		prepareResult(gctx->ctx, gctx->fullRoute); // not required by classic method
+		prepareResult(gctx->ctx, gctx->fullRoute); // routing-based already did it
+	} else {
+		cleanDoubleJoints(gctx);
 	}
 
 	// clean turns to recaculate them
 	cleanupResultAndAddTurns(gctx);
 }
 
+void GpxRouteApproximation::cleanDoubleJoints(const SHARED_PTR<GpxRouteApproximation>& gctx) {
+	// cleanup double joints
+	int LOOK_AHEAD = 4;
+	for (int i = 0; i < gctx->fullRoute.size() && !gctx->ctx->progress->isCancelled(); i++) {
+		SHARED_PTR<RouteSegmentResult>& s = gctx->fullRoute[i];
+		for (int j = i + 2; j <= i + LOOK_AHEAD && j < gctx->fullRoute.size(); j++) {
+			SHARED_PTR<RouteSegmentResult>& e = gctx->fullRoute[j];
+			if (e->getStartPoint().isEquals(s->getEndPoint())) {
+				while ((--j) != i) {
+					gctx->fullRoute.erase(gctx->fullRoute.begin() + j);
+				}
+				break;
+			}
+		}
+	}
+	gctx->fullRoute.shrink_to_fit();
+}
+
 void GpxRouteApproximation::addStraightLine(const SHARED_PTR<GpxRouteApproximation>& gctx, vector<LatLon>& lastStraightLine, const SHARED_PTR<GpxPoint>& strPnt,
-                                           const SHARED_PTR<RoutingIndex>& reg) {
+                                            const SHARED_PTR<RoutingIndex>& reg) {
 	SHARED_PTR<RouteDataObject> rdo = std::make_shared<RouteDataObject>(reg);
 	if (gctx->ctx->config->smoothenPointsNoRoute > 0) {
 		std::vector<bool> include(lastStraightLine.size(), true);
@@ -496,22 +516,6 @@ void GpxRouteApproximation::simplifyDouglasPeucker(vector<LatLon>& l, double eps
 }
 
 void GpxRouteApproximation::cleanupResultAndAddTurns(SHARED_PTR<GpxRouteApproximation>& gctx) {
-	// cleanup double joints
-	int LOOK_AHEAD = 4;
-	for (int i = 0; i < gctx->fullRoute.size() && !gctx->ctx->progress->isCancelled(); i++) {
-		SHARED_PTR<RouteSegmentResult>& s = gctx->fullRoute[i];
-		for (int j = i + 2; j <= i + LOOK_AHEAD && j < gctx->fullRoute.size(); j++) {
-			SHARED_PTR<RouteSegmentResult>& e = gctx->fullRoute[j];
-			if (e->getStartPoint().isEquals(s->getEndPoint())) {
-				while ((--j) != i) {
-					gctx->fullRoute.erase(gctx->fullRoute.begin() + j);
-				}
-				break;
-			}
-		}
-	}
-	gctx->fullRoute.shrink_to_fit();
-
 	for (SHARED_PTR<RouteSegmentResult> r : gctx->fullRoute) {
 		r->turnType = nullptr;
 		r->description = "";
