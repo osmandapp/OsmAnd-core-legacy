@@ -109,23 +109,11 @@ void GpxMultiSegmentsApproximation::addSegment(const RouteSegmentAppr* last, con
         return;
     }
 
-    // 1. different roads; 2. different segments; 3. auto-detected GPX loops
     if (sg->getRoad()->getId() != last->segment->road->getId()
-        || std::min(sg->getSegmentStart(), sg->getSegmentEnd()) != std::min(
-            last->segment->getSegmentStart(), last->segment->getSegmentEnd())
-        || (sg->getSegmentStart() != last->segment->getSegmentStart() && shouldAllowGpxLoops(last))
+        || sg->getSegmentStart() != last->segment->getSegmentStart()
     ) {
         addSegmentInternal(last, sg, connected);
     }
-}
-
-bool GpxMultiSegmentsApproximation::shouldAllowGpxLoops(const RouteSegmentAppr* last) {
-    int prevPoint = last->gpxStart;
-    int nextPoint = std::min(last->gpxNext(), (int)(gpxPoints.size() - 1));
-    double prevDir = gpxPoints.at(0)->object->directionRoute(prevPoint, true);
-    double nextDir = gpxPoints.at(0)->object->directionRoute(nextPoint, true);
-    double diff = std::abs(alignAngleDifference(nextDir - prevDir));
-    return diff > M_PI / 6 * 5; // short loops for >150 degrees (between gpx segments)
 }
 
 bool GpxMultiSegmentsApproximation::approximateSegment(const RouteSegmentAppr* parent,
