@@ -406,7 +406,7 @@ void GpxRouteApproximation::calculateGpxRouteResult(SHARED_PTR<GpxRouteApproxima
 					SHARED_PTR<GpxPoint>& prev = gctx->finalPoints.at(gctx->finalPoints.size() - 1);
 					SHARED_PTR<RouteSegmentResult> lastRouteRes = prev->getLastRouteRes();
 					if (lastRouteRes) {
-						router->makeSegmentPointPrecise(gctx->ctx, lastRouteRes, prev->lat, prev->lon, false);
+						router->makeSegmentPointPrecise(gctx->ctx, lastRouteRes, pnt->lat, pnt->lon, false);
 					}
 					lastStraightLine.push_back(gctx->getLastPoint());
 				}
