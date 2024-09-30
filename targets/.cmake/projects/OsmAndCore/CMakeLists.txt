@@ -32,16 +32,19 @@ include_directories(AFTER SYSTEM
 )
 if(CMAKE_TARGET_OS STREQUAL "windows")
 	include_directories(AFTER SYSTEM
+		"${OSMAND_ROOT}/externals/gdal"
 		"$ENV{JAVA_HOME}/include/win32"
 	)
 	add_definitions(-DSK_BUILD_FOR_WIN32)
 elseif((CMAKE_TARGET_OS STREQUAL "darwin") OR (CMAKE_TARGET_OS STREQUAL "macosx"))
-        include_directories(AFTER SYSTEM
-                "$ENV{JAVA_HOME}/include/darwin"
-        )
+	include_directories(AFTER SYSTEM
+		"${OSMAND_ROOT}/externals/gdal"
+		"$ENV{JAVA_HOME}/include/darwin"
+	)
 	add_definitions(-DSK_BUILD_FOR_MAC)
 elseif(CMAKE_TARGET_OS STREQUAL "linux")
 	include_directories(AFTER SYSTEM
+		"${OSMAND_ROOT}/externals/gdal"
 		"$ENV{JAVA_HOME}/include/linux"
 	)
 	add_definitions(-DSK_BUILD_FOR_UNIX)
@@ -62,14 +65,17 @@ set(pd_sources "")
 if(CMAKE_TARGET_OS STREQUAL "linux")
     set(pd_sources
 		"${OSMAND_ROOT}/targets/linux/OsmAndCore/src/Logging.cpp"
+		"${ROOT}/src/heightmapRenderer.cpp"
 	)
 elseif((CMAKE_TARGET_OS STREQUAL "darwin") OR (CMAKE_TARGET_OS STREQUAL "macosx"))
     set(pd_sources
-                "${OSMAND_ROOT}/targets/darwin/OsmAndCore/src/Logging.cpp"
-        )
+		"${OSMAND_ROOT}/targets/darwin/OsmAndCore/src/Logging.cpp"
+		"${ROOT}/src/heightmapRenderer.cpp"
+	)
 elseif(CMAKE_TARGET_OS STREQUAL "windows")
     set(pd_sources
 		"${OSMAND_ROOT}/targets/windows/OsmAndCore/src/Logging.cpp"
+		"${ROOT}/src/heightmapRenderer.cpp"
 		"${OSMAND_ROOT}/targets/windows_desktop/OsmAndCore/src/DllMain.cpp"
 	)
 endif()
@@ -117,3 +123,9 @@ target_link_libraries(osmand LINK_PUBLIC
 	protobuf_osmand
 	harfbuzz
 )
+
+if (NOT CMAKE_TARGET_OS STREQUAL "android")
+	target_link_libraries(osmand LINK_PUBLIC
+		gdal_osmand
+	)
+endif()

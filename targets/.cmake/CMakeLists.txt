@@ -69,6 +69,23 @@ add_subdirectory("${OSMAND_PROJECTS_ROOT}/protobuf" "protobuf")
 add_subdirectory("${OSMAND_PROJECTS_ROOT}/skia" "skia")
 add_dependencies(skia_osmand png_osmand jpeg_osmand expat_osmand)
 
-# OsmAnd core
-add_subdirectory("${OSMAND_PROJECTS_ROOT}/OsmAndCore" "OsmAndCore")
-add_dependencies(osmand	skia_osmand protobuf_osmand harfbuzz)
+if (CMAKE_TARGET_OS STREQUAL "android")
+	# OsmAnd core without GDAL
+	add_subdirectory("${OSMAND_PROJECTS_ROOT}/OsmAndCore" "OsmAndCore")
+	add_dependencies(osmand	skia_osmand protobuf_osmand harfbuzz)
+else()
+	# External : sqlite
+	add_subdirectory("${OSMAND_PROJECTS_ROOT}/sqlite" "sqlite")
+
+	# External : proj
+	add_subdirectory("${OSMAND_PROJECTS_ROOT}/proj" "proj")
+	add_dependencies(proj_osmand sqlite_osmand)
+
+	# External : gdal
+	add_subdirectory("${OSMAND_PROJECTS_ROOT}/gdal" "gdal")
+	add_dependencies(gdal_osmand z_osmand png_osmand jpeg_osmand expat_osmand proj_osmand)
+
+	# OsmAnd core with GDAL
+	add_subdirectory("${OSMAND_PROJECTS_ROOT}/OsmAndCore" "OsmAndCore")
+	add_dependencies(osmand	skia_osmand protobuf_osmand harfbuzz gdal_osmand)
+endif()
