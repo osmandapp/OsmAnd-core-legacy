@@ -13,6 +13,11 @@
 #include "java_renderRules.h"
 #include "java_wrap.h"
 
+#ifndef ANDROID_BUILD
+#include <gdal.h>
+#include "heightmapRenderer.h"
+#endif
+
 #include "rendering.h"
 #include "routePlannerFrontEnd.h"
 #include "routingContext.h"
@@ -407,6 +412,76 @@ extern "C" JNIEXPORT jobject JNICALL Java_net_osmand_NativeLibrary_generateRende
 
 	return resultObject;
 }
+
+#ifndef ANDROID_BUILD
+bool isGDALRegistered = false;
+void* geotiffData = NULL;
+size_t geotiffDataSize = 0;
+extern "C" JNIEXPORT jobject JNICALL Java_net_osmand_NativeLibrary_getGeotiffTile(
+	JNIEnv* ienv, jobject obj, jobject tilePath, jobject outColorFilename, jobject midColorFilename,
+	jint type, jint size, jint zoom, jint x, jint y) {
+
+	const char* utfTilePath = ienv->GetStringUTFChars((jstring)tilePath, NULL);
+	std::string tifTilePath(utfTilePath);
+	ienv->ReleaseStringUTFChars((jstring)tilePath, utfTilePath);
+
+	const char* utfOutColorFilename = ienv->GetStringUTFChars((jstring)outColorFilename, NULL);
+	std::string outputColorFilename(utfOutColorFilename);
+	ienv->ReleaseStringUTFChars((jstring)outColorFilename, utfOutColorFilename);
+
+	const char* utfMidColorFilename = ienv->GetStringUTFChars((jstring)midColorFilename, NULL);
+	std::string middleColorFilename(utfMidColorFilename);
+	ienv->ReleaseStringUTFChars((jstring)midColorFilename, utfMidColorFilename);
+
+	if (!isGDALRegistered)
+	{
+		isGDALRegistered = true;
+		GDALAllRegister();
+	}
+
+	SkBitmap* bitmap = new SkBitmap();
+	SkImageInfo imageInfo = SkImageInfo::Make(size, size, kN32_SkColorType, kUnpremul_SkAlphaType);
+	size_t reqDataSize = imageInfo.minRowBytes() * size;
+
+	if (geotiffData != NULL && geotiffDataSize != reqDataSize) {
+		free(geotiffData);
+		geotiffData = NULL;
+		geotiffDataSize = 0;
+	}
+	if (geotiffData == NULL && geotiffDataSize == 0) {
+		geotiffDataSize = reqDataSize;
+		geotiffData = malloc(geotiffDataSize);
+	}
+
+	bitmap->installPixels(imageInfo, geotiffData, imageInfo.minRowBytes());
+
+	if (!getGeotiffData(tifTilePath, outputColorFilename, middleColorFilename, type, size, zoom, x, y, geotiffData)) {
+		bitmap->eraseColor(SK_ColorTRANSPARENT);
+	}
+
+	SkDynamicMemoryWStream* stream = new SkDynamicMemoryWStream();
+	if (SkEncodeImage(stream, *bitmap, SkEncodedImageFormat::kPNG, 100)) {
+		// clean previous data
+		if (geotiffData != NULL) {
+			free(geotiffData);
+		}
+		geotiffDataSize = stream->bytesWritten();
+		geotiffData = malloc(geotiffDataSize);
+
+		stream->copyTo(geotiffData);
+	}
+	delete stream;
+
+	delete bitmap;
+
+	fflush(stdout);
+
+	/* Construct a result object */
+	jobject resultObject = ienv->NewDirectByteBuffer(geotiffData, geotiffDataSize);
+
+	return resultObject;
+}
+#endif
 
 ///////////////////////////////////////////////
 //////////  JNI Rendering Context //////////////

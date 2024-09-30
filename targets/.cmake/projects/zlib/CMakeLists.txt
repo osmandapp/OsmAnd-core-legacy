@@ -2,7 +2,10 @@ project(z_osmand)
 
 set(ROOT "${OSMAND_ROOT}/externals/skia/upstream.patched/third_party/externals/zlib")
 set(UPSTREAM "${ROOT}")
-add_definitions(-D_LARGEFILE64_SOURCE=1 -DHAVE_SYS_TYPES_H -DHAVE_STDINT_H -DHAVE_STDDEF_H -DZ_PREFIX)
+include_directories(AFTER SYSTEM
+	"${UPSTREAM}"
+)
+add_definitions(-D_LARGEFILE64_SOURCE=1 -DHAVE_SYS_TYPES_H -DHAVE_STDINT_H -DHAVE_STDDEF_H)
 if(CMAKE_COMPILER_FAMILY STREQUAL "gcc" OR CMAKE_COMPILER_FAMILY STREQUAL "clang")
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
 endif()
@@ -68,3 +71,5 @@ add_library(z_osmand STATIC
 #	"${UPSTREAM}/uncompr.c"
 #	"${UPSTREAM}/zutil.c"
 )
+
+target_compile_definitions(z_osmand PUBLIC -DZ_PREFIX)

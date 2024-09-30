@@ -26,6 +26,9 @@ add_subdirectory("${OSMAND_CORE_ROOT}/externals/skia/upstream.patched/third_part
 add_subdirectory("${OSMAND_CORE_ROOT}/externals/skia/upstream.patched/third_party/externals/expat" "./externals/expat")
 add_subdirectory("${OSMAND_CORE_ROOT}/externals/libskia" "./externals/libskia")
 add_subdirectory("${OSMAND_CORE_ROOT}/externals/protobuf" "./externals/protobuf")
+add_subdirectory("${OSMAND_CORE_ROOT}/externals/sqlite" "./externals/sqlite")
+add_subdirectory("${OSMAND_CORE_ROOT}/externals/proj" "./externals/proj")
+add_subdirectory("${OSMAND_CORE_ROOT}/externals/gdal" "./externals/gdal")
 
 #add_subdirectory("${OSMAND_CORE_ROOT}/externals/zlib" "./externals/zlib") # zlibstatic
 #add_subdirectory("${OSMAND_CORE_ROOT}/externals/giflib" "./externals/giflib")
