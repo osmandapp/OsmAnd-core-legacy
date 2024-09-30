@@ -7,6 +7,11 @@ set(target_specific_sources "")
 set(target_specific_public_libraries "")
 set(target_specific_private_definitions "")
 
+if(CMAKE_COMPILER_FAMILY STREQUAL "gcc" OR CMAKE_COMPILER_FAMILY STREQUAL "clang")
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
+endif()
+
 if (CMAKE_COMPILER_FAMILY STREQUAL "msvc")
 	configure_file("${UPSTREAM}/port/cpl_config.h.vc.common" "${CMAKE_CURRENT_BINARY_DIR}/cpl_config.h" COPYONLY)
 else()
