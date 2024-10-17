@@ -417,6 +417,8 @@ extern "C" JNIEXPORT jobject JNICALL Java_net_osmand_NativeLibrary_generateRende
 bool isGDALRegistered = false;
 void* geotiffData = NULL;
 size_t geotiffDataSize = 0;
+void* pngData = NULL;
+size_t pngDataSize = 0;
 extern "C" JNIEXPORT jobject JNICALL Java_net_osmand_NativeLibrary_getGeotiffTile(
 	JNIEnv* ienv, jobject obj, jobject tilePath, jobject outColorFilename, jobject midColorFilename,
 	jint type, jint size, jint zoom, jint x, jint y) {
@@ -462,13 +464,14 @@ extern "C" JNIEXPORT jobject JNICALL Java_net_osmand_NativeLibrary_getGeotiffTil
 	SkDynamicMemoryWStream* stream = new SkDynamicMemoryWStream();
 	if (SkEncodeImage(stream, *bitmap, SkEncodedImageFormat::kPNG, 100)) {
 		// clean previous data
-		if (geotiffData != NULL) {
-			free(geotiffData);
+		if (pngData != NULL) {
+			free(pngData);
 		}
-		geotiffDataSize = stream->bytesWritten();
-		geotiffData = malloc(geotiffDataSize);
+		pngDataSize = stream->bytesWritten();
+		pngData = malloc(pngDataSize);
 
-		stream->copyTo(geotiffData);
+		stream->copyTo(pngData);
+		stream->flush();
 	}
 	delete stream;
 
@@ -477,7 +480,7 @@ extern "C" JNIEXPORT jobject JNICALL Java_net_osmand_NativeLibrary_getGeotiffTil
 	fflush(stdout);
 
 	/* Construct a result object */
-	jobject resultObject = ienv->NewDirectByteBuffer(geotiffData, geotiffDataSize);
+	jobject resultObject = ienv->NewDirectByteBuffer(pngData, pngDataSize);
 
 	return resultObject;
 }
