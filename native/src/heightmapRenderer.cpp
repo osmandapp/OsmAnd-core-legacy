@@ -376,8 +376,9 @@ bool getGeotiffData(std::string& tilePath, std::string& outColorFilename, std::s
         {
             const std::string filePath =
                 tilePath + std::to_string(minZoom) + "/" + std::to_string(x) + "/" + std::to_string(y) + ".tif";
-            if (true)
+            if (FILE *file = fopen(filePath.c_str(), "r"))
             {
+                fclose(file);
                 available = true;
                 const int zoomShift = zoom - minZoom;
                 bool tileFound = true;
