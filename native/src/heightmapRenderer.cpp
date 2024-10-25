@@ -272,7 +272,7 @@ bool getGeotiffData(std::string& tilePath, std::string& outColorFilename, std::s
     const uint32_t bandCount = 4;
     const bool toBytes = true;
     const int32_t minZoom = 9;
-    const int32_t maxZoom = 31;
+    const int32_t maxZoom = 13;
     const auto valueCount = tileSize * tileSize;
 
     ProcessingParameters parameters;
