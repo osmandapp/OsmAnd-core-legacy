@@ -1,0 +1,22 @@
+diff -rupN upstream.original/src/projections/s2.cpp upstream.patched/src/projections/s2.cpp
+--- upstream.original/src/projections/s2.cpp	2024-10-29 20:41:27.304326170 +0100
++++ upstream.patched/src/projections/s2.cpp	2024-10-29 20:55:38.490959279 +0100
+@@ -52,6 +52,7 @@
+ 
+ #include <errno.h>
+ #include <cmath>
++#include <cstdint> // for int64_t and uint64_t
+ 
+ #include "proj.h"
+ #include "proj_internal.h"
+diff -rupN upstream.original/src/proj_json_streaming_writer.hpp upstream.patched/src/proj_json_streaming_writer.hpp
+--- upstream.original/src/proj_json_streaming_writer.hpp	2024-10-29 20:41:27.304326170 +0100
++++ upstream.patched/src/proj_json_streaming_writer.hpp	2024-10-29 20:55:04.607627282 +0100
+@@ -33,6 +33,7 @@
+ 
+ #include <vector>
+ #include <string>
++#include <cstdint> // for int64_t and uint64_t
+ 
+ #define CPL_DLL
+ 
