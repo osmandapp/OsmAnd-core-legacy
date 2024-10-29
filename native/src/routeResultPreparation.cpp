@@ -1376,6 +1376,10 @@ void inferCommonActiveLane(const SHARED_PTR<TurnType>& currentTurn, const SHARED
                 TurnType::setTertiaryTurn(lanes, i, TurnType::getPrimaryTurn(lanes[i]));
                 TurnType::setPrimaryTurn(lanes, i, singleTurn);
             } else {
+                if (lanes.size() == 1)
+                {
+                    return;
+                }
                 // disable lane
                 lanes[i] = lanes[i] - 1;
             }
