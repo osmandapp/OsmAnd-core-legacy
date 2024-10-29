@@ -720,6 +720,12 @@ void HHRoutePlanner::recalculateNetworkCluster(const SHARED_PTR<HHRoutingContext
 	// SPEEDUP: Speed up by just clearing visited
 	hctx->rctx->unloadAllData(); // needed for proper multidijsktra work
 	SHARED_PTR<RouteSegmentPoint> s = loadPoint(hctx->rctx, start);
+	if (s == nullptr) {
+		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning,
+		                  "HH recalculateNetworkCluster: loadPoint() is NULL for Point %d (%d %d-%d)",
+		                  start->index, start->roadId / 64, start->start, start->end);
+		return;
+	}
 	//hctx->rctx->progress = std::make_shared<RouteCalculationProgress>(); // we should reuse same progress for cancellation
 	hctx->rctx->config->MAX_VISITED = MAX_POINTS_CLUSTER_ROUTING * 2;
 	int64_t ps = calcRPId(s, s->getSegmentStart(), s->getSegmentEnd());
