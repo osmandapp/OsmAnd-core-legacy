@@ -722,8 +722,8 @@ void HHRoutePlanner::recalculateNetworkCluster(const SHARED_PTR<HHRoutingContext
 	SHARED_PTR<RouteSegmentPoint> s = loadPoint(hctx->rctx, start);
 	if (s == nullptr) {
 		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning,
-		                  "HH recalculateNetworkCluster: loadPoint() is NULL for Point %d (%d %d-%d)",
-		                  start->index, start->roadId / 64, start->start, start->end);
+		                  "HH recalculateNetworkCluster: loadPoint() is NULL for Point %u (%u %d-%d)",
+		                  (unsigned int)(start->index), (unsigned int)(start->roadId / 64), start->start, start->end);
 		return;
 	}
 	//hctx->rctx->progress = std::make_shared<RouteCalculationProgress>(); // we should reuse same progress for cancellation

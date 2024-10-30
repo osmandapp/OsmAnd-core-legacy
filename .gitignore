@@ -1,5 +1,6 @@
 # Ignore all externals upstream files
 /externals/**/upstream.*
+externals/**/.stamp
 externals/.stamp
 .gradle
 # Ignore binary files
