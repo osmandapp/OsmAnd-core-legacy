@@ -413,6 +413,11 @@ string RouteSegmentResult::getDestinationName(string lang, bool transliterate, v
         float distanceFromTurn = distance;
         for (int n = routeInd + 1; n + 1 < list.size(); n++) {
             SHARED_PTR<RouteSegmentResult> s1 = list[n];
+            if (s1->turnType)
+            {
+                // avoid retrieve destination over other turns
+                break;
+            }
             string s1DnRef = s1->object->getDestinationName(lang, transliterate, isForwardDirection());
             bool dnRefIsEqual = s1DnRef.size() > 0 && dnRef.size() > 0 && s1DnRef == dnRef;
             bool isMotorwayLink = s1->object->getHighway() == "motorway_link";
