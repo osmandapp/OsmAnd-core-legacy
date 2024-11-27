@@ -1674,23 +1674,6 @@ void OpeningHoursParser::parseRuleV2(const std::string& rl, int sequenceIndex,
 		}
 	}
 
-	// bool hoursSpecified = false;
-	// for (int i = 0; i < tokens.size(); i++) {
-	// 	if (tokens[i]->type == TokenType::TOKEN_HOUR_MINUTES || tokens[i]->type == TokenType::TOKEN_OFF_ON) {
-	// 		hoursSpecified = true;
-	// 		break;
-	// 	}
-	// }
-	// for (int i = 0; i < (int)tokens.size(); i++) {
-	// 	if (tokens[i]->type == TokenType::TOKEN_UNKNOWN && tokens[i]->mainNumber >= 0) {
-	// 		tokens[i]->type = hoursSpecified ? TokenType::TOKEN_DAY_MONTH : TokenType::TOKEN_HOUR_MINUTES;
-	// 		if (tokens[i]->type == TokenType::TOKEN_HOUR_MINUTES)
-	// 			tokens[i]->mainNumber = tokens[i]->mainNumber * 60;
-	// 		else
-	// 			tokens[i]->mainNumber = tokens[i]->mainNumber - 1;
-	// 	}
-	// }
-
 	buildRule(basic, tokens, rules);
 }
 
