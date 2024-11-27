@@ -1654,12 +1654,7 @@ void OpeningHoursParser::parseRuleV2(const std::string& rl, int sequenceIndex,
 			tokens.erase(tokens.begin() + (i - 1));
 		}
 	}
-	buildRule(basic, tokens, rules);
-}
 
-void OpeningHoursParser::buildRule(std::shared_ptr<BasicOpeningHourRule>& basic,
-								   std::vector<std::shared_ptr<Token>>& tokens,
-								   std::vector<std::shared_ptr<OpeningHoursRule>>& rules) {
 	// recognize other numbers
 	bool monthSpecified = false;
 	for (int i = 0; i < tokens.size(); i++) {
@@ -1679,22 +1674,12 @@ void OpeningHoursParser::buildRule(std::shared_ptr<BasicOpeningHourRule>& basic,
 		}
 	}
 
-	bool hoursSpecified = false;
-	for (int i = 0; i < tokens.size(); i++) {
-		if (tokens[i]->type == TokenType::TOKEN_HOUR_MINUTES || tokens[i]->type == TokenType::TOKEN_OFF_ON) {
-			hoursSpecified = true;
-			break;
-		}
-	}
-	for (int i = 0; i < (int)tokens.size(); i++) {
-		if (tokens[i]->type == TokenType::TOKEN_UNKNOWN && tokens[i]->mainNumber >= 0) {
-			tokens[i]->type = hoursSpecified ? TokenType::TOKEN_DAY_MONTH : TokenType::TOKEN_HOUR_MINUTES;
-			if (tokens[i]->type == TokenType::TOKEN_HOUR_MINUTES)
-				tokens[i]->mainNumber = tokens[i]->mainNumber * 60;
-			else
-				tokens[i]->mainNumber = tokens[i]->mainNumber - 1;
-		}
-	}
+	buildRule(basic, tokens, rules);
+}
+
+void OpeningHoursParser::buildRule(std::shared_ptr<BasicOpeningHourRule>& basic,
+								   std::vector<std::shared_ptr<Token>>& tokens,
+								   std::vector<std::shared_ptr<OpeningHoursRule>>& rules) {
 	// order MONTH MONTH_DAY DAY_WEEK HOUR_MINUTE OPEN_OFF
 	TokenType currentParse = TokenType::TOKEN_UNKNOWN;
 	TokenType currentParseParent = TokenType::TOKEN_UNKNOWN;
