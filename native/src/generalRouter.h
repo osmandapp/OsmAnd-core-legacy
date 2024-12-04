@@ -398,9 +398,9 @@ class GeneralRouter {
 	// cached values
 	bool _restrictionsAware;
 	bool heightObstacles;
-	double sharpTurn;
-	double roundaboutTurn;
-	double slightTurn;
+	double sharpTurn, shortWaySharpTurn;
+	double slightTurn, shortWaySlightTurn;
+	double roundaboutTurn, shortWayRoundaboutTurn;
 	double minSpeed;
 	double defaultSpeed;
 	double maxSpeed;
@@ -576,6 +576,9 @@ class GeneralRouter {
 	/**
 	 * Calculate turn time
 	 */
+	float getSharpTurnPenalty();
+	float getSlightTurnPenalty();
+	float getRoundaboutTurnPenalty();
 	double calculateTurnTime(const SHARED_PTR<RouteSegment>& segment, const SHARED_PTR<RouteSegment>& prev);
 	
 	MAP_STR_STR getParameterValues() {
