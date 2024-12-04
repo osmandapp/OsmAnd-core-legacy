@@ -31,14 +31,17 @@ const char* GeneralRouterConstants::MAX_SPEED = "max_speed";
 static const bool USE_CACHE = true;
 
 GeneralRouter::GeneralRouter()
-	: profile(GeneralRouterProfile::CAR), _restrictionsAware(true), heightObstacles(false), minSpeed(0.28),
-	  defaultSpeed(1.0), maxSpeed(10.0), shortestRoute(false), allowPrivate(false), checkAllowPrivateNeeded(false) {
+	: profile(GeneralRouterProfile::CAR), _restrictionsAware(true), heightObstacles(false), sharpTurn(.0),
+	  shortWaySharpTurn(.0), slightTurn(.0), shortWaySlightTurn(.0), roundaboutTurn(.0), shortWayRoundaboutTurn(.0),
+	  minSpeed(0.28), defaultSpeed(1.0), maxSpeed(10.0), shortestRoute(false),
+	  allowPrivate(false), checkAllowPrivateNeeded(false) {
 	cacheEval.resize((std::size_t)RouteDataObjectAttribute::COUNT);
 }
 
 GeneralRouter::GeneralRouter(const GeneralRouterProfile profile, const MAP_STR_STR& attributes)
 	: profile(GeneralRouterProfile::CAR), _restrictionsAware(true), heightObstacles(false), sharpTurn(.0),
-	  roundaboutTurn(.0), slightTurn(.0), minSpeed(0.28), defaultSpeed(1.0), maxSpeed(10.0), shortestRoute(false),
+	  shortWaySharpTurn(.0), slightTurn(.0), shortWaySlightTurn(.0), roundaboutTurn(.0), shortWayRoundaboutTurn(.0),
+	  minSpeed(0.28), defaultSpeed(1.0), maxSpeed(10.0), shortestRoute(false),
 	  allowPrivate(false), checkAllowPrivateNeeded(false) {
 	this->profile = profile;
 	cacheEval.resize((std::size_t)RouteDataObjectAttribute::COUNT);
@@ -53,7 +56,8 @@ GeneralRouter::GeneralRouter(const GeneralRouterProfile profile, const MAP_STR_S
 
 GeneralRouter::GeneralRouter(const GeneralRouter& parent, const MAP_STR_STR& params)
 	: profile(GeneralRouterProfile::CAR), _restrictionsAware(true), heightObstacles(false), sharpTurn(.0),
-	  roundaboutTurn(.0), slightTurn(.0), minSpeed(0.28), defaultSpeed(1.0), maxSpeed(10.0), shortestRoute(false),
+	  shortWaySharpTurn(.0), slightTurn(.0), shortWaySlightTurn(.0), roundaboutTurn(.0), shortWayRoundaboutTurn(.0),
+	  minSpeed(0.28), defaultSpeed(1.0), maxSpeed(10.0), shortestRoute(false),
 	  allowPrivate(false), checkAllowPrivateNeeded(false) {
 	this->profile = parent.profile;
 	cacheEval.resize((std::size_t)RouteDataObjectAttribute::COUNT);
@@ -145,7 +149,7 @@ dynbitset& align(dynbitset& t, uint targetSize) {
 	if (t.size() < targetSize) {
 		t.resize(targetSize);
 	} else if (t.size() > targetSize) {
-		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "Bitset %d is longer than target %d", t.size(), targetSize);
+		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "Bitset %zu is longer than target %u", t.size(), targetSize);
 	}
 	return t;
 }
@@ -198,6 +202,12 @@ void GeneralRouter::addAttribute(string k, string v) {
 		minSpeed = parseFloat(attributes, k, minSpeed * 3.6f) / 3.6f;
 	} else if (k == "maxDefaultSpeed" || k == "maxSpeed") {
 		maxSpeed = parseFloat(attributes, k, maxSpeed * 3.6f) / 3.6f;
+	} else if (k == "shortWaySharpTurn") {
+		shortWaySharpTurn = parseFloat(attributes, k, shortWaySharpTurn);
+	} else if (k == "shortWaySlightTurn") {
+		shortWaySlightTurn = parseFloat(attributes, k, shortWaySlightTurn);
+	} else if (k == "shortWayRoundaboutTurn") {
+		shortWayRoundaboutTurn = parseFloat(attributes, k, shortWayRoundaboutTurn);
 	}
 }
 
@@ -541,6 +551,19 @@ bool GeneralRouter::restrictionsAware() {
 	return _restrictionsAware;
 }
 
+
+float GeneralRouter::getSharpTurnPenalty() {
+	return shortestRoute ? shortWaySharpTurn : sharpTurn;
+}
+
+float GeneralRouter::getSlightTurnPenalty() {
+	return shortestRoute ? shortWaySlightTurn : slightTurn;
+}
+
+float GeneralRouter::getRoundaboutTurnPenalty() {
+	return shortestRoute ? shortWayRoundaboutTurn : roundaboutTurn;
+}
+
 double GeneralRouter::calculateTurnTime(const SHARED_PTR<RouteSegment>& segment, const SHARED_PTR<RouteSegment>& prev) {
 	double ts = definePenaltyTransition(segment->getRoad());
 	double prevTs = definePenaltyTransition(prev->getRoad());
@@ -551,38 +574,22 @@ double GeneralRouter::calculateTurnTime(const SHARED_PTR<RouteSegment>& segment,
 		totalPenalty += abs(ts - prevTs) / 2;
 	}
 
-	// if(prev->road->pointTypes.size() > (uint)prevSegmentEnd && prev->road->pointTypes[prevSegmentEnd].size() > 0){
-	// 	RoutingIndex* reg = prev->getRoad()->region;
-	// 	vector<uint32_t> pt = prev->road->pointTypes[prevSegmentEnd];
-	// 	for (uint i = 0; i < pt.size(); i++) {
-	// 		tag_value r = reg->decodingRules[pt[i]];
-	// 		if ("highway" == r.first && "traffic_signals" == r.second) {
-	// 			// traffic signals don't add turn info
-	// 			return 0;
-	// 		}
-	// 	}
-	// }
-
-	if (shortestRoute) {
-		return totalPenalty;
-	}
-
 	if (segment->getRoad()->roundabout() && !prev->getRoad()->roundabout()) {
-		double rt = roundaboutTurn;
+		double rt = getRoundaboutTurnPenalty();
 		if (rt > 0) {
 			totalPenalty += rt;
 		}
-	} else if (sharpTurn > 0 || slightTurn > 0) {
+	} else if (getSharpTurnPenalty() > 0 || getSlightTurnPenalty() > 0) {
 		double a1 = segment->getRoad()->directionRoute(segment->getSegmentStart(), segment->isPositive());
 		double a2 = prev->getRoad()->directionRoute(prev->getSegmentEnd(), !prev->isPositive());
 		double diff = abs(alignAngleDifference(a1 - a2 - M_PI));
 		if (diff > M_PI / 1.5f) {
-			totalPenalty += sharpTurn; // >120 degree (U-turn)
+			totalPenalty += getSharpTurnPenalty(); // >120 degree (U-turn)
 		} else if (diff > M_PI / 3.0f) {
-			totalPenalty += slightTurn; // >60 degree (standard)
+			totalPenalty += getSlightTurnPenalty(); // >60 degree (standard)
 		} else if (diff > M_PI / 6.0f) {
-			totalPenalty += slightTurn / 2.0f; // >30 degree (light)
-			// totalPenalty += slightTurn * diff * 3.0f / M_PI; // to think
+			totalPenalty += getSlightTurnPenalty() / 2.0f; // >30 degree (light)
+			// totalPenalty += getSlightTurnPenalty() * diff * 3.0f / M_PI; // to think
 		}
 	}
 	return totalPenalty;
