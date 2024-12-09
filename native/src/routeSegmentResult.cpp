@@ -405,7 +405,7 @@ bool RouteSegmentResult::continuesBeyondRouteSegment(const SHARED_PTR<RouteSegme
 	return commonX && commonY;
 }
 
-string RouteSegmentResult::getDestinationName(string lang, bool transliterate, vector<SHARED_PTR<RouteSegmentResult>> &list, int routeInd) {
+string RouteSegmentResult::getDestinationName(string lang, bool transliterate, vector<SHARED_PTR<RouteSegmentResult>> &list, int routeInd, bool withRef) {
     string dnRef = object->getDestinationRef(isForwardDirection());
     string destinationName = object->getDestinationName(lang, transliterate, isForwardDirection());
     if (destinationName.size() == 0) {
@@ -430,10 +430,12 @@ string RouteSegmentResult::getDestinationName(string lang, bool transliterate, v
             }
         }
     }
-    if (dnRef.size() > 0 && destinationName.size() > 0) {
-        destinationName = dnRef + ", " + destinationName;
-    } else if (dnRef.size() > 0 && destinationName.size() == 0) {
-        destinationName = dnRef;
+    if (withRef) {
+        if (dnRef.size() > 0 && destinationName.size() > 0) {
+            destinationName = dnRef + ", " + destinationName;
+        } else if (dnRef.size() > 0 && destinationName.size() == 0) {
+            destinationName = dnRef;
+        }
     }
     return destinationName;
 }
