@@ -82,7 +82,7 @@ struct RouteSegmentResult {
 	
 	bool continuesBeyondRouteSegment(const SHARED_PTR<RouteSegmentResult> &segment) const;
 	
-	string getDestinationName(string lang, bool transliterate, vector<SHARED_PTR<RouteSegmentResult>> &list, int routeInd);
+	string getDestinationName(string lang, bool transliterate, vector<SHARED_PTR<RouteSegmentResult>> &list, int routeInd, bool withRef);
 	string getStreetName(string lang, bool transliterate, vector<SHARED_PTR<RouteSegmentResult>> &list, int routeInd);
 	string getRef(string lang, bool transliterate);
 	SHARED_PTR<RouteDataObject> getObjectWithShield(vector<SHARED_PTR<RouteSegmentResult>> &list, uint routeInd);
