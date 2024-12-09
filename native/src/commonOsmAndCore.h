@@ -471,5 +471,6 @@ std::string trim(const std::string& in, const char* t = trim_chars);
 void trimspec(std::string &text);
 
 std::string getFileName(const std::string& filePath);
+std::string splitAndClearRepeats(std::string ref, std::string symbol);
 
 #endif /*_OSMAND_COMMON_CORE_H*/

@@ -565,3 +565,26 @@ std::string RenderableObject::toJson() const {
 
 	return j.dump();
 }
+
+std::string splitAndClearRepeats(std::string str, std::string del) {
+    std::vector<std::string> arr;
+    auto pos = str.find(del);
+    while (pos != string::npos) {
+        arr.push_back(str.substr(0, pos));
+        str.erase(0, pos + del.length());
+        pos = str.find(del);
+    }
+    arr.push_back(str);
+    string res = "";
+    string prev = "";
+    for (const string & s : arr) {
+        if (s.length() == 0 || prev == s)
+            continue;
+        if (res.length() > 0) {
+            res += del;
+        }
+        res += s;
+        prev = s;
+    }
+    return res;
+}
