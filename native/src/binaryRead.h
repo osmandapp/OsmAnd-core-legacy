@@ -357,7 +357,7 @@ struct RouteDataObject {
 				int k = it->first;
 				if (region->routeEncodingRules.size() > k) {
 					if (refTag == region->routeEncodingRules[k].getTag()) {
-						return names[k];
+						return splitAndClearRepeats(names[k], ";");
 					}
 					if (refTagDefault == region->routeEncodingRules[k].getTag()) {
 						refDefault = names[k];
@@ -365,7 +365,7 @@ struct RouteDataObject {
 				}
 			}
 			if (!refDefault.empty()) {
-				return refDefault;
+				return splitAndClearRepeats(refDefault, ";");
 			}
 			// return names.get(region.refTypeRule);
 		}
