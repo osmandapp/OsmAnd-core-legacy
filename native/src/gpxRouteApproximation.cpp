@@ -467,7 +467,7 @@ void GpxRouteApproximation::addStraightLine(const SHARED_PTR<GpxRouteApproximati
 	vector<uint32_t> y;
 	for (int i = 0; i < s; i++) {
 		LatLon l = lastStraightLine[i];
-		uint64_t t = x.size() - 1;
+		int64_t t = x.size() - 1;
 		x.push_back(get31TileNumberX(l.lon));
 		y.push_back(get31TileNumberY(l.lat));
 		if (t >= 0) {
