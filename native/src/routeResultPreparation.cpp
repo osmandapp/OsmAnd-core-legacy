@@ -1997,7 +1997,7 @@ void simplifyAreaRouteWay(vector<CombineAreaRoutePoint>& routeWay, vector<Combin
         uint64_t connectStart = -1;
         uint64_t connectLen = 0;
         double dist = 0;
-        uint64_t length = routeWay.size() - 1;
+        int64_t length = routeWay.size() - 1;
         while (length > 0 && connectLen == 0) {
             for (int i = 0; i < routeWay.size() - length; i++) {
                 CombineAreaRoutePoint& p = routeWay[i];
