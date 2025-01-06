@@ -644,8 +644,13 @@ UNORDERED_map<int64_t, NetworkDBPoint *> HHRoutePlanner::initStart(const SHARED_
 					int preciseX = reverse? hctx->startX : hctx->endX;
 					o->distanceFromStart += calculatePreciseStartTime(hctx->rctx, preciseX, preciseY, o);
 				} else {
+					float obstacle = hctx->rctx->config->router->defineRoutingObstacle(
+						o->getRoad(), o->getSegmentStart(), o->getSegmentStart() > o->getSegmentEnd());
+					if (obstacle < 0) {
+						continue;
+					}
+					o->distanceFromStart += calcRoutingSegmentTimeOnlyDist(hctx->rctx->config->router, o) / 2 + obstacle;
 					pnt = it->second;
-					o->distanceFromStart += calcRoutingSegmentTimeOnlyDist(hctx->rctx->config->router, o) / 2;
 				}
 				if (pnt->rt(reverse)->rtCost != 0) {
 					OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "Illegal state exception (hhRoutePlanner) [Native]");
