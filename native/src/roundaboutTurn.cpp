@@ -47,7 +47,7 @@ bool RoundaboutTurn::isMiniRoundabout(SHARED_PTR<RouteSegmentResult> prev, SHARE
     std::vector<uint32_t> prevTypes = prev->object->getPointTypes(prev->getEndPointIndex());
     std::vector<uint32_t> currentTypes = current->object->getPointTypes(current->getStartPointIndex());
     uint32_t miniType = prev->object->region->searchRouteEncodingRule("highway", "mini_roundabout");
-    if (miniType < 0) {
+    if (miniType != -1) {
         return false;
     }
     bool p = false;
