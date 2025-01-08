@@ -402,6 +402,31 @@ bool RouteDataObject::roundabout() {
 	return false;
 }
 
+bool RouteDataObject::isClockwise(bool leftSide) {
+    if (pointTypes.size() > 0) {
+        for (std::vector<uint32_t>& tt : pointTypes) {
+            for (uint32_t t : tt) {
+                if (t >= region->routeEncodingRules.size()) {
+                    continue;
+                }
+                RouteTypeRule r = region->routeEncodingRules[t];
+                if (r.getTag() == "direction") {
+                    if (r.getValue() == "clockwise") {
+                        return true;
+                    }
+                    if (r.getValue() == "anticlockwise") {
+                        return false;
+                    }
+                }
+            }
+        }
+    }
+    if (leftSide) {
+        return true;
+    }
+    return false;
+}
+
 bool RouteDataObject::hasTrafficLightAt(int i) {
 	if (i < pointTypes.size()) {
 		for (int j = 0; j < pointTypes[i].size(); j++) {

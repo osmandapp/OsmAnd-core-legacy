@@ -7,53 +7,15 @@
 #include "turnType.h"
 #include "binaryRoutePlanner.h"
 #include "multipolygons.h"
+#include "roadSplitStructure.h"
+#include "roundaboutTurn.h"
 
 const int MAX_SPEAK_PRIORITY = 5;
 const float TURN_DEGREE_MIN = 45;
 const float UNMATCHED_TURN_DEGREE_MINIMUM = 45;
 const float SPLIT_TURN_DEGREE_NOT_STRAIGHT = 100;
-const float TURN_SLIGHT_DEGREE = 5;
 
 const int TurnType::TURNS_ORDER[9] = {TU, TSHL, TL, TSLL, C, TSLR, TR, TSHR, TRU};
-
-struct AttachedRoadInfo {
-    vector<int> parsedLanes;
-    double attachedAngle;
-    int lanes;
-    int speakPriority;
-    bool attachedOnTheRight;
-    int turnType;
-};
-
-struct RoadSplitStructure {
-    bool keepLeft = false;
-    bool keepRight = false;
-    bool speak = false;
-    vector<SHARED_PTR<AttachedRoadInfo>> leftLanesInfo;
-    int leftLanes = 0;
-    vector<SHARED_PTR<AttachedRoadInfo>> rightLanesInfo;
-    int rightLanes = 0;
-    int roadsOnLeft = 0;
-    int addRoadsOnLeft = 0;
-    int roadsOnRight = 0;
-    int addRoadsOnRight = 0;
-    int leftMaxPrio = 0;
-    int rightMaxPrio = 0;
-    
-    bool allAreStraight() {
-        for (const SHARED_PTR<AttachedRoadInfo> & angle : leftLanesInfo) {
-            if (abs(angle->attachedAngle) > TURN_SLIGHT_DEGREE) {
-                return false;
-            }
-        }
-        for (const SHARED_PTR<AttachedRoadInfo> & angle : rightLanesInfo) {
-            if (abs(angle->attachedAngle) > TURN_SLIGHT_DEGREE) {
-                return false;
-            }
-        }
-        return true;
-    }
-};
 
 struct MergeTurnLaneTurn {
     SHARED_PTR<TurnType> turn;
@@ -363,47 +325,6 @@ void calculateTimeSpeed(RoutingContext* ctx, SHARED_PTR<RouteSegmentResult>& rr)
             rr->segmentSpeed = (float) speed;
         }
     }
-}
-
-SHARED_PTR<TurnType> processRoundaboutTurn(vector<SHARED_PTR<RouteSegmentResult> >& result, int i, bool leftSide, SHARED_PTR<RouteSegmentResult>& prev, SHARED_PTR<RouteSegmentResult>& rr) {
-    int exit = 1;
-    auto last = rr;
-    auto firstRoundabout = rr;
-    auto lastRoundabout = rr;
-    for (int j = i; j < result.size(); j++) {
-        auto rnext = result[j];
-        last = rnext;
-        if (rnext->object->roundabout()) {
-            lastRoundabout = rnext;
-            bool plus = rnext->getStartPointIndex() < rnext->getEndPointIndex();
-            int k = rnext->getStartPointIndex();
-            if (j == i) {
-                // first exit could be immediately after roundabout enter
-                //					k = plus ? k + 1 : k - 1;
-            }
-            while (k != rnext->getEndPointIndex()) {
-                int attachedRoads = (int)rnext->getAttachedRoutes(k).size();
-                if (attachedRoads > 0) {
-                    exit++;
-                }
-                k = plus ? k + 1 : k - 1;
-            }
-        } else {
-            break;
-        }
-    }
-    // combine all roundabouts
-    auto t = TurnType::getPtrExitTurn(exit, 0, leftSide);
-    // usually covers more than expected
-    float turnAngleBasedOnOutRoads = (float) degreesDiff(last->getBearingBegin(), prev->getBearingEnd());
-    // usually covers less than expected
-    float turnAngleBasedOnCircle = (float) -degreesDiff(firstRoundabout->getBearingBegin(), lastRoundabout->getBearingEnd() + 180);
-    if (abs(turnAngleBasedOnOutRoads - turnAngleBasedOnCircle) > 180) {
-        t->setTurnAngle(turnAngleBasedOnCircle);
-    } else {
-        t->setTurnAngle((turnAngleBasedOnCircle + turnAngleBasedOnOutRoads) / 2) ;
-    }
-    return t;
 }
 
 string getTurnLanesString(SHARED_PTR<RouteSegmentResult>& segment) {
@@ -1164,15 +1085,12 @@ SHARED_PTR<TurnType> getTurnInfo(vector<SHARED_PTR<RouteSegmentResult> >& result
     if (i == 0) {
         return TurnType::ptrValueOf(TurnType::C, false);
     }
+    RoundaboutTurn roundaboutTurn(result, i, leftSide);
+    if (roundaboutTurn.isRoundaboutExist()) {
+        return roundaboutTurn.getRoundaboutType();
+    }
     auto prev = result[i - 1];
-    if (prev->object->roundabout()) {
-        // already analyzed!
-        return nullptr;
-    }
     auto rr = result[i];
-    if (rr->object->roundabout()) {
-        return processRoundaboutTurn(result, i, leftSide, prev, rr);
-    }
     SHARED_PTR<TurnType> t = nullptr;
 	if (prev != nullptr)
 	{
