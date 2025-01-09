@@ -302,7 +302,7 @@ bool getGeotiffData(std::string& tilePath, std::string& outColorFilename, std::s
         {
             const auto bufSize = valueCount * sizeof(float);
             compositeTile = reinterpret_cast<char*>(malloc(bufSize));
-            memset(compositeTile, bufSize, 0);
+            memset(compositeTile, 0, bufSize);
             compose = true;
         }
     }
