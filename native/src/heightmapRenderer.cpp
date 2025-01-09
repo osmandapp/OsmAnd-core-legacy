@@ -573,7 +573,7 @@ bool getGeotiffData(std::string& tilePath, std::string& outColorFilename, std::s
         else
         {
             // Produce empty raster if no data was found
-            memset(pBuffer, bandCount * bandSize, 0);
+            memset(pBuffer, 0, bandCount * bandSize);
         }
     }
 
