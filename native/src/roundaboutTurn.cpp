@@ -109,7 +109,7 @@ SHARED_PTR<TurnType> RoundaboutTurn::processRoundaboutTurn() {
 }
 
 SHARED_PTR<TurnType> RoundaboutTurn::processMiniRoundaboutTurn() {
-    vector<SHARED_PTR<RouteSegmentResult>> & attachedRoutes = current->getAttachedRoutes(current->getStartPointIndex());
+    const auto & attachedRoutes = current->getAttachedRoutes(current->getStartPointIndex());
     bool clockwise = current->object->isClockwise(leftSide);
     if (attachedRoutes.size() > 0) {
         SHARED_PTR<RoadSplitStructure> rs = calculateSimpleRoadSplitStructure(attachedRoutes);

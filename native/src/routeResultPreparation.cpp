@@ -411,7 +411,7 @@ int countLanesMinOne(SHARED_PTR<RouteSegmentResult>& attached) {
 
 RoadSplitStructure calculateRoadSplitStructure(SHARED_PTR<RouteSegmentResult>& prevSegm,
                                                SHARED_PTR<RouteSegmentResult>& currentSegm,
-                                               vector<SHARED_PTR<RouteSegmentResult>>& attachedRoutes,
+                                               const vector<SHARED_PTR<RouteSegmentResult>>& attachedRoutes,
                                                string turnLanesPrevSegm) {
     RoadSplitStructure rs;
     int speakPriority = max(highwaySpeakPriority(prevSegm->object->getHighway()),
@@ -420,7 +420,7 @@ RoadSplitStructure calculateRoadSplitStructure(SHARED_PTR<RouteSegmentResult>& p
     double prevAngle =  normalizeDegrees360(prevSegm->getBearingBegin() - 180);
     bool hasSharpOrReverseLane = hasSharpOrReverseTurnLane(turnLanesPrevSegm);
     bool isSameTurnLanes = hasSameTurnLanes(prevSegm, currentSegm);
-    for (auto attached : attachedRoutes) {
+    for (auto & attached : attachedRoutes) {
         bool restricted = false;
         for (int k = 0; k < prevSegm->object->getRestrictionLength(); k++) {
             if (prevSegm->object->getRestrictionId(k) == attached->object->getId() &&
@@ -503,7 +503,7 @@ std::array<int,3> findActiveIndex(SHARED_PTR<RouteSegmentResult> prevSegm, SHARE
         return pair;
     }
     if (!rs) {
-        std::vector<SHARED_PTR<RouteSegmentResult>> & attachedRoutes = currentSegm->getAttachedRoutes(currentSegm->getStartPointIndex());
+        const auto & attachedRoutes = currentSegm->getAttachedRoutes(currentSegm->getStartPointIndex());
         if(attachedRoutes.size() > 0) {
             rs = std::make_shared<RoadSplitStructure>(calculateRoadSplitStructure(prevSegm, currentSegm, attachedRoutes, turnLanes));
         }
