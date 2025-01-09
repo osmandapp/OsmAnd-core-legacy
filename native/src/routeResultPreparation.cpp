@@ -503,7 +503,7 @@ std::array<int,3> findActiveIndex(SHARED_PTR<RouteSegmentResult> prevSegm, SHARE
         return pair;
     }
     if (!rs) {
-        std::vector<SHARED_PTR<RouteSegmentResult>> attachedRoutes = currentSegm->getAttachedRoutes(currentSegm->getStartPointIndex());
+        std::vector<SHARED_PTR<RouteSegmentResult>> & attachedRoutes = currentSegm->getAttachedRoutes(currentSegm->getStartPointIndex());
         if(attachedRoutes.size() > 0) {
             rs = std::make_shared<RoadSplitStructure>(calculateRoadSplitStructure(prevSegm, currentSegm, attachedRoutes, turnLanes));
         }
