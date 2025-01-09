@@ -134,7 +134,7 @@ SHARED_PTR<TurnType> RoundaboutTurn::processMiniRoundaboutTurn() {
     return nullptr;
 }
 
-SHARED_PTR<RoadSplitStructure> RoundaboutTurn::calculateSimpleRoadSplitStructure(vector<SHARED_PTR<RouteSegmentResult>>& attachedRoutes) {
+SHARED_PTR<RoadSplitStructure> RoundaboutTurn::calculateSimpleRoadSplitStructure(const vector<SHARED_PTR<RouteSegmentResult>>& attachedRoutes) {
     double prevAngle = normalizeDegrees360(prev->getBearingBegin() - 180);
     double currentAngle = normalizeDegrees360(current->getBearingBegin());
     SHARED_PTR<RoadSplitStructure> rs = std::make_shared<RoadSplitStructure>();

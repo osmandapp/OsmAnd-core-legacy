@@ -25,7 +25,7 @@ private:
     bool isMiniRoundabout(SHARED_PTR<RouteSegmentResult> prev, SHARED_PTR<RouteSegmentResult> current);
     SHARED_PTR<TurnType> processRoundaboutTurn();
     SHARED_PTR<TurnType> processMiniRoundaboutTurn();
-    SHARED_PTR<RoadSplitStructure> calculateSimpleRoadSplitStructure(vector<SHARED_PTR<RouteSegmentResult>>& attachedRoutes);
+    SHARED_PTR<RoadSplitStructure> calculateSimpleRoadSplitStructure(const vector<SHARED_PTR<RouteSegmentResult>>& attachedRoutes);
 };
 
 
