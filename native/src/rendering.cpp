@@ -382,7 +382,11 @@ void renderText(MapDataObject* obj, RenderableObject* rObj, RenderingRuleSearchR
 				if (tagName2 != "") {
 					std::string tv = obj->objectNames[tagName2];
 					if (tv != "") {
-						info->text = name + " (" + tv + ")";
+						if (name != tv) {
+							info->text = name + " (" + tv + ")";
+						} else {
+							info->text = name; // avoid awkward "$X ($X)"
+						}
 					}
 				}
 				info->drawOnPath = (path != NULL) && (req->getIntPropertyValue(req->props()->R_TEXT_ON_PATH, 0) > 0);
