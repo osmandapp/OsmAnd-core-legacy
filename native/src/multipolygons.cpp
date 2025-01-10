@@ -249,6 +249,29 @@ int ray_intersect_x(int prevX, int prevY, int x, int y, int middleY) {
 	}
 }
 
+int ray_intersect_y(int prevX, int prevY, int x, int y, int middleX) {
+	if (prevX > x) {
+		int tx = x;
+		int ty = y;
+		x = prevX;
+		y = prevY;
+		prevX = tx;
+		prevY = ty;
+	}
+	if (x == middleX || prevX == middleX) {
+		middleX -= 1;
+	}
+	if (prevX > middleX || x < middleX) {
+		return INT_MIN;
+	} else {
+		if (x == prevX) {
+			return y;
+		}
+		double ry = y + ((double)middleX - x) * ((double)y - prevY) / (((double)x - prevX));
+		return (int)ry;
+	}
+}
+
 // Copied from MapAlgorithms
 bool isClockwiseWay(std::vector<int_pair>& c) {
 	if (c.size() == 0) {
