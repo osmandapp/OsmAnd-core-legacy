@@ -770,8 +770,12 @@ vector<int> createCombinedTurnTypeForSingleLane(RoadSplitStructure & rs, double 
 }
 
 void synteticAssignTurnTypes(RoadSplitStructure & rs, int mainLaneType, vector<SHARED_PTR<AttachedRoadInfo>> & roads, bool left) {
-    auto comparatorByAngle = [left](const SHARED_PTR<AttachedRoadInfo>& o1, const SHARED_PTR<AttachedRoadInfo>& o2) {
-            return (left ? 1 : -1) * (o1->attachedAngle < o2->attachedAngle ? -1 : (o1->attachedAngle > o2->attachedAngle ? 1 : 0));
+    auto comparatorByAngle =
+        [left](const SHARED_PTR<AttachedRoadInfo>& o1, const SHARED_PTR<AttachedRoadInfo>& o2)-> bool
+    {
+        return left
+                   ? o1->attachedAngle < o2->attachedAngle
+                   : o1->attachedAngle > o2->attachedAngle;
     };
     vector<SHARED_PTR<AttachedRoadInfo>> & col = left ? rs.leftLanesInfo : rs.rightLanesInfo;
     std::sort(col.begin(), col.end(), comparatorByAngle);
