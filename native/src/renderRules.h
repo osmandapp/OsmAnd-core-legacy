@@ -589,6 +589,7 @@ private :
 	vector<float> fvalues;
 	vector<int> savedValues;
 	vector<float> savedFvalues;
+    map<string, string> classProperties;
 	bool searchResult;
 	MapDataObject* obj;
 
@@ -647,7 +648,7 @@ public:
 
 	bool searchRenderingAttribute(string attribute);
 
-
+    void setClassProperty(string tag, string value);
 };
 
 
