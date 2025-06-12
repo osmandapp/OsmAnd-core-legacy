@@ -719,3 +719,7 @@ void RenderingRuleSearchRequest::printDebugResult() {
 		printf("\nNot found\n");
 	}
 }
+
+void RenderingRuleSearchRequest::setClassProperty(string tag, string value) {
+    classProperties[tag] = value;
+}

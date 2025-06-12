@@ -44,6 +44,7 @@ jfieldID RenderingRuleSearchRequest_values;
 jfieldID RenderingRuleSearchRequest_fvalues;
 jfieldID RenderingRuleSearchRequest_savedValues;
 jfieldID RenderingRuleSearchRequest_savedFvalues;
+jfieldID RenderingRuleSearchRequest_classProperties;
 
 jclass findGlobalClass(JNIEnv* env, string cl) {
 	return (jclass)env->NewGlobalRef(findClass(env, cl.c_str()));
@@ -269,6 +270,48 @@ void initRenderingRuleSearchRequest(JNIEnv* env, RenderingRuleSearchRequest* r, 
 		env->ReleaseFloatArrayElements(ia, ie, JNI_ABORT);
 		env->DeleteLocalRef(ia);
 	}
+
+	jobject classPropsMap = env->GetObjectField(rrs, RenderingRuleSearchRequest_classProperties);
+	if (classPropsMap != NULL) {
+		jclass mapClass = env->FindClass("java/util/Map");
+		jmethodID entrySet = env->GetMethodID(mapClass, "entrySet", "()Ljava/util/Set;");
+		jobject entrySetObj = env->CallObjectMethod(classPropsMap, entrySet);
+		
+		jclass setClass = env->FindClass("java/util/Set");
+		jmethodID iterator = env->GetMethodID(setClass, "iterator", "()Ljava/util/Iterator;");
+		jobject iteratorObj = env->CallObjectMethod(entrySetObj, iterator);
+		
+		jclass iteratorClass = env->FindClass("java/util/Iterator");
+		jmethodID hasNext = env->GetMethodID(iteratorClass, "hasNext", "()Z");
+		jmethodID next = env->GetMethodID(iteratorClass, "next", "()Ljava/lang/Object;");
+		
+		jclass entryClass = env->FindClass("java/util/Map$Entry");
+		jmethodID getKey = env->GetMethodID(entryClass, "getKey", "()Ljava/lang/Object;");
+		jmethodID getValue = env->GetMethodID(entryClass, "getValue", "()Ljava/lang/Object;");
+		
+		while (env->CallBooleanMethod(iteratorObj, hasNext)) {
+			jobject entry = env->CallObjectMethod(iteratorObj, next);
+			jstring key = (jstring)env->CallObjectMethod(entry, getKey);
+			jstring value = (jstring)env->CallObjectMethod(entry, getValue);
+			
+			const char* keyStr = env->GetStringUTFChars(key, NULL);
+			const char* valueStr = env->GetStringUTFChars(value, NULL);
+
+            r->setClassProperty(string(keyStr), string(valueStr));
+			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Initializing class property: %s = %s", keyStr, valueStr);
+			
+			env->ReleaseStringUTFChars(key, keyStr);
+			env->ReleaseStringUTFChars(value, valueStr);
+			env->DeleteLocalRef(key);
+			env->DeleteLocalRef(value);
+			env->DeleteLocalRef(entry);
+		}
+		
+		env->DeleteLocalRef(iteratorObj);
+		env->DeleteLocalRef(entrySetObj);
+		env->DeleteLocalRef(classPropsMap);
+	}
+
 	r->externalInitialize(values, fvalues, savedValues, savedFvalues);
 }
 
@@ -320,6 +363,7 @@ void loadJniRenderingRules(JNIEnv* env) {
 	RenderingRuleSearchRequest_fvalues = env->GetFieldID(RenderingRuleSearchRequestClass, "fvalues", "[F");
 	RenderingRuleSearchRequest_savedValues = env->GetFieldID(RenderingRuleSearchRequestClass, "savedValues", "[I");
 	RenderingRuleSearchRequest_savedFvalues = env->GetFieldID(RenderingRuleSearchRequestClass, "savedFvalues", "[F");
+	RenderingRuleSearchRequest_classProperties = env->GetFieldID(RenderingRuleSearchRequestClass, "classProperties", "Ljava/util/Map;");
 }
 
 void unloadJniRenderRules(JNIEnv* env) {
