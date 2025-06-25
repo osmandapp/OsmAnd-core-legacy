@@ -83,6 +83,8 @@ SHARED_PTR<HHRoutingContext> HHRoutePlanner::selectBestRoutingFiles(int startX, 
 	std::sort(groups.begin(), groups.end(), [](const SHARED_PTR<HHRouteRegionsGroup> o1, const SHARED_PTR<HHRouteRegionsGroup> o2) {
 		if (o1->containsStartEnd != o2->containsStartEnd) {
 			return o1->containsStartEnd;
+		} else if (o1->edition != o2->edition) {
+			return o1->edition > o2->edition;
 		} else if (o1->extraParam != o2->extraParam) {
 			return o1->extraParam < o2->extraParam;
 		} else if (o1->matchParam != o2->matchParam) {
