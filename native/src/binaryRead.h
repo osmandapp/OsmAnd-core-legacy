@@ -73,6 +73,10 @@ struct RouteSubregion {
 
 	RouteSubregion(const SHARED_PTR<RoutingIndex>& ind) : length(0), filePointer(0), mapDataBlock(0), routingIndex(ind) {
 	}
+    
+    bool operator<(const RouteSubregion& other) const {
+        return length < other.length && filePointer < other.filePointer && mapDataBlock < other.mapDataBlock && left < other.left && right < other.right && top < other.top && bottom < other.bottom && subregions.size() < other.subregions.size();
+    }
 };
 
 struct MapRoot : MapTreeBounds {
@@ -657,6 +661,7 @@ struct RouteDataObject {
 	bool isRoadDeleted() {
 		auto sz = types.size();
 		for (int i = 0; i < sz; i++) {
+            uint32_t type = types[i];
 			auto& r = region->quickGetEncodingRule(types[i]);
 			if ("osmand_change" == r.getTag() && "delete" == r.getValue()) {
 				return true;
@@ -1097,7 +1102,17 @@ void loadTransportRoutes(BinaryMapFile* file, vector<int32_t> filePointers, UNOR
 
 void searchRouteSubregions(SearchQuery* q, std::vector<RouteSubregion>& tempResult, bool basemap, bool geocoding, std::vector<BinaryMapFile*> & mapIndexReaderFilter);
 
-bool searchRouteSubregionsForBinaryMapFile(BinaryMapFile* file,
+void readRouteDataObjects(SearchQuery* q, BinaryMapFile* file, vector<RouteSubregion>& subregions, const SHARED_PTR<RoutingIndex>& routeIndex, std::vector<RouteDataObject*>& tempResult);
+
+void readRouteDataAsMapObjects(SearchQuery* q, BinaryMapFile* file, std::vector<FoundMapDataObject>& tempResult, int& renderedState);
+
+void searchRouteRegion(BinaryMapFile* file, SearchQuery* q,
+                       const SHARED_PTR<RoutingIndex>& ind, std::vector<RouteSubregion>& subregions, std::vector<RouteSubregion>& toLoad,
+                       bool geocoding);
+
+void checkAndInitRouteRegionRules(int fileInd, const SHARED_PTR<RoutingIndex>& routingIndex);
+
+std::vector<RouteSubregion> searchRouteSubregionsForBinaryMapFile(BinaryMapFile* file,
 										   SearchQuery* q);
 
 void searchRouteDataForSubRegion(SearchQuery* q, std::vector<RouteDataObject*>& list, RouteSubregion* sub,
