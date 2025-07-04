@@ -57,7 +57,7 @@ bool TransportRoutePlanner::includeRoute(SHARED_PTR<TransportRouteResult>& fastR
 void TransportRoutePlanner::prepareResults(unique_ptr<TransportRoutingContext>& ctx,
 										   vector<SHARED_PTR<TransportRouteSegment>>& results,
 										   vector<SHARED_PTR<TransportRouteResult>>& routes) {
-    TransportSegmentsComparator trSegmComp;
+	TransportSegmentsComparator trSegmComp;
 	sort(results.begin(), results.end(), trSegmComp);
 
 	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,

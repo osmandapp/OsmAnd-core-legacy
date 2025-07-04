@@ -24,14 +24,14 @@ TransportRoutingConfiguration::TransportRoutingConfiguration(
 		finishTimeSeconds = router->getIntAttribute(
 			"delayForAlternativesRoutes", finishTimeSeconds);
 		string mn = router->getAttribute("max_num_changes");
-        if (mn.length() > 0) {
-            try {
-                int maxChanges = atoi(mn.c_str());
-                maxNumberOfChanges = maxChanges;
-            } catch (...) {
-                // Ignore
-            }
-        }
+		if (mn.length() > 0) {
+			try {
+				int maxChanges = atoi(mn.c_str());
+				maxNumberOfChanges = maxChanges;
+			} catch (...) {
+				// Ignore
+			}
+		}
 		walkSpeed =
 			router->getFloatAttribute("minDefaultSpeed", walkSpeed * 3.6f) /
 			3.6f;
