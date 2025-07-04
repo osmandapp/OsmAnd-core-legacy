@@ -67,7 +67,8 @@ SHARED_PTR<HHRoutingContext> HHRoutePlanner::selectBestRoutingFiles(int startX, 
 		}
 	}
 	for (auto & g : groups) {
-		g->containsStartEnd = g->contains(startX, startY, hctx) && g->contains(endX, endY, hctx);
+		g->containsStartEnd = g->contains(startX, startY, hctx) && g->contains(endX, endY, hctx)
+			&& g->containsStartEndRegion(hctx->rctx->regionsCoveringStartAndTargets);
 		vector<string> params = split_string(g->profileParams, ",");
 		for (string & p : params) {
 			if (trim(p).length() == 0) {

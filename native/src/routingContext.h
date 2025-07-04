@@ -118,6 +118,8 @@ struct RoutingContext {
 	UNORDERED(map)<int64_t, std::vector<SHARED_PTR<RoutingSubregionTile>>> indexedSubregions;
 	vector<BinaryMapFile *> mapIndexReaderFilter;
 
+	std::vector<std::string> regionsCoveringStartAndTargets;
+
 	int alertFasterRoadToVisitedSegments;
 	int alertSlowerSegmentedWasVisitedEarlier;
 

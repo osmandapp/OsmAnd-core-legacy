@@ -514,6 +514,7 @@ jfieldID jfield_RoutingContext_calculationProgress = NULL;
 jfieldID jfield_RoutingContext_calculationMode = NULL;
 jfieldID jfield_RoutingContext_alertFasterRoadToVisitedSegments = NULL;
 jfieldID jfield_RoutingContext_alertSlowerSegmentedWasVisitedEarlier = NULL;
+jfieldID jfield_RoutingContext_regionsCoveringStartAndTargets = NULL;
 
 jclass jclass_RouteCalculationMode = NULL;
 jclass jclass_RoutePlannerFrontEnd = NULL;
@@ -929,6 +930,8 @@ void loadJniRenderingContext(JNIEnv* env) {
 		getFid(env, jclass_RoutingContext, "alertFasterRoadToVisitedSegments", "I");
 	jfield_RoutingContext_alertSlowerSegmentedWasVisitedEarlier =
 		getFid(env, jclass_RoutingContext, "alertSlowerSegmentedWasVisitedEarlier", "I");
+	jfield_RoutingContext_regionsCoveringStartAndTargets =
+		getFid(env, jclass_RoutingContext, "regionsCoveringStartAndTargets", "[Ljava/lang/String;");
 
 	jclass_RouteCalculationProgress = findGlobalClass(env, "net/osmand/router/RouteCalculationProgress");
 	jfield_RouteCalculationProgress_isCancelled = getFid(env, jclass_RouteCalculationProgress, "isCancelled", "Z");
@@ -1880,6 +1883,22 @@ RoutingContext* getRoutingContext(JNIEnv* ienv, jobject jCtx, jfloat initDirecti
 	jint value = ienv->CallIntMethod(calculationMode, getOrdinalValueMethod);
 	c->calculationMode = (RouteCalculationMode)(value);
 	c->targetTransportStop = ienv->GetBooleanField(jCtx, jfield_RoutingContext_targetTransportStop);
+
+	jobjectArray jRegionsArray = (jobjectArray)
+		ienv->GetObjectField(jCtx, jfield_RoutingContext_regionsCoveringStartAndTargets);
+	if (jRegionsArray)
+	{
+		jsize len = ienv->GetArrayLength(jRegionsArray);
+		for (jsize i = 0; i < len; ++i)
+		{
+			jstring jStr = (jstring)ienv->GetObjectArrayElement(jRegionsArray, i);
+			const char* utf = ienv->GetStringUTFChars(jStr, nullptr);
+			c->regionsCoveringStartAndTargets.push_back(std::string(utf));
+			ienv->ReleaseStringUTFChars(jStr, utf);
+			ienv->DeleteLocalRef(jStr);
+		}
+		ienv->DeleteLocalRef(jRegionsArray);
+	}
 
 	c->basemap = basemap;
 	c->setConditionalTime(c->config->routeCalculationTime);

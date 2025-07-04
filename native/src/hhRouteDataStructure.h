@@ -712,6 +712,28 @@ struct HHRouteRegionsGroup {
 		}
 		return contains;
 	}
+
+	bool containsStartEndRegion(const std::vector<std::string>& regionsCoveringStartAndTargets)
+	{
+		if (regionsCoveringStartAndTargets.size() == 0)
+		{
+			return true;
+		}
+		for (auto* reader : readers)
+		{
+			for (auto& index : reader->routingIndexes)
+			{
+				for (const auto& region : regionsCoveringStartAndTargets)
+				{
+					if (to_lowercase(region) == to_lowercase(index->name))
+					{
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
 };
 
 #endif /*_OSMAND_HH_ROUTE_DATA_STRUCTURE_H*/
