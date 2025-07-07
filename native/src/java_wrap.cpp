@@ -1886,11 +1886,9 @@ RoutingContext* getRoutingContext(JNIEnv* ienv, jobject jCtx, jfloat initDirecti
 
 	jobjectArray jRegionsArray = (jobjectArray)
 		ienv->GetObjectField(jCtx, jfield_RoutingContext_regionsCoveringStartAndTargets);
-	if (jRegionsArray)
-	{
+	if (jRegionsArray) {
 		jsize len = ienv->GetArrayLength(jRegionsArray);
-		for (jsize i = 0; i < len; ++i)
-		{
+		for (jsize i = 0; i < len; ++i) {
 			jstring jStr = (jstring)ienv->GetObjectArrayElement(jRegionsArray, i);
 			const char* utf = ienv->GetStringUTFChars(jStr, nullptr);
 			c->regionsCoveringStartAndTargets.push_back(std::string(utf));
