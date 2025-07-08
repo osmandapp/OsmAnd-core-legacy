@@ -178,12 +178,16 @@ SHARED_PTR<RouteSegment> initEdgeSegment(RoutingContext* ctx, SHARED_PTR<RouteSe
 	auto segments = ctx->loadRouteSegment(originalDir ? pnt->getStartPointX() : pnt->getEndPointX(),
 			originalDir ? pnt->getStartPointY() : pnt->getEndPointY(), reverseSearchWay);
 	SHARED_PTR<RouteSegment> seg = nullptr;
-	for (int i = 0; i < segments.size(); i++) {
-		seg = segments[i];
-		if (seg->getRoad()->getId() == pnt->getRoad()->getId() &&
+	auto it = segments.begin();
+	while (it != segments.end()) {
+		if (*it != nullptr) {
+			seg = *it;
+			if (seg->getRoad()->getId() == pnt->getRoad()->getId() &&
 				(seg->getSegmentStart() == (originalDir ? pnt->getSegmentStart() : pnt->getSegmentEnd()))) {
-			break;
+				break;
+			}
 		}
+		++it;
 	}
 	if (ctx->isInterrupted() || segments.size() == 0 || seg == nullptr) {
 		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "initEdgeSegment() got empty segments (cancel)");
