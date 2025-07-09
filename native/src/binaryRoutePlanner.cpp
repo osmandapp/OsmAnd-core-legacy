@@ -196,6 +196,11 @@ SHARED_PTR<RouteSegment> initEdgeSegment(RoutingContext* ctx, SHARED_PTR<RouteSe
 	if (seg->getSegmentStart() != (originalDir ? pnt->getSegmentStart() : pnt->getSegmentEnd())
 			|| seg->getSegmentEnd() != (originalDir ? pnt->getSegmentEnd() : pnt->getSegmentStart())) {
 		seg = RouteSegment::initRouteSegment(seg, !seg->isPositive());
+		if (seg == nullptr || seg->getRoad() == nullptr)
+		{
+			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "initEdgeSegment() got empty initRouteSegment");
+			return nullptr;
+		}
 	}
 	if (originalDir && (seg->getSegmentStart() != pnt->getSegmentStart() || seg->getSegmentEnd() != pnt->getSegmentEnd())) {
 		//throw new IllegalStateException();
