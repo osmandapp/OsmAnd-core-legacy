@@ -86,10 +86,10 @@ struct RouteSegment {
 
 	static SHARED_PTR<RouteSegment> initRouteSegment(const SHARED_PTR<RouteSegment>& th, bool positiveDirection) {
 		if (th->segmentStart == 0 && !positiveDirection) {
-			return SHARED_PTR<RouteSegment>();
+			return SHARED_PTR<RouteSegment>(); // FIXME - Java returns null here - be careful at parents
 		}
 		if (th->segmentStart == th->road->getPointsLength() - 1 && positiveDirection) {
-			return SHARED_PTR<RouteSegment>();
+			return SHARED_PTR<RouteSegment>(); // FIXME - Java returns null here - be careful at parents
 		}
 
 		if (th->segmentStart == th->segmentEnd) {
