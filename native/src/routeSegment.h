@@ -109,7 +109,7 @@ struct RouteSegment {
 				return th->oppositeDirection.lock();
 			}
 		}
-		return nullptr;
+		return nullptr; // unreached
 	}
 
 	RouteSegment()
