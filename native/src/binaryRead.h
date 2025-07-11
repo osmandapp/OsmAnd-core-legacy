@@ -73,10 +73,6 @@ struct RouteSubregion {
 
 	RouteSubregion(const SHARED_PTR<RoutingIndex>& ind) : length(0), filePointer(0), mapDataBlock(0), routingIndex(ind) {
 	}
-    
-    bool operator<(const RouteSubregion& other) const {
-        return length < other.length && filePointer < other.filePointer && mapDataBlock < other.mapDataBlock && left < other.left && right < other.right && top < other.top && bottom < other.bottom && subregions.size() < other.subregions.size();
-    }
 };
 
 struct MapRoot : MapTreeBounds {
@@ -661,7 +657,7 @@ struct RouteDataObject {
 	bool isRoadDeleted() {
 		auto sz = types.size();
 		for (int i = 0; i < sz; i++) {
-            uint32_t type = types[i];
+			uint32_t type = types[i];
 			auto& r = region->quickGetEncodingRule(types[i]);
 			if ("osmand_change" == r.getTag() && "delete" == r.getValue()) {
 				return true;
