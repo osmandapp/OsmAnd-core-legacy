@@ -2793,7 +2793,7 @@ void checkAndInitRouteRegionRules(int fileInd, const SHARED_PTR<RoutingIndex>& r
 	}
 }
 
-bool searchRouteSubregionsForBinaryMapFile(BinaryMapFile* file,
+std::vector<RouteSubregion> searchRouteSubregionsForBinaryMapFile(BinaryMapFile* file,
 										   SearchQuery* q) {
 	std::vector<RouteSubregion> tempResult;
 	for (const auto& routeIndex : file->routingIndexes) {
@@ -2809,16 +2809,17 @@ bool searchRouteSubregionsForBinaryMapFile(BinaryMapFile* file,
 			FileInputStream* nt = NULL;
 			CodedInputStream* cis = NULL;
 			searchRouteRegion(&cis, &nt, file, q, routeIndex, subs, tempResult, false);
+            
 			if (cis != NULL) {
 				delete cis;
 			}
 			if (nt != NULL) {
 				delete nt;
 			}
-			return true;
+			return tempResult;
 		}
 	}
-	return false;
+	return tempResult;
 }
 
 void searchRouteSubregions(SearchQuery* q, std::vector<RouteSubregion>& tempResult, bool basemap, bool geocoding, std::vector<BinaryMapFile *> & mapIndexReaderFilter) {
@@ -2872,6 +2873,26 @@ void readRouteMapObjects(SearchQuery* q, BinaryMapFile* file, vector<RouteSubreg
 		cis.PopLimit(old);
 		convertRouteDataObjecToMapObjects(q, list, tempResult, renderedState);
 	}
+}
+
+void readRouteDataObjects(SearchQuery* q, BinaryMapFile* file, vector<RouteSubregion>& subregions, const SHARED_PTR<RoutingIndex>& routeIndex, std::vector<RouteDataObject*>& tempResult) {
+    sort(subregions.begin(), subregions.end(), sortRouteRegions);
+    lseek(file->getFD(), 0, SEEK_SET);
+    FileInputStream input(file->getFD());
+    input.SetCloseOnDelete(false);
+    CodedInputStream cis(&input);
+    cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
+    
+    for (std::vector<RouteSubregion>::iterator sub = subregions.begin(); sub != subregions.end(); sub++) {
+        std::vector<RouteDataObject*> list;
+        cis.Seek(sub->filePointer + sub->mapDataBlock);
+        uint32_t length;
+        cis.ReadVarint32(&length);
+        uint32_t old = cis.PushLimit(length);
+        readRouteTreeData(&cis, &(*sub), list, routeIndex);
+        cis.PopLimit(old);
+        tempResult.insert(tempResult.end(), list.begin(), list.end());
+    }
 }
 
 void readRouteDataAsMapObjects(SearchQuery* q, BinaryMapFile* file, std::vector<FoundMapDataObject>& tempResult,
@@ -3267,6 +3288,15 @@ void initInputForRouteFile(CodedInputStream** inputStream, FileInputStream** fis
 	} else {
 		(*inputStream)->Seek(seek);
 	}
+}
+
+void searchRouteRegion(BinaryMapFile* file, SearchQuery* q,
+                       const SHARED_PTR<RoutingIndex>& ind, std::vector<RouteSubregion>& subregions, std::vector<RouteSubregion>& toLoad,
+                       bool geocoding)
+{
+    FileInputStream* nt = NULL;
+    CodedInputStream* cis = NULL;
+    searchRouteRegion(&cis, &nt, file, q, ind, subregions, toLoad, false);
 }
 
 void searchRouteRegion(CodedInputStream** input, FileInputStream** fis, BinaryMapFile* file, SearchQuery* q,
