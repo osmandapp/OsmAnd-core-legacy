@@ -812,6 +812,7 @@ jfieldID jfield_HHRoutingConfig_MAX_SETTLE_POINTS = NULL;
 jfieldID jfield_HHRoutingConfig_USE_CH = NULL;
 jfieldID jfield_HHRoutingConfig_USE_CH_SHORTCUTS = NULL;
 jfieldID jfield_HHRoutingConfig_USE_MIDPOINT = NULL;
+jfieldID jfield_HHRoutingConfig_STRICT_BEST_GROUP_MAPS = NULL;
 
 void loadJniRenderingContext(JNIEnv* env) {
 	jclass_NativeTransportRoutingResult = findGlobalClass(env, "net/osmand/router/NativeTransportRoutingResult");
@@ -1249,6 +1250,7 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jfield_HHRoutingConfig_USE_CH = getFid(env, jclass_HHRoutingConfig, "USE_CH", "Z");
 	jfield_HHRoutingConfig_USE_CH_SHORTCUTS = getFid(env, jclass_HHRoutingConfig, "USE_CH_SHORTCUTS", "Z");
 	jfield_HHRoutingConfig_USE_MIDPOINT = getFid(env, jclass_HHRoutingConfig, "USE_MIDPOINT", "Z");		
+	jfield_HHRoutingConfig_STRICT_BEST_GROUP_MAPS = getFid(env, jclass_HHRoutingConfig, "STRICT_BEST_GROUP_MAPS", "Z");
 }
 
 void pullFromJavaRenderingContext(JNIEnv* env, jobject jrc, JNIRenderingContext* rc) {
@@ -1922,7 +1924,8 @@ HHRoutingConfig * getHHRoutingConfig(JNIEnv* ienv, jobject jHHConf) {
 	c->MAX_SETTLE_POINTS = ienv->GetIntField(jHHConf, jfield_HHRoutingConfig_MAX_SETTLE_POINTS);
 	c->USE_CH = ienv->GetBooleanField(jHHConf, jfield_HHRoutingConfig_USE_CH);
 	c->USE_CH_SHORTCUTS = ienv->GetBooleanField(jHHConf, jfield_HHRoutingConfig_USE_CH_SHORTCUTS);
-	c->USE_MIDPOINT = ienv->GetBooleanField(jHHConf,  jfield_HHRoutingConfig_USE_MIDPOINT);
+	c->USE_MIDPOINT = ienv->GetBooleanField(jHHConf, jfield_HHRoutingConfig_USE_MIDPOINT);
+	c->STRICT_BEST_GROUP_MAPS = ienv->GetBooleanField(jHHConf, jfield_HHRoutingConfig_STRICT_BEST_GROUP_MAPS);
 	return c;
 }
 

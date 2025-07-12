@@ -216,7 +216,7 @@ SHARED_PTR<RouteSegment> initEdgeSegment(RoutingContext* ctx, SHARED_PTR<RouteSe
 		// special case for single side spread point-dijkstra
 		return nullptr;
 	}
-	seg->parentRoute = createNull();
+	seg->parentRoute = createNullRouteSegment();
 	float dist = -calculatePreciseStartTime(ctx, pnt->preciseX, pnt->preciseY, seg);
 	// full segment length will be added on first visit
 	seg->distanceFromStart = dist;
@@ -240,7 +240,7 @@ SHARED_PTR<RouteSegment> initEdgeSegment(RoutingContext* ctx, SHARED_PTR<RouteSe
 	return nullptr;
 }
 
-SHARED_PTR<RouteSegment> createNull() { return std::make_shared<RouteSegment>(nullptr, 0, 1); }
+SHARED_PTR<RouteSegment> createNullRouteSegment() { return std::make_shared<RouteSegment>(nullptr, 0, 1); }
 
 void initQueuesWithStartEnd(RoutingContext* ctx, SHARED_PTR<RouteSegmentPoint>& start, SHARED_PTR<RouteSegmentPoint>& end,
 							SEGMENTS_QUEUE& graphDirectSegments, SEGMENTS_QUEUE& graphReverseSegments) {

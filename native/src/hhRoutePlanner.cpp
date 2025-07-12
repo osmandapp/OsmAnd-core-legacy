@@ -48,7 +48,9 @@ SHARED_PTR<HHRoutingContext> HHRoutePlanner::initNewContext(RoutingContext * ctx
 	return currentCtx;
 }
 
-SHARED_PTR<HHRoutingContext> HHRoutePlanner::selectBestRoutingFiles(int startX, int startY, int endX, int endY, const SHARED_PTR<HHRoutingContext> & hctx) {
+SHARED_PTR<HHRoutingContext> HHRoutePlanner::selectBestRoutingFiles(int startX, int startY, int endX, int endY,
+                                                                    const SHARED_PTR<HHRoutingContext>& hctx,
+                                                                    bool strictBestGroupMap) {
 	std::vector<SHARED_PTR<HHRouteRegionsGroup>> groups;
 	SHARED_PTR<GeneralRouter> router = hctx->rctx->config->router;
 	string profile = profileToString(router->getProfile()); // use base profile
@@ -123,10 +125,12 @@ SHARED_PTR<HHRoutingContext> HHRoutePlanner::selectBestRoutingFiles(int startX, 
 			break;
 		}
 	}
+
 	if (allMatched) {
 		return currentCtx;
 	}
-	if (groups.size() > 1) {
+
+	if (strictBestGroupMap && groups.size() > 1) {
 		for (SHARED_PTR<HHRouteRegionPointsCtx> reg : regions) {
 			if (std::find(hctx->rctx->mapIndexReaderFilter.begin(), hctx->rctx->mapIndexReaderFilter.end(), reg->file) == hctx->rctx->mapIndexReaderFilter.end()) {
 				hctx->rctx->mapIndexReaderFilter.push_back(reg->file);
@@ -182,7 +186,8 @@ SHARED_PTR<HHRoutingContext> HHRoutePlanner::initHCtx(HHRoutingConfig * c, int s
 	SHARED_PTR<HHRoutingContext> hctx = currentCtx;
 	SHARED_PTR<RouteCalculationProgress> progress = hctx->rctx->progress;
 	progress->hhIteration(RouteCalculationProgress::HHIteration::SELECT_REGIONS);
-	hctx = selectBestRoutingFiles(startX, startY, endX, endY, hctx);
+
+	hctx = selectBestRoutingFiles(startX, startY, endX, endY, hctx, c->STRICT_BEST_GROUP_MAPS);
 	
 	if (hctx == nullptr) {
 		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "No files found for routing");
