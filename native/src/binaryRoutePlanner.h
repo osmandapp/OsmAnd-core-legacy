@@ -33,7 +33,7 @@ vector<SHARED_PTR<RouteSegment>> searchRouteInternal(RoutingContext* ctx, SHARED
 
 bool checkMovementAllowed(RoutingContext* ctx, bool reverseWaySearch, const SHARED_PTR<RouteSegment>& segment);
 bool containsKey(VISITED_MAP& visited, int64_t routePointId);
-SHARED_PTR<RouteSegment> createNull();
+SHARED_PTR<RouteSegment> createNullRouteSegment();
 float calculatePreciseStartTime(const RoutingContext* ctx, int projX, int projY, const SHARED_PTR<RouteSegment>& seg);
 class GeneralRouter;
 float calcRoutingSegmentTimeOnlyDist(const SHARED_PTR<GeneralRouter>& router, const SHARED_PTR<RouteSegment>& segment);

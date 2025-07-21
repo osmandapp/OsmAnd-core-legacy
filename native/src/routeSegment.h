@@ -1,5 +1,6 @@
 #ifndef _OSMAND_ROUTE_SEGMENT_H
 #define _OSMAND_ROUTE_SEGMENT_H
+
 #include "CommonCollections.h"
 #include "commonOsmAndCore.h"
 #include "routeSegmentResult.h"
@@ -86,14 +87,14 @@ struct RouteSegment {
 
 	static SHARED_PTR<RouteSegment> initRouteSegment(const SHARED_PTR<RouteSegment>& th, bool positiveDirection) {
 		if (th->segmentStart == 0 && !positiveDirection) {
-			return SHARED_PTR<RouteSegment>();
+			return nullptr;
 		}
 		if (th->segmentStart == th->road->getPointsLength() - 1 && positiveDirection) {
-			return SHARED_PTR<RouteSegment>();
+			return nullptr;
 		}
 
 		if (th->segmentStart == th->segmentEnd) {
-			throw std::invalid_argument("segmentStart or segmentEnd");
+			throw std::invalid_argument("segmentStart == segmentEnd");
 		} else {
 			if (positiveDirection == (th->segmentEnd > th->segmentStart)) {
 				return th;
@@ -109,7 +110,7 @@ struct RouteSegment {
 				return th->oppositeDirection.lock();
 			}
 		}
-		return nullptr;
+		return nullptr; // actually unreached
 	}
 
 	RouteSegment()

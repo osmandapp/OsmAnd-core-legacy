@@ -570,6 +570,7 @@ HHRoutingConfig * RoutePlannerFrontEnd::setDefaultRoutingConfig() {
 	}
 	HH_ROUTING_CONFIG = HHRoutingConfig::astar(0);
 	HH_ROUTING_CONFIG->calcDetailed(HHRoutingConfig::CALCULATE_ALL_DETAILED);
+	HH_ROUTING_CONFIG->applyCalculateMissingMaps(CALCULATE_MISSING_MAPS);
 	return HH_ROUTING_CONFIG;
 }
 
