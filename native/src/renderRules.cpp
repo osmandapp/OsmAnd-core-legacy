@@ -577,8 +577,8 @@ bool RenderingRuleSearchRequest::checkInputProperties(RenderingRule* rule) {
 				} else {
 					std::string val = storage->getDictionaryValue(rule->intProperties[i]);
 					int i = val.find('=');
-					if (i == val.length() - 1) {
-						match = !obj->containsAdditional(val, "");
+					if (val.find('!') == 0) {
+						match = !obj->containsAdditional(val.find(1), "");
 					} else if (i >= 0) {
 						match = obj->containsAdditional(val.substr(0, i), val.substr(i + 1));
 					} else {
