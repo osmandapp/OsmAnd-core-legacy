@@ -657,7 +657,6 @@ struct RouteDataObject {
 	bool isRoadDeleted() {
 		auto sz = types.size();
 		for (int i = 0; i < sz; i++) {
-			uint32_t type = types[i];
 			auto& r = region->quickGetEncodingRule(types[i]);
 			if ("osmand_change" == r.getTag() && "delete" == r.getValue()) {
 				return true;
