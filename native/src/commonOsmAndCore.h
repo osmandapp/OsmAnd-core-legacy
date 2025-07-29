@@ -11,6 +11,8 @@
 #include "CommonCollections.h"
 #include "Internal.h"
 
+struct TextDrawInfo;
+
 // M_PI is no longer part of math.h/cmath by standart, but some GCC's define them
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -255,6 +257,7 @@ class MapDataObject {
    public:
 	std::vector<tag_value> types;
 	std::vector<tag_value> additionalTypes;
+	SHARED_PTR<TextDrawInfo> prevText;
 	coordinates points;
 	std::vector<coordinates> polygonInnerCoordinates;
 

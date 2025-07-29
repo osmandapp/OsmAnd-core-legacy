@@ -431,6 +431,12 @@ void renderText(MapDataObject* obj, RenderableObject* rObj, RenderingRuleSearchR
 					if (rObj != NULL) {
 						renderableObjects.insert({info->object.id, rObj});
 					}
+
+					if (!ico) {
+						obj->prevText = info;
+					} else if (obj->prevText) {
+						obj->prevText->additionalIcon = ico;
+					}
 				}
 			}
 		}

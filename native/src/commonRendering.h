@@ -130,6 +130,7 @@ struct TextDrawInfo {
 	std::string text;
 	MapDataObject object;
 	SHARED_PTR<IconDrawInfo> icon;
+	SHARED_PTR<IconDrawInfo> additionalIcon;
 	bool visible;
 	bool combined;
 
