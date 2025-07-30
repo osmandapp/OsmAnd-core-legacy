@@ -257,7 +257,6 @@ class MapDataObject {
    public:
 	std::vector<tag_value> types;
 	std::vector<tag_value> additionalTypes;
-	SHARED_PTR<TextDrawInfo> prevText;
 	coordinates points;
 	std::vector<coordinates> polygonInnerCoordinates;
 
