@@ -11,8 +11,6 @@
 #include "CommonCollections.h"
 #include "Internal.h"
 
-struct TextDrawInfo;
-
 // M_PI is no longer part of math.h/cmath by standart, but some GCC's define them
 #define _USE_MATH_DEFINES
 #include <math.h>
