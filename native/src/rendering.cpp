@@ -43,7 +43,7 @@ const int POINT_DRAW_ZOOM_FILTER = 16;
 
 struct MapDataObjectPrimitive {
 	MapDataObject* obj;
-	SHARED_PTR<MapDataObjectPrimitive> prevObj = nullptr;
+	MapDataObjectPrimitive* primaryPointObject = nullptr;
 	SHARED_PTR<TextDrawInfo> primitiveText = nullptr;
 	int typeInd;
 	double order;
@@ -437,8 +437,8 @@ void renderText(MapDataObjectPrimitive* objPrimitive, RenderableObject* rObj, Re
 
 					objPrimitive->primitiveText = info;
 
-					if (objPrimitive->prevObj && objPrimitive->prevObj->primitiveText) {
-						objPrimitive->prevObj->primitiveText->additionalIcon = ico;
+					if (objPrimitive->primaryPointObject && objPrimitive->primaryPointObject->primitiveText) {
+						objPrimitive->primaryPointObject->primitiveText->additionalIcon = ico;
 					}
 				}
 			}
@@ -808,7 +808,7 @@ bool contains(vector<pair<int, int>>& points, int x, int y) {
 }
 
 void drawPolygon(MapDataObject* mObj, RenderingRuleSearchRequest* req, SkCanvas* cv, SkPaint* paint,
-				 RenderingContext* rc, tag_value pair, const SHARED_PTR<MapDataObjectPrimitive>& prim,
+				 RenderingContext* rc, tag_value pair, MapDataObjectPrimitive* prim,
 				 std::unordered_map<int64_t, RenderableObject*>& renderableObjects) {
 	size_t length = mObj->points.size();
 	if (length <= 2) {
@@ -927,9 +927,9 @@ void drawPolygon(MapDataObject* mObj, RenderingRuleSearchRequest* req, SkCanvas*
 			if (!prim->pointAdded && (prim->area > MAX_V_AREA || addTextForSmallAreas) && !ignoreText) {
 		if (rc->saveTextTile) {
 			RenderableObject* rObj = rc->createRenderableObject(mObj, "polygon");
-										renderText(prim.get(), rObj, req, rc, pair.first, pair.second, xText, yText, 0, &path, NULL, renderableObjects);
+			renderText(prim, rObj, req, rc, pair.first, pair.second, xText, yText, 0, &path, NULL, renderableObjects);
 		} else {
-			renderText(prim.get(), NULL, req, rc, pair.first, pair.second, xText, yText, 0, &path, NULL, renderableObjects);
+			renderText(prim, NULL, req, rc, pair.first, pair.second, xText, yText, 0, &path, NULL, renderableObjects);
 		}
 	}
 }
@@ -1038,7 +1038,7 @@ void drawPoint(MapDataObjectPrimitive* objPrimitive, RenderingRuleSearchRequest*
 }
 
 void drawObject(RenderingContext* rc, SkCanvas* cv, RenderingRuleSearchRequest* req, SkPaint* paint,
-				vector<SHARED_PTR<MapDataObjectPrimitive>>& array, int objOrder,
+				vector<MapDataObjectPrimitive*>& array, int objOrder,
 				std::unordered_map<int64_t, RenderableObject*>& renderableObjects) {
 	// double polygonLimit = 100;
 	// float orderToSwitch = 0;
@@ -1049,9 +1049,9 @@ void drawObject(RenderingContext* rc, SkCanvas* cv, RenderingRuleSearchRequest* 
 		if (array[i]->objectType == 3) {
 			drawPolygon(mObj, req, cv, paint, rc, pair, array[i], renderableObjects);
 		} else if (array[i]->objectType == 2) {
-			drawPolyline(array[i].get(), req, cv, paint, rc, pair, mObj->getSimpleLayer(), objOrder == 1, renderableObjects);
+			drawPolyline(array[i], req, cv, paint, rc, pair, mObj->getSimpleLayer(), objOrder == 1, renderableObjects);
 		} else if (array[i]->objectType == 1) {
-			drawPoint(array[i].get(), req, cv, paint, rc, pair, array[i]->typeInd, renderableObjects);
+			drawPoint(array[i], req, cv, paint, rc, pair, array[i]->typeInd, renderableObjects);
 		}
 		if (i % 25 == 0 && rc->interrupted()) {
 			return;
@@ -1212,8 +1212,8 @@ double getSquareSegmentLength(MapDataObject* obj) {
 	return dist;
 }
 
-void filterLinesByDensity(RenderingContext* rc, std::vector<SHARED_PTR<MapDataObjectPrimitive>>& linesResArray,
-						  std::vector<SHARED_PTR<MapDataObjectPrimitive>>& linesArray) {
+void filterLinesByDensity(RenderingContext* rc, std::vector<MapDataObjectPrimitive*>& linesResArray,
+						  std::vector<MapDataObjectPrimitive*>& linesArray) {
 	int roadsLimit = rc->roadsDensityLimitPerTile;
 	int densityZ = rc->roadDensityZoomTile;
 	if (densityZ == 0 || roadsLimit == 0) {
@@ -1255,7 +1255,7 @@ void filterLinesByDensity(RenderingContext* rc, std::vector<SHARED_PTR<MapDataOb
 	reverse(linesResArray.begin(), linesResArray.end());
 }
 
-bool sortByOrder(const SHARED_PTR<MapDataObjectPrimitive>& i, const SHARED_PTR<MapDataObjectPrimitive>& j) {
+bool sortByOrder(const MapDataObjectPrimitive* i, const MapDataObjectPrimitive* j) {
 	if (i->order == j->order) {
 		if (i->typeInd == j->typeInd) {
 			return i->obj->points.size() < j->obj->points.size();
@@ -1268,24 +1268,24 @@ bool sortByOrder(const SHARED_PTR<MapDataObjectPrimitive>& i, const SHARED_PTR<M
 	}
 	return (i->order < j->order);
 }
-bool sortPolygonsOrder(const SHARED_PTR<MapDataObjectPrimitive>& i, const SHARED_PTR<MapDataObjectPrimitive>& j) {
+bool sortPolygonsOrder(const MapDataObjectPrimitive* i, const MapDataObjectPrimitive* j) {
 	if (i->order == j->order) return i->typeInd < j->typeInd;
 	return (i->order > j->order);
 }
 
 void sortObjectsByProperOrder(std::vector<FoundMapDataObject>& mapDataObjects, RenderingRuleSearchRequest* req,
-							  RenderingContext* rc, std::vector<SHARED_PTR<MapDataObjectPrimitive>>& polygonsArray,
-							  std::vector<SHARED_PTR<MapDataObjectPrimitive>>& pointsArray,
-							  std::vector<SHARED_PTR<MapDataObjectPrimitive>>& linesResArray) {
+							  RenderingContext* rc, std::vector<MapDataObjectPrimitive*>& polygonsArray,
+							  std::vector<MapDataObjectPrimitive*>& pointsArray,
+							  std::vector<MapDataObjectPrimitive*>& linesResArray) {
 	if (req != NULL) {
-		std::vector<SHARED_PTR<MapDataObjectPrimitive>> linesArray;
+		std::vector<MapDataObjectPrimitive*> linesArray;
 		req->clearState();
 		const uint size = mapDataObjects.size();
 		float mult = 1. / getPowZoom(max(31 - (rc->getZoom() + 8), 0));
 		double minPolygonSize = rc->polygonMinSizeToDisplay;
 		uint i = 0;
 		for (; i < size; i++) {
-			SHARED_PTR<MapDataObjectPrimitive> prevObject = nullptr;
+			MapDataObjectPrimitive* primaryObject = nullptr;
 			MapDataObject* mobj = mapDataObjects[i].obj;
 			size_t sizeTypes = mobj->types.size();
 			size_t j = 0;
@@ -1304,7 +1304,7 @@ void sortObjectsByProperOrder(std::vector<FoundMapDataObject>& mapDataObjects, R
 					bool addPoint = req->getBoolPropertyValue(req->props()->R_ADD_POINT);
 					if (order >= 0) {
 						// int l = req->getIntPropertyValue(req->props()->R_LAYER);
-						SHARED_PTR<MapDataObjectPrimitive> mapObj = std::make_shared<MapDataObjectPrimitive>();
+						MapDataObjectPrimitive* mapObj = new MapDataObjectPrimitive();
 						mapObj->objectType = objectType;
 						mapObj->order = order;
 						mapObj->area = 0;
@@ -1312,44 +1312,40 @@ void sortObjectsByProperOrder(std::vector<FoundMapDataObject>& mapDataObjects, R
 						mapObj->typeInd = j;
 						mapObj->obj = mobj;
 						mapObj->orderByDensity = req->getIntPropertyValue(req->props()->R_ORDER_BY_DENSITY);
-						mapObj->prevObj = prevObject;
+						mapObj->primaryPointObject = primaryObject;
 						// polygon
 						if (objectType == 3) {
 							mapObj->pointAdded = addPoint;
 							double area = polygonArea(mobj, mult);
 							mapObj->area = area;
 
-							SHARED_PTR<MapDataObjectPrimitive> pointObj = std::make_shared<MapDataObjectPrimitive>(*mapObj);
+							MapDataObjectPrimitive* pointObj = new MapDataObjectPrimitive(*mapObj);
 							pointObj->objectType = 1;
 
 							if (area > MAX_V && area > minPolygonSize) {
 								mapObj->order = mapObj->order + (1. / area);
 								if (mapObj->order < DEFAULT_POLYGON_MAX) {
 									polygonsArray.push_back(mapObj);
-									prevObject = mapObj;
 								} else {
 									linesArray.push_back(mapObj);
-									prevObject = mapObj;
 								}
 								if (addPoint && (area > MAX_V_AREA || addTextForSmallAreas ||
 												 rc->getZoom() > POINT_DRAW_ZOOM_FILTER)) {
 									pointsArray.push_back(pointObj);
-									prevObject = pointObj;
+									if (!primaryObject) primaryObject = pointObj;
 								}
 							} else if (addTextForSmallAreas) {
 								pointsArray.push_back(pointObj);
-								prevObject = pointObj;
+								if (!primaryObject) primaryObject = pointObj;
 							}
 						} else if (objectType == 1) {
 							pointsArray.push_back(mapObj);
-							prevObject = mapObj;
+							if (!primaryObject) primaryObject = mapObj;
 						} else {
 							if (mapObj->order < DEFAULT_POLYGON_MAX) {
 								polygonsArray.push_back(mapObj);
-								prevObject = mapObj;
 							} else {
 								linesArray.push_back(mapObj);
-								prevObject = mapObj;
 							}
 						}
 						if (req->getIntPropertyValue(req->props()->R_SHADOW_LEVEL) > 0) {
@@ -1368,7 +1364,7 @@ void sortObjectsByProperOrder(std::vector<FoundMapDataObject>& mapDataObjects, R
 	}
 }
 
-void saveTextTile(RenderingContext* rc, std::vector<SHARED_PTR<MapDataObjectPrimitive>> & arr, bool isPolygon, std::vector<int64_t> processed) {
+void saveTextTile(RenderingContext* rc, std::vector<MapDataObjectPrimitive*> & arr, bool isPolygon, std::vector<int64_t> processed) {
 	std::string result = "";
 	double width = rc->getWidth() * (1 << (31 - rc->getZoom() - 8));
 	double height = rc->getHeight() * (1 << (31 - rc->getZoom() - 8));
@@ -1467,9 +1463,9 @@ void doRendering(std::vector<FoundMapDataObject>& mapDataObjects, SkCanvas* canv
 	SkPaint* paint = new SkPaint;
 	paint->setAntiAlias(true);
 
-	std::vector<SHARED_PTR<MapDataObjectPrimitive>> polygonsArray;
-	std::vector<SHARED_PTR<MapDataObjectPrimitive>> pointsArray;
-	std::vector<SHARED_PTR<MapDataObjectPrimitive>> linesArray;
+	std::vector<MapDataObjectPrimitive*> polygonsArray;
+	std::vector<MapDataObjectPrimitive*> pointsArray;
+	std::vector<MapDataObjectPrimitive*> linesArray;
 
 	sortObjectsByProperOrder(mapDataObjects, req, rc, polygonsArray, pointsArray, linesArray);
 	rc->lastRenderedKey = 0;
@@ -1501,6 +1497,16 @@ void doRendering(std::vector<FoundMapDataObject>& mapDataObjects, SkCanvas* canv
 
 	rc->clearRenderableObjectsCache();
 	renderableObjects.clear();
+
+	for (auto* ptr : polygonsArray) {
+		delete ptr;
+	}
+	for (auto* ptr : pointsArray) {
+		delete ptr;
+	}
+	for (auto* ptr : linesArray) {
+		delete ptr;
+	}
 
 	delete paint;
 	rc->nativeOperations.Pause();
