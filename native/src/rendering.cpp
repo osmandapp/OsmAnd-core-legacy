@@ -44,7 +44,7 @@ const int POINT_DRAW_ZOOM_FILTER = 16;
 struct MapDataObjectPrimitive {
 	MapDataObject* obj;
 	MapDataObjectPrimitive* primaryPointObject = nullptr;
-	SHARED_PTR<TextDrawInfo> primitiveText = nullptr;
+	SHARED_PTR<TextDrawInfo> textInfo = nullptr;
 	int typeInd;
 	double order;
 	int objectType;
@@ -435,10 +435,10 @@ void renderText(MapDataObjectPrimitive* objPrimitive, RenderableObject* rObj, Re
 						renderableObjects.insert({info->object.id, rObj});
 					}
 
-					objPrimitive->primitiveText = info;
+					objPrimitive->textInfo = info;
 
-					if (objPrimitive->primaryPointObject && objPrimitive->primaryPointObject->primitiveText) {
-						objPrimitive->primaryPointObject->primitiveText->additionalIcon = ico;
+					if (objPrimitive->primaryPointObject && objPrimitive->primaryPointObject->textInfo) {
+						objPrimitive->primaryPointObject->textInfo->additionalIcon = ico;
 					}
 				}
 			}
