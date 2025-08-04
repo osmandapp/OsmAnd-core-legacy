@@ -1313,41 +1313,61 @@ void sortObjectsByProperOrder(std::vector<FoundMapDataObject>& mapDataObjects, R
 						mapObj->obj = mobj;
 						mapObj->orderByDensity = req->getIntPropertyValue(req->props()->R_ORDER_BY_DENSITY);
 						mapObj->primaryPointObject = primaryObject;
+						
+						bool mapObjAdded = false;
+						bool pointObjAdded = false;
+						MapDataObjectPrimitive* pointObj = nullptr;
+						
 						// polygon
 						if (objectType == 3) {
 							mapObj->pointAdded = addPoint;
 							double area = polygonArea(mobj, mult);
 							mapObj->area = area;
 
-							MapDataObjectPrimitive* pointObj = new MapDataObjectPrimitive(*mapObj);
+							pointObj = new MapDataObjectPrimitive(*mapObj);
 							pointObj->objectType = 1;
 
 							if (area > MAX_V && area > minPolygonSize) {
 								mapObj->order = mapObj->order + (1. / area);
 								if (mapObj->order < DEFAULT_POLYGON_MAX) {
 									polygonsArray.push_back(mapObj);
+									mapObjAdded = true;
 								} else {
 									linesArray.push_back(mapObj);
+									mapObjAdded = true;
 								}
 								if (addPoint && (area > MAX_V_AREA || addTextForSmallAreas ||
 												 rc->getZoom() > POINT_DRAW_ZOOM_FILTER)) {
 									pointsArray.push_back(pointObj);
+									pointObjAdded = true;
 									if (!primaryObject) primaryObject = pointObj;
 								}
 							} else if (addTextForSmallAreas) {
 								pointsArray.push_back(pointObj);
+								pointObjAdded = true;
 								if (!primaryObject) primaryObject = pointObj;
 							}
 						} else if (objectType == 1) {
 							pointsArray.push_back(mapObj);
+							mapObjAdded = true;
 							if (!primaryObject) primaryObject = mapObj;
 						} else {
 							if (mapObj->order < DEFAULT_POLYGON_MAX) {
 								polygonsArray.push_back(mapObj);
+								mapObjAdded = true;
 							} else {
 								linesArray.push_back(mapObj);
+								mapObjAdded = true;
 							}
 						}
+						
+						if (!mapObjAdded) {
+							delete mapObj;
+						}
+						if (pointObj != nullptr && !pointObjAdded) {
+							delete pointObj;
+						}
+						
 						if (req->getIntPropertyValue(req->props()->R_SHADOW_LEVEL) > 0) {
 							rc->shadowLevelMin = std::min(rc->shadowLevelMin, order);
 							rc->shadowLevelMax = std::max(rc->shadowLevelMax, order);
@@ -1518,3 +1538,4 @@ void doRendering(std::vector<FoundMapDataObject>& mapDataObjects, SkCanvas* canv
 		rc->pointInsideCount, rc->visible, rc->allObjects);
 #endif
 }
+
