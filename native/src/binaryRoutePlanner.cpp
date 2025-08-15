@@ -178,12 +178,16 @@ SHARED_PTR<RouteSegment> initEdgeSegment(RoutingContext* ctx, SHARED_PTR<RouteSe
 	auto segments = ctx->loadRouteSegment(originalDir ? pnt->getStartPointX() : pnt->getEndPointX(),
 			originalDir ? pnt->getStartPointY() : pnt->getEndPointY(), reverseSearchWay);
 	SHARED_PTR<RouteSegment> seg = nullptr;
-	for (int i = 0; i < segments.size(); i++) {
-		seg = segments[i];
-		if (seg->getRoad()->getId() == pnt->getRoad()->getId() &&
+	auto it = segments.begin();
+	while (it != segments.end()) {
+		if (*it != nullptr) {
+			seg = *it;
+			if (seg->getRoad()->getId() == pnt->getRoad()->getId() &&
 				(seg->getSegmentStart() == (originalDir ? pnt->getSegmentStart() : pnt->getSegmentEnd()))) {
-			break;
+				break;
+			}
 		}
+		++it;
 	}
 	if (ctx->isInterrupted() || segments.size() == 0 || seg == nullptr) {
 		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "initEdgeSegment() got empty segments (cancel)");
@@ -192,6 +196,11 @@ SHARED_PTR<RouteSegment> initEdgeSegment(RoutingContext* ctx, SHARED_PTR<RouteSe
 	if (seg->getSegmentStart() != (originalDir ? pnt->getSegmentStart() : pnt->getSegmentEnd())
 			|| seg->getSegmentEnd() != (originalDir ? pnt->getSegmentEnd() : pnt->getSegmentStart())) {
 		seg = RouteSegment::initRouteSegment(seg, !seg->isPositive());
+		if (seg == nullptr || seg->getRoad() == nullptr)
+		{
+			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "initEdgeSegment() got empty initRouteSegment");
+			return nullptr;
+		}
 	}
 	if (originalDir && (seg->getSegmentStart() != pnt->getSegmentStart() || seg->getSegmentEnd() != pnt->getSegmentEnd())) {
 		//throw new IllegalStateException();
@@ -207,7 +216,7 @@ SHARED_PTR<RouteSegment> initEdgeSegment(RoutingContext* ctx, SHARED_PTR<RouteSe
 		// special case for single side spread point-dijkstra
 		return nullptr;
 	}
-	seg->parentRoute = createNull();
+	seg->parentRoute = createNullRouteSegment();
 	float dist = -calculatePreciseStartTime(ctx, pnt->preciseX, pnt->preciseY, seg);
 	// full segment length will be added on first visit
 	seg->distanceFromStart = dist;
@@ -231,7 +240,7 @@ SHARED_PTR<RouteSegment> initEdgeSegment(RoutingContext* ctx, SHARED_PTR<RouteSe
 	return nullptr;
 }
 
-SHARED_PTR<RouteSegment> createNull() { return std::make_shared<RouteSegment>(nullptr, 0, 1); }
+SHARED_PTR<RouteSegment> createNullRouteSegment() { return std::make_shared<RouteSegment>(nullptr, 0, 1); }
 
 void initQueuesWithStartEnd(RoutingContext* ctx, SHARED_PTR<RouteSegmentPoint>& start, SHARED_PTR<RouteSegmentPoint>& end,
 							SEGMENTS_QUEUE& graphDirectSegments, SEGMENTS_QUEUE& graphReverseSegments) {

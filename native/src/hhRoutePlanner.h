@@ -41,7 +41,7 @@ private:
 	SHARED_PTR<HHRoutingContext> currentCtx;
 	SHARED_PTR<HHRoutingContext> initHCtx(HHRoutingConfig * c, int startX, int startY, int endX, int endY);
 	SHARED_PTR<HHRoutingContext> initNewContext(RoutingContext * ctx, std::vector<SHARED_PTR<HHRouteRegionPointsCtx>> & regions);
-	SHARED_PTR<HHRoutingContext> selectBestRoutingFiles(int startX, int startY, int endX, int endY, const SHARED_PTR<HHRoutingContext> & hctx);
+	SHARED_PTR<HHRoutingContext> selectBestRoutingFiles(int startX, int startY, int endX, int endY, const SHARED_PTR<HHRoutingContext> & hctx, bool strictBestGroupMaps);
 	SHARED_PTR<RouteSegmentPoint> loadPoint(RoutingContext * ctx, const NetworkDBPoint * pnt);
 	SHARED_PTR<HHRouteRegionsGroup> hhRouteRegionGroup;
 	void findFirstLastSegments(const SHARED_PTR<HHRoutingContext> & hctx, int startX, int startY, int endX, int endY,
