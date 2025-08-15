@@ -761,6 +761,8 @@ void drawTextOverCanvas(RenderingContext* rc, RenderingRuleSearchRequest* req, S
 		if (textDrawInfo->combined) continue;
 		if (textDrawInfo->icon && !textDrawInfo->icon->visible) continue;
 
+		if (!textDrawInfo->icon) textDrawInfo->icon = textDrawInfo->additionalIcon;
+
 		fontEntry = globalFontRegistry.updateFontEntry(rc->getReshapedString(textDrawInfo->text.c_str()),
 										  textDrawInfo->bold,  // false,
 										  textDrawInfo->italic);
