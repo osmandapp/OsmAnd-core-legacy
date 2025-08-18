@@ -181,6 +181,7 @@ public:
 
 	RenderingRule(map<string, string>& attrs, bool isGroup, RenderingRulesStorage* storage);
 	void printDebugRenderingRule(string indent, RenderingRulesStorage * st);
+	
 private :
 	inline int getPropertyIndex(string property) {
 		for (uint i = 0; i < properties.size(); i++) {
@@ -302,6 +303,7 @@ public:
 	RenderingRuleProperty* R_CYCLE;
 	RenderingRuleProperty* R_NAME_TAG;
 	RenderingRuleProperty* R_NAME_TAG2;
+	RenderingRuleProperty* R_R_CLASS;
 	RenderingRuleProperty* R_ATTR_INT_VALUE;
 	RenderingRuleProperty* R_ATTR_COLOR_VALUE;
 	RenderingRuleProperty* R_ATTR_BOOL_VALUE;
@@ -390,6 +392,8 @@ public:
 		R_TEXT_LENGTH = registerRuleInternal(RenderingRuleProperty::createInputIntProperty("textLength"));
 		R_NAME_TAG = registerRuleInternal(RenderingRuleProperty::createInputStringProperty("nameTag"));
 		R_NAME_TAG2 = registerRuleInternal(RenderingRuleProperty::createOutputStringProperty("nameTag2"));
+		
+		R_R_CLASS = registerRuleInternal(RenderingRuleProperty::createOutputStringProperty("rClass"));
 
 		R_ATTR_INT_VALUE = registerRuleInternal(RenderingRuleProperty::createOutputIntProperty("attrIntValue"));
 		R_ATTR_BOOL_VALUE = registerRuleInternal(RenderingRuleProperty::createOutputBooleanProperty("attrBoolValue"));
@@ -595,6 +599,9 @@ private :
 
 	bool searchInternal(int state, int tagKey, int valueKey, bool loadOutput);
 	bool visitRule(RenderingRule* rule, bool loadOutput);
+	bool isChildRuleEnabled(RenderingRule* childRule, const string& parentRClassValue);
+	bool isClassEnabled(RenderingRule* rule, const string& rClassValue);
+private:
 	void loadOutputProperties(RenderingRule* rule, bool override);
 	bool checkInputProperties(RenderingRule* rule);
 public:
