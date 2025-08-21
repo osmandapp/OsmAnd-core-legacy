@@ -273,7 +273,6 @@ void initRenderingRuleSearchRequest(JNIEnv* env, RenderingRuleSearchRequest* r, 
 
 	jobject classPropsMap = env->GetObjectField(rrs, RenderingRuleSearchRequest_classProperties);
 	if (classPropsMap != NULL) {
-        OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "classPropsMap != NULL");
 		jclass mapClass = env->FindClass("java/util/Map");
 		jmethodID entrySet = env->GetMethodID(mapClass, "entrySet", "()Ljava/util/Set;");
 		jobject entrySetObj = env->CallObjectMethod(classPropsMap, entrySet);
@@ -299,6 +298,7 @@ void initRenderingRuleSearchRequest(JNIEnv* env, RenderingRuleSearchRequest* r, 
 			const char* valueStr = env->GetStringUTFChars(value, NULL);
 
             r->setClassProperty(string(keyStr), string(valueStr));
+			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Initializing class property: %s = %s", keyStr, valueStr);
 
 			env->ReleaseStringUTFChars(key, keyStr);
 			env->ReleaseStringUTFChars(value, valueStr);
