@@ -626,7 +626,73 @@ void RenderingRuleSearchRequest::loadOutputProperties(RenderingRule* rule, bool 
 	}
 }
 
+bool RenderingRuleSearchRequest::isChildRuleEnabled(RenderingRule* childRule, const string& parentRClassValue) {
+	const string additional = childRule->getStringPropertyValue("additional", storage);
+	if (!additional.empty()) {
+		
+		const size_t equalPos = additional.find('=');
+		if (equalPos != string::npos) {
+			const string additionalKey = additional.substr(0, equalPos);
+			const string additionalValue = additional.substr(equalPos + 1);
+			
+			if (parentRClassValue.find("$" + additionalKey) != string::npos) {
+				string specificClass = parentRClassValue;
+				size_t dollarPos = specificClass.find_last_of('$');
+				if (dollarPos != string::npos) {
+					specificClass = specificClass.substr(0, dollarPos) + additionalValue;
+					
+					map<string, string>::const_iterator it = classProperties.find(specificClass);
+					if (it != classProperties.end()) {
+						const string value = it->second;
+						bool enabled = (value == "true" || value == "1" || value == "yes");
+						return enabled;
+					}
+				}
+			}
+		}
+	}
+	
+	return true;
+}
+
+bool RenderingRuleSearchRequest::isClassEnabled(RenderingRule* rule, const string& rClassValue) {
+	if (rClassValue.empty()) {
+		return true;
+	}
+	
+	map<string, string>::const_iterator it = classProperties.find(rClassValue);
+	if (it != classProperties.end()) {
+		const string value = it->second;
+		const bool enabled = (value == "true" || value == "1" || value == "yes");
+		return enabled;
+	}
+
+	string parentClass = rClassValue;
+	while (!parentClass.empty()) {
+		const size_t lastDot = parentClass.find_last_of('.');
+		if (lastDot == string::npos) {
+			break;
+		}
+
+		parentClass = parentClass.substr(0, lastDot);
+		it = classProperties.find(parentClass);
+		if (it != classProperties.end()) {
+			const string value = it->second;
+			if (value == "false" || value == "0" || value == "no") {
+				return false;
+			}
+		}
+	}
+	
+	return true;
+}
+
 bool RenderingRuleSearchRequest::visitRule(RenderingRule* rule, bool loadOutput) {
+	const string rClassValue = rule->getStringPropertyValue("rClass", storage);
+	if (!isClassEnabled(rule, rClassValue)) {
+		return false;
+	}
+	
 	bool match = checkInputProperties(rule);
 	if (!match) {
 		return false;
@@ -641,6 +707,9 @@ bool RenderingRuleSearchRequest::visitRule(RenderingRule* rule, bool loadOutput)
 	size_t j;
 	match = false;
 	for (j = 0; j < rule->ifElseChildren.size(); j++) {
+		if (!isChildRuleEnabled(rule->ifElseChildren.at(j), rClassValue)) {
+			continue;
+		}
 		match = visitRule(rule->ifElseChildren.at(j), loadOutput);
 		if (match) {
 			break;
@@ -652,6 +721,9 @@ bool RenderingRuleSearchRequest::visitRule(RenderingRule* rule, bool loadOutput)
 			loadOutputProperties(rule, false);
 		}
 		for (j = 0; j < rule->ifChildren.size(); j++) {
+			if (!isChildRuleEnabled(rule->ifChildren.at(j), rClassValue)) {
+				continue;
+			}
 			visitRule(rule->ifChildren.at(j), loadOutput);
 		}
 	}
@@ -720,4 +792,8 @@ void RenderingRuleSearchRequest::printDebugResult() {
 	} else {
 		printf("\nNot found\n");
 	}
+}
+
+void RenderingRuleSearchRequest::setClassProperty(string tag, string value) {
+    classProperties[tag] = value;
 }
