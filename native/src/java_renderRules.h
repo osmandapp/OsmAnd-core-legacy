@@ -298,7 +298,6 @@ void initRenderingRuleSearchRequest(JNIEnv* env, RenderingRuleSearchRequest* r, 
 			const char* valueStr = env->GetStringUTFChars(value, NULL);
 
             r->setClassProperty(string(keyStr), string(valueStr));
-			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Initializing class property: %s = %s", keyStr, valueStr);
 
 			env->ReleaseStringUTFChars(key, keyStr);
 			env->ReleaseStringUTFChars(value, valueStr);
