@@ -599,10 +599,6 @@ struct RouteDataObject {
     
     bool isClockwise(bool leftSide);
 
-	double simplifyDistance(int x, int y, int px, int py) {
-		return abs(px - x) * 0.011 + abs(py - y) * 0.01863;
-	}
-
 	double distance(int startPoint, int endPoint) {
 		if (startPoint > endPoint) {
 			int k = endPoint;
@@ -615,7 +611,7 @@ struct RouteDataObject {
 			int y = pointsY[k];
 			int kx = pointsX[k + 1];
 			int ky = pointsY[k + 1];
-			d += simplifyDistance(kx, ky, x, y);
+			d += squareRootDist31(kx, ky, x, y);
 		}
 		return d;
 	}

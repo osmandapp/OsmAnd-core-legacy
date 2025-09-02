@@ -7,9 +7,7 @@
 #include "commonOsmAndCore.h"
 #include "turnType.h"
 
-// this should be bigger (50-80m) but tests need to be fixed first
-#define DIST_BEARING_DETECT 15
-
+#define DIST_BEARING_DETECT 10
 #define DIST_BEARING_DETECT_UNMATCHED 50
 
 #define DIST_TO_SEEK_STREET_NAME 150
