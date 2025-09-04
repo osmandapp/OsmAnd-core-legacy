@@ -490,7 +490,7 @@ double GeneralRouter::defineHeightObstacle(const SHARED_PTR<RouteDataObject>& ro
 		double dist = startIndex < endIndex ? heightArray[2 * knext] : heightArray[2 * k];
 		double diff = heightArray[2 * knext + 1] - heightArray[2 * k + 1];
 		if (diff != 0 && dist > 0) {
-			double incl = abs(diff / dist);
+			double incl = abs(diff / max(10, dist)); // MIN_DISTANCE_SLOPE_ROUND
 			int percentIncl = (int)(incl * 100);
 			percentIncl = (percentIncl + 2) / 3 * 3 - 2;  // 1, 4, 7, 10, .
 			if (percentIncl >= 1) {
