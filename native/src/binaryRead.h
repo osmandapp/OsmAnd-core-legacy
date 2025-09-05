@@ -713,7 +713,7 @@ struct RouteDataObject {
 			px = pointsX[nx];
 			py = pointsY[nx];
 			// translate into meters
-			total += abs(px - x) * 0.011 + abs(py - y) * 0.01863;
+			total += squareRootDist31(px, py, x, y);
 		} while (total < dist);
 		return -atan2(x - px, y - py);
 	}
