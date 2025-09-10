@@ -96,7 +96,9 @@ LOCAL_CFLAGS := \
 	-DGR_RELEASE=1 \
 	-DANDROID_BUILD \
 	-fPIC
-	
+
+LOCAL_LDFLAGS += -Wl -z max-page-size=16384
+
 LOCAL_STATIC_LIBRARIES := \
 	osmand_protobuf \
 	osmand_jpeg \
