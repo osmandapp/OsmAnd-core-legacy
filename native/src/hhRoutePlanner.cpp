@@ -1399,10 +1399,12 @@ void HHRoutePlanner::filterPointsBasedOnConfiguration(const SHARED_PTR<HHRouting
 				rdo->types.push_back(tp.additionalAttribute);
 			}
 			pnt->rtExclude = !currentCtx->rctx->config->router->acceptLine(rdo);
-			if (!pnt->rtExclude) {
-				// constant should be reduced if route is not found
-				pnt->rtExclude = currentCtx->rctx->config->router->defineSpeedPriority(rdo, pnt->end > pnt->start) < EXCLUDE_PRIORITY_CONSTANT;
-			}
+			// This might speed up for certain avoid parameters 
+			// but produces unpredictably wrong results (prefer_unpaved) when shortcuts are calculated - error 300%
+			// if (!pnt->rtExclude) {
+			//	// constant should be reduced if route is not found
+			// 	pnt->rtExclude = currentCtx->rctx->config->router->defineSpeedPriority(rdo, pnt->end > pnt->start) < EXCLUDE_PRIORITY_CONSTANT;
+			// }
 			if (pnt->rtExclude) {
 				filtered++;
 			}
