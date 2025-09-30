@@ -24,6 +24,7 @@ public:
 	constexpr static const double MAX_INC_COST_CORR = 10.0;
 	// this constant should dynamically change if route is not found
 	constexpr static const double EXCLUDE_PRIORITY_CONSTANT = 0.0; // see comments below
+	static const std::unordered_set<std::string> HIGH_COST_PARAMS; // initialized in hhRoutePlanner.cpp
 	
 	HHRoutingConfig * prepareDefaultRoutingConfig(HHRoutingConfig * c);
 	HHNetworkRouteRes * runRouting(int startX, int startY, int endX, int endY, HHRoutingConfig * config);
