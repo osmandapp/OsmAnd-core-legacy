@@ -13,6 +13,11 @@ const int HHRoutePlanner::PNT_SHORT_ROUTE_START_END = -1000;
 const int HHRoutePlanner::MAX_POINTS_CLUSTER_ROUTING = 150000;
 const int HHRoutePlanner::ROUTE_POINTS = 11;
 
+// select specifically high cost params
+// for example prefer_unpaved has higher cost > avoid_toll param,
+// so it's better to select profile with prefer_unpaved shortcuts
+const std::unordered_set<std::string> HHRoutePlanner::HIGH_COST_PARAMS = { "prefer_unpaved" };
+
 HHRoutePlanner::HHRoutePlanner(RoutingContext * ctx) {
 	std::vector<SHARED_PTR<HHRouteRegionPointsCtx>> regions;
 	initNewContext(ctx, regions);
@@ -79,6 +84,9 @@ SHARED_PTR<HHRoutingContext> HHRoutePlanner::selectBestRoutingFiles(int startX, 
 			if (std::find(ls.begin(), ls.end(), p) == ls.end()) {
 				g->extraParam++;
 			} else {
+				if (HIGH_COST_PARAMS.count(p)) {
+					g->highCostParam++;
+				}
 				g->matchParam++;
 			}
 		}
@@ -92,6 +100,8 @@ SHARED_PTR<HHRoutingContext> HHRoutePlanner::selectBestRoutingFiles(int startX, 
 			return o1->extraParam < o2->extraParam;
 		} else if (o1->matchParam != o2->matchParam) {
 			return o1->matchParam > o2->matchParam;
+		} else if (o1->highCostParam != o2->highCostParam) {
+			return o1->highCostParam > o2->highCostParam;
 		}
 		return o1->sumIntersects < o2->sumIntersects; // higher is better
 	});
