@@ -17,7 +17,7 @@ const int HHRoutePlanner::ROUTE_POINTS = 11;
 // for example prefer_unpaved has higher cost > avoid_toll param,
 // so it's better to select profile with prefer_unpaved shortcuts
 const std::unordered_set<std::string> HHRoutePlanner::HIGH_COST_PARAMS =
-		{ "prefer_unpaved", "driving_style_prefer_unpaved" };
+		{ "prefer_unpaved", "avoid_motorway", "driving_style_prefer_unpaved" };
 
 HHRoutePlanner::HHRoutePlanner(RoutingContext * ctx) {
 	std::vector<SHARED_PTR<HHRouteRegionPointsCtx>> regions;
