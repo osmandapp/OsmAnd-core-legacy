@@ -1009,11 +1009,11 @@ void loadJniRenderingContext(JNIEnv* env) {
 		getFid(env, jclass_TransportRoutingConfiguration, "walkSpeed", "F");
 	jfield_TransportRoutingConfiguration_defaultTravelSpeed =
 		getFid(env, jclass_TransportRoutingConfiguration, "defaultTravelSpeed", "F");
-	jfield_TransportRoutingConfiguration_stopTime = getFid(env, jclass_TransportRoutingConfiguration, "stopTime", "I");
+	jfield_TransportRoutingConfiguration_stopTime = getFid(env, jclass_TransportRoutingConfiguration, "defaultStopTime", "I");
 	jfield_TransportRoutingConfiguration_changeTime =
-		getFid(env, jclass_TransportRoutingConfiguration, "changeTime", "I");
+		getFid(env, jclass_TransportRoutingConfiguration, "defaultChangeTime", "I");
 	jfield_TransportRoutingConfiguration_boardingTime =
-		getFid(env, jclass_TransportRoutingConfiguration, "boardingTime", "I");
+		getFid(env, jclass_TransportRoutingConfiguration, "defaultBoardingTime", "I");
 	jfield_TransportRoutingConfiguration_useSchedule =
 		getFid(env, jclass_TransportRoutingConfiguration, "useSchedule", "Z");
 	jfield_TransportRoutingConfiguration_scheduleTimeOfDay =
@@ -2090,9 +2090,9 @@ void parseTransportRoutingConfiguration(JNIEnv* ienv, shared_ptr<TransportRoutin
 	rConfig->walkSpeed = ienv->GetFloatField(jTransportConfig, jfield_TransportRoutingConfiguration_walkSpeed);
 	rConfig->defaultTravelSpeed =
 		ienv->GetFloatField(jTransportConfig, jfield_TransportRoutingConfiguration_defaultTravelSpeed);
-	rConfig->stopTime = ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_defaultStopTime);
-	rConfig->changeTime = ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_defaultChangeTime);
-	rConfig->boardingTime = ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_defaultBoardingTime);
+	rConfig->stopTime = ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_stopTime);
+	rConfig->changeTime = ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_changeTime);
+	rConfig->boardingTime = ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_boardingTime);
 	rConfig->useSchedule = ienv->GetBooleanField(jTransportConfig, jfield_TransportRoutingConfiguration_useSchedule);
 	rConfig->scheduleTimeOfDay =
 		ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_scheduleTimeOfDay);
