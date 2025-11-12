@@ -24,7 +24,8 @@
 #include "transportRoutePlanner.h"
 #include "transportRouteResult.h"
 #include "transportRouteResultSegment.h"
-// #include "transportRouteSegment.h"
+#include "routeResultPreparation.h"
+
 #include "transportRoutingConfiguration.h"
 #include "transportRoutingContext.h"
 #include "hhRouteDataStructure.h"
@@ -1987,8 +1988,8 @@ extern "C" JNIEXPORT jobject JNICALL Java_net_osmand_NativeLibrary_nativeSearchG
 	return jResult;
 }
 
-extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_nativeRouting(
-	JNIEnv* ienv, jobject obj, jobject jCtx, jobject jHHConfig, jfloat initDirection, jobjectArray regions, bool basemap) {
+extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_nativeRouting(JNIEnv* ienv, jobject obj,
+	jobject jCtx, jobject jHHConfig, jfloat initDirection, jobjectArray regions, bool basemap, bool nativeResult) {
 	jobject precalculatedRoute = ienv->GetObjectField(jCtx, jfield_RoutingContext_precalculatedRouteDirection);
 	jobject progress = ienv->GetObjectField(jCtx, jfield_RoutingContext_calculationProgress);
 
@@ -2004,6 +2005,11 @@ extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_nativeRo
 	} else {
 		r = searchRouteInternal(c, false); // BRP-cpp: do direct call to binaryRoutePlanner.cpp
 	}
+	if (nativeResult)
+	{
+		prepareResult(c, r); // used for TurnLanes native test only
+	}
+
 	UNORDERED(map)<int64_t, int> indexes;
 	for (int t = 0; t < ienv->GetArrayLength(regions); t++) {
 		jobject oreg = ienv->GetObjectArrayElement(regions, t);
