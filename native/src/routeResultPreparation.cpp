@@ -497,44 +497,118 @@ RoadSplitStructure calculateRoadSplitStructure(SHARED_PTR<RouteSegmentResult>& p
     return rs;
 }
 
-std::array<int,3> findActiveIndex(SHARED_PTR<RouteSegmentResult> prevSegm, SHARED_PTR<RouteSegmentResult> currentSegm, vector<int> rawLanes, SHARED_PTR<RoadSplitStructure> rs, string turnLanes) {
-    std::array<int,3> pair = { -1, -1, 0 };
+int getAttachedLanesCount(const SHARED_PTR<RoadSplitStructure>& rs)
+{
+    int cnt = 0;
+    if (!rs->leftLanesInfo.empty())
+    {
+        for (const SHARED_PTR<AttachedRoadInfo>& ri : rs->leftLanesInfo)
+        {
+            cnt += ri->lanes;
+        }
+    }
+    if (!rs->rightLanesInfo.empty())
+    {
+        for (const SHARED_PTR<AttachedRoadInfo>& ri : rs->rightLanesInfo)
+        {
+            cnt += ri->lanes;
+        }
+    }
+    return cnt;
+}
+
+bool findActiveIndexByLanes(std::array<int, 3>& pair, const std::vector<int>& directions,
+                            const SHARED_PTR<RoadSplitStructure>& rs, const std::vector<int>& rawLanes,
+                            const SHARED_PTR<RouteSegmentResult>& prevSegm,
+                            const SHARED_PTR<RouteSegmentResult>& currentSegm)
+{
+    std::vector<int> prevCntLanes = parseLanes(prevSegm->object, prevSegm->getBearingBegin() * M_PI / 180.0);
+    std::vector<int> curCntLanes = parseLanes(currentSegm->object, currentSegm->getBearingBegin() * M_PI / 180.0);
+    int attachedLanesCount = getAttachedLanesCount(rs);
+
+    if (!prevCntLanes.empty() && !curCntLanes.empty()
+        && prevCntLanes.size() > curCntLanes.size()
+        && prevCntLanes.size() == curCntLanes.size() + attachedLanesCount)
+    {
+        if (rs->roadsOnLeft == 0 && rs->roadsOnRight > 0)
+        {
+            pair[0] = 0;
+            pair[1] = (int)curCntLanes.size() - 1;
+            pair[2] = directions[0];
+            return true;
+        }
+        if (rs->roadsOnLeft > 0 && rs->roadsOnRight == 0)
+        {
+            pair[0] = (int)rawLanes.size() - (int)curCntLanes.size();
+            pair[1] = (int)rawLanes.size() - 1;
+            pair[2] = directions[rs->roadsOnLeft];
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void findActiveIndexByUniqueDirections(std::array<int, 3>& pair, const std::vector<int>& directions,
+                                       const SHARED_PTR<RoadSplitStructure>& rs, const std::vector<int>& rawLanes)
+{
+    if (rs->roadsOnLeft + rs->roadsOnRight < directions.size())
+    {
+        int startDirection = directions[rs->roadsOnLeft];
+        int endDirection = directions[directions.size() - rs->roadsOnRight - 1];
+        for (int i = 0; i < rawLanes.size(); i++)
+        {
+            int p = TurnType::getPrimaryTurn(rawLanes[i]);
+            int s = TurnType::getSecondaryTurn(rawLanes[i]);
+            int t = TurnType::getTertiaryTurn(rawLanes[i]);
+            if (p == startDirection || s == startDirection || t == startDirection)
+            {
+                pair[0] = i;
+                pair[2] = startDirection;
+                break;
+            }
+        }
+        for (int i = (int)rawLanes.size() - 1; i >= 0; i--)
+        {
+            int p = TurnType::getPrimaryTurn(rawLanes[i]);
+            int s = TurnType::getSecondaryTurn(rawLanes[i]);
+            int t = TurnType::getTertiaryTurn(rawLanes[i]);
+            if (p == endDirection || s == endDirection || t == endDirection)
+            {
+                pair[1] = i;
+                break;
+            }
+        }
+    }
+}
+
+std::array<int, 3> findActiveIndex(SHARED_PTR<RouteSegmentResult> prevSegm, SHARED_PTR<RouteSegmentResult> currentSegm,
+                                   const vector<int> &rawLanes, SHARED_PTR<RoadSplitStructure> rs,
+                                   const string& turnLanes)
+{
+    std::array<int,3> pair = { -1, -1, 0 }; // [activeBeginIndex, activeEndIndex, activeTurn]
     if (turnLanes.empty()) {
         return pair;
     }
     if (!rs) {
         vector<SHARED_PTR<RouteSegmentResult>> attachedRoutes = currentSegm->getAttachedRoutes(currentSegm->getStartPointIndex());
-        if(attachedRoutes.size() > 0) {
+        if (attachedRoutes.size() > 0) {
             rs = std::make_shared<RoadSplitStructure>(calculateRoadSplitStructure(prevSegm, currentSegm, attachedRoutes, turnLanes));
         }
     }
     if (!rs) {
         return pair;
     }
+
     vector<int> directions = getUniqTurnTypes(turnLanes);
-    if (rs->roadsOnLeft + rs->roadsOnRight < directions.size()) {
-        int startDirection = directions[rs->roadsOnLeft];
-        int endDirection = directions[directions.size() - rs->roadsOnRight - 1];
-        for (int i = 0; i < rawLanes.size(); i++) {
-            int p = TurnType::getPrimaryTurn(rawLanes[i]);
-            int s = TurnType::getSecondaryTurn(rawLanes[i]);
-            int t = TurnType::getTertiaryTurn(rawLanes[i]);
-            if (p == startDirection || s == startDirection || t == startDirection) {
-                pair[0] = i;
-                pair[2] = startDirection;
-                break;
-            }
-        }
-        for (int i = (int)rawLanes.size() - 1; i >= 0; i--) {
-            int p = TurnType::getPrimaryTurn(rawLanes[i]);
-            int s = TurnType::getSecondaryTurn(rawLanes[i]);
-            int t = TurnType::getTertiaryTurn(rawLanes[i]);
-            if (p == endDirection || s == endDirection || t == endDirection) {
-                pair[1] = i;
-                break;
-            }
-        }
+
+    if (findActiveIndexByLanes(pair, directions, rs, rawLanes, prevSegm, currentSegm))
+    {
+        return pair;
     }
+
+    findActiveIndexByUniqueDirections(pair, directions, rs, rawLanes);
+
     return pair;
 }
 
@@ -542,10 +616,10 @@ vector<int> getTurnLanesInfo(SHARED_PTR<RouteSegmentResult>& prevSegm, SHARED_PT
     string turnLanes = getTurnLanesString(prevSegm);
     vector<int> lanesArray;
     if (turnLanes.empty()) {
-        if(prevSegm->turnType && !prevSegm->turnType->getLanes().empty() && prevSegm->distance < 60) {
+        if (prevSegm->turnType && !prevSegm->turnType->getLanes().empty() && prevSegm->distance < 60) {
             const auto& lns = prevSegm->turnType->getLanes();
             vector<int> lst;
-            for(int i = 0; i < lns.size(); i++) {
+            for (int i = 0; i < lns.size(); i++) {
                 if (lns[i] % 2 == 1) {
                     lst.push_back((lns[i] >> 1) << 1);
                 }
@@ -2190,6 +2264,7 @@ SHARED_PTR<TurnType> getActiveTurnType(const vector<int>& lanes, bool leftSide, 
     }
     int tp = oldTurnType->getValue();
     int cnt = 0;
+    bool isOldTurnTypeSharp = TurnType::isSharpOrReverse(tp);
     for (int k = 0; k < lanes.size(); k++) {
         int ln = lanes[k];
         if ((ln & 1) > 0) {
@@ -2197,6 +2272,9 @@ SHARED_PTR<TurnType> getActiveTurnType(const vector<int>& lanes, bool leftSide, 
             oneActiveLane.push_back(lanes[k]);
             if (hasAllowedLanes(oldTurnType->getValue(), oneActiveLane, 0, 0)) {
                  tp = TurnType::getPrimaryTurn(lanes[k]);
+            }
+            if (isOldTurnTypeSharp && TurnType::isSharpOrReverse(tp)) {
+                break;
             }
             cnt++;
         }
