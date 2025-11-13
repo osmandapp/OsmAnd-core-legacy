@@ -546,32 +546,29 @@ bool findActiveIndexByLanes(std::array<int, 3>& pair, const std::vector<int>& di
 void findActiveIndexByUniqueDirections(std::array<int, 3>& pair, const std::vector<int>& directions,
                                        const SHARED_PTR<RoadSplitStructure>& rs, const std::vector<int>& rawLanes)
 {
-    if (rs->roadsOnLeft + rs->roadsOnRight < directions.size())
+    int startDirection = directions[rs->roadsOnLeft];
+    int endDirection = directions[directions.size() - rs->roadsOnRight - 1];
+    for (int i = 0; i < rawLanes.size(); i++)
     {
-        int startDirection = directions[rs->roadsOnLeft];
-        int endDirection = directions[directions.size() - rs->roadsOnRight - 1];
-        for (int i = 0; i < rawLanes.size(); i++)
+        int p = TurnType::getPrimaryTurn(rawLanes[i]);
+        int s = TurnType::getSecondaryTurn(rawLanes[i]);
+        int t = TurnType::getTertiaryTurn(rawLanes[i]);
+        if (p == startDirection || s == startDirection || t == startDirection)
         {
-            int p = TurnType::getPrimaryTurn(rawLanes[i]);
-            int s = TurnType::getSecondaryTurn(rawLanes[i]);
-            int t = TurnType::getTertiaryTurn(rawLanes[i]);
-            if (p == startDirection || s == startDirection || t == startDirection)
-            {
-                pair[0] = i;
-                pair[2] = startDirection;
-                break;
-            }
+            pair[0] = i;
+            pair[2] = startDirection;
+            break;
         }
-        for (int i = (int)rawLanes.size() - 1; i >= 0; i--)
+    }
+    for (int i = (int)rawLanes.size() - 1; i >= 0; i--)
+    {
+        int p = TurnType::getPrimaryTurn(rawLanes[i]);
+        int s = TurnType::getSecondaryTurn(rawLanes[i]);
+        int t = TurnType::getTertiaryTurn(rawLanes[i]);
+        if (p == endDirection || s == endDirection || t == endDirection)
         {
-            int p = TurnType::getPrimaryTurn(rawLanes[i]);
-            int s = TurnType::getSecondaryTurn(rawLanes[i]);
-            int t = TurnType::getTertiaryTurn(rawLanes[i]);
-            if (p == endDirection || s == endDirection || t == endDirection)
-            {
-                pair[1] = i;
-                break;
-            }
+            pair[1] = i;
+            break;
         }
     }
 }
@@ -595,6 +592,10 @@ std::array<int, 3> findActiveIndex(SHARED_PTR<RouteSegmentResult> prevSegm, SHAR
     }
 
     vector<int> directions = getUniqTurnTypes(turnLanes);
+
+    if (rs->roadsOnLeft + rs->roadsOnRight >= directions.size()) {
+        return pair;
+    }
 
     if (findActiveIndexByLanes(pair, directions, rs, rawLanes, prevSegm, currentSegm))
     {
