@@ -500,19 +500,13 @@ RoadSplitStructure calculateRoadSplitStructure(SHARED_PTR<RouteSegmentResult>& p
 int getAttachedLanesCount(const SHARED_PTR<RoadSplitStructure>& rs)
 {
     int cnt = 0;
-    if (!rs->leftLanesInfo.empty())
+    for (const SHARED_PTR<AttachedRoadInfo>& ri : rs->leftLanesInfo)
     {
-        for (const SHARED_PTR<AttachedRoadInfo>& ri : rs->leftLanesInfo)
-        {
-            cnt += ri->lanes;
-        }
+        cnt += ri->lanes;
     }
-    if (!rs->rightLanesInfo.empty())
+    for (const SHARED_PTR<AttachedRoadInfo>& ri : rs->rightLanesInfo)
     {
-        for (const SHARED_PTR<AttachedRoadInfo>& ri : rs->rightLanesInfo)
-        {
-            cnt += ri->lanes;
-        }
+        cnt += ri->lanes;
     }
     return cnt;
 }
