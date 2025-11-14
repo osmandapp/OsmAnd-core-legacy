@@ -132,11 +132,21 @@ RenderingRule* createRenderingRule(JNIEnv* env, jobject rRule, RenderingRulesSto
 
 void initDictionary(JNIEnv* env, RenderingRulesStorage* storage, jobject javaStorage) {
 	jobject listDictionary = env->GetObjectField(javaStorage, RenderingRulesStorageClass_dictionary);
+	if (listDictionary == NULL) {
+		return;
+	}
 	uint32_t sz = env->CallIntMethod(listDictionary, List_size);
 	uint32_t i = 0;
 	for (; i < sz; i++) {
 		jstring st = (jstring)env->CallObjectMethod(listDictionary, List_get, i);
+		if (st == NULL) {
+			continue;
+		}
 		const char* utf = env->GetStringUTFChars(st, NULL);
+		if (utf == NULL) {
+			env->DeleteLocalRef(st);
+			continue;
+		}
 		std::string d = std::string(utf);
 
 		env->ReleaseStringUTFChars(st, utf);
