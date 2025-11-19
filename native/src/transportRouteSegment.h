@@ -10,6 +10,7 @@ struct TransportRouteSegment {
 	static const int32_t SHIFT = 10;		  // assume less than 1024 stops
 	static const int32_t SHIFT_DEPTIME = 14;  // assume less than 1024 stops
 
+	long nonce = 0;
 	const int32_t segStart;
 	SHARED_PTR<TransportRoute> road;
 
