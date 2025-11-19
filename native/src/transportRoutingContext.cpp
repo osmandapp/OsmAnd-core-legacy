@@ -35,6 +35,7 @@ void TransportRoutingContext::calcLatLons() {
 void TransportRoutingContext::getTransportStops(int32_t sx, int32_t sy, bool change,
 												vector<SHARED_PTR<TransportRouteSegment>> &res) {
 	loadTime.Start();
+	std::set<int64_t> alreadyLoaded;
 	int32_t d = change ? walkChangeRadiusIn31 : walkRadiusIn31;
 	int32_t lx = (sx - d) >> (31 - cfg->zoomToLoadTiles);
 	int32_t rx = (sx + d) >> (31 - cfg->zoomToLoadTiles);
@@ -56,7 +57,8 @@ void TransportRoutingContext::getTransportStops(int32_t sx, int32_t sy, bool cha
 				SHARED_PTR<TransportStop> st = it->getStop(it->segStart);
 				if (abs(st->x31 - sx) > walkRadiusIn31 || abs(st->y31 - sy) > walkRadiusIn31) {
 					wrongLoadedWays++;
-				} else {
+				} else if (!alreadyLoaded.count(it->getId())) {
+					alreadyLoaded.insert(it->getId());
 					loadedWays++;
 					res.push_back(it);
 				}

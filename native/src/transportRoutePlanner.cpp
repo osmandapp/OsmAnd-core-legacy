@@ -10,18 +10,21 @@
 #include "transportRoutingContext.h"
 #include "transportRoutingObjects.h"
 
+template <typename T>
+int cmp(const T &a, const T &b) {
+	if (a < b) return -1;
+	if (a > b) return +1;
+	return 0;
+}
+
 struct TransportSegmentsComparator
 	: public std::function<bool(SHARED_PTR<TransportRouteSegment>&, SHARED_PTR<TransportRouteSegment>&)> {
 	TransportSegmentsComparator() {
 	}
-	bool operator()(const SHARED_PTR<TransportRouteSegment>& lhs, const SHARED_PTR<TransportRouteSegment>& rhs) const {
-		int cmp;
-		if (lhs->distFromStart == rhs->distFromStart) {
-			cmp = 0;
-		} else {
-			cmp = lhs->distFromStart < rhs->distFromStart ? -1 : 1;
-		}
-		return cmp > 0;
+	bool operator()(const SHARED_PTR<TransportRouteSegment>& o1, const SHARED_PTR<TransportRouteSegment>& o2) const
+	{
+		int cmpDist = cmp(o1->distFromStart, o2->distFromStart);
+		return cmpDist == 0 ? cmp(o1->getId() + o1->nonce, o2->getId() + o2->nonce) > 0 : cmpDist > 0;
 	}
 };
 
@@ -80,7 +83,7 @@ void TransportRoutePlanner::prepareResults(unique_ptr<TransportRoutingContext>& 
 			if (ctx->calculationProgress != nullptr && ctx->calculationProgress->isCancelled()) {
 				return;
 			}
-			if (p->parentRoute != nullptr) {
+			if (p->hasParentRoute) {
 				unique_ptr<TransportRouteResultSegment> sg(new TransportRouteResultSegment());
 				sg->route = p->parentRoute->road;
 				sg->start = p->parentRoute->segStart;
@@ -102,11 +105,11 @@ void TransportRoutePlanner::prepareResults(unique_ptr<TransportRoutingContext>& 
 			}
 			if (includeRoute(s, route)) {
 				include = true;
-				route->toString();
 				break;
 			}
 		}
 		if (!include) {
+			route->toString();
 			routes.push_back(std::move(route));
 			// System.out.println(route.toString());
 		}
@@ -115,6 +118,7 @@ void TransportRoutePlanner::prepareResults(unique_ptr<TransportRoutingContext>& 
 
 void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingContext>& ctx,
 												vector<SHARED_PTR<TransportRouteResult>>& res) {
+	long nonce = 0;
 	OsmAnd::ElapsedTimer pt_timer;
 	pt_timer.Start();
 	ctx->loadTime.Enable();
@@ -143,6 +147,7 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 	for (SHARED_PTR<TransportRouteSegment>& r : startStops) {
 		r->walkDist = getDistance(r->getLocationLat(), r->getLocationLon(), ctx->startLat, ctx->startLon);
 		r->distFromStart = r->walkDist / ctx->cfg->walkSpeed;
+		r->nonce = nonce++;
 		queue.push(r);
 	}
 
@@ -185,8 +190,8 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 
 		int64_t segmentId = segment->getId();
 		SHARED_PTR<TransportRouteSegment> finish = nullptr;
-		int64_t minDist = 0;
-		int64_t travelDist = 0;
+		double minDist = 0;
+		double travelDist = 0;
 		double travelTime = 0;
 		const float routeTravelSpeed = ctx->cfg->getSpeedByRouteType(segment->road->type);
 
@@ -232,6 +237,7 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 					}
 					SHARED_PTR<TransportRouteSegment> nextSegment = make_shared<TransportRouteSegment>(sgm);
 					nextSegment->parentRoute = segment;
+					nextSegment->hasParentRoute = true;
 					nextSegment->parentStop = ind;
 					nextSegment->walkDist =
 					getDistance(nextSegment->getLocationLat(), nextSegment->getLocationLon(), stop->lat, stop->lon);
@@ -240,6 +246,7 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 					double walkTime = nextSegment->walkDist / ctx->cfg->walkSpeed + ctx->cfg->getChangeTime() +
 					ctx->cfg->getBoardingTime();
 					nextSegment->distFromStart = segment->distFromStart + travelTime + walkTime;
+					nextSegment->nonce = nonce++;
 					if (ctx->cfg->useSchedule) {
 						int tm = (sgm->departureTime - ctx->cfg->scheduleTimeOfDay) * 10;
 						if (tm >= nextSegment->distFromStart) {
@@ -262,6 +269,7 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 					minDist = distToEnd;
 					finish = make_shared<TransportRouteSegment>(finalSegment);
 					finish->parentRoute = segment;
+					finish->hasParentRoute = true;
 					finish->parentStop = ind;
 					finish->walkDist = distToEnd;
 					finish->parentTravelTime = travelTime;
