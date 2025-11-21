@@ -1,3 +1,4 @@
+#include <inttypes.h>
 #ifndef _OSMAND_TRANSPORT_ROUTE_SEGMENT_CPP
 #define _OSMAND_TRANSPORT_ROUTE_SEGMENT_CPP
 #include "transportRouteSegment.h"
@@ -64,14 +65,14 @@ int64_t TransportRouteSegment::getId() {
 	l += (departureTime + 1);
 	l = l << SHIFT;
 	if (segStart >= (1 << SHIFT)) {
-		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "too many stops roadId: %d, start: %d", road->id, segStart);
+		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "too many stops roadId: %" PRId64 ", start: %d", road->id, segStart);
 		return -1;
 	}
 
 	l += segStart;
 
 	if (l < 0) {
-		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "too long id: %d", road->id);
+		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "too long id: %" PRId64, road->id);
 		return -1;
 	}
 	return l;

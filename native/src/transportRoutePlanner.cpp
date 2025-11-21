@@ -66,8 +66,8 @@ void TransportRoutePlanner::prepareResults(unique_ptr<TransportRoutingContext>& 
 		 });
 
 	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
-					  "Found %d results, visited %d routes / %d stops, loaded "
-					  "%d tiles, loaded ways %d (%d wrong)",
+					  "Found %zu results, visited %d routes / %d stops, loaded "
+					  "%zu tiles, loaded ways %d (%d wrong)",
 					  results.size(), ctx->visitedRoutesCount, ctx->visitedStops, ctx->quadTree.size(), ctx->loadedWays,
 					  ctx->wrongLoadedWays);
 

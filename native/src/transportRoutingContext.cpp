@@ -1,3 +1,4 @@
+#include <inttypes.h>
 #ifndef _OSMAND_TRANSPORT_ROUTING_CONTEXT_CPP
 #define _OSMAND_TRANSPORT_ROUTING_CONTEXT_CPP
 #include "transportRoutingContext.h"
@@ -123,8 +124,8 @@ void TransportRoutingContext::loadTransportSegments(vector<SHARED_PTR<TransportS
 				}
 			} else {
 				OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error,
-								  "Routing error: missing stop '%s' in route '%s' id: %d", s->name.c_str(),
-								  route->ref.c_str(), route->id / 2);
+				                  "Routing error: missing stop '%s' in route '%s' id: %" PRId64,
+				                  s->name.c_str(), route->ref.c_str(), route->id / 2);
 			}
 		}
 	}
