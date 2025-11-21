@@ -1,3 +1,4 @@
+#include <inttypes.h>
 #ifndef _OSMAND_TRANSPORT_ROUTE_PLANNER_CPP
 #define _OSMAND_TRANSPORT_ROUTE_PLANNER_CPP
 #include "transportRoutePlanner.h"
@@ -9,6 +10,9 @@
 #include "transportRoutingConfiguration.h"
 #include "transportRoutingContext.h"
 #include "transportRoutingObjects.h"
+
+#define TRACE_ONBOARD_ID 0 // 19728216
+#define TRACE_CHANGE_ID 0 // 19728216
 
 struct TransportSegmentsComparator {
 	TransportSegmentsComparator() = default;
@@ -147,20 +151,27 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 	for (SHARED_PTR<TransportRouteSegment>& r : startStops) {
 		r->walkDist = getDistance(r->getLocationLat(), r->getLocationLon(), ctx->startLat, ctx->startLon);
 		r->distFromStart = r->walkDist / ctx->cfg->walkSpeed;
+		if (TRACE_ONBOARD_ID)
+		{
+			ObfConstants::osmand_id_t id = ObfConstants::getOsmIdFromBinaryMapObjectId(r->road->id);
+			if (id == TRACE_ONBOARD_ID)
+			{
+				LogPrintf(OsmAnd::LogSeverityLevel::Debug, "TRACE_ONBOARD_ID %f %" PRId64 " %s",
+				          r->distFromStart, id, r->to_string().c_str());
+			}
+		}
 		r->nonce = nonce++;
 		queue.push(r);
 	}
 
 	double totalDistance = getDistance(ctx->startLat, ctx->startLon, ctx->endLat, ctx->endLon);
 	double finishTime = ctx->cfg->maxRouteTime;
-	ctx->finishTimeSeconds = ctx->cfg->finishTimeSeconds;
 	if (totalDistance > ctx->cfg->maxRouteDistance && ctx->cfg->maxRouteIncreaseSpeed > 0) {
 		int increaseTime = (int)((totalDistance - ctx->cfg->maxRouteDistance) * 3.6 / ctx->cfg->maxRouteIncreaseSpeed);
 		finishTime += increaseTime;
-		ctx->finishTimeSeconds += increaseTime / 6;
 	}
 
-	double maxTravelTimeCmpToWalk = totalDistance / ctx->cfg->walkSpeed - ctx->cfg->changeTime / 2;
+	double maxTravelTimeCmpToWalk = totalDistance / ctx->cfg->walkSpeed;
 
 	while (queue.size() > 0) {
 		if (ctx->calculationProgress != nullptr && ctx->calculationProgress->isCancelled()) {
@@ -172,8 +183,10 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 		queue.pop();
 		SHARED_PTR<TransportRouteSegment> ex;
 
-		if (ctx->visitedSegments.find(segment->getId()) != ctx->visitedSegments.end()) {
-			ex = ctx->visitedSegments.find(segment->getId())->second;
+		int64_t segIdWithParent = segmentWithParentId(segment, segment->parentRoute);
+
+		if (ctx->visitedSegments.find(segIdWithParent) != ctx->visitedSegments.end()) {
+			ex = ctx->visitedSegments.find(segIdWithParent)->second;
 			if (ex->distFromStart > segment->distFromStart) {
 				OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "%.1f (%s) > %.1f (%s)", ex->distFromStart,
 								  ex->to_string().c_str(), segment->distFromStart, segment->to_string().c_str());
@@ -181,9 +194,9 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 			continue;
 		}
 		ctx->visitedRoutesCount++;
-		ctx->visitedSegments.insert({segment->getId(), segment});
+		ctx->visitedSegments.insert({segIdWithParent, segment});
 
-		if (segment->distFromStart > finishTime + ctx->finishTimeSeconds ||
+		if (segment->distFromStart > finishTime * 0 /* ctx.cfg.increaseForAlternativesRoutes*/ || // TODO continue
 			segment->distFromStart > maxTravelTimeCmpToWalk) {
 			break;
 		}
@@ -318,6 +331,14 @@ void TransportRoutePlanner::updateCalculationProgress(unique_ptr<TransportRoutin
 				(int64_t)fmax(peek->distFromStart, ctx->calculationProgress->distanceFromBegin);
 		}
 	}
+}
+
+int64_t TransportRoutePlanner::segmentWithParentId(const SHARED_PTR<TransportRouteSegment>& segment,
+                                                   const SHARED_PTR<TransportRouteSegment>& parent)
+{
+	// TODO add bool hasParentRoute (but first check if it possible to use std::shared_ptr == nullptr)
+	// TODO check both callers for parent == nullptr and/or hasParentRoute !? -- might be a difference with Java
+	return ((parent ? ObfConstants::getOsmIdFromBinaryMapObjectId(parent->road->id) : 0) << 30l) + segment->getId();
 }
 
 #endif	//_OSMAND_TRANSPORT_ROUTE_PLANNER_CPP

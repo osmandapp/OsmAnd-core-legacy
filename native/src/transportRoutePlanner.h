@@ -33,6 +33,7 @@ class TransportRoutePlanner {
 	bool includeRoute(SHARED_PTR<TransportRouteResult>& fastRoute, SHARED_PTR<TransportRouteResult>& testRoute);
 	void updateCalculationProgress(unique_ptr<TransportRoutingContext>& ctx,
 								   priority_queue<SHARED_PTR<TransportRouteSegment>>& queue);
+	static int64_t segmentWithParentId(const SHARED_PTR<TransportRouteSegment>&, const SHARED_PTR<TransportRouteSegment>&);
 };
 
 #endif	// _OSMAND_TRANSPORT_ROUTE_PLANNER_H
