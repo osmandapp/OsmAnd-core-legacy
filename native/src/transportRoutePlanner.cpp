@@ -10,17 +10,17 @@
 #include "transportRoutingContext.h"
 #include "transportRoutingObjects.h"
 
-template <typename T>
-int cmp(const T &a, const T &b) {
-	if (a < b) return -1;
-	if (a > b) return +1;
-	return 0;
-}
+struct TransportSegmentsComparator {
+	TransportSegmentsComparator() = default;
 
-struct TransportSegmentsComparator
-	: public std::function<bool(SHARED_PTR<TransportRouteSegment>&, SHARED_PTR<TransportRouteSegment>&)> {
-	TransportSegmentsComparator() {
+	template <typename T>
+	static int cmp(const T& a, const T& b)
+	{
+		if (a < b) return -1;
+		if (a > b) return +1;
+		return 0;
 	}
+
 	bool operator()(const SHARED_PTR<TransportRouteSegment>& o1, const SHARED_PTR<TransportRouteSegment>& o2) const
 	{
 		int cmpDist = cmp(o1->distFromStart, o2->distFromStart);
