@@ -29,9 +29,9 @@ struct TransportRoutingConfiguration {
 
 	float walkSpeed = (float)(3.6 / 3.6);
 	float defaultTravelSpeed = (60 / 3.6);
-	int32_t stopTime = 30; // TODO remove
-	int32_t changeTime = 180; // TODO remove
-	int32_t boardingTime = 180; // TODO remove
+	// int32_t stopTime = 30; // TODO remove
+	// int32_t changeTime = 180; // TODO remove
+	// int32_t boardingTime = 180; // TODO remove
 
 	int32_t defaultStopTime = 0;
 	UNORDERED(map)<string, int32_t> stopTimes;
@@ -58,8 +58,8 @@ struct TransportRoutingConfiguration {
 	float getSpeedByRouteType(std::string routeType);
 	dynbitset getRawBitset(std::string tg, std::string vl);
 	uint getRawType(string &tg, string &vl);
-	int32_t getChangeTime(); // TODO remove
-	int32_t getBoardingTime(); // TODO remove
+	// int32_t getChangeTime(); // TODO remove
+	// int32_t getBoardingTime(); // TODO remove
 
 	int32_t getStopTime(const std::string &routeType);
 	int32_t getBoardingTime(const std::string &routeType);

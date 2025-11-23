@@ -27,8 +27,6 @@ struct TransportRouteResult {
 	double getTravelTime();
 	double getWalkTime();
 
-	// double getChangeTime(); // TODO remove
-	// double getBoardingTime(); // TODO remove
 	int32_t getChangeTime(const SHARED_PTR<TransportRouteResultSegment>& current,
 	                      const SHARED_PTR<TransportRouteResultSegment>& next);
 

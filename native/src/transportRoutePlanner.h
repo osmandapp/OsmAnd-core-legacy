@@ -23,14 +23,11 @@ class TransportRoutePlanner {
 	~TransportRoutePlanner();
 
 	void buildTransportRoute(unique_ptr<TransportRoutingContext>& ctx, vector<SHARED_PTR<TransportRouteResult>>& res);
-	// void updateCalculationProgress(unique_ptr<TransportRoutingContext>& ctx, TRANSPORT_SEGMENTS_QUEUE& queue); // TODO remove
 	void prepareResults(unique_ptr<TransportRoutingContext>& ctx,
 															vector<SHARED_PTR<TransportRouteSegment>>& results,
                                                             vector<SHARED_PTR<TransportRouteResult>>& routes);
-	// bool includeRoute(TransportRouteResult& fastRoute, TransportRouteResult& testRoute); // TODO remove
 
    private:
-	// bool includeRoute(SHARED_PTR<TransportRouteResult>& fastRoute, SHARED_PTR<TransportRouteResult>& testRoute); // TODO remove
 	void updateCalculationProgress(unique_ptr<TransportRoutingContext>& ctx,
 								   priority_queue<SHARED_PTR<TransportRouteSegment>>& queue);
 	static int64_t segmentWithParentId(const SHARED_PTR<TransportRouteSegment>&, const SHARED_PTR<TransportRouteSegment>&);

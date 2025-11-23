@@ -38,30 +38,6 @@ TransportRoutePlanner::TransportRoutePlanner() {
 TransportRoutePlanner::~TransportRoutePlanner() {
 }
 
-// TODO remove
-// bool TransportRoutePlanner::includeRoute(SHARED_PTR<TransportRouteResult>& fastRoute,
-// 										 SHARED_PTR<TransportRouteResult>& testRoute) {
-// 	if (testRoute->segments.size() < fastRoute->segments.size()) {
-// 		return false;
-// 	}
-// 	int32_t j = 0;
-// 	for (int32_t i = 0; i < fastRoute->segments.size(); i++, j++) {
-// 		SHARED_PTR<TransportRouteResultSegment>& fs = fastRoute->segments.at(i);
-// 		while (j < testRoute->segments.size()) {
-// 			SHARED_PTR<TransportRouteResultSegment>& ts = testRoute->segments[j];
-// 			if (fs->route->id != ts->route->id) {
-// 				j++;
-// 			} else {
-// 				break;
-// 			}
-// 		}
-// 		if (j >= testRoute->segments.size()) {
-// 			return false;
-// 		}
-// 	}
-// 	return true;
-// }
-
 void TransportRoutePlanner::prepareResults(unique_ptr<TransportRoutingContext>& ctx,
 										   vector<SHARED_PTR<TransportRouteSegment>>& results,
 										   vector<SHARED_PTR<TransportRouteResult>>& routes) {
@@ -219,13 +195,12 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 			break;
 		}
 
-		// int64_t segmentId = segment->getId(); // TODO remove
 		SHARED_PTR<TransportRouteSegment> finish = nullptr;
 		double minDist = 0;
 		double travelDist = 0;
 
 		int onboardTime = ctx->cfg->getBoardingTime(segment->road->getType());
-		int intervalTime = OsmAndAlgorithms::parseNumberSilently(segment->road->getInterval(), 0); // TODO cache
+		int intervalTime = OsmAndAlgorithms::parseNumberSilently(segment->road->getInterval(), 0);
 		if (intervalTime > 0) {
 			onboardTime = intervalTime * 60 / 2;
 		}

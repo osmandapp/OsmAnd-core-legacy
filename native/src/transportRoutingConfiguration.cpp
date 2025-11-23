@@ -51,18 +51,18 @@ TransportRoutingConfiguration::TransportRoutingConfiguration(
 		maxRouteDistance =  router->getIntAttribute("maxRouteDistance", maxRouteDistance);
 
 		// TODO remove lines 45-52
-		RouteAttributeContext &obstacles =
-			router->getObjContext(RouteDataObjectAttribute::ROUTING_OBSTACLES);
-		dynbitset bs = getRawBitset("time", "stop");
-		stopTime = obstacles.evaluateInt(bs, stopTime);
-		bs = getRawBitset("time", "change");
-		changeTime = obstacles.evaluateInt(bs, changeTime);
-		bs = getRawBitset("time", "boarding");
-		boardingTime = obstacles.evaluateInt(bs, boardingTime);
+		// RouteAttributeContext &obstacles =
+		// 	router->getObjContext(RouteDataObjectAttribute::ROUTING_OBSTACLES);
+		// dynbitset bs = getRawBitset("time", "stop");
+		// stopTime = obstacles.evaluateInt(bs, stopTime);
+		// bs = getRawBitset("time", "change");
+		// changeTime = obstacles.evaluateInt(bs, changeTime);
+		// bs = getRawBitset("time", "boarding");
+		// boardingTime = obstacles.evaluateInt(bs, boardingTime);
 
 		RouteAttributeContext &spds =
 			router->getObjContext(RouteDataObjectAttribute::ROAD_SPEED);
-		bs = getRawBitset("route", "walk");
+		dynbitset bs = getRawBitset("route", "walk");
 		walkSpeed = spds.evaluateFloat(bs, walkSpeed);
 	}
 }
@@ -98,14 +98,6 @@ uint TransportRoutingConfiguration::getRawType(string &tg, string &vl) {
 	}
 	return rawTypes[key];
 }
-
-int32_t TransportRoutingConfiguration::getChangeTime() { // TODO remove
-	return useSchedule ? 0 : changeTime;
-};
-
-int32_t TransportRoutingConfiguration::getBoardingTime() { // TODO remove
-	return boardingTime;
-};
 
 int32_t TransportRoutingConfiguration::getStopTime(const std::string &routeType) {
 	if (stopTimes.count(routeType)) { // TODO optimize

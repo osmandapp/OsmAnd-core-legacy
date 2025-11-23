@@ -389,7 +389,6 @@ void TransportRoute::setTags(UNORDERED_map<std::string, std::string> newTags) {
 }
 
 std::string TransportRoute::getInterval() const {
-	// TODO optimize with cache
 	auto it = tags.find(INTERVAL_KEY);
 	return it != tags.end() ? it->second : "";
 }
