@@ -38,28 +38,29 @@ TransportRoutePlanner::TransportRoutePlanner() {
 TransportRoutePlanner::~TransportRoutePlanner() {
 }
 
-bool TransportRoutePlanner::includeRoute(SHARED_PTR<TransportRouteResult>& fastRoute,
-										 SHARED_PTR<TransportRouteResult>& testRoute) {
-	if (testRoute->segments.size() < fastRoute->segments.size()) {
-		return false;
-	}
-	int32_t j = 0;
-	for (int32_t i = 0; i < fastRoute->segments.size(); i++, j++) {
-		SHARED_PTR<TransportRouteResultSegment>& fs = fastRoute->segments.at(i);
-		while (j < testRoute->segments.size()) {
-			SHARED_PTR<TransportRouteResultSegment>& ts = testRoute->segments[j];
-			if (fs->route->id != ts->route->id) {
-				j++;
-			} else {
-				break;
-			}
-		}
-		if (j >= testRoute->segments.size()) {
-			return false;
-		}
-	}
-	return true;
-}
+// TODO remove
+// bool TransportRoutePlanner::includeRoute(SHARED_PTR<TransportRouteResult>& fastRoute,
+// 										 SHARED_PTR<TransportRouteResult>& testRoute) {
+// 	if (testRoute->segments.size() < fastRoute->segments.size()) {
+// 		return false;
+// 	}
+// 	int32_t j = 0;
+// 	for (int32_t i = 0; i < fastRoute->segments.size(); i++, j++) {
+// 		SHARED_PTR<TransportRouteResultSegment>& fs = fastRoute->segments.at(i);
+// 		while (j < testRoute->segments.size()) {
+// 			SHARED_PTR<TransportRouteResultSegment>& ts = testRoute->segments[j];
+// 			if (fs->route->id != ts->route->id) {
+// 				j++;
+// 			} else {
+// 				break;
+// 			}
+// 		}
+// 		if (j >= testRoute->segments.size()) {
+// 			return false;
+// 		}
+// 	}
+// 	return true;
+// }
 
 void TransportRoutePlanner::prepareResults(unique_ptr<TransportRoutingContext>& ctx,
 										   vector<SHARED_PTR<TransportRouteSegment>>& results,
@@ -102,21 +103,38 @@ void TransportRoutePlanner::prepareResults(unique_ptr<TransportRoutingContext>& 
 			p = p->parentRoute;
 		}
 		// test if faster routes fully included
-		bool include = false; // TODO next 105
+		bool exclude = false;
+
 		for (SHARED_PTR<TransportRouteResult>& s : routes) {
 			if (ctx->calculationProgress.get() && ctx->calculationProgress->isCancelled()) {
 				return;
 			}
-			if (includeRoute(s, route)) {
-				include = true;
+			if (excludeRoute(ctx, s, route)) {
+				exclude = true;
 				break;
 			}
 		}
-		if (!include) {
-			route->toString();
-			routes.push_back(std::move(route));
-			// System.out.println(route.toString());
+
+		if (!exclude) {
+			for (SHARED_PTR<TransportRouteResult>& s : routes) {
+				if (ctx->calculationProgress.get() && ctx->calculationProgress->isCancelled()) {
+					return;
+				}
+				if (checkAlternative(ctx, s, route)) {
+					LogPrintf(OsmAnd::LogSeverityLevel::Info, "ALT (%" PRId64 ") %s",
+					          s->segments.at(0)->route->id, route->toString().c_str());
+					exclude = true;
+					break;
+				}
+			}
 		}
+
+		if (!exclude) {
+			route->toStringPrint();
+			routes.push_back(std::move(route));
+		}
+
+		// TODO next (add alternatives)
 	}
 }
 
@@ -207,7 +225,7 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 		double travelDist = 0;
 
 		int onboardTime = ctx->cfg->getBoardingTime(segment->road->getType());
-		int intervalTime = OsmAndAlgorithms::parseNumberSilently(segment->road->getInterval(), 0); // TODO check
+		int intervalTime = OsmAndAlgorithms::parseNumberSilently(segment->road->getInterval(), 0); // TODO check and cache
 		if (intervalTime > 0) {
 			onboardTime = intervalTime * 60 / 2;
 		}
@@ -366,6 +384,80 @@ int64_t TransportRoutePlanner::segmentWithParentId(const SHARED_PTR<TransportRou
 	// TODO add bool hasParentRoute (but first check if it possible to use std::shared_ptr == nullptr)
 	// TODO check both callers for parent == nullptr and/or hasParentRoute !? -- might be a difference with Java
 	return ((parent ? ObfConstants::getOsmIdFromBinaryMapObjectId(parent->road->id) : 0) << 30l) + segment->getId();
+}
+
+bool TransportRoutePlanner::excludeRoute(const unique_ptr<TransportRoutingContext>& ctx,
+                                         const SHARED_PTR<TransportRouteResult>& fastRoute,
+                                         const SHARED_PTR<TransportRouteResult>& testRoute) {
+	if (sameRouteWithExtraSegments(fastRoute, testRoute)) {
+		return true;
+	}
+	double fastRouteWalkDist = std::max(fastRoute->getWalkDist(),
+			ctx->cfg->combineAltRoutesDiffStops * ctx->cfg->increaseForAltRoutesWalking);
+	if (fastRouteWalkDist * ctx->cfg->increaseForAltRoutesWalking < testRoute->getWalkDist()) {
+		// remove routes where we need to walk x3
+		return true;
+	}
+	for (const SHARED_PTR<TransportRouteResult>& alt : fastRoute->getAlternativeRoutes()) {
+		if (sameRouteWithExtraSegments(alt, testRoute)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool TransportRoutePlanner::checkAlternative(const unique_ptr<TransportRoutingContext>& ctx,
+                                             const SHARED_PTR<TransportRouteResult>& fastRoute,
+                                             const SHARED_PTR<TransportRouteResult>& testRoute) {
+	bool alternativeRoute = false;
+	if (testRoute->segments.size() == fastRoute->segments.size()) {
+		double sumDiffs = 0;
+		alternativeRoute = true;
+		for (int i = 0; i < fastRoute->segments.size(); i++) {
+			const SHARED_PTR<TransportRouteResultSegment>& seg1 = fastRoute->segments.at(i);
+			const SHARED_PTR<TransportRouteResultSegment>& seg2 = testRoute->segments.at(i);
+			double startDiff = measuredDist31(seg1->getStart().x31, seg1->getStart().y31,
+			                                  seg2->getStart().x31, seg2->getStart().y31);
+			double endDiff = measuredDist31(seg1->getEnd().x31, seg1->getEnd().y31,
+			                                seg2->getEnd().x31, seg2->getEnd().y31);
+			sumDiffs += startDiff;
+			sumDiffs += endDiff;
+			if (startDiff > ctx->cfg->combineAltRoutesDiffStops || endDiff > ctx->cfg->combineAltRoutesDiffStops) {
+				alternativeRoute = false;
+				break;
+			}
+		}
+		if (alternativeRoute && sumDiffs < ctx->cfg->combineAltRoutesSumDiffStops) {
+			fastRoute->alternativeRoutes.push_back(testRoute); // TODO should be new shared_ptr ?
+		}
+	}
+	return alternativeRoute;
+
+}
+
+bool TransportRoutePlanner::sameRouteWithExtraSegments(const SHARED_PTR<TransportRouteResult>& fastRoute,
+                                                       const SHARED_PTR<TransportRouteResult>& testRoute) {
+	if (testRoute->segments.size() < fastRoute->segments.size()) {
+		return false;
+	}
+	int j = 0;
+	bool sameRouteWithExtraSegments = true;
+	for (int i = 0; i < fastRoute->segments.size(); i++, j++) {
+		const SHARED_PTR<TransportRouteResultSegment>& fs = fastRoute->segments.at(i);
+		while (j < testRoute->segments.size()) {
+			const SHARED_PTR<TransportRouteResultSegment>& ts = testRoute->segments.at(j);
+			if (fs->route->id != ts->route->id) {
+				j++;
+			} else {
+				break;
+			}
+		}
+		if (j >= testRoute->segments.size()) {
+			sameRouteWithExtraSegments = false;
+			break;
+		}
+	}
+	return sameRouteWithExtraSegments;
 }
 
 #endif	//_OSMAND_TRANSPORT_ROUTE_PLANNER_CPP
