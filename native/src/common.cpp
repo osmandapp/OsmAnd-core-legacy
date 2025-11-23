@@ -589,28 +589,6 @@ std::string splitAndClearRepeats(std::string str, std::string del) {
     return res;
 }
 
-template <typename T>
-T parseNumberSilently(const std::string& str, T defaultValue)
-{
-	if (str.empty()) return defaultValue;
-	try
-	{
-		if (std::is_same<T, int>::value)
-			return std::stoi(str);
-		if (std::is_same<T, long>::value)
-			return std::stol(str);
-		if (std::is_same<T, float>::value)
-			return std::stof(str);
-		if (std::is_same<T, double>::value)
-			return std::stod(str);
-	}
-	catch (...)
-	{
-		return defaultValue;
-	}
-	return defaultValue;
-}
-
 namespace ObfConstants
 {
 	static osmand_id_t SHIFT_ID = 6;
