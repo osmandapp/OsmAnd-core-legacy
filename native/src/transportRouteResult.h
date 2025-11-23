@@ -13,6 +13,10 @@ struct TransportRouteResult {
 	double routeTime;
 	SHARED_PTR<TransportRoutingConfiguration> config;
 
+	// alternative routes always match with number of segments
+	vector<SHARED_PTR<TransportRouteResult>> alternativeRoutes;
+	const vector<SHARED_PTR<TransportRouteResult>>& getAlternativeRoutes() const;
+
 	TransportRouteResult(SHARED_PTR<TransportRoutingConfiguration>& cfg);
 
 	double getWalkDist();
@@ -22,8 +26,12 @@ struct TransportRouteResult {
 	double getTravelDist();
 	double getTravelTime();
 	double getWalkTime();
-	double getChangeTime();
-	double getBoardingTime();
+
+	// double getChangeTime(); // TODO remove
+	// double getBoardingTime(); // TODO remove
+	int32_t getChangeTime(const SHARED_PTR<TransportRouteResultSegment>& current,
+	                      const SHARED_PTR<TransportRouteResultSegment>& next);
+
 	int getChanges();
 	void toString();
 };

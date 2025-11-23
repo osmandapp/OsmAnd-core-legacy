@@ -1,3 +1,4 @@
+#include <inttypes.h>
 #ifndef _OSMAND_TRANSPORT_ROUTE_RESULT_CPP
 #define _OSMAND_TRANSPORT_ROUTE_RESULT_CPP
 #include "transportRouteResult.h"
@@ -58,6 +59,7 @@ double TransportRouteResult::getTravelDist() {
 // for ui/logs
 double TransportRouteResult::getTravelTime() {
 	double t = 0;
+	SHARED_PTR<TransportRouteResultSegment> prev = nullptr;
 	for (SHARED_PTR<TransportRouteResultSegment>& seg : segments) {
 		if (config->useSchedule) {
 			// TransportSchedule& sts = seg->route->schedule;
@@ -65,9 +67,15 @@ double TransportRouteResult::getTravelTime() {
 				t += seg->route->schedule.avgStopIntervals[k] * 10;
 			}
 		} else {
-			t += config->getBoardingTime();
+			// t += config->getBoardingTime();
+			if (prev != nullptr) {
+				// t += config->getChangeTime(prev->route->getType(), seg->route->getType()); // TODO
+			}
+			// part of s.getTravelTime()
+			// t += cfg.getBoardingTime(s.route.getType());
 			t += seg->travelTime;
 		}
+		prev = seg;
 	}
 	return t;
 }
@@ -77,13 +85,23 @@ double TransportRouteResult::getWalkTime() {
 	return getWalkDist() / config->walkSpeed;
 }
 // for ui/logs
-double TransportRouteResult::getChangeTime() {
-	return config->changeTime;
-}
+// double TransportRouteResult::getChangeTime() { // TODO remove
+// 	return config->changeTime;
+// }
 // for ui/logs
-double TransportRouteResult::getBoardingTime() {
-	return config->boardingTime;
+// double TransportRouteResult::getBoardingTime() { // TODO remove
+// 	return config->boardingTime;
+// }
+int32_t TransportRouteResult::getChangeTime(const SHARED_PTR<TransportRouteResultSegment>& current,
+                                            const SHARED_PTR<TransportRouteResultSegment>& next)
+{
+	if (next == nullptr) {
+		return 0;
+	}
+	return 0; // TODO implement getType()
+	// return config->getChangeTime(current->route->getType(), next->route->getType()); // TODO
 }
+
 // for ui/logs
 int TransportRouteResult::getChanges() {
 	return segments.size() - 1;
@@ -107,11 +125,15 @@ void TransportRouteResult::toString() {
 			arrivalTime = "and arrive at " + std::to_string(aTime);	 // formatTransportTime(s->getArrivalTime());
 		}
 		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
-						  "%d. %s: walk %.1f m to '%s' and travel %s to '%s' "
-						  "by %s %d stops %s\n",
-						  i + 1, s->route->ref.c_str(), s->walkDist, s->getStart().name.c_str(), time.c_str(),
-						  s->getEnd().name.c_str(), s->route->name.c_str(), (s->end - s->start), arrivalTime.c_str());
+						  "%d. %s [%" PRId64 "]: walk %.1f m to '%s' and travel %s to '%s' by %s %d stops %s\n",
+						  i + 1, s->route->ref.c_str(), ObfConstants::getOsmIdFromBinaryMapObjectId(s->route->id),
+						  s->walkDist, s->getStart().name.c_str(), time.c_str(), s->getEnd().name.c_str(),
+						  s->route->name.c_str(), s->end - s->start, arrivalTime.c_str());
 	}
+}
+
+const vector<SHARED_PTR<TransportRouteResult>>& TransportRouteResult::getAlternativeRoutes() const {
+	return alternativeRoutes;
 }
 
 #endif /*_OSMAND_TRANSPORT_ROUTE_RESULT_CPP*/
