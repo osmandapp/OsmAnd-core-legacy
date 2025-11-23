@@ -21,16 +21,25 @@ TransportRoutingConfiguration::TransportRoutingConfiguration(
 		maxNumberOfChanges =
 			router->getIntAttribute("maxNumberOfChanges", maxNumberOfChanges);
 		maxRouteTime = router->getIntAttribute("maxRouteTime", maxRouteTime);
-		finishTimeSeconds = router->getIntAttribute(
+		finishTimeSeconds = router->getIntAttribute( // TODO remove
 			"delayForAlternativesRoutes", finishTimeSeconds);
+
+		increaseForAlternativesRoutes = router->
+			getFloatAttribute("increaseForAlternativesRoutes", static_cast<float>(increaseForAlternativesRoutes));
+		increaseForAltRoutesWalking = router->
+			getFloatAttribute("increaseForAltRoutesWalking", static_cast<float>(increaseForAltRoutesWalking));
+
+		combineAltRoutesDiffStops = router->
+			getIntAttribute("combineAltRoutesDiffStops", combineAltRoutesDiffStops);
+		combineAltRoutesSumDiffStops = router->
+			getIntAttribute("combineAltRoutesSumDiffStops", combineAltRoutesSumDiffStops);
+
 		string mn = router->getAttribute("max_num_changes");
-		int maxNumOfChanges = 3;
 		try {
-			maxNumOfChanges = atoi(mn.c_str());
+			maxNumberOfChanges = std::stoi(mn);
 		} catch (...) {
 			// Ignore
 		}
-		maxNumberOfChanges = maxNumOfChanges;
 
 		walkSpeed =
 			router->getFloatAttribute("minDefaultSpeed", walkSpeed * 3.6f) /
@@ -41,6 +50,7 @@ TransportRoutingConfiguration::TransportRoutingConfiguration(
 		maxRouteIncreaseSpeed = router->getIntAttribute("maxRouteIncreaseSpeed", maxRouteIncreaseSpeed);
 		maxRouteDistance =  router->getIntAttribute("maxRouteDistance", maxRouteDistance);
 
+		// TODO remove lines 45-52
 		RouteAttributeContext &obstacles =
 			router->getObjContext(RouteDataObjectAttribute::ROUTING_OBSTACLES);
 		dynbitset bs = getRawBitset("time", "stop");
@@ -89,12 +99,80 @@ uint TransportRoutingConfiguration::getRawType(string &tg, string &vl) {
 	return rawTypes[key];
 }
 
-int32_t TransportRoutingConfiguration::getChangeTime() {
+int32_t TransportRoutingConfiguration::getChangeTime() { // TODO remove
 	return useSchedule ? 0 : changeTime;
 };
 
-int32_t TransportRoutingConfiguration::getBoardingTime() {
+int32_t TransportRoutingConfiguration::getBoardingTime() { // TODO remove
 	return boardingTime;
 };
+
+int32_t TransportRoutingConfiguration::getStopTime(const std::string &routeType) {
+	if (stopTimes.count(routeType)) {
+		const int32_t time = stopTimes.at(routeType);
+		if (time > 0) return time;
+	}
+
+	RouteAttributeContext &obstacles =
+		router->getObjContext(RouteDataObjectAttribute::ROUTING_OBSTACLES);
+
+	dynbitset bs = getRawBitset("stop", routeType);
+	const int32_t time = obstacles.evaluateInt(bs, 0);
+	stopTimes[routeType] = time;
+
+	if (time > 0) return time;
+
+	if (defaultStopTime == 0) {
+		dynbitset bs2 = getRawBitset("stop", "");
+		defaultStopTime = obstacles.evaluateInt(bs2, 30);
+	}
+	return defaultStopTime;
+}
+
+int32_t TransportRoutingConfiguration::getBoardingTime(const std::string &routeType) {
+	if (boardingTimes.count(routeType)) {
+		const int32_t time = boardingTimes.at(routeType);
+		if (time > 0) return time;
+	}
+
+	RouteAttributeContext &obstacles =
+		router->getObjContext(RouteDataObjectAttribute::ROUTING_OBSTACLES);
+
+	dynbitset bs = getRawBitset("boarding", routeType);
+	const int32_t time = obstacles.evaluateInt(bs, 0);
+	boardingTimes[routeType] = time;
+
+	if (time > 0) return time;
+
+	if (defaultBoardingTime == 0) {
+		dynbitset bs2 = getRawBitset("boarding", "");
+		defaultBoardingTime = obstacles.evaluateInt(bs2, 150);
+	}
+	return defaultBoardingTime;
+}
+
+int32_t TransportRoutingConfiguration::getChangeTime(const std::string &fromRouteType, const std::string &toRouteType) {
+	const std::string key = fromRouteType + "_" + toRouteType;
+
+	if (changingTimes.count(key)) {
+		const int32_t time = changingTimes.at(key);
+		if (time > 0) return time;
+	}
+
+	RouteAttributeContext &obstacles =
+		router->getObjContext(RouteDataObjectAttribute::ROUTING_OBSTACLES);
+
+	dynbitset bs = getRawBitset("change", key);
+	const int32_t time = obstacles.evaluateInt(bs, 0);
+	changingTimes[key] = time;
+
+	if (time > 0) return time;
+
+	if (defaultChangeTime == 0) {
+		dynbitset bs2 = getRawBitset("change", "");
+		defaultChangeTime = obstacles.evaluateInt(bs2, 240);
+	}
+	return defaultChangeTime;
+}
 
 #endif
