@@ -225,7 +225,7 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 		double travelDist = 0;
 
 		int onboardTime = ctx->cfg->getBoardingTime(segment->road->getType());
-		int intervalTime = OsmAndAlgorithms::parseNumberSilently(segment->road->getInterval(), 0); // TODO check and cache
+		int intervalTime = OsmAndAlgorithms::parseNumberSilently(segment->road->getInterval(), 0); // TODO cache
 		if (intervalTime > 0) {
 			onboardTime = intervalTime * 60 / 2;
 		}

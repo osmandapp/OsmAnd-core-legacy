@@ -380,8 +380,18 @@ std::string TransportRoute::getType() const {
 	return type;
 }
 
+void TransportRoute::addTag(const std::string& key, const std::string& value) {
+	tags[key] = value;
+}
+
+void TransportRoute::setTags(UNORDERED_map<std::string, std::string> newTags) {
+	tags = std::move(newTags);
+}
+
 std::string TransportRoute::getInterval() const {
-	return ""; // TODO implement tags and set tags from BinaryMapTransportReaderAdapter.initializeNames
+	// TODO optimize with cache
+	auto it = tags.find(INTERVAL_KEY);
+	return it != tags.end() ? it->second : "";
 }
 
 bool TransportRoute::compareRoute(SHARED_PTR<TransportRoute>& thatObj) {

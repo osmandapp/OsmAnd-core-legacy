@@ -137,6 +137,9 @@ struct TransportRoute : public MapObject {
 	vector<SHARED_PTR<Way>> forwardWays;
 	TransportSchedule schedule;
 
+	const std::string INTERVAL_KEY = "interval";
+	UNORDERED_map<std::string, std::string> tags;
+
 	TransportRoute();
 	TransportRoute(SHARED_PTR<TransportRoute>& base, vector<SHARED_PTR<TransportStop>>& cforwardStops, vector<SHARED_PTR<Way>>& cforwardWays);
 
@@ -152,6 +155,8 @@ struct TransportRoute : public MapObject {
 	bool isIncomplete();
 	std::string getType() const;
 	std::string getInterval() const;
+	void addTag(const std::string& key, const std::string& value);
+	void setTags(UNORDERED_map<std::string, std::string> newTags);
 };
 
 
