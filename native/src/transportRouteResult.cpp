@@ -106,16 +106,29 @@ int TransportRouteResult::getChanges() {
 	return segments.size() - 1;
 }
 
-void TransportRouteResult::toString() {
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
-					  "Route %d stops, %d changes, %.2f min: %.2f m (%.1f min) "
-					  "to walk, %.2f m (%.1f min) to travel\n",
-					  getStops(), getChanges(), routeTime / 60, getWalkDist(), getWalkTime() / 60.0, getTravelDist(),
-					  getTravelTime() / 60.0);
+void TransportRouteResult::toStringPrint() {
+	LogPrintf(OsmAnd::LogSeverityLevel::Info, "%s", toString().c_str());
+}
+
+std::string TransportRouteResult::toString() {
+	char buff[1024];
+	snprintf(buff, sizeof(buff),
+	         "Route %d stops, %d changes, %.2f min: %.2f m (%.1f min) to walk, %.2f m (%.1f min) to travel\n",
+	         getStops(), getChanges(), routeTime / 60, getWalkDist(), getWalkTime() / 60.0, getTravelDist(),
+	         getTravelTime() / 60.0);
+
+	std::string result(buff);
+
+	// OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, // TODO remove
+	// 				  "Route %d stops, %d changes, %.2f min: %.2f m (%.1f min) "
+	// 				  "to walk, %.2f m (%.1f min) to travel\n",
+	// 				  getStops(), getChanges(), routeTime / 60, getWalkDist(), getWalkTime() / 60.0, getTravelDist(),
+	// 				  getTravelTime() / 60.0);
+
 	for (int i = 0; i < segments.size(); i++) {
 		SHARED_PTR<TransportRouteResultSegment>& s = segments[i];
-		string time = "";
-		string arrivalTime = "";
+		string time;
+		string arrivalTime;
 		if (s->depTime != -1) {
 			time = "at " + std::to_string(s->depTime);	// formatTransportTime(s->deptTime);
 		}
@@ -123,12 +136,23 @@ void TransportRouteResult::toString() {
 		if (aTime != -1) {
 			arrivalTime = "and arrive at " + std::to_string(aTime);	 // formatTransportTime(s->getArrivalTime());
 		}
-		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
+		snprintf(buff, sizeof(buff),
 						  "%d. %s [%" PRId64 "]: walk %.1f m to '%s' and travel %s to '%s' by %s %d stops %s\n",
 						  i + 1, s->route->ref.c_str(), ObfConstants::getOsmIdFromBinaryMapObjectId(s->route->id),
 						  s->walkDist, s->getStart().name.c_str(), time.c_str(), s->getEnd().name.c_str(),
 						  s->route->name.c_str(), s->end - s->start, arrivalTime.c_str());
+
+		const std::string line(buff);
+		result += line;
+
+		// OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, // TODO remove
+		// 				  "%d. %s [%" PRId64 "]: walk %.1f m to '%s' and travel %s to '%s' by %s %d stops %s\n",
+		// 				  i + 1, s->route->ref.c_str(), ObfConstants::getOsmIdFromBinaryMapObjectId(s->route->id),
+		// 				  s->walkDist, s->getStart().name.c_str(), time.c_str(), s->getEnd().name.c_str(),
+		// 				  s->route->name.c_str(), s->end - s->start, arrivalTime.c_str());
 	}
+
+	return result;
 }
 
 const vector<SHARED_PTR<TransportRouteResult>>& TransportRouteResult::getAlternativeRoutes() const {

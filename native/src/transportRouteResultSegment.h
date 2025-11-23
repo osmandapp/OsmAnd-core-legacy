@@ -35,6 +35,8 @@ public:
 	double walkDist;
 	int32_t depTime;
 
+	vector<TransportRouteResultSegment> alternatives;
+
 	TransportRouteResultSegment();
 
 	int getArrivalTime();

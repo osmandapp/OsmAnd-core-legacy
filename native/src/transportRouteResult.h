@@ -33,7 +33,8 @@ struct TransportRouteResult {
 	                      const SHARED_PTR<TransportRouteResultSegment>& next);
 
 	int getChanges();
-	void toString();
+	void toStringPrint();
+	std::string toString();
 };
 
 #endif /*_OSMAND_TRANSPORT_ROUTE_RESULT_H*/
