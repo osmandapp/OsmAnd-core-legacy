@@ -102,7 +102,7 @@ void TransportRoutePlanner::prepareResults(unique_ptr<TransportRoutingContext>& 
 			p = p->parentRoute;
 		}
 		// test if faster routes fully included
-		bool include = false;
+		bool include = false; // TODO next 105
 		for (SHARED_PTR<TransportRouteResult>& s : routes) {
 			if (ctx->calculationProgress.get() && ctx->calculationProgress->isCancelled()) {
 				return;
@@ -151,7 +151,7 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 	for (SHARED_PTR<TransportRouteSegment>& r : startStops) {
 		r->walkDist = getDistance(r->getLocationLat(), r->getLocationLon(), ctx->startLat, ctx->startLon);
 		r->distFromStart = r->walkDist / ctx->cfg->walkSpeed;
-		if (TRACE_ONBOARD_ID)
+		if (TRACE_ONBOARD_ID != 0)
 		{
 			ObfConstants::osmand_id_t id = ObfConstants::getOsmIdFromBinaryMapObjectId(r->road->id);
 			if (id == TRACE_ONBOARD_ID)
@@ -196,16 +196,23 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 		ctx->visitedRoutesCount++;
 		ctx->visitedSegments.insert({segIdWithParent, segment});
 
-		if (segment->distFromStart > finishTime * 0 /* ctx.cfg.increaseForAlternativesRoutes*/ || // TODO continue
+		if (segment->distFromStart > finishTime * ctx->cfg->increaseForAlternativesRoutes ||
 			segment->distFromStart > maxTravelTimeCmpToWalk) {
 			break;
 		}
 
-		int64_t segmentId = segment->getId();
+		// int64_t segmentId = segment->getId(); // TODO remove
 		SHARED_PTR<TransportRouteSegment> finish = nullptr;
 		double minDist = 0;
 		double travelDist = 0;
-		double travelTime = 0;
+
+		int onboardTime = ctx->cfg->getBoardingTime(segment->road->getType());
+		int intervalTime = parseNumberSilently(segment->road->getInterval(), 0); // TODO check both functions
+		if (intervalTime > 0) {
+			onboardTime = intervalTime * 60 / 2;
+		}
+		double travelTime = onboardTime;
+
 		const float routeTravelSpeed = ctx->cfg->getSpeedByRouteType(segment->road->type);
 
 		if (routeTravelSpeed == 0) {
@@ -214,12 +221,22 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 		SHARED_PTR<TransportStop> prevStop = segment->getStop(segment->segStart);
 		vector<SHARED_PTR<TransportRouteSegment>> sgms;
 
+		if (TRACE_ONBOARD_ID != 0) {
+			ObfConstants::osmand_id_t id = ObfConstants::getOsmIdFromBinaryMapObjectId(segment->road->id);
+			if (id == TRACE_ONBOARD_ID) {
+				LogPrintf(OsmAnd::LogSeverityLevel::Debug, "TRACE_ONBOARD_ID -> %" PRId64 " (%d) %.2f (parent %s)",
+				          id, segment->segStart, segment->distFromStart, segment->parentRoute
+					                                                         ? segment->parentRoute->to_string().c_str()
+					                                                         : "null");
+			}
+		}
+
 		for (int32_t ind = 1 + segment->segStart; ind < segment->getLength(); ind++) {
 			if (ctx->calculationProgress != nullptr && ctx->calculationProgress->isCancelled()) {
 				return;
 			}
-			segmentId++;
-			ctx->visitedSegments.insert({segmentId, segment});
+			segIdWithParent++;
+			ctx->visitedSegments.insert({segIdWithParent, segment});
 			SHARED_PTR<TransportStop> stop = segment->getStop(ind);
 			double segmentDist = getDistance(prevStop->lat, prevStop->lon, stop->lat, stop->lon);
 			travelDist += segmentDist;
@@ -229,9 +246,10 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 				int interval = segment->road->schedule.avgStopIntervals.at(ind - 1);
 				travelTime += interval * 10;
 			} else {
-				travelTime += ctx->cfg->stopTime + segmentDist / routeTravelSpeed;
+				int stopTime = ctx->cfg->getStopTime(segment->road->getType());
+				travelTime += stopTime + segmentDist / routeTravelSpeed;
 			}
-			if (segment->distFromStart + travelTime > finishTime + ctx->finishTimeSeconds) {
+			if (segment->distFromStart + travelTime > finishTime * ctx->cfg->increaseForAlternativesRoutes) {
 				break;
 			}
 			sgms.clear();
@@ -245,7 +263,7 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 					if (segment->wasVisited(sgm)) {
 						continue;
 					}
-					if (ctx->visitedSegments.find(sgm->getId()) != ctx->visitedSegments.end()) {
+					if (ctx->visitedSegments.find(segmentWithParentId(sgm, segment)) != ctx->visitedSegments.end()) {
 						continue;
 					}
 					SHARED_PTR<TransportRouteSegment> nextSegment = make_shared<TransportRouteSegment>(sgm);
@@ -256,8 +274,8 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 					getDistance(nextSegment->getLocationLat(), nextSegment->getLocationLon(), stop->lat, stop->lon);
 					nextSegment->parentTravelTime = travelTime;
 					nextSegment->parentTravelDist = travelDist;
-					double walkTime = nextSegment->walkDist / ctx->cfg->walkSpeed + ctx->cfg->getChangeTime() +
-					ctx->cfg->getBoardingTime();
+					double walkTime = nextSegment->walkDist / ctx->cfg->walkSpeed +
+						ctx->cfg->getChangeTime(segment->road->getType(), sgm->road->getType());
 					nextSegment->distFromStart = segment->distFromStart + travelTime + walkTime;
 					nextSegment->nonce = nonce++;
 					if (ctx->cfg->useSchedule) {
@@ -269,11 +287,20 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 					} else {
 						queue.push(nextSegment);
 					}
+					if (TRACE_CHANGE_ID != 0) {
+						ObfConstants::osmand_id_t from = ObfConstants::getOsmIdFromBinaryMapObjectId(segment->road->id);
+						ObfConstants::osmand_id_t to = ObfConstants::getOsmIdFromBinaryMapObjectId(sgm->road->id);
+						LogPrintf(OsmAnd::LogSeverityLevel::Debug,
+						          "TRACE_CHANGE_ID ? Change %" PRId64 " (%d) -> %" PRId64" (%d) %.3f",
+						          from, ind, to, sgm->segStart, sgm->distFromStart);
+					}
 				}
 			}
 			SHARED_PTR<TransportRouteSegment> finalSegment = nullptr;
-			if (endSegments.find(segmentId) != endSegments.end()) {
-				finalSegment = endSegments[segmentId];
+
+			int64_t finalSegmentId = segment->getId() + ind - segment->segStart;
+			if (endSegments.find(finalSegmentId) != endSegments.end()) {
+				finalSegment = endSegments[finalSegmentId];
 			}
 			double distToEnd = getDistance(stop->lat, stop->lon, ctx->endLat, ctx->endLon);
 
@@ -298,7 +325,7 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 			if (finishTime > finish->distFromStart) {
 				finishTime = finish->distFromStart;
 			}
-			if (finish->distFromStart < finishTime + ctx->finishTimeSeconds &&
+			if (finish->distFromStart < finishTime * ctx->cfg->increaseForAlternativesRoutes &&
 				(finish->distFromStart < maxTravelTimeCmpToWalk || results.size() == 0)) {
 				results.push_back(finish);
 			}

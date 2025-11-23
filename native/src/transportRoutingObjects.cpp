@@ -376,6 +376,14 @@ string TransportRoute::getAdjustedRouteRef(bool small) {
 	return adjustedRef;
 }
 
+std::string TransportRoute::getType() const {
+	return type;
+}
+
+std::string TransportRoute::getInterval() const {
+	return ""; // TODO implement tags and set tags from BinaryMapTransportReaderAdapter.initializeNames
+}
+
 bool TransportRoute::compareRoute(SHARED_PTR<TransportRoute>& thatObj) {
 	if (this == thatObj.get()) {
 		return true;

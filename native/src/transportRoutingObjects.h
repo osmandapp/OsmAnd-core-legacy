@@ -150,6 +150,8 @@ struct TransportRoute : public MapObject {
 	string getAdjustedRouteRef(bool small);
 	bool compareRoute(SHARED_PTR<TransportRoute> &thatObj);
 	bool isIncomplete();
+	std::string getType() const;
+	std::string getInterval() const;
 };
 
 

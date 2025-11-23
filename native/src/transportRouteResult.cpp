@@ -69,7 +69,7 @@ double TransportRouteResult::getTravelTime() {
 		} else {
 			// t += config->getBoardingTime();
 			if (prev != nullptr) {
-				// t += config->getChangeTime(prev->route->getType(), seg->route->getType()); // TODO
+				t += config->getChangeTime(prev->route->getType(), seg->route->getType());
 			}
 			// part of s.getTravelTime()
 			// t += cfg.getBoardingTime(s.route.getType());
@@ -98,8 +98,7 @@ int32_t TransportRouteResult::getChangeTime(const SHARED_PTR<TransportRouteResul
 	if (next == nullptr) {
 		return 0;
 	}
-	return 0; // TODO implement getType()
-	// return config->getChangeTime(current->route->getType(), next->route->getType()); // TODO
+	return config->getChangeTime(current->route->getType(), next->route->getType());
 }
 
 // for ui/logs
