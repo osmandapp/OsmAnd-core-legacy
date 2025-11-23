@@ -16,7 +16,6 @@ struct TransportRouteSegment {
 
 	int32_t departureTime;
 	SHARED_PTR<TransportRouteSegment> parentRoute;
-	bool hasParentRoute = false; // TODO not required, remove
 	int32_t parentStop;		  // last stop to exit for parent route
 	double parentTravelTime;  // travel time for parent route
 	double parentTravelDist;  // travel distance for parent route (inaccurate)

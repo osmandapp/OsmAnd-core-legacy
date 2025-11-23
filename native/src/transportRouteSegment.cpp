@@ -27,7 +27,7 @@ bool TransportRouteSegment::wasVisited(SHARED_PTR<TransportRouteSegment>& rrs) {
 	if (rrs->road->id == road->id && rrs->departureTime == departureTime) {
 		return true;
 	}
-	if (hasParentRoute) {
+	if (parentRoute) {
 		return parentRoute->wasVisited(rrs);
 	}
 	return false;
@@ -79,7 +79,7 @@ int64_t TransportRouteSegment::getId() {
 }
 
 int32_t TransportRouteSegment::getDepth() {
-	if (hasParentRoute) {
+	if (parentRoute) {
 		return parentRoute->getDepth() + 1;
 	}
 	return 1;

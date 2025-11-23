@@ -64,7 +64,7 @@ void TransportRoutePlanner::prepareResults(unique_ptr<TransportRoutingContext>& 
 			if (ctx->calculationProgress != nullptr && ctx->calculationProgress->isCancelled()) {
 				return;
 			}
-			if (p->hasParentRoute) {
+			if (p->parentRoute) {
 				unique_ptr<TransportRouteResultSegment> sg(new TransportRouteResultSegment());
 				sg->route = p->parentRoute->road;
 				sg->start = p->parentRoute->segStart;
@@ -261,7 +261,6 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 					}
 					SHARED_PTR<TransportRouteSegment> nextSegment = make_shared<TransportRouteSegment>(sgm);
 					nextSegment->parentRoute = segment;
-					nextSegment->hasParentRoute = true;
 					nextSegment->parentStop = ind;
 					nextSegment->walkDist =
 					getDistance(nextSegment->getLocationLat(), nextSegment->getLocationLon(), stop->lat, stop->lon);
@@ -302,7 +301,6 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 					minDist = distToEnd;
 					finish = make_shared<TransportRouteSegment>(finalSegment);
 					finish->parentRoute = segment;
-					finish->hasParentRoute = true;
 					finish->parentStop = ind;
 					finish->walkDist = distToEnd;
 					finish->parentTravelTime = travelTime;
@@ -356,8 +354,6 @@ void TransportRoutePlanner::updateCalculationProgress(unique_ptr<TransportRoutin
 int64_t TransportRoutePlanner::segmentWithParentId(const SHARED_PTR<TransportRouteSegment>& segment,
                                                    const SHARED_PTR<TransportRouteSegment>& parent)
 {
-	// TODO add bool hasParentRoute (but first check if it possible to use std::shared_ptr == nullptr)
-	// TODO check both callers for parent == nullptr and/or hasParentRoute !? -- might be a difference with Java
 	return ((parent ? ObfConstants::getOsmIdFromBinaryMapObjectId(parent->road->id) : 0) << 30l) + segment->getId();
 }
 
