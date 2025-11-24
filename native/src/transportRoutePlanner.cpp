@@ -30,6 +30,11 @@ struct TransportSegmentsComparator {
 		int cmpDist = cmp(o1->distFromStart, o2->distFromStart);
 		return cmpDist == 0 ? cmp(o1->getId() + o1->nonce, o2->getId() + o2->nonce) > 0 : cmpDist > 0;
 	}
+
+	static bool less(const SHARED_PTR<TransportRouteSegment>& o1, const SHARED_PTR<TransportRouteSegment>& o2)
+	{
+		return TransportSegmentsComparator{}(o2, o1);
+	}
 };
 
 TransportRoutePlanner::TransportRoutePlanner() {
@@ -40,11 +45,9 @@ TransportRoutePlanner::~TransportRoutePlanner() {
 
 void TransportRoutePlanner::prepareResults(unique_ptr<TransportRoutingContext>& ctx,
 										   vector<SHARED_PTR<TransportRouteSegment>>& results,
-										   vector<SHARED_PTR<TransportRouteResult>>& routes) {
-	sort(results.begin(), results.end(),
-		 [](const SHARED_PTR<TransportRouteSegment>& lhs, const SHARED_PTR<TransportRouteSegment>& rhs) {
-			 return lhs->distFromStart < rhs->distFromStart;
-		 });
+										   vector<SHARED_PTR<TransportRouteResult>>& routes)
+{
+	sort(results.begin(), results.end(), TransportSegmentsComparator::less);
 
 	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
 					  "Found %zu results, visited %d routes / %d stops, loaded "
@@ -308,6 +311,7 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 
 					double walkTime = distToEnd / ctx->cfg->walkSpeed;
 					finish->distFromStart = segment->distFromStart + travelTime + walkTime;
+					finish->nonce = nonce++;
 				}
 			}
 			prevStop = stop;
