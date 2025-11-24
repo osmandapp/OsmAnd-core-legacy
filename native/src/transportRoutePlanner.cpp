@@ -112,8 +112,26 @@ void TransportRoutePlanner::prepareResults(unique_ptr<TransportRoutingContext>& 
 			route->toStringPrint();
 			routes.push_back(std::move(route));
 		}
+	}
 
-		// TODO next (add alternatives)
+	for (const SHARED_PTR<TransportRouteResult>& r : routes) {
+		for (int i = 0; i < r->segments.size(); i++) {
+			std::set<std::string> altRefsAlreadyAdded;
+			std::vector<SHARED_PTR<TransportRouteResultSegment>> alts;
+			const std::string& mainRef = r->segments.at(i)->route->ref;
+			for (const SHARED_PTR<TransportRouteResult>& alt : r->getAlternativeRoutes()) {
+				const SHARED_PTR<TransportRouteResultSegment>& rs = alt->segments.at(i);
+				const std::string& altRef = rs->route->ref;
+				if (!altRef.empty() && altRef != mainRef) {
+					if (!altRefsAlreadyAdded.count(altRef)) {
+						altRefsAlreadyAdded.insert(altRef);
+						alts.push_back(rs);
+					}
+				}
+			}
+			auto& vec = r->segments.at(i)->alternatives;
+			vec.insert(vec.end(), alts.begin(), alts.end());
+		}
 	}
 }
 
