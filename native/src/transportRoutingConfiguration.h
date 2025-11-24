@@ -13,7 +13,7 @@ struct TransportRoutingConfiguration {
 	int32_t zoomToLoadTiles = 15;
 	int32_t walkRadius = 1500;
 	int32_t walkChangeRadius = 300;
-	int32_t maxNumberOfChanges = 3;
+	int32_t maxNumberOfChanges = 2; // replaced with max_num_changes
 	int32_t finishTimeSeconds = 1200; // TODO comment
 
 	double increaseForAlternativesRoutes = 2.0;
