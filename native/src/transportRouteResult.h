@@ -14,7 +14,7 @@ struct TransportRouteResult {
 	SHARED_PTR<TransportRoutingConfiguration> config;
 
 	// alternative routes always match with number of segments
-	vector<SHARED_PTR<TransportRouteResult>> alternativeRoutes;
+	std::vector<SHARED_PTR<TransportRouteResult>> alternativeRoutes;
 	const vector<SHARED_PTR<TransportRouteResult>>& getAlternativeRoutes() const;
 
 	TransportRouteResult(SHARED_PTR<TransportRoutingConfiguration>& cfg);

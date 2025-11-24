@@ -35,7 +35,7 @@ public:
 	double walkDist;
 	int32_t depTime;
 
-	vector<TransportRouteResultSegment> alternatives;
+	std::vector<SHARED_PTR<TransportRouteResultSegment>> alternatives;
 
 	TransportRouteResultSegment();
 

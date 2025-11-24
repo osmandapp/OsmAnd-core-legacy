@@ -55,7 +55,7 @@ void TransportRoutePlanner::prepareResults(unique_ptr<TransportRoutingContext>& 
 					  results.size(), ctx->visitedRoutesCount, ctx->visitedStops, ctx->quadTree.size(), ctx->loadedWays,
 					  ctx->wrongLoadedWays);
 
-	for (SHARED_PTR<TransportRouteSegment>& res : results) {
+	for (const SHARED_PTR<TransportRouteSegment>& res : results) {
 		if (ctx->calculationProgress.get() && ctx->calculationProgress->isCancelled()) {
 			return;
 		}
@@ -84,7 +84,7 @@ void TransportRoutePlanner::prepareResults(unique_ptr<TransportRoutingContext>& 
 		// test if faster routes fully included
 		bool exclude = false;
 
-		for (SHARED_PTR<TransportRouteResult>& s : routes) {
+		for (const SHARED_PTR<TransportRouteResult>& s : routes) {
 			if (ctx->calculationProgress.get() && ctx->calculationProgress->isCancelled()) {
 				return;
 			}
@@ -95,7 +95,7 @@ void TransportRoutePlanner::prepareResults(unique_ptr<TransportRoutingContext>& 
 		}
 
 		if (!exclude) {
-			for (SHARED_PTR<TransportRouteResult>& s : routes) {
+			for (const SHARED_PTR<TransportRouteResult>& s : routes) {
 				if (ctx->calculationProgress.get() && ctx->calculationProgress->isCancelled()) {
 					return;
 				}
