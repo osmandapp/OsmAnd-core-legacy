@@ -569,19 +569,22 @@ jfieldID jfield_TransportRoutingConfiguration_ZOOM_TO_LOAD_TILES = NULL;
 jfieldID jfield_TransportRoutingConfiguration_walkRadius = NULL;
 jfieldID jfield_TransportRoutingConfiguration_walkChangeRadius = NULL;
 jfieldID jfield_TransportRoutingConfiguration_maxNumberOfChanges = NULL;
-jfieldID jfield_TransportRoutingConfiguration_finishTimeSeconds = NULL;
 jfieldID jfield_TransportRoutingConfiguration_maxRouteTime = NULL;
 jfieldID jfield_TransportRoutingConfiguration_router = NULL;
 jfieldID jfield_TransportRoutingConfiguration_walkSpeed = NULL;
 jfieldID jfield_TransportRoutingConfiguration_defaultTravelSpeed = NULL;
-jfieldID jfield_TransportRoutingConfiguration_stopTime = NULL;
-jfieldID jfield_TransportRoutingConfiguration_changeTime = NULL;
-jfieldID jfield_TransportRoutingConfiguration_boardingTime = NULL;
+jfieldID jfield_TransportRoutingConfiguration_defaultStopTime = NULL;
+jfieldID jfield_TransportRoutingConfiguration_defaultChangeTime = NULL;
+jfieldID jfield_TransportRoutingConfiguration_defaultBoardingTime = NULL;
 jfieldID jfield_TransportRoutingConfiguration_useSchedule = NULL;
 jfieldID jfield_TransportRoutingConfiguration_scheduleTimeOfDay = NULL;
 jfieldID jfield_TransportRoutingConfiguration_scheduleMaxTime = NULL;
 jfieldID jfield_TransportRoutingConfiguration_maxRouteDistance = NULL;
 jfieldID jfield_TransportRoutingConfiguration_maxRouteIncreaseSpeed = NULL;
+jfieldID jfield_TransportRoutingConfiguration_increaseForAlternativesRoutes = NULL;
+jfieldID jfield_TransportRoutingConfiguration_increaseForAltRoutesWalking = NULL;
+jfieldID jfield_TransportRoutingConfiguration_combineAltRoutesDiffStops = NULL;
+jfieldID jfield_TransportRoutingConfiguration_combineAltRoutesSumDiffStops = NULL;
 
 // jfieldID jfield_TransportRoutingConfiguration_rawTypes = NULL;
 // jfieldID jfield_jclass_TransportRoutingConfiguration_speed = NULL;
@@ -1000,8 +1003,6 @@ void loadJniRenderingContext(JNIEnv* env) {
 		getFid(env, jclass_TransportRoutingConfiguration, "walkChangeRadius", "I");
 	jfield_TransportRoutingConfiguration_maxNumberOfChanges =
 		getFid(env, jclass_TransportRoutingConfiguration, "maxNumberOfChanges", "I");
-	jfield_TransportRoutingConfiguration_finishTimeSeconds =
-		getFid(env, jclass_TransportRoutingConfiguration, "finishTimeSeconds", "I");
 	jfield_TransportRoutingConfiguration_maxRouteTime =
 		getFid(env, jclass_TransportRoutingConfiguration, "maxRouteTime", "I");
 	jfield_TransportRoutingConfiguration_router =
@@ -1010,11 +1011,12 @@ void loadJniRenderingContext(JNIEnv* env) {
 		getFid(env, jclass_TransportRoutingConfiguration, "walkSpeed", "F");
 	jfield_TransportRoutingConfiguration_defaultTravelSpeed =
 		getFid(env, jclass_TransportRoutingConfiguration, "defaultTravelSpeed", "F");
-	jfield_TransportRoutingConfiguration_stopTime = getFid(env, jclass_TransportRoutingConfiguration, "defaultStopTime", "I");
-	jfield_TransportRoutingConfiguration_changeTime =
-		getFid(env, jclass_TransportRoutingConfiguration, "defaultChangeTime", "I");
-	jfield_TransportRoutingConfiguration_boardingTime =
+	jfield_TransportRoutingConfiguration_defaultStopTime =
+		getFid(env, jclass_TransportRoutingConfiguration, "defaultStopTime", "I");
+	jfield_TransportRoutingConfiguration_defaultBoardingTime =
 		getFid(env, jclass_TransportRoutingConfiguration, "defaultBoardingTime", "I");
+	jfield_TransportRoutingConfiguration_defaultChangeTime =
+		getFid(env, jclass_TransportRoutingConfiguration, "defaultChangeTime", "I");
 	jfield_TransportRoutingConfiguration_useSchedule =
 		getFid(env, jclass_TransportRoutingConfiguration, "useSchedule", "Z");
 	jfield_TransportRoutingConfiguration_scheduleTimeOfDay =
@@ -1025,6 +1027,14 @@ void loadJniRenderingContext(JNIEnv* env) {
 		getFid(env, jclass_TransportRoutingConfiguration, "maxRouteDistance", "I");
 	jfield_TransportRoutingConfiguration_maxRouteIncreaseSpeed =
 		getFid(env, jclass_TransportRoutingConfiguration, "maxRouteIncreaseSpeed", "I");
+	jfield_TransportRoutingConfiguration_increaseForAlternativesRoutes =
+		getFid(env, jclass_TransportRoutingConfiguration, "increaseForAlternativesRoutes", "D");
+	jfield_TransportRoutingConfiguration_increaseForAltRoutesWalking =
+		getFid(env, jclass_TransportRoutingConfiguration, "increaseForAltRoutesWalking", "D");
+	jfield_TransportRoutingConfiguration_combineAltRoutesDiffStops =
+		getFid(env, jclass_TransportRoutingConfiguration, "combineAltRoutesDiffStops", "I");
+	jfield_TransportRoutingConfiguration_combineAltRoutesSumDiffStops =
+		getFid(env, jclass_TransportRoutingConfiguration, "combineAltRoutesSumDiffStops", "I");
 	// jfield_TransportRoutingConfiguration_rawTypes = getFid(env, jclass_TransportRoutingConfiguration, "rawTypes",
 	// "__"); jfield_TransportRoutingConfiguration_speed = getFid(env, jclass_TransportRoutingConfiguration, "speed",
 	// "___");
@@ -2090,16 +2100,16 @@ void parseTransportRoutingConfiguration(JNIEnv* ienv, shared_ptr<TransportRoutin
 		ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_walkChangeRadius);
 	rConfig->maxNumberOfChanges =
 		ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_maxNumberOfChanges);
-	rConfig->finishTimeSeconds =
-		ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_finishTimeSeconds);
 	rConfig->maxRouteTime = ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_maxRouteTime);
 	rConfig->walkSpeed = ienv->GetFloatField(jTransportConfig, jfield_TransportRoutingConfiguration_walkSpeed);
 	rConfig->defaultTravelSpeed =
 		ienv->GetFloatField(jTransportConfig, jfield_TransportRoutingConfiguration_defaultTravelSpeed);
-	// TODO remove commented lines
-	// rConfig->stopTime = ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_stopTime);
-	// rConfig->changeTime = ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_changeTime);
-	// rConfig->boardingTime = ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_boardingTime);
+	rConfig->defaultStopTime =
+		ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_defaultStopTime);
+	rConfig->defaultBoardingTime =
+		ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_defaultBoardingTime);
+	rConfig->defaultChangeTime =
+		ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_defaultChangeTime);
 	rConfig->useSchedule = ienv->GetBooleanField(jTransportConfig, jfield_TransportRoutingConfiguration_useSchedule);
 	rConfig->scheduleTimeOfDay =
 		ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_scheduleTimeOfDay);
@@ -2109,6 +2119,15 @@ void parseTransportRoutingConfiguration(JNIEnv* ienv, shared_ptr<TransportRoutin
 		ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_maxRouteDistance);
 	rConfig->maxRouteIncreaseSpeed =
 		ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_maxRouteIncreaseSpeed);
+	rConfig->increaseForAlternativesRoutes =
+		ienv->GetDoubleField(jTransportConfig, jfield_TransportRoutingConfiguration_increaseForAlternativesRoutes);
+	rConfig->increaseForAltRoutesWalking =
+		ienv->GetDoubleField(jTransportConfig, jfield_TransportRoutingConfiguration_increaseForAltRoutesWalking);
+	rConfig->combineAltRoutesDiffStops =
+		ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_combineAltRoutesDiffStops);
+	rConfig->combineAltRoutesSumDiffStops =
+		ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_combineAltRoutesSumDiffStops);
+
 	jobject lrouter = ienv->GetObjectField(jTransportConfig, jfield_TransportRoutingConfiguration_router);
 	jobject router = ienv->NewGlobalRef(lrouter);
 

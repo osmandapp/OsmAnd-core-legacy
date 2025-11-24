@@ -14,15 +14,10 @@ TransportRoutingConfiguration::TransportRoutingConfiguration(
 	if (prouter != nullptr) {
 		this->router = prouter->build(params);
 		walkRadius = router->getIntAttribute("walkRadius", walkRadius);
-		walkChangeRadius = 
-			router->getIntAttribute("walkChangeRadius", walkChangeRadius);
-		zoomToLoadTiles =
-			router->getIntAttribute("zoomToLoadTiles", zoomToLoadTiles);
-		maxNumberOfChanges =
-			router->getIntAttribute("maxNumberOfChanges", maxNumberOfChanges);
+		walkChangeRadius = router->getIntAttribute("walkChangeRadius", walkChangeRadius);
+		zoomToLoadTiles = router->getIntAttribute("zoomToLoadTiles", zoomToLoadTiles);
+		maxNumberOfChanges = router->getIntAttribute("maxNumberOfChanges", maxNumberOfChanges);
 		maxRouteTime = router->getIntAttribute("maxRouteTime", maxRouteTime);
-		finishTimeSeconds = router->getIntAttribute( // TODO remove
-			"delayForAlternativesRoutes", finishTimeSeconds);
 
 		increaseForAlternativesRoutes = router->
 			getFloatAttribute("increaseForAlternativesRoutes", static_cast<float>(increaseForAlternativesRoutes));
@@ -34,34 +29,15 @@ TransportRoutingConfiguration::TransportRoutingConfiguration(
 		combineAltRoutesSumDiffStops = router->
 			getIntAttribute("combineAltRoutesSumDiffStops", combineAltRoutesSumDiffStops);
 
-		string mn = router->getAttribute("max_num_changes");
-		try {
-			maxNumberOfChanges = std::stoi(mn);
-		} catch (...) {
-			// Ignore
-		}
+		const std::string mn = router->getAttribute("max_num_changes"); // int as float-string
+		maxNumberOfChanges = (int) OsmAndAlgorithms::parseNumberSilently(mn, (float) maxNumberOfChanges);
 
-		walkSpeed =
-			router->getFloatAttribute("minDefaultSpeed", walkSpeed * 3.6f) /
-			3.6f;
-		defaultTravelSpeed = router->getFloatAttribute(
-								 "maxDefaultSpeed", defaultTravelSpeed * 3.6f) /
-							 3.6f;
+		walkSpeed = router->getFloatAttribute("minDefaultSpeed", walkSpeed * 3.6f) / 3.6f;
+		defaultTravelSpeed = router->getFloatAttribute("maxDefaultSpeed", defaultTravelSpeed * 3.6f) / 3.6f;
 		maxRouteIncreaseSpeed = router->getIntAttribute("maxRouteIncreaseSpeed", maxRouteIncreaseSpeed);
-		maxRouteDistance =  router->getIntAttribute("maxRouteDistance", maxRouteDistance);
+		maxRouteDistance = router->getIntAttribute("maxRouteDistance", maxRouteDistance);
 
-		// TODO remove lines 45-52
-		// RouteAttributeContext &obstacles =
-		// 	router->getObjContext(RouteDataObjectAttribute::ROUTING_OBSTACLES);
-		// dynbitset bs = getRawBitset("time", "stop");
-		// stopTime = obstacles.evaluateInt(bs, stopTime);
-		// bs = getRawBitset("time", "change");
-		// changeTime = obstacles.evaluateInt(bs, changeTime);
-		// bs = getRawBitset("time", "boarding");
-		// boardingTime = obstacles.evaluateInt(bs, boardingTime);
-
-		RouteAttributeContext &spds =
-			router->getObjContext(RouteDataObjectAttribute::ROAD_SPEED);
+		RouteAttributeContext &spds = router->getObjContext(RouteDataObjectAttribute::ROAD_SPEED);
 		dynbitset bs = getRawBitset("route", "walk");
 		walkSpeed = spds.evaluateFloat(bs, walkSpeed);
 	}
