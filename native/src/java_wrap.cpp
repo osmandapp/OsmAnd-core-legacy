@@ -735,6 +735,7 @@ jfieldID jfield_NativeTransportRoutingResult_routeTime = NULL;
 jmethodID jmethod_NativeTransportRoutingResult_init = NULL;
 
 jclass jclass_NativeTransportRouteResultSegment = NULL;
+jfieldID jfield_NativeTransportRouteResultSegment_alternatives = NULL;
 jfieldID jfield_NativeTransportRouteResultSegment_route = NULL;
 jfieldID jfield_NativeTransportRouteResultSegment_walkTime = NULL;
 jfieldID jfield_NativeTransportRouteResultSegment_travelDistApproximate = NULL;
@@ -829,6 +830,8 @@ void loadJniRenderingContext(JNIEnv* env) {
 
 	jclass_NativeTransportRouteResultSegment =
 		findGlobalClass(env, "net/osmand/router/NativeTransportRouteResultSegment");
+	jfield_NativeTransportRouteResultSegment_alternatives =
+		getFid(env, jclass_NativeTransportRouteResultSegment, "alternatives", "[Lnet/osmand/router/NativeTransportRouteResultSegment;");
 	jfield_NativeTransportRouteResultSegment_route =
 		getFid(env, jclass_NativeTransportRouteResultSegment, "route", "Lnet/osmand/router/NativeTransportRoute;");
 	jfield_NativeTransportRouteResultSegment_walkTime =
@@ -2358,7 +2361,7 @@ jobject convertTransportRouteToJava(JNIEnv* ienv, SHARED_PTR<TransportRoute>& ro
 	return jtr;
 }
 
-jobject convertPTRouteResultSegmentToJava(JNIEnv* ienv, SHARED_PTR<TransportRouteResultSegment>& trrs) {
+jobject convertPTRouteResultSegmentToJava(JNIEnv* ienv, const SHARED_PTR<TransportRouteResultSegment>& trrs) {
 	jobject jtrrs =
 		ienv->NewObject(jclass_NativeTransportRouteResultSegment, jmethod_NativeTransportRouteResultSegment_init);
 	jobject jtr = convertTransportRouteToJava(ienv, trrs->route);
@@ -2372,6 +2375,26 @@ jobject convertPTRouteResultSegmentToJava(JNIEnv* ienv, SHARED_PTR<TransportRout
 	ienv->SetIntField(jtrrs, jfield_NativeTransportRouteResultSegment_end, trrs->end);
 	ienv->SetDoubleField(jtrrs, jfield_NativeTransportRouteResultSegment_walkDist, (jdouble)trrs->walkDist);
 	ienv->SetIntField(jtrrs, jfield_NativeTransportRouteResultSegment_depTime, trrs->depTime);
+
+	// Add alternatives (ChatGPT 5.1)
+	if (!trrs->alternatives.empty()) {
+		const auto size = static_cast<jsize>(trrs->alternatives.size());
+		jobjectArray j_alts = ienv->NewObjectArray(size, jclass_NativeTransportRouteResultSegment, nullptr);
+
+		for (jsize i = 0; i < size; i++) {
+			const SHARED_PTR<TransportRouteResultSegment>& alt = trrs->alternatives[i];
+			if (!alt) {
+				continue;
+			}
+			jobject jAlt = convertPTRouteResultSegmentToJava(ienv, alt);
+			ienv->SetObjectArrayElement(j_alts, i, jAlt);
+			ienv->DeleteLocalRef(jAlt);
+		}
+
+		ienv->SetObjectField(jtrrs, jfield_NativeTransportRouteResultSegment_alternatives, j_alts);
+		ienv->DeleteLocalRef(j_alts);
+	}
+
 	return jtrrs;
 }
 
