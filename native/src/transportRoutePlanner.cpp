@@ -220,12 +220,8 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 		double minDist = 0;
 		double travelDist = 0;
 
-		int onboardTime = ctx->cfg->getBoardingTime(segment->road->getType());
-		int intervalTime = OsmAndAlgorithms::parseNumberSilently(segment->road->getInterval(), 0);
-		if (intervalTime > 0) {
-			onboardTime = intervalTime * 60 / 2;
-		}
-		double travelTime = onboardTime;
+		int seconds = segment->road->calcIntervalInSeconds();
+		double travelTime = seconds > 0 ? (double) seconds / 2 : ctx->cfg->getBoardingTime(segment->road->getType());
 
 		const float routeTravelSpeed = ctx->cfg->getSpeedByRouteType(segment->road->type);
 
