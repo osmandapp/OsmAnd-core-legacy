@@ -729,6 +729,7 @@ jmethodID jmethod_TurnType_init = NULL;
 
 //--- Transport routing result class
 jclass jclass_NativeTransportRoutingResult = NULL;
+jfieldID jfield_NativeTransportRoutingResult_alternativeRoutes = NULL;
 jfieldID jfield_NativeTransportRoutingResult_segments = NULL;
 jfieldID jfield_NativeTransportRoutingResult_finishWalkDist = NULL;
 jfieldID jfield_NativeTransportRoutingResult_routeTime = NULL;
@@ -821,6 +822,9 @@ jfieldID jfield_HHRoutingConfig_STRICT_BEST_GROUP_MAPS = NULL;
 
 void loadJniRenderingContext(JNIEnv* env) {
 	jclass_NativeTransportRoutingResult = findGlobalClass(env, "net/osmand/router/NativeTransportRoutingResult");
+	jfield_NativeTransportRoutingResult_alternativeRoutes =
+		getFid(env, jclass_NativeTransportRoutingResult, "alternativeRoutes",
+														  "[Lnet/osmand/router/NativeTransportRoutingResult;");
 	jfield_NativeTransportRoutingResult_segments = getFid(env, jclass_NativeTransportRoutingResult, "segments",
 														  "[Lnet/osmand/router/NativeTransportRouteResultSegment;");
 	jfield_NativeTransportRoutingResult_finishWalkDist =
@@ -2376,7 +2380,7 @@ jobject convertPTRouteResultSegmentToJava(JNIEnv* ienv, const SHARED_PTR<Transpo
 	ienv->SetDoubleField(jtrrs, jfield_NativeTransportRouteResultSegment_walkDist, (jdouble)trrs->walkDist);
 	ienv->SetIntField(jtrrs, jfield_NativeTransportRouteResultSegment_depTime, trrs->depTime);
 
-	// Add alternatives (ChatGPT 5.1)
+	// alternatives (ChatGPT 5.1)
 	if (!trrs->alternatives.empty()) {
 		const auto size = static_cast<jsize>(trrs->alternatives.size());
 		jobjectArray j_alts = ienv->NewObjectArray(size, jclass_NativeTransportRouteResultSegment, nullptr);
@@ -2398,8 +2402,9 @@ jobject convertPTRouteResultSegmentToJava(JNIEnv* ienv, const SHARED_PTR<Transpo
 	return jtrrs;
 }
 
-jobject convertPTResultToJava(JNIEnv* ienv, SHARED_PTR<TransportRouteResult>& r) {
+jobject convertPTResultToJava(JNIEnv* ienv, const SHARED_PTR<TransportRouteResult>& r) {
 	jobject jtrr = ienv->NewObject(jclass_NativeTransportRoutingResult, jmethod_NativeTransportRoutingResult_init);
+
 	jobjectArray j_segments = ienv->NewObjectArray(r->segments.size(), jclass_NativeTransportRouteResultSegment, NULL);
 	for (int i = 0; i < r->segments.size(); i++) {
 		jobject jtrrseg = convertPTRouteResultSegmentToJava(ienv, r->segments.at(i));
@@ -2408,6 +2413,25 @@ jobject convertPTResultToJava(JNIEnv* ienv, SHARED_PTR<TransportRouteResult>& r)
 	}
 	ienv->SetObjectField(jtrr, jfield_NativeTransportRoutingResult_segments, j_segments);
 	ienv->DeleteLocalRef(j_segments);
+
+	// alternativeRoutes (ChatGPT 5.1)
+	if (!r->alternativeRoutes.empty()) {
+		const auto size = static_cast<jsize>(r->alternativeRoutes.size());
+		jobjectArray j_altRoutes = ienv->NewObjectArray(size, jclass_NativeTransportRoutingResult, nullptr);
+
+		for (jsize i = 0; i < size; i++) {
+			const SHARED_PTR<TransportRouteResult>& alt = r->alternativeRoutes[i];
+			if (alt) {
+				jobject jAlt = convertPTResultToJava(ienv, alt);
+				ienv->SetObjectArrayElement(j_altRoutes, i, jAlt);
+				ienv->DeleteLocalRef(jAlt);
+			}
+		}
+
+		ienv->SetObjectField(jtrr, jfield_NativeTransportRoutingResult_alternativeRoutes, j_altRoutes);
+		ienv->DeleteLocalRef(j_altRoutes);
+	}
+
 	ienv->SetDoubleField(jtrr, jfield_NativeTransportRoutingResult_finishWalkDist, (jdouble)r->finishWalkDist);
 	ienv->SetDoubleField(jtrr, jfield_NativeTransportRoutingResult_routeTime, (jdouble)r->routeTime);
 	return jtrr;
