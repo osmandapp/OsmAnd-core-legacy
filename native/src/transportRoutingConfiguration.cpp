@@ -85,9 +85,9 @@ uint TransportRoutingConfiguration::getRawType(string &tg, string &vl) {
 }
 
 int32_t TransportRoutingConfiguration::getStopTime(const std::string &routeType) {
-	if (stopTimes.count(routeType)) { // TODO optimize
-		const int32_t time = stopTimes.at(routeType);
-		if (time > 0) return time;
+	auto it = stopTimes.find(routeType);
+	if (it != stopTimes.end() && it->second > 0) {
+		return it->second;
 	}
 
 	RouteAttributeContext &obstacles =
@@ -107,9 +107,9 @@ int32_t TransportRoutingConfiguration::getStopTime(const std::string &routeType)
 }
 
 int32_t TransportRoutingConfiguration::getBoardingTime(const std::string &routeType) {
-	if (boardingTimes.count(routeType)) { // TODO optimize
-		const int32_t time = boardingTimes.at(routeType);
-		if (time > 0) return time;
+	auto it = boardingTimes.find(routeType);
+	if (it != boardingTimes.end() && it->second > 0) {
+		return it->second;
 	}
 
 	RouteAttributeContext &obstacles =
@@ -131,9 +131,9 @@ int32_t TransportRoutingConfiguration::getBoardingTime(const std::string &routeT
 int32_t TransportRoutingConfiguration::getChangeTime(const std::string &fromRouteType, const std::string &toRouteType) {
 	const std::string key = fromRouteType + "_" + toRouteType;
 
-	if (changingTimes.count(key)) { // TODO optimize
-		const int32_t time = changingTimes.at(key);
-		if (time > 0) return time;
+	auto it = changingTimes.find(key);
+	if (it != changingTimes.end() && it->second > 0) {
+		return it->second;
 	}
 
 	RouteAttributeContext &obstacles =

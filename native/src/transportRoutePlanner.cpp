@@ -181,7 +181,7 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 		r->distFromStart = r->walkDist / ctx->cfg->walkSpeed;
 		if (TRACE_ONBOARD_ID != 0)
 		{
-			ObfConstants::osmand_id_t id = ObfConstants::getOsmIdFromBinaryMapObjectId(r->road->id);
+			OsmAndObfConstants::osmand_id_t id = OsmAndObfConstants::getOsmIdFromBinaryMapObjectId(r->road->id);
 			if (id == TRACE_ONBOARD_ID)
 			{
 				LogPrintf(OsmAnd::LogSeverityLevel::Debug, "TRACE_ONBOARD_ID %f %" PRId64 " %s",
@@ -245,7 +245,7 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 		vector<SHARED_PTR<TransportRouteSegment>> sgms;
 
 		if (TRACE_ONBOARD_ID != 0) {
-			ObfConstants::osmand_id_t id = ObfConstants::getOsmIdFromBinaryMapObjectId(segment->road->id);
+			OsmAndObfConstants::osmand_id_t id = OsmAndObfConstants::getOsmIdFromBinaryMapObjectId(segment->road->id);
 			if (id == TRACE_ONBOARD_ID) {
 				LogPrintf(OsmAnd::LogSeverityLevel::Debug, "TRACE_ONBOARD_ID -> %" PRId64 " (%d) %.2f (parent %s)",
 				          id, segment->segStart, segment->distFromStart, segment->parentRoute
@@ -310,8 +310,10 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 						queue.push(nextSegment);
 					}
 					if (TRACE_CHANGE_ID != 0) {
-						ObfConstants::osmand_id_t from = ObfConstants::getOsmIdFromBinaryMapObjectId(segment->road->id);
-						ObfConstants::osmand_id_t to = ObfConstants::getOsmIdFromBinaryMapObjectId(sgm->road->id);
+						OsmAndObfConstants::osmand_id_t from = OsmAndObfConstants
+							::getOsmIdFromBinaryMapObjectId(segment->road->id);
+						OsmAndObfConstants::osmand_id_t to = OsmAndObfConstants
+							::getOsmIdFromBinaryMapObjectId(sgm->road->id);
 						LogPrintf(OsmAnd::LogSeverityLevel::Debug,
 						          "TRACE_CHANGE_ID ? Change %" PRId64 " (%d) -> %" PRId64" (%d) %.3f",
 						          from, ind, to, sgm->segStart, sgm->distFromStart);
@@ -385,7 +387,8 @@ void TransportRoutePlanner::updateCalculationProgress(unique_ptr<TransportRoutin
 int64_t TransportRoutePlanner::segmentWithParentId(const SHARED_PTR<TransportRouteSegment>& segment,
                                                    const SHARED_PTR<TransportRouteSegment>& parent)
 {
-	return ((parent ? ObfConstants::getOsmIdFromBinaryMapObjectId(parent->road->id) : 0) << 30l) + segment->getId();
+	return ((parent ? OsmAndObfConstants::getOsmIdFromBinaryMapObjectId(parent->road->id) : 0) << 30l)
+		+ segment->getId();
 }
 
 bool TransportRoutePlanner::excludeRoute(const unique_ptr<TransportRoutingContext>& ctx,
@@ -430,7 +433,7 @@ bool TransportRoutePlanner::checkAlternative(const unique_ptr<TransportRoutingCo
 			}
 		}
 		if (alternativeRoute && sumDiffs < ctx->cfg->combineAltRoutesSumDiffStops) {
-			fastRoute->alternativeRoutes.push_back(testRoute); // TODO should be new shared_ptr ?
+			fastRoute->alternativeRoutes.push_back(testRoute);
 		}
 	}
 	return alternativeRoute;

@@ -589,7 +589,7 @@ std::string splitAndClearRepeats(std::string str, std::string del) {
     return res;
 }
 
-namespace ObfConstants
+namespace OsmAndObfConstants
 {
 	static osmand_id_t SHIFT_ID = 6;
 

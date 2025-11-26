@@ -125,7 +125,7 @@ std::string TransportRouteResult::toString() {
 		}
 		snprintf(buff, sizeof(buff),
 						  "%d. %s [%" PRId64 "]: walk %.1f m to '%s' and travel %s to '%s' by %s %d stops %s\n",
-						  i + 1, s->route->ref.c_str(), ObfConstants::getOsmIdFromBinaryMapObjectId(s->route->id),
+						  i + 1, s->route->ref.c_str(), OsmAndObfConstants::getOsmIdFromBinaryMapObjectId(s->route->id),
 						  s->walkDist, s->getStart().name.c_str(), time.c_str(), s->getEnd().name.c_str(),
 						  s->route->name.c_str(), s->end - s->start, arrivalTime.c_str());
 

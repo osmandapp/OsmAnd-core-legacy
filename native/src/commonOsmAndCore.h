@@ -473,7 +473,7 @@ void trimspec(std::string &text);
 std::string getFileName(const std::string& filePath);
 std::string splitAndClearRepeats(std::string ref, std::string symbol);
 
-namespace ObfConstants
+namespace OsmAndObfConstants
 {
 	using osmand_id_t = int64_t;
 	osmand_id_t getOsmIdFromBinaryMapObjectId(osmand_id_t id);
