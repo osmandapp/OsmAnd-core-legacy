@@ -29,8 +29,17 @@ TransportRoutingConfiguration::TransportRoutingConfiguration(
 		combineAltRoutesSumDiffStops = router->
 			getIntAttribute("combineAltRoutesSumDiffStops", combineAltRoutesSumDiffStops);
 
-		const std::string mn = router->getAttribute("max_num_changes"); // int as float-string
-		maxNumberOfChanges = (int) OsmAndAlgorithms::parseNumberSilently<float>(mn, (float) maxNumberOfChanges);
+		const std::string max_num_changes = router->getAttribute("max_num_changes");
+		maxNumberOfChanges = (int)OsmAndAlgorithms
+			::parseNumberSilently<float>(max_num_changes, (float)maxNumberOfChanges);
+
+		const std::string pt_limit = router->getAttribute("pt_limit");
+		ptLimitResultsByNumber = (int)OsmAndAlgorithms
+			::parseNumberSilently<float>(pt_limit, (float)ptLimitResultsByNumber);
+
+		const std::string pt_exclude = router->getAttribute("pt_exclude");
+		ptLimitResultsByPercent = (int)OsmAndAlgorithms
+			::parseNumberSilently<float>(pt_exclude, (float)ptLimitResultsByPercent);
 
 		walkSpeed = router->getFloatAttribute("minDefaultSpeed", walkSpeed * 3.6f) / 3.6f;
 		defaultTravelSpeed = router->getFloatAttribute("maxDefaultSpeed", defaultTravelSpeed * 3.6f) / 3.6f;

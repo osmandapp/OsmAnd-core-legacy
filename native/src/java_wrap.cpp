@@ -569,6 +569,8 @@ jfieldID jfield_TransportRoutingConfiguration_ZOOM_TO_LOAD_TILES = NULL;
 jfieldID jfield_TransportRoutingConfiguration_walkRadius = NULL;
 jfieldID jfield_TransportRoutingConfiguration_walkChangeRadius = NULL;
 jfieldID jfield_TransportRoutingConfiguration_maxNumberOfChanges = NULL;
+jfieldID jfield_TransportRoutingConfiguration_ptLimitResultsByNumber = NULL;
+jfieldID jfield_TransportRoutingConfiguration_ptLimitResultsByPercent = NULL;
 jfieldID jfield_TransportRoutingConfiguration_maxRouteTime = NULL;
 jfieldID jfield_TransportRoutingConfiguration_router = NULL;
 jfieldID jfield_TransportRoutingConfiguration_walkSpeed = NULL;
@@ -1010,6 +1012,10 @@ void loadJniRenderingContext(JNIEnv* env) {
 		getFid(env, jclass_TransportRoutingConfiguration, "walkChangeRadius", "I");
 	jfield_TransportRoutingConfiguration_maxNumberOfChanges =
 		getFid(env, jclass_TransportRoutingConfiguration, "maxNumberOfChanges", "I");
+	jfield_TransportRoutingConfiguration_ptLimitResultsByNumber =
+		getFid(env, jclass_TransportRoutingConfiguration, "ptLimitResultsByNumber", "I");
+	jfield_TransportRoutingConfiguration_ptLimitResultsByPercent =
+		getFid(env, jclass_TransportRoutingConfiguration, "ptLimitResultsByPercent", "I");
 	jfield_TransportRoutingConfiguration_maxRouteTime =
 		getFid(env, jclass_TransportRoutingConfiguration, "maxRouteTime", "I");
 	jfield_TransportRoutingConfiguration_router =
@@ -2107,6 +2113,10 @@ void parseTransportRoutingConfiguration(JNIEnv* ienv, shared_ptr<TransportRoutin
 		ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_walkChangeRadius);
 	rConfig->maxNumberOfChanges =
 		ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_maxNumberOfChanges);
+	rConfig->ptLimitResultsByNumber =
+		ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_ptLimitResultsByNumber);
+	rConfig->ptLimitResultsByPercent =
+		ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_ptLimitResultsByPercent);
 	rConfig->maxRouteTime = ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_maxRouteTime);
 	rConfig->walkSpeed = ienv->GetFloatField(jTransportConfig, jfield_TransportRoutingConfiguration_walkSpeed);
 	rConfig->defaultTravelSpeed =
