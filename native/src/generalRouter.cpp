@@ -1,3 +1,4 @@
+#include <iomanip>
 #ifndef _OSMAND_GENERAL_ROUTER_CPP
 #define _OSMAND_GENERAL_ROUTER_CPP
 #include "generalRouter.h"
@@ -271,6 +272,13 @@ void RouteAttributeEvalRule::printRule(GeneralRouter* r) {
 		s << " selectexpression " << selectExpression.expressionType;
 	}
 	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "%s", s.str().c_str());
+}
+
+std::string RoutingParameter::getDefaultString() const
+{
+	std::ostringstream ss;
+	ss << std::fixed << std::setprecision(1) << defaultNumeric;
+	return type == RoutingParameterType::NUMERIC ? ss.str() : "-";
 }
 
 RouteAttributeExpression::RouteAttributeExpression(vector<string>& vls, int type, string vType)

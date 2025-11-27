@@ -148,8 +148,9 @@ struct RoutingParameter {
 	vector<double> possibleValues;	// Object TODO;
 	vector<string> possibleValueDescriptions;
 	vector<string> profiles;
-	double defaultNumeric;
 	bool defaultBoolean;
+	double defaultNumeric;
+	std::string getDefaultString() const;
 };
 
 struct ParameterContext {
