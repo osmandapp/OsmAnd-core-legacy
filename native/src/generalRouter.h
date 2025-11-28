@@ -454,8 +454,9 @@ class GeneralRouter {
 		rp.profiles = profiles;
 		rp.type = RoutingParameterType::BOOLEAN;
 		rp.defaultBoolean = defaultBoolean;
+		if (!parameters.count(rp.id))
+			parametersList.push_back(rp);
 		parameters[rp.id] = rp;
-		parametersList.push_back(rp);
 	}
 
 	void registerNumericParameter(string id, string name, string description, vector<double> vls,
@@ -470,8 +471,9 @@ class GeneralRouter {
 		rp.possibleValueDescriptions = vlsDescriptions;
 		rp.type = RoutingParameterType::NUMERIC;
 		rp.defaultNumeric = defaultNumeric;
+		if (!parameters.count(rp.id))
+			parametersList.push_back(rp);
 		parameters[rp.id] = rp;
-		parametersList.push_back(rp);
 	}
 
 	RouteAttributeContext* newRouteAttributeContext() {
