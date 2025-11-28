@@ -145,12 +145,14 @@ struct RoutingParameter {
 	string name;
 	string description;
 	RoutingParameterType type;
-	vector<double> possibleValues;	// Object TODO;
+	vector<double> possibleValues;
 	vector<string> possibleValueDescriptions;
 	vector<string> profiles;
 	bool defaultBoolean;
 	double defaultNumeric;
 	std::string getDefaultString() const;
+	std::string getNumericValueAsString(double n) const;
+	int findIndexInPossibleValues(const std::string& stringValue);
 };
 
 struct ParameterContext {

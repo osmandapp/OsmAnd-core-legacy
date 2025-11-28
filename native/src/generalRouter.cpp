@@ -274,11 +274,25 @@ void RouteAttributeEvalRule::printRule(GeneralRouter* r) {
 	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "%s", s.str().c_str());
 }
 
-std::string RoutingParameter::getDefaultString() const
+std::string RoutingParameter::getNumericValueAsString(double n) const
 {
 	std::ostringstream ss;
-	ss << std::fixed << std::setprecision(1) << defaultNumeric;
-	return type == RoutingParameterType::NUMERIC ? ss.str() : "-";
+	ss << std::fixed << std::setprecision(1) << n; // %.1f
+	return ss.str();
+}
+
+std::string RoutingParameter::getDefaultString() const
+{
+	return type == RoutingParameterType::NUMERIC ? getNumericValueAsString(defaultNumeric) : "-";
+}
+
+int RoutingParameter::findIndexInPossibleValues(const std::string& value)
+{
+	std::string fixedValue = getNumericValueAsString(OsmAndAlgorithms::parseNumberSilently<double>(value, 0.0));
+	for (int i = 0; i < possibleValues.size(); i++)
+		if (fixedValue == getNumericValueAsString(possibleValues[i]))
+			return i;
+	return 0;
 }
 
 RouteAttributeExpression::RouteAttributeExpression(vector<string>& vls, int type, string vType)
