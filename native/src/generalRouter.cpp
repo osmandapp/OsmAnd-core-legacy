@@ -187,6 +187,19 @@ UNORDERED_map<std::string, RoutingParameter> GeneralRouter::getParameters(const 
 	return params;
 }
 
+std::vector<RoutingParameter> GeneralRouter::getParametersList(const string& derivedProfile)
+{
+	std::vector<RoutingParameter> params;
+	for (const RoutingParameter& rp : parametersList)
+	{
+		const auto profiles = rp.profiles;
+		if (profiles.empty() || find(profiles.begin(), profiles.end(), derivedProfile) != profiles.end()) {
+			params.push_back(rp);
+		}
+	}
+	return params;
+}
+
 void GeneralRouter::addAttribute(string k, string v) {
 	attributes[k] = v;
 	if (k == "restrictionsAware") {

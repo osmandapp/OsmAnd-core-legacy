@@ -489,7 +489,8 @@ class GeneralRouter {
 	}
 	
 	UNORDERED_map<string, RoutingParameter> getParameters(const string &derivedProfile);
-	
+	std::vector<RoutingParameter> getParametersList(const string& derivedProfile);
+
 	void addAttribute(string k, string v);
 
 	bool containsAttribute(string attribute);
