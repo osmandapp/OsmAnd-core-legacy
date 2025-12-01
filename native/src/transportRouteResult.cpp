@@ -67,12 +67,11 @@ double TransportRouteResult::getTravelTime() {
 				t += seg->route->schedule.avgStopIntervals[k] * 10;
 			}
 		} else {
-			// t += config->getBoardingTime();
 			if (prev != nullptr) {
 				t += config->getChangeTime(prev->route->getType(), seg->route->getType());
 			}
-			// part of s.getTravelTime()
-			// t += cfg.getBoardingTime(s.route.getType());
+			// part of s.getTravelTime() // Java comment
+			// t += cfg.getBoardingTime(s.route.getType()); // Java comment
 			t += seg->travelTime;
 		}
 		prev = seg;
