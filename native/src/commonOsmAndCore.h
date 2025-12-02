@@ -484,23 +484,22 @@ namespace OsmAndAlgorithms
 	template <typename T>
 	T parseNumberSilently(const std::string& str, T defaultValue)
 	{
-		if (str.empty()) return defaultValue;
-		try
-		{
-			if (std::is_same<T, int>::value)
-				return std::stoi(str);
-			if (std::is_same<T, long>::value)
-				return std::stol(str);
-			if (std::is_same<T, float>::value)
-				return std::stof(str);
-			if (std::is_same<T, double>::value)
-				return std::stod(str);
-		}
-		catch (...)
-		{
+		if (str.empty())
 			return defaultValue;
-		}
-		return defaultValue;
+
+		static_assert(std::is_arithmetic<T>::value,
+					  "parseNumberSilently: T must be arithmetic");
+
+		std::istringstream iss(str);
+		iss.imbue(std::locale::classic()); // '.' as a point
+
+		T value;
+		iss >> value;
+
+		if (iss.fail())
+			return defaultValue;
+
+		return value;
 	}
 }
 

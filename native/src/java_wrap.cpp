@@ -2390,7 +2390,6 @@ jobject convertPTRouteResultSegmentToJava(JNIEnv* ienv, const SHARED_PTR<Transpo
 	ienv->SetDoubleField(jtrrs, jfield_NativeTransportRouteResultSegment_walkDist, (jdouble)trrs->walkDist);
 	ienv->SetIntField(jtrrs, jfield_NativeTransportRouteResultSegment_depTime, trrs->depTime);
 
-	// alternatives by ChatGPT 5.1
 	if (!trrs->alternatives.empty()) {
 		const auto size = static_cast<jsize>(trrs->alternatives.size());
 		jobjectArray j_alts = ienv->NewObjectArray(size, jclass_NativeTransportRouteResultSegment, nullptr);
@@ -2424,7 +2423,6 @@ jobject convertPTResultToJava(JNIEnv* ienv, const SHARED_PTR<TransportRouteResul
 	ienv->SetObjectField(jtrr, jfield_NativeTransportRoutingResult_segments, j_segments);
 	ienv->DeleteLocalRef(j_segments);
 
-	// alternativeRoutes by ChatGPT 5.1
 	if (!r->alternativeRoutes.empty()) {
 		const auto size = static_cast<jsize>(r->alternativeRoutes.size());
 		jobjectArray j_altRoutes = ienv->NewObjectArray(size, jclass_NativeTransportRoutingResult, nullptr);

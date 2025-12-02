@@ -2394,7 +2394,6 @@ void initializeNames(UNORDERED(map) < int32_t, string > &stringTable, SHARED_PTR
 	}
 }
 
-// initializeTags by ChatGPT 5.1
 UNORDERED_map<std::string, std::string> initializeTags(const UNORDERED_map<int32_t, string>& stringTable,
                                                        const UNORDERED_map<std::string, std::string>& srcTags)
 {

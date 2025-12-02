@@ -289,9 +289,10 @@ void RouteAttributeEvalRule::printRule(GeneralRouter* r) {
 
 std::string RoutingParameter::getNumericValueAsString(double n) const
 {
-	std::ostringstream ss;
-	ss << std::fixed << std::setprecision(1) << n; // %.1f
-	return ss.str();
+	std::ostringstream oss;
+	oss.imbue(std::locale::classic()); // '.' as a point
+	oss << std::fixed << std::setprecision(1) << n; // %.1f
+	return oss.str();
 }
 
 std::string RoutingParameter::getDefaultString() const
