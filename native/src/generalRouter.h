@@ -150,9 +150,9 @@ struct RoutingParameter {
 	vector<string> profiles;
 	bool defaultBoolean;
 	double defaultNumeric;
-	std::string getDefaultString() const;
-	std::string getNumericValueAsString(double n) const;
-	int findIndexInPossibleValues(const std::string& stringValue);
+	string getDefaultString() const;
+	string getNumericValueAsString(double n) const;
+	int findIndexInPossibleValues(const string& stringValue);
 };
 
 struct ParameterContext {
