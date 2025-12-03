@@ -8,6 +8,8 @@ struct TransportRoutingContext;
 struct TransportRoutingConfiguration;
 
 struct TransportRouteResult {
+	friend class TransportRoutePlanner;
+
 	vector<SHARED_PTR<TransportRouteResultSegment>> segments;
 	double finishWalkDist;
 	double routeTime;
@@ -15,7 +17,6 @@ struct TransportRouteResult {
 
 	// alternative routes always match with number of segments
 	std::vector<SHARED_PTR<TransportRouteResult>> alternativeRoutes;
-	const vector<SHARED_PTR<TransportRouteResult>>& getAlternativeRoutes() const;
 
 	TransportRouteResult(SHARED_PTR<TransportRoutingConfiguration>& cfg);
 
@@ -33,6 +34,9 @@ struct TransportRouteResult {
 	int getChanges();
 	void toStringPrint();
 	std::string toString();
+
+private:
+	const vector<SHARED_PTR<TransportRouteResult>>& getAlternativeRoutes() const;
 };
 
 #endif /*_OSMAND_TRANSPORT_ROUTE_RESULT_H*/
