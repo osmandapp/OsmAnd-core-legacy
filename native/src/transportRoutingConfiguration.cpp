@@ -10,6 +10,7 @@ TransportRoutingConfiguration::TransportRoutingConfiguration()
 	: router(new GeneralRouter()) {}
 
 TransportRoutingConfiguration::TransportRoutingConfiguration(SHARED_PTR<GeneralRouter> prouter, MAP_STR_STR params) {
+	using namespace OsmAndAlgorithms;
 	auto getParamValue = [params](const char* key) -> std::string {
 		auto it = params.find(key);
 		return it != params.end() ? it->second : "";
@@ -32,14 +33,12 @@ TransportRoutingConfiguration::TransportRoutingConfiguration(SHARED_PTR<GeneralR
 		combineAltRoutesSumDiffStops = router->
 			getIntAttribute("combineAltRoutesSumDiffStops", combineAltRoutesSumDiffStops);
 
-		maxNumberOfChanges = (int)OsmAndAlgorithms
-			::parseNumberSilently<float>(getParamValue("max_num_changes"), (float)maxNumberOfChanges);
-
-		ptLimitResultsByNumber = (int)OsmAndAlgorithms
-			::parseNumberSilently<float>(getParamValue("pt_limit"), (float)ptLimitResultsByNumber);
-
-		ptLimitResultsByPercent = (int)OsmAndAlgorithms
-			::parseNumberSilently<float>(getParamValue("pt_exclude"), (float)ptLimitResultsByPercent);
+		maxNumberOfChanges = (int)parseNumberSilently<float>(getParamValue("max_num_changes"),
+		                                                     (float)maxNumberOfChanges);
+		ptLimitResultsByNumber = (int)parseNumberSilently<float>(getParamValue("pt_limit"),
+		                                                         (float)ptLimitResultsByNumber);
+		ptLimitResultsByPercent = (int)parseNumberSilently<float>(getParamValue("pt_exclude"),
+		                                                          (float)ptLimitResultsByPercent);
 
 		walkSpeed = router->getFloatAttribute("minDefaultSpeed", walkSpeed * 3.6f) / 3.6f;
 		defaultTravelSpeed = router->getFloatAttribute("maxDefaultSpeed", defaultTravelSpeed * 3.6f) / 3.6f;
