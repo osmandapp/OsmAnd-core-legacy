@@ -136,7 +136,7 @@ void TransportRoutePlanner::prepareResults(unique_ptr<TransportRoutingContext>& 
 				const SHARED_PTR<TransportRouteResultSegment>& rs = alt->segments.at(i);
 				const std::string& altRef = rs->route->ref;
 				if (!altRef.empty() && altRef != mainRef) {
-					if (!altRefsAlreadyAdded.count(altRef)) {
+					if (altRefsAlreadyAdded.count(altRef) == 0) {
 						altRefsAlreadyAdded.insert(altRef);
 						alts.push_back(rs);
 					}

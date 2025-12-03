@@ -454,7 +454,7 @@ class GeneralRouter {
 		rp.profiles = profiles;
 		rp.type = RoutingParameterType::BOOLEAN;
 		rp.defaultBoolean = defaultBoolean;
-		if (!parameters.count(rp.id))
+		if (parameters.count(rp.id) == 0)
 			parametersList.push_back(rp);
 		parameters[rp.id] = rp;
 	}
@@ -471,7 +471,7 @@ class GeneralRouter {
 		rp.possibleValueDescriptions = vlsDescriptions;
 		rp.type = RoutingParameterType::NUMERIC;
 		rp.defaultNumeric = defaultNumeric;
-		if (!parameters.count(rp.id))
+		if (parameters.count(rp.id) == 0)
 			parametersList.push_back(rp);
 		parameters[rp.id] = rp;
 	}
