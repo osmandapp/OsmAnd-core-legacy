@@ -37,8 +37,6 @@ TransportRoutingConfiguration::TransportRoutingConfiguration(SHARED_PTR<GeneralR
 		                                                     (float)maxNumberOfChanges);
 		ptLimitResultsByNumber = (int)parseNumberSilently<float>(getParamValue("pt_limit"),
 		                                                         (float)ptLimitResultsByNumber);
-		ptLimitResultsByPercent = (int)parseNumberSilently<float>(getParamValue("pt_exclude"),
-		                                                          (float)ptLimitResultsByPercent);
 
 		walkSpeed = router->getFloatAttribute("minDefaultSpeed", walkSpeed * 3.6f) / 3.6f;
 		defaultTravelSpeed = router->getFloatAttribute("maxDefaultSpeed", defaultTravelSpeed * 3.6f) / 3.6f;

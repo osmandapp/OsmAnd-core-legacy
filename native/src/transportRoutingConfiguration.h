@@ -15,8 +15,7 @@ struct TransportRoutingConfiguration {
 	int32_t walkChangeRadius = 300;
 	int32_t maxNumberOfChanges = 2; // replaced with max_num_changes
 
-	int32_t ptLimitResultsByNumber = 0; // pt_limit - limit number of best routes (0 = unlimited)
-	int32_t ptLimitResultsByPercent = 0; // pt_exclude - limit by time-to-the-best+% (0 = unlimited)
+	int32_t ptLimitResultsByNumber = 50; // pt_limit - limit number of best routes (0 = unlimited)
 
 	double increaseForAlternativesRoutes = 2.0;
 	double increaseForAltRoutesWalking = 3.0;

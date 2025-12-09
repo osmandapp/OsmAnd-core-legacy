@@ -114,14 +114,6 @@ void TransportRoutePlanner::prepareResults(unique_ptr<TransportRoutingContext>& 
 				LogPrintf(OsmAnd::LogSeverityLevel::Info, "ptLimitResultsByNumber (%d) reached", limitByNumber);
 				break;
 			}
-			int limitByPercent = ctx->cfg->ptLimitResultsByPercent;
-			if (!routes.empty() && limitByPercent > 0) {
-				double timeLimit = routes.front()->routeTime * (1.0 + static_cast<double>(limitByPercent) / 100.0);
-				if (route->routeTime > timeLimit) {
-					LogPrintf(OsmAnd::LogSeverityLevel::Info, "ptLimitResultsByPercent (%d%%) reached", limitByPercent);
-					break;
-				}
-			}
 			route->toStringPrint();
 			routes.push_back(std::move(route));
 		}
