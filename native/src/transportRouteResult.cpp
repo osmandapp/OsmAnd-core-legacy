@@ -1,3 +1,4 @@
+#include <inttypes.h>
 #ifndef _OSMAND_TRANSPORT_ROUTE_RESULT_CPP
 #define _OSMAND_TRANSPORT_ROUTE_RESULT_CPP
 #include "transportRouteResult.h"
@@ -58,6 +59,7 @@ double TransportRouteResult::getTravelDist() {
 // for ui/logs
 double TransportRouteResult::getTravelTime() {
 	double t = 0;
+	SHARED_PTR<TransportRouteResultSegment> prev = nullptr;
 	for (SHARED_PTR<TransportRouteResultSegment>& seg : segments) {
 		if (config->useSchedule) {
 			// TransportSchedule& sts = seg->route->schedule;
@@ -65,9 +67,14 @@ double TransportRouteResult::getTravelTime() {
 				t += seg->route->schedule.avgStopIntervals[k] * 10;
 			}
 		} else {
-			t += config->getBoardingTime();
+			if (prev != nullptr) {
+				t += config->getChangeTime(prev->route->getType(), seg->route->getType());
+			}
+			// part of s.getTravelTime() // Java comment
+			// t += cfg.getBoardingTime(s.route.getType()); // Java comment
 			t += seg->travelTime;
 		}
+		prev = seg;
 	}
 	return t;
 }
@@ -76,29 +83,38 @@ double TransportRouteResult::getTravelTime() {
 double TransportRouteResult::getWalkTime() {
 	return getWalkDist() / config->walkSpeed;
 }
-// for ui/logs
-double TransportRouteResult::getChangeTime() {
-	return config->changeTime;
+
+int32_t TransportRouteResult::getChangeTime(const SHARED_PTR<TransportRouteResultSegment>& current,
+                                            const SHARED_PTR<TransportRouteResultSegment>& next)
+{
+	if (next == nullptr) {
+		return 0;
+	}
+	return config->getChangeTime(current->route->getType(), next->route->getType());
 }
-// for ui/logs
-double TransportRouteResult::getBoardingTime() {
-	return config->boardingTime;
-}
+
 // for ui/logs
 int TransportRouteResult::getChanges() {
 	return segments.size() - 1;
 }
 
-void TransportRouteResult::toString() {
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
-					  "Route %d stops, %d changes, %.2f min: %.2f m (%.1f min) "
-					  "to walk, %.2f m (%.1f min) to travel\n",
-					  getStops(), getChanges(), routeTime / 60, getWalkDist(), getWalkTime() / 60.0, getTravelDist(),
-					  getTravelTime() / 60.0);
+void TransportRouteResult::toStringPrint() {
+	LogPrintf(OsmAnd::LogSeverityLevel::Info, "%s", toString().c_str());
+}
+
+std::string TransportRouteResult::toString() {
+	char buff[1024];
+	snprintf(buff, sizeof(buff),
+	         "Route %d stops, %d changes, %.2f min: %.2f m (%.1f min) to walk, %.2f m (%.1f min) to travel\n",
+	         getStops(), getChanges(), routeTime / 60, getWalkDist(), getWalkTime() / 60.0, getTravelDist(),
+	         getTravelTime() / 60.0);
+
+	std::string result(buff);
+
 	for (int i = 0; i < segments.size(); i++) {
 		SHARED_PTR<TransportRouteResultSegment>& s = segments[i];
-		string time = "";
-		string arrivalTime = "";
+		string time;
+		string arrivalTime;
 		if (s->depTime != -1) {
 			time = "at " + std::to_string(s->depTime);	// formatTransportTime(s->deptTime);
 		}
@@ -106,12 +122,21 @@ void TransportRouteResult::toString() {
 		if (aTime != -1) {
 			arrivalTime = "and arrive at " + std::to_string(aTime);	 // formatTransportTime(s->getArrivalTime());
 		}
-		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
-						  "%d. %s: walk %.1f m to '%s' and travel %s to '%s' "
-						  "by %s %d stops %s\n",
-						  i + 1, s->route->ref.c_str(), s->walkDist, s->getStart().name.c_str(), time.c_str(),
-						  s->getEnd().name.c_str(), s->route->name.c_str(), (s->end - s->start), arrivalTime.c_str());
+		snprintf(buff, sizeof(buff),
+						  "%d. %s [%" PRId64 "]: walk %.1f m to '%s' and travel %s to '%s' by %s %d stops %s\n",
+						  i + 1, s->route->ref.c_str(), OsmAndObfConstants::getOsmIdFromBinaryMapObjectId(s->route->id),
+						  s->walkDist, s->getStart().name.c_str(), time.c_str(), s->getEnd().name.c_str(),
+						  s->route->name.c_str(), s->end - s->start, arrivalTime.c_str());
+
+		const std::string line(buff);
+		result += line;
 	}
+
+	return result;
+}
+
+const vector<SHARED_PTR<TransportRouteResult>>& TransportRouteResult::getAlternativeRoutes() const {
+	return alternativeRoutes;
 }
 
 #endif /*_OSMAND_TRANSPORT_ROUTE_RESULT_CPP*/

@@ -145,10 +145,14 @@ struct RoutingParameter {
 	string name;
 	string description;
 	RoutingParameterType type;
-	vector<double> possibleValues;	// Object TODO;
+	vector<double> possibleValues;
 	vector<string> possibleValueDescriptions;
 	vector<string> profiles;
 	bool defaultBoolean;
+	double defaultNumeric;
+	string getDefaultString() const;
+	string getNumericValueAsString(double n) const;
+	int findIndexInPossibleValues(const string& stringValue);
 };
 
 struct ParameterContext {
@@ -439,7 +443,9 @@ class GeneralRouter {
 		return parametersList;
 	}
 
-	void registerBooleanParameter(string id, string group, string name, string description, vector<string> profiles, bool defaultValue) {
+	void registerBooleanParameter(string id, string group, string name, string description, vector<string> profiles,
+	                              bool defaultBoolean)
+	{
 		RoutingParameter rp{};
 		rp.group = group;
 		rp.name = name;
@@ -447,13 +453,15 @@ class GeneralRouter {
 		rp.id = id;
 		rp.profiles = profiles;
 		rp.type = RoutingParameterType::BOOLEAN;
-		rp.defaultBoolean = defaultValue;
+		rp.defaultBoolean = defaultBoolean;
+		if (parameters.count(rp.id) == 0)
+			parametersList.push_back(rp);
 		parameters[rp.id] = rp;
-		parametersList.push_back(rp);
 	}
 
-	void registerNumericParameter(string id, string name, string description, vector<double> vls, vector<string> profiles,
-								  vector<string> vlsDescriptions) {
+	void registerNumericParameter(string id, string name, string description, vector<double> vls,
+	                              vector<string> profiles, vector<string> vlsDescriptions, double defaultNumeric)
+	{
 		RoutingParameter rp{};
 		rp.name = name;
 		rp.description = description;
@@ -462,8 +470,10 @@ class GeneralRouter {
 		rp.possibleValues = vls;
 		rp.possibleValueDescriptions = vlsDescriptions;
 		rp.type = RoutingParameterType::NUMERIC;
+		rp.defaultNumeric = defaultNumeric;
+		if (parameters.count(rp.id) == 0)
+			parametersList.push_back(rp);
 		parameters[rp.id] = rp;
-		parametersList.push_back(rp);
 	}
 
 	RouteAttributeContext* newRouteAttributeContext() {
@@ -479,7 +489,8 @@ class GeneralRouter {
 	}
 	
 	UNORDERED_map<string, RoutingParameter> getParameters(const string &derivedProfile);
-	
+	std::vector<RoutingParameter> getParametersList(const string& derivedProfile);
+
 	void addAttribute(string k, string v);
 
 	bool containsAttribute(string attribute);

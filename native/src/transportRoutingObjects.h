@@ -132,10 +132,14 @@ struct TransportRoute : public MapObject {
 	string ref;
 	string routeOperator;
 	string type;
-	uint32_t dist;
+	uint32_t dist; // -1;
 	string color;
 	vector<SHARED_PTR<Way>> forwardWays;
 	TransportSchedule schedule;
+
+	int intervalInSeconds; // -1
+	const std::string INTERVAL_KEY = "interval";
+	UNORDERED_map<std::string, std::string> tags;
 
 	TransportRoute();
 	TransportRoute(SHARED_PTR<TransportRoute>& base, vector<SHARED_PTR<TransportStop>>& cforwardStops, vector<SHARED_PTR<Way>>& cforwardWays);
@@ -150,6 +154,12 @@ struct TransportRoute : public MapObject {
 	string getAdjustedRouteRef(bool small);
 	bool compareRoute(SHARED_PTR<TransportRoute> &thatObj);
 	bool isIncomplete();
+	std::string getType() const;
+	std::string getInterval() const;
+	int calcIntervalInSeconds();
+	int parseIntervalTagToSeconds(const std::string& interval);
+	void addTag(const std::string& key, const std::string& value);
+	void setTags(UNORDERED_map<std::string, std::string> newTags);
 };
 
 

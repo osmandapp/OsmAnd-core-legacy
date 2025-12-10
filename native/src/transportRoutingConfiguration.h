@@ -13,8 +13,16 @@ struct TransportRoutingConfiguration {
 	int32_t zoomToLoadTiles = 15;
 	int32_t walkRadius = 1500;
 	int32_t walkChangeRadius = 300;
-	int32_t maxNumberOfChanges = 3;
-	int32_t finishTimeSeconds = 1200;
+	int32_t maxNumberOfChanges = 2; // replaced with max_num_changes
+
+	int32_t ptLimitResultsByNumber = 50; // pt_limit - limit number of best routes (0 = unlimited)
+
+	double increaseForAlternativesRoutes = 2.0;
+	double increaseForAltRoutesWalking = 3.0;
+
+	int combineAltRoutesDiffStops = 120;
+	int combineAltRoutesSumDiffStops = 300;
+
 	int32_t maxRouteTime = 60 * 60 * 10;
 	int32_t maxRouteDistance = 0;
 	int32_t maxRouteIncreaseSpeed = 30;
@@ -22,9 +30,15 @@ struct TransportRoutingConfiguration {
 
 	float walkSpeed = (float)(3.6 / 3.6);
 	float defaultTravelSpeed = (60 / 3.6);
-	int32_t stopTime = 30;
-	int32_t changeTime = 180;
-	int32_t boardingTime = 180;
+
+	int32_t defaultStopTime = 0;
+	UNORDERED(map)<string, int32_t> stopTimes;
+
+	int32_t defaultBoardingTime = 0;
+	UNORDERED(map)<string, int32_t> boardingTimes;
+
+	int32_t defaultChangeTime = 0;
+	UNORDERED(map)<string, int32_t> changingTimes;
 
 	bool useSchedule = false;
 
@@ -42,8 +56,10 @@ struct TransportRoutingConfiguration {
 	float getSpeedByRouteType(std::string routeType);
 	dynbitset getRawBitset(std::string tg, std::string vl);
 	uint getRawType(string &tg, string &vl);
-	int32_t getChangeTime();
-	int32_t getBoardingTime();
+
+	int32_t getStopTime(const std::string &routeType);
+	int32_t getBoardingTime(const std::string &routeType);
+	int32_t getChangeTime(const std::string &fromRouteType, const std::string &toRouteType);
 };
 
 #endif	//_OSMAND_TRANSPORT_ROUTING_CONFIGURATION_H

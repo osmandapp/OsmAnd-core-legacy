@@ -588,3 +588,44 @@ std::string splitAndClearRepeats(std::string str, std::string del) {
     }
     return res;
 }
+
+namespace OsmAndObfConstants
+{
+	static osmand_id_t SHIFT_ID = 6;
+
+	static osmand_id_t SHIFT_MULTIPOLYGON_IDS = 43;
+	static osmand_id_t SHIFT_NON_SPLIT_EXISTING_IDS = 41;
+
+	static osmand_id_t RELATION_BIT = 1L << (SHIFT_MULTIPOLYGON_IDS - 1); // 1L << 42
+	static osmand_id_t SPLIT_BIT = 1L << (SHIFT_NON_SPLIT_EXISTING_IDS - 1); // 1L << 40
+	static osmand_id_t DUPLICATE_SPLIT = 5;
+
+	static bool isIdFromSplit(osmand_id_t id)
+	{
+		return id > 0 && (id & SPLIT_BIT) == SPLIT_BIT;
+	}
+
+	static bool isIdFromRelation(osmand_id_t id)
+	{
+		return id > 0 && (id & RELATION_BIT) == RELATION_BIT;
+	}
+
+	static bool isShiftedID(osmand_id_t id)
+	{
+		return isIdFromRelation(id) || isIdFromSplit(id);
+	}
+
+	static osmand_id_t getOsmId(osmand_id_t id)
+	{
+		// According methods assignIdForMultipolygon and genId in IndexPoiCreator
+		osmand_id_t clearBits = RELATION_BIT | SPLIT_BIT;
+		id = isShiftedID(id) ? (id & ~clearBits) >> DUPLICATE_SPLIT : id;
+		return id >> SHIFT_ID;
+	}
+
+	osmand_id_t getOsmIdFromBinaryMapObjectId(osmand_id_t id)
+	{
+		// BinaryMapDataObject object
+		return getOsmId(id >> 1);
+	}
+}

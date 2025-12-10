@@ -1,3 +1,4 @@
+#include <inttypes.h>
 #ifndef _OSMAND_TRANSPORT_ROUTE_STOPS_READER_CPP
 #define _OSMAND_TRANSPORT_ROUTE_STOPS_READER_CPP
 
@@ -45,7 +46,7 @@ vector<SHARED_PTR<TransportStop>> TransportRouteStopsReader::readMergedTransport
 						// skip, we already has this route from other map?
 					} else if (routesToLoad.at(rr) == nullptr) {
 						OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error,
-										  "Something went wrong by loading route %d for stop %d", rr, stop->id);
+										  "Something went wrong by loading route %d for stop %" PRId64, rr, stop->id);
 					} else {
 						const auto it = routesToLoad.find(rr);
 						auto& route = it->second;

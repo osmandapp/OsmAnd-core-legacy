@@ -1,3 +1,4 @@
+#include <inttypes.h>
 #ifndef _OSMAND_TRANSPORT_ROUTE_SEGMENT_CPP
 #define _OSMAND_TRANSPORT_ROUTE_SEGMENT_CPP
 #include "transportRouteSegment.h"
@@ -26,7 +27,7 @@ bool TransportRouteSegment::wasVisited(SHARED_PTR<TransportRouteSegment>& rrs) {
 	if (rrs->road->id == road->id && rrs->departureTime == departureTime) {
 		return true;
 	}
-	if (hasParentRoute) {
+	if (parentRoute) {
 		return parentRoute->wasVisited(rrs);
 	}
 	return false;
@@ -64,21 +65,21 @@ int64_t TransportRouteSegment::getId() {
 	l += (departureTime + 1);
 	l = l << SHIFT;
 	if (segStart >= (1 << SHIFT)) {
-		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "too many stops roadId: %d, start: %d", road->id, segStart);
+		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "too many stops roadId: %" PRId64 ", start: %d", road->id, segStart);
 		return -1;
 	}
 
 	l += segStart;
 
 	if (l < 0) {
-		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "too long id: %d", road->id);
+		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "too long id: %" PRId64, road->id);
 		return -1;
 	}
 	return l;
 }
 
 int32_t TransportRouteSegment::getDepth() {
-	if (hasParentRoute) {
+	if (parentRoute) {
 		return parentRoute->getDepth() + 1;
 	}
 	return 1;

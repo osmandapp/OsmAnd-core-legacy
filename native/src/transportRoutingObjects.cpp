@@ -192,6 +192,7 @@ void Way::reverseNodes() {
 
 TransportRoute::TransportRoute() {
 	dist = -1;
+	intervalInSeconds = -1;
 }
 TransportRoute::TransportRoute(SHARED_PTR<TransportRoute>& base, vector<SHARED_PTR<TransportStop>>& cforwardStops,
 							   vector<shared_ptr<Way>>& cforwardWays) {
@@ -202,12 +203,14 @@ TransportRoute::TransportRoute(SHARED_PTR<TransportRoute>& base, vector<SHARED_P
 	ref = base->ref;
 	routeOperator = base->routeOperator;
 	type = base->type;
-	dist = base->dist;	//??
 	color = base->color;
 	schedule = base->schedule;
 
 	forwardWays = cforwardWays;
 	forwardStops = cforwardStops;
+
+	dist = -1;
+	intervalInSeconds = -1;
 }
 
 TransportSchedule& TransportRoute::getOrCreateSchedule() {
@@ -374,6 +377,54 @@ string TransportRoute::getAdjustedRouteRef(bool small) {
 		}
 	}
 	return adjustedRef;
+}
+
+std::string TransportRoute::getType() const {
+	return type;
+}
+
+void TransportRoute::addTag(const std::string& key, const std::string& value) {
+	tags[key] = value;
+}
+
+void TransportRoute::setTags(UNORDERED_map<std::string, std::string> newTags) {
+	tags = std::move(newTags);
+}
+
+std::string TransportRoute::getInterval() const {
+	auto it = tags.find(INTERVAL_KEY);
+	return it != tags.end() ? it->second : "";
+}
+
+int TransportRoute::calcIntervalInSeconds() {
+	if (intervalInSeconds < 0) {
+		intervalInSeconds = parseIntervalTagToSeconds(getInterval());
+	}
+	return intervalInSeconds;
+}
+
+int TransportRoute::parseIntervalTagToSeconds(const std::string& interval) {
+	using OsmAndAlgorithms::parseNumberSilently;
+
+	if (interval.empty())
+		return 0;
+
+	std::vector<std::string> hms = split_string(interval, ":");
+
+	int hh = 0, mm = 0, ss = 0;
+
+	if (hms.size() == 1) {
+		mm = parseNumberSilently<int>(hms[0], 0);
+	} else if (hms.size() == 2) {
+		hh = parseNumberSilently<int>(hms[0], 0);
+		mm = parseNumberSilently<int>(hms[1], 0);
+	} else if (hms.size() >= 3) {
+		hh = parseNumberSilently<int>(hms[0], 0);
+		mm = parseNumberSilently<int>(hms[1], 0);
+		ss = parseNumberSilently<int>(hms[2], 0);
+	}
+
+	return std::max(0, hh * 3600 + mm * 60 + ss);
 }
 
 bool TransportRoute::compareRoute(SHARED_PTR<TransportRoute>& thatObj) {

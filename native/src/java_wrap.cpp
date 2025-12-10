@@ -569,19 +569,23 @@ jfieldID jfield_TransportRoutingConfiguration_ZOOM_TO_LOAD_TILES = NULL;
 jfieldID jfield_TransportRoutingConfiguration_walkRadius = NULL;
 jfieldID jfield_TransportRoutingConfiguration_walkChangeRadius = NULL;
 jfieldID jfield_TransportRoutingConfiguration_maxNumberOfChanges = NULL;
-jfieldID jfield_TransportRoutingConfiguration_finishTimeSeconds = NULL;
+jfieldID jfield_TransportRoutingConfiguration_ptLimitResultsByNumber = NULL;
 jfieldID jfield_TransportRoutingConfiguration_maxRouteTime = NULL;
 jfieldID jfield_TransportRoutingConfiguration_router = NULL;
 jfieldID jfield_TransportRoutingConfiguration_walkSpeed = NULL;
 jfieldID jfield_TransportRoutingConfiguration_defaultTravelSpeed = NULL;
-jfieldID jfield_TransportRoutingConfiguration_stopTime = NULL;
-jfieldID jfield_TransportRoutingConfiguration_changeTime = NULL;
-jfieldID jfield_TransportRoutingConfiguration_boardingTime = NULL;
+jfieldID jfield_TransportRoutingConfiguration_defaultStopTime = NULL;
+jfieldID jfield_TransportRoutingConfiguration_defaultChangeTime = NULL;
+jfieldID jfield_TransportRoutingConfiguration_defaultBoardingTime = NULL;
 jfieldID jfield_TransportRoutingConfiguration_useSchedule = NULL;
 jfieldID jfield_TransportRoutingConfiguration_scheduleTimeOfDay = NULL;
 jfieldID jfield_TransportRoutingConfiguration_scheduleMaxTime = NULL;
 jfieldID jfield_TransportRoutingConfiguration_maxRouteDistance = NULL;
 jfieldID jfield_TransportRoutingConfiguration_maxRouteIncreaseSpeed = NULL;
+jfieldID jfield_TransportRoutingConfiguration_increaseForAlternativesRoutes = NULL;
+jfieldID jfield_TransportRoutingConfiguration_increaseForAltRoutesWalking = NULL;
+jfieldID jfield_TransportRoutingConfiguration_combineAltRoutesDiffStops = NULL;
+jfieldID jfield_TransportRoutingConfiguration_combineAltRoutesSumDiffStops = NULL;
 
 // jfieldID jfield_TransportRoutingConfiguration_rawTypes = NULL;
 // jfieldID jfield_jclass_TransportRoutingConfiguration_speed = NULL;
@@ -726,12 +730,14 @@ jmethodID jmethod_TurnType_init = NULL;
 
 //--- Transport routing result class
 jclass jclass_NativeTransportRoutingResult = NULL;
+jfieldID jfield_NativeTransportRoutingResult_alternativeRoutes = NULL;
 jfieldID jfield_NativeTransportRoutingResult_segments = NULL;
 jfieldID jfield_NativeTransportRoutingResult_finishWalkDist = NULL;
 jfieldID jfield_NativeTransportRoutingResult_routeTime = NULL;
 jmethodID jmethod_NativeTransportRoutingResult_init = NULL;
 
 jclass jclass_NativeTransportRouteResultSegment = NULL;
+jfieldID jfield_NativeTransportRouteResultSegment_alternatives = NULL;
 jfieldID jfield_NativeTransportRouteResultSegment_route = NULL;
 jfieldID jfield_NativeTransportRouteResultSegment_walkTime = NULL;
 jfieldID jfield_NativeTransportRouteResultSegment_travelDistApproximate = NULL;
@@ -817,6 +823,9 @@ jfieldID jfield_HHRoutingConfig_STRICT_BEST_GROUP_MAPS = NULL;
 
 void loadJniRenderingContext(JNIEnv* env) {
 	jclass_NativeTransportRoutingResult = findGlobalClass(env, "net/osmand/router/NativeTransportRoutingResult");
+	jfield_NativeTransportRoutingResult_alternativeRoutes =
+		getFid(env, jclass_NativeTransportRoutingResult, "alternativeRoutes",
+														  "[Lnet/osmand/router/NativeTransportRoutingResult;");
 	jfield_NativeTransportRoutingResult_segments = getFid(env, jclass_NativeTransportRoutingResult, "segments",
 														  "[Lnet/osmand/router/NativeTransportRouteResultSegment;");
 	jfield_NativeTransportRoutingResult_finishWalkDist =
@@ -826,6 +835,8 @@ void loadJniRenderingContext(JNIEnv* env) {
 
 	jclass_NativeTransportRouteResultSegment =
 		findGlobalClass(env, "net/osmand/router/NativeTransportRouteResultSegment");
+	jfield_NativeTransportRouteResultSegment_alternatives =
+		getFid(env, jclass_NativeTransportRouteResultSegment, "alternatives", "[Lnet/osmand/router/NativeTransportRouteResultSegment;");
 	jfield_NativeTransportRouteResultSegment_route =
 		getFid(env, jclass_NativeTransportRouteResultSegment, "route", "Lnet/osmand/router/NativeTransportRoute;");
 	jfield_NativeTransportRouteResultSegment_walkTime =
@@ -1000,8 +1011,8 @@ void loadJniRenderingContext(JNIEnv* env) {
 		getFid(env, jclass_TransportRoutingConfiguration, "walkChangeRadius", "I");
 	jfield_TransportRoutingConfiguration_maxNumberOfChanges =
 		getFid(env, jclass_TransportRoutingConfiguration, "maxNumberOfChanges", "I");
-	jfield_TransportRoutingConfiguration_finishTimeSeconds =
-		getFid(env, jclass_TransportRoutingConfiguration, "finishTimeSeconds", "I");
+	jfield_TransportRoutingConfiguration_ptLimitResultsByNumber =
+		getFid(env, jclass_TransportRoutingConfiguration, "ptLimitResultsByNumber", "I");
 	jfield_TransportRoutingConfiguration_maxRouteTime =
 		getFid(env, jclass_TransportRoutingConfiguration, "maxRouteTime", "I");
 	jfield_TransportRoutingConfiguration_router =
@@ -1010,11 +1021,12 @@ void loadJniRenderingContext(JNIEnv* env) {
 		getFid(env, jclass_TransportRoutingConfiguration, "walkSpeed", "F");
 	jfield_TransportRoutingConfiguration_defaultTravelSpeed =
 		getFid(env, jclass_TransportRoutingConfiguration, "defaultTravelSpeed", "F");
-	jfield_TransportRoutingConfiguration_stopTime = getFid(env, jclass_TransportRoutingConfiguration, "defaultStopTime", "I");
-	jfield_TransportRoutingConfiguration_changeTime =
-		getFid(env, jclass_TransportRoutingConfiguration, "defaultChangeTime", "I");
-	jfield_TransportRoutingConfiguration_boardingTime =
+	jfield_TransportRoutingConfiguration_defaultStopTime =
+		getFid(env, jclass_TransportRoutingConfiguration, "defaultStopTime", "I");
+	jfield_TransportRoutingConfiguration_defaultBoardingTime =
 		getFid(env, jclass_TransportRoutingConfiguration, "defaultBoardingTime", "I");
+	jfield_TransportRoutingConfiguration_defaultChangeTime =
+		getFid(env, jclass_TransportRoutingConfiguration, "defaultChangeTime", "I");
 	jfield_TransportRoutingConfiguration_useSchedule =
 		getFid(env, jclass_TransportRoutingConfiguration, "useSchedule", "Z");
 	jfield_TransportRoutingConfiguration_scheduleTimeOfDay =
@@ -1025,6 +1037,14 @@ void loadJniRenderingContext(JNIEnv* env) {
 		getFid(env, jclass_TransportRoutingConfiguration, "maxRouteDistance", "I");
 	jfield_TransportRoutingConfiguration_maxRouteIncreaseSpeed =
 		getFid(env, jclass_TransportRoutingConfiguration, "maxRouteIncreaseSpeed", "I");
+	jfield_TransportRoutingConfiguration_increaseForAlternativesRoutes =
+		getFid(env, jclass_TransportRoutingConfiguration, "increaseForAlternativesRoutes", "D");
+	jfield_TransportRoutingConfiguration_increaseForAltRoutesWalking =
+		getFid(env, jclass_TransportRoutingConfiguration, "increaseForAltRoutesWalking", "D");
+	jfield_TransportRoutingConfiguration_combineAltRoutesDiffStops =
+		getFid(env, jclass_TransportRoutingConfiguration, "combineAltRoutesDiffStops", "I");
+	jfield_TransportRoutingConfiguration_combineAltRoutesSumDiffStops =
+		getFid(env, jclass_TransportRoutingConfiguration, "combineAltRoutesSumDiffStops", "I");
 	// jfield_TransportRoutingConfiguration_rawTypes = getFid(env, jclass_TransportRoutingConfiguration, "rawTypes",
 	// "__"); jfield_TransportRoutingConfiguration_speed = getFid(env, jclass_TransportRoutingConfiguration, "speed",
 	// "___");
@@ -2090,15 +2110,18 @@ void parseTransportRoutingConfiguration(JNIEnv* ienv, shared_ptr<TransportRoutin
 		ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_walkChangeRadius);
 	rConfig->maxNumberOfChanges =
 		ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_maxNumberOfChanges);
-	rConfig->finishTimeSeconds =
-		ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_finishTimeSeconds);
+	rConfig->ptLimitResultsByNumber =
+		ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_ptLimitResultsByNumber);
 	rConfig->maxRouteTime = ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_maxRouteTime);
 	rConfig->walkSpeed = ienv->GetFloatField(jTransportConfig, jfield_TransportRoutingConfiguration_walkSpeed);
 	rConfig->defaultTravelSpeed =
 		ienv->GetFloatField(jTransportConfig, jfield_TransportRoutingConfiguration_defaultTravelSpeed);
-	rConfig->stopTime = ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_stopTime);
-	rConfig->changeTime = ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_changeTime);
-	rConfig->boardingTime = ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_boardingTime);
+	rConfig->defaultStopTime =
+		ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_defaultStopTime);
+	rConfig->defaultBoardingTime =
+		ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_defaultBoardingTime);
+	rConfig->defaultChangeTime =
+		ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_defaultChangeTime);
 	rConfig->useSchedule = ienv->GetBooleanField(jTransportConfig, jfield_TransportRoutingConfiguration_useSchedule);
 	rConfig->scheduleTimeOfDay =
 		ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_scheduleTimeOfDay);
@@ -2108,6 +2131,15 @@ void parseTransportRoutingConfiguration(JNIEnv* ienv, shared_ptr<TransportRoutin
 		ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_maxRouteDistance);
 	rConfig->maxRouteIncreaseSpeed =
 		ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_maxRouteIncreaseSpeed);
+	rConfig->increaseForAlternativesRoutes =
+		ienv->GetDoubleField(jTransportConfig, jfield_TransportRoutingConfiguration_increaseForAlternativesRoutes);
+	rConfig->increaseForAltRoutesWalking =
+		ienv->GetDoubleField(jTransportConfig, jfield_TransportRoutingConfiguration_increaseForAltRoutesWalking);
+	rConfig->combineAltRoutesDiffStops =
+		ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_combineAltRoutesDiffStops);
+	rConfig->combineAltRoutesSumDiffStops =
+		ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_combineAltRoutesSumDiffStops);
+
 	jobject lrouter = ienv->GetObjectField(jTransportConfig, jfield_TransportRoutingConfiguration_router);
 	jobject router = ienv->NewGlobalRef(lrouter);
 
@@ -2338,7 +2370,7 @@ jobject convertTransportRouteToJava(JNIEnv* ienv, SHARED_PTR<TransportRoute>& ro
 	return jtr;
 }
 
-jobject convertPTRouteResultSegmentToJava(JNIEnv* ienv, SHARED_PTR<TransportRouteResultSegment>& trrs) {
+jobject convertPTRouteResultSegmentToJava(JNIEnv* ienv, const SHARED_PTR<TransportRouteResultSegment>& trrs) {
 	jobject jtrrs =
 		ienv->NewObject(jclass_NativeTransportRouteResultSegment, jmethod_NativeTransportRouteResultSegment_init);
 	jobject jtr = convertTransportRouteToJava(ienv, trrs->route);
@@ -2352,11 +2384,31 @@ jobject convertPTRouteResultSegmentToJava(JNIEnv* ienv, SHARED_PTR<TransportRout
 	ienv->SetIntField(jtrrs, jfield_NativeTransportRouteResultSegment_end, trrs->end);
 	ienv->SetDoubleField(jtrrs, jfield_NativeTransportRouteResultSegment_walkDist, (jdouble)trrs->walkDist);
 	ienv->SetIntField(jtrrs, jfield_NativeTransportRouteResultSegment_depTime, trrs->depTime);
+
+	if (!trrs->alternatives.empty()) {
+		const auto size = static_cast<jsize>(trrs->alternatives.size());
+		jobjectArray j_alts = ienv->NewObjectArray(size, jclass_NativeTransportRouteResultSegment, nullptr);
+
+		for (jsize i = 0; i < size; i++) {
+			const SHARED_PTR<TransportRouteResultSegment>& alt = trrs->alternatives[i];
+			if (!alt) {
+				continue;
+			}
+			jobject jAlt = convertPTRouteResultSegmentToJava(ienv, alt);
+			ienv->SetObjectArrayElement(j_alts, i, jAlt);
+			ienv->DeleteLocalRef(jAlt);
+		}
+
+		ienv->SetObjectField(jtrrs, jfield_NativeTransportRouteResultSegment_alternatives, j_alts);
+		ienv->DeleteLocalRef(j_alts);
+	}
+
 	return jtrrs;
 }
 
-jobject convertPTResultToJava(JNIEnv* ienv, SHARED_PTR<TransportRouteResult>& r) {
+jobject convertPTResultToJava(JNIEnv* ienv, const SHARED_PTR<TransportRouteResult>& r) {
 	jobject jtrr = ienv->NewObject(jclass_NativeTransportRoutingResult, jmethod_NativeTransportRoutingResult_init);
+
 	jobjectArray j_segments = ienv->NewObjectArray(r->segments.size(), jclass_NativeTransportRouteResultSegment, NULL);
 	for (int i = 0; i < r->segments.size(); i++) {
 		jobject jtrrseg = convertPTRouteResultSegmentToJava(ienv, r->segments.at(i));
@@ -2365,6 +2417,24 @@ jobject convertPTResultToJava(JNIEnv* ienv, SHARED_PTR<TransportRouteResult>& r)
 	}
 	ienv->SetObjectField(jtrr, jfield_NativeTransportRoutingResult_segments, j_segments);
 	ienv->DeleteLocalRef(j_segments);
+
+	if (!r->alternativeRoutes.empty()) {
+		const auto size = static_cast<jsize>(r->alternativeRoutes.size());
+		jobjectArray j_altRoutes = ienv->NewObjectArray(size, jclass_NativeTransportRoutingResult, nullptr);
+
+		for (jsize i = 0; i < size; i++) {
+			const SHARED_PTR<TransportRouteResult>& alt = r->alternativeRoutes[i];
+			if (alt) {
+				jobject jAlt = convertPTResultToJava(ienv, alt);
+				ienv->SetObjectArrayElement(j_altRoutes, i, jAlt);
+				ienv->DeleteLocalRef(jAlt);
+			}
+		}
+
+		ienv->SetObjectField(jtrr, jfield_NativeTransportRoutingResult_alternativeRoutes, j_altRoutes);
+		ienv->DeleteLocalRef(j_altRoutes);
+	}
+
 	ienv->SetDoubleField(jtrr, jfield_NativeTransportRoutingResult_finishWalkDist, (jdouble)r->finishWalkDist);
 	ienv->SetDoubleField(jtrr, jfield_NativeTransportRoutingResult_routeTime, (jdouble)r->routeTime);
 	return jtrr;

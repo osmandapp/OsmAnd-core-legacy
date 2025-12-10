@@ -2298,6 +2298,26 @@ bool readTransportRoute(BinaryMapFile* file, SHARED_PTR<TransportRoute>& transpo
 				input->PopLimit(pold);
 				break;
 			}
+			case OsmAnd::OBF::TransportRoute::kAttributeTagIdsFieldNumber: {
+				transportRoute->addTag(regStr(stringTable, input), "");
+				break;
+			}
+			case OsmAnd::OBF::TransportRoute::kAttributeTextTagValuesFieldNumber: {
+				input->ReadVarint32(&sizeL);
+				pold = input->PushLimit(sizeL);
+				std::string key = regStr(stringTable, input);
+
+				std::string value;
+				while (input->BytesUntilLimit() > 0) {
+					char c;
+					if (input->ReadRaw(&c, 1)) {
+						value.push_back(c);
+					}
+				}
+				transportRoute->addTag(key, value);
+				input->PopLimit(pold);
+				break;
+			}
 			default: {
 				if (!skipUnknownFields(input, t)) {
 					return false;
@@ -2374,8 +2394,38 @@ void initializeNames(UNORDERED(map) < int32_t, string > &stringTable, SHARED_PTR
 	}
 }
 
-void initializeNames(bool onlyDescription, SHARED_PTR<TransportRoute>& dataObject, UNORDERED(map) < int32_t,
-					 string > &stringTable) {
+UNORDERED_map<std::string, std::string> initializeTags(const UNORDERED_map<int32_t, string>& stringTable,
+                                                       const UNORDERED_map<std::string, std::string>& srcTags)
+{
+	UNORDERED_map<std::string, std::string> resultTags;
+
+	for (const auto& kv : srcTags) {
+		const std::string& key = kv.first;
+		const std::string& value = kv.second;
+		if (key.empty())
+			continue;
+
+		auto it = stringTable.find(stoi(key)); // stringTable key is int-string
+		if (it == stringTable.end())
+			continue;
+
+		const std::string& s = it->second;
+
+		if (!value.empty()) {
+			resultTags.emplace(s, value);
+		} else {
+			std::string::size_type pos = s.find('/');
+			if (pos != std::string::npos && pos > 0 && pos + 1 < s.size()) {
+				resultTags.emplace(s.substr(0, pos), s.substr(pos + 1));
+			}
+		}
+	}
+
+	return resultTags;
+}
+
+void initializeNames(bool onlyDescription, SHARED_PTR<TransportRoute>& dataObject,
+                     UNORDERED(map)<int32_t, string>& stringTable) {
 	if (dataObject->name.size() > 0) {
 		const auto it = stringTable.find(atoi(dataObject->name.c_str()));
 		dataObject->name = it != stringTable.end() ? it->second : "";
@@ -2403,6 +2453,9 @@ void initializeNames(bool onlyDescription, SHARED_PTR<TransportRoute>& dataObjec
 		for (SHARED_PTR<TransportStop>& s : dataObject->forwardStops) {
 			initializeNames(stringTable, s);
 		}
+	}
+	if (!dataObject->tags.empty()) {
+		dataObject->setTags(initializeTags(stringTable, dataObject->tags));
 	}
 }
 

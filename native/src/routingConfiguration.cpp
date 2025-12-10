@@ -76,10 +76,11 @@ class RoutingRulesHandler {
 		vector<string> profiles;
 		if (!profilesList.empty())
 			profiles = split_string(profilesList, ",");
-		bool defaultValue = parseBool(attrValue(attrsMap, "default"), false);
 		if ("boolean" == to_lowercase(type)) {
-			currentRouter->registerBooleanParameter(id, group, name, description, profiles, defaultValue);
+			bool defaultBoolean = parseBool(attrValue(attrsMap, "default"), false);
+			currentRouter->registerBooleanParameter(id, group, name, description, profiles, defaultBoolean);
 		} else if ("numeric" == to_lowercase(type)) {
+			double defaultNumeric = OsmAndAlgorithms::parseNumberSilently<double>(attrValue(attrsMap, "default"), 0);
 			string values = attrValue(attrsMap, "values");
 			string valueDescriptions = attrValue(attrsMap, "valueDescriptions");
 			vector<string> vlsDesc = split_string(valueDescriptions, ",");
@@ -88,7 +89,7 @@ class RoutingRulesHandler {
 			for (int i = 0; i < strValues.size(); i++) {
 				vls.push_back(parseFloat(strValues[i], false));
 			}
-			currentRouter->registerNumericParameter(id, name, description, vls, profiles, vlsDesc);
+			currentRouter->registerNumericParameter(id, name, description, vls, profiles, vlsDesc, defaultNumeric);
 		}
 	}
 

@@ -473,4 +473,34 @@ void trimspec(std::string &text);
 std::string getFileName(const std::string& filePath);
 std::string splitAndClearRepeats(std::string ref, std::string symbol);
 
+namespace OsmAndObfConstants
+{
+	using osmand_id_t = int64_t;
+	osmand_id_t getOsmIdFromBinaryMapObjectId(osmand_id_t id);
+}
+
+namespace OsmAndAlgorithms
+{
+	template <typename T>
+	T parseNumberSilently(const std::string& str, T defaultValue)
+	{
+		if (str.empty())
+			return defaultValue;
+
+		static_assert(std::is_arithmetic<T>::value,
+					  "parseNumberSilently: T must be arithmetic");
+
+		std::istringstream iss(str);
+		iss.imbue(std::locale::classic()); // '.' as a point
+
+		T value;
+		iss >> value;
+
+		if (iss.fail())
+			return defaultValue;
+
+		return value;
+	}
+}
+
 #endif /*_OSMAND_COMMON_CORE_H*/

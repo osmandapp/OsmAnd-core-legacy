@@ -1,3 +1,4 @@
+#include <inttypes.h>
 #ifndef _OSMAND_TRANSPORT_ROUTING_CONTEXT_CPP
 #define _OSMAND_TRANSPORT_ROUTING_CONTEXT_CPP
 #include "transportRoutingContext.h"
@@ -57,7 +58,7 @@ void TransportRoutingContext::getTransportStops(int32_t sx, int32_t sy, bool cha
 				SHARED_PTR<TransportStop> st = it->getStop(it->segStart);
 				if (abs(st->x31 - sx) > walkRadiusIn31 || abs(st->y31 - sy) > walkRadiusIn31) {
 					wrongLoadedWays++;
-				} else if (!alreadyLoaded.count(it->getId())) {
+				} else if (alreadyLoaded.count(it->getId()) == 0) {
 					alreadyLoaded.insert(it->getId());
 					loadedWays++;
 					res.push_back(it);
@@ -123,8 +124,8 @@ void TransportRoutingContext::loadTransportSegments(vector<SHARED_PTR<TransportS
 				}
 			} else {
 				OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error,
-								  "Routing error: missing stop '%s' in route '%s' id: %d", s->name.c_str(),
-								  route->ref.c_str(), route->id / 2);
+				                  "Routing error: missing stop '%s' in route '%s' id: %" PRId64,
+				                  s->name.c_str(), route->ref.c_str(), route->id / 2);
 			}
 		}
 	}
