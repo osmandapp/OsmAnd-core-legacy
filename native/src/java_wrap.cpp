@@ -582,6 +582,7 @@ jfieldID jfield_TransportRoutingConfiguration_scheduleTimeOfDay = NULL;
 jfieldID jfield_TransportRoutingConfiguration_scheduleMaxTime = NULL;
 jfieldID jfield_TransportRoutingConfiguration_maxRouteDistance = NULL;
 jfieldID jfield_TransportRoutingConfiguration_maxRouteIncreaseSpeed = NULL;
+jfieldID jfield_TransportRoutingConfiguration_queueLimitByBestFinishTimeRatio = NULL;
 jfieldID jfield_TransportRoutingConfiguration_increaseForAlternativesRoutes = NULL;
 jfieldID jfield_TransportRoutingConfiguration_increaseForAltRoutesWalking = NULL;
 jfieldID jfield_TransportRoutingConfiguration_combineAltRoutesDiffStops = NULL;
@@ -1037,6 +1038,8 @@ void loadJniRenderingContext(JNIEnv* env) {
 		getFid(env, jclass_TransportRoutingConfiguration, "maxRouteDistance", "I");
 	jfield_TransportRoutingConfiguration_maxRouteIncreaseSpeed =
 		getFid(env, jclass_TransportRoutingConfiguration, "maxRouteIncreaseSpeed", "I");
+	jfield_TransportRoutingConfiguration_queueLimitByBestFinishTimeRatio =
+		getFid(env, jclass_TransportRoutingConfiguration, "queueLimitByBestFinishTimeRatio", "D");
 	jfield_TransportRoutingConfiguration_increaseForAlternativesRoutes =
 		getFid(env, jclass_TransportRoutingConfiguration, "increaseForAlternativesRoutes", "D");
 	jfield_TransportRoutingConfiguration_increaseForAltRoutesWalking =
@@ -2131,6 +2134,8 @@ void parseTransportRoutingConfiguration(JNIEnv* ienv, shared_ptr<TransportRoutin
 		ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_maxRouteDistance);
 	rConfig->maxRouteIncreaseSpeed =
 		ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_maxRouteIncreaseSpeed);
+	rConfig->queueLimitByBestFinishTimeRatio =
+		ienv->GetDoubleField(jTransportConfig, jfield_TransportRoutingConfiguration_queueLimitByBestFinishTimeRatio);
 	rConfig->increaseForAlternativesRoutes =
 		ienv->GetDoubleField(jTransportConfig, jfield_TransportRoutingConfiguration_increaseForAlternativesRoutes);
 	rConfig->increaseForAltRoutesWalking =

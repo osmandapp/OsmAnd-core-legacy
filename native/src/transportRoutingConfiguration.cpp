@@ -23,6 +23,8 @@ TransportRoutingConfiguration::TransportRoutingConfiguration(SHARED_PTR<GeneralR
 		maxNumberOfChanges = router->getIntAttribute("maxNumberOfChanges", maxNumberOfChanges);
 		maxRouteTime = router->getIntAttribute("maxRouteTime", maxRouteTime);
 
+		queueLimitByBestFinishTimeRatio = router->
+			getFloatAttribute("queueLimitByBestFinishTimeRatio", static_cast<float>(queueLimitByBestFinishTimeRatio));
 		increaseForAlternativesRoutes = router->
 			getFloatAttribute("increaseForAlternativesRoutes", static_cast<float>(increaseForAlternativesRoutes));
 		increaseForAltRoutesWalking = router->

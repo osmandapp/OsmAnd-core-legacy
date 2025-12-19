@@ -17,6 +17,7 @@ struct TransportRoutingConfiguration {
 
 	int32_t ptLimitResultsByNumber = 50; // pt_limit - limit number of best routes (0 = unlimited)
 
+	double queueLimitByBestFinishTimeRatio = 1.2; // 1.1-1.3 ok
 	double increaseForAlternativesRoutes = 2.0;
 	double increaseForAltRoutesWalking = 3.0;
 
