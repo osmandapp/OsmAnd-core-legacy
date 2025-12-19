@@ -294,7 +294,7 @@ void calculateTimeSpeed(RoutingContext* ctx, SHARED_PTR<RouteSegmentResult>& rr)
             next = plus ? j + 1 : j - 1;
             double d = measuredDist31(road->pointsX[j], road->pointsY[j], road->pointsX[next], road->pointsY[next]);
             distance += d;
-            double obstacle = ctx->config->router->defineObstacle(road, j, rr->getStartPointIndex() < rr->getEndPointIndex());
+            double obstacle = ctx->config->router->defineObstacle(road, j, !plus);
             if (obstacle < 0) {
                 obstacle = 0;
             }

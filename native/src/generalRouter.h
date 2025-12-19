@@ -521,7 +521,7 @@ class GeneralRouter {
 	/**
 	 * return delay in seconds (0 no obstacles)
 	 */
-	double defineObstacle(const SHARED_PTR<RouteDataObject>& road, uint point, bool dir);
+	double defineObstacle(const SHARED_PTR<RouteDataObject>& road, uint point, bool isBackwardDir);
 
 	/**
 	 * return delay in seconds for height obstacles
@@ -531,7 +531,7 @@ class GeneralRouter {
 	/**
 	 * return delay in seconds (0 no obstacles)
 	 */
-	double defineRoutingObstacle(const SHARED_PTR<RouteDataObject>& road, uint point, bool dir);
+	double defineRoutingObstacle(const SHARED_PTR<RouteDataObject>& road, uint point, bool isBackwardDir);
 
 	/**
 	 * return routing speed in m/s for vehicle for specified road
