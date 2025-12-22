@@ -91,8 +91,9 @@ GeneralRouter::GeneralRouter(const GeneralRouter& parent, const MAP_STR_STR& par
 	if (shortestRoute) {
 		if (this->profile == GeneralRouterProfile::BICYCLE) {
 			this->maxSpeed = min(GeneralRouterConstants::BICYCLE_SHORTEST_DEFAULT_SPEED, this->maxSpeed);
-		} else {
+		} else if (this->profile == GeneralRouterProfile::CAR) {
 			this->maxSpeed = min(GeneralRouterConstants::CAR_SHORTEST_DEFAULT_SPEED, this->maxSpeed);
+			this->heightObstacles = true;
 		}
 	}
 }
