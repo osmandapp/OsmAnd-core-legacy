@@ -96,16 +96,33 @@ SHARED_PTR<TurnType> RoundaboutTurn::processRoundaboutTurn() {
     }
     // combine all roundabouts
     auto t = TurnType::getPtrExitTurn(exit, 0, leftSide);
-    // usually covers more than expected
-    float turnAngleBasedOnOutRoads = (float) degreesDiff(last->getBearingBegin(), prev->getBearingEnd());
-    // usually covers less than expected
-    float turnAngleBasedOnCircle = (float) -degreesDiff(firstRoundabout->getBearingBegin(), lastRoundabout->getBearingEnd() + 180);
-    if (abs(turnAngleBasedOnOutRoads - turnAngleBasedOnCircle) > 180) {
-        t->setTurnAngle(turnAngleBasedOnCircle);
-    } else {
-        t->setTurnAngle((turnAngleBasedOnCircle + turnAngleBasedOnOutRoads) / 2) ;
-    }
+    float turnAngle = calculateRoundaboutTurnAngle(last, firstRoundabout, lastRoundabout, -1);
+    t->setTurnAngle(turnAngle);
     return t;
+}
+
+float RoundaboutTurn::calculateRoundaboutTurnAngle(const SHARED_PTR<RouteSegmentResult>& last,
+                                                   const SHARED_PTR<RouteSegmentResult>& firstRoundabout,
+                                                   const SHARED_PTR<RouteSegmentResult>& lastRoundabout, int ind) {
+    float turnAngle;
+    // usually covers more than expected
+    float turnAngleBasedOnOutRoads = (float) degreesDiff(
+            ind < 0 ? last->getBearingBegin() : last->getBearingBegin(ind, DIST_BEARING_DETECT), prev->getBearingEnd());
+    // Angle based on circle method tries
+    // 1. to calculate antinormal to roundabout circle on roundabout entrance and
+    // 2. normal to roundabout circle on roundabout exit
+    // 3. calculate angle difference
+    // This method doesn't work if you go from S to N touching only 1 point of roundabout,
+    // but it is very important to identify very sharp or very large angle to understand did you pass whole roundabout or small entrance
+    float turnAngleBasedOnCircle = (float) -degreesDiff(firstRoundabout->getBearingBegin(),
+            ind < 0 ? last->getBearingEnd() : lastRoundabout->getBearingEnd(ind, DIST_BEARING_DETECT) + 180);
+    if (abs(turnAngleBasedOnOutRoads) > 120) {
+        // correctly identify if angle is +- 180, so we approach from left or right side
+        turnAngle = turnAngleBasedOnCircle;
+    } else {
+        turnAngle = turnAngleBasedOnOutRoads;
+    }
+    return turnAngle;
 }
 
 SHARED_PTR<TurnType> RoundaboutTurn::processMiniRoundaboutTurn() {
