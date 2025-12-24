@@ -26,6 +26,7 @@ private:
     SHARED_PTR<TurnType> processRoundaboutTurn();
     SHARED_PTR<TurnType> processMiniRoundaboutTurn();
     SHARED_PTR<RoadSplitStructure> calculateSimpleRoadSplitStructure(const vector<SHARED_PTR<RouteSegmentResult>>& attachedRoutes);
+    float calculateRoundaboutTurnAngle(const SHARED_PTR<RouteSegmentResult>& last, const SHARED_PTR<RouteSegmentResult>& firstRoundabout, const SHARED_PTR<RouteSegmentResult>& lastRoundabout, int ind);
 };
 
 
