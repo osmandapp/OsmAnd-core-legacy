@@ -15,6 +15,8 @@ const int RouteAttributeExpression::GREAT_EXPRESSION = 2;
 const int RouteAttributeExpression::EQUAL_EXPRESSION = 3;
 const int RouteAttributeExpression::MIN_EXPRESSION = 4;
 const int RouteAttributeExpression::MAX_EXPRESSION = 5;
+const int RouteAttributeExpression::GREAT_OR_EQUAL_EXPRESSION = 6;
+const int RouteAttributeExpression::LESS_OR_EQUAL_EXPRESSION = 7;
 
 
 const double GeneralRouterConstants::CAR_SHORTEST_DEFAULT_SPEED = 55 / 3.6f;
@@ -742,11 +744,19 @@ bool RouteAttributeExpression::matches(dynbitset& types, ParameterContext& param
 	if (f1 == DOUBLE_MISSING || f2 == DOUBLE_MISSING) {
 		return false;
 	}
-	if (expressionType == LESS_EXPRESSION) {
-		return f1 <= f2;
-	} else if (expressionType == GREAT_EXPRESSION) {
+	if (expressionType == GREAT_EXPRESSION) {
+		return f1 > f2;
+	}
+	if (expressionType == GREAT_OR_EQUAL_EXPRESSION) {
 		return f1 >= f2;
-	} else if (expressionType == EQUAL_EXPRESSION) {
+	}
+	if (expressionType == LESS_EXPRESSION) {
+		return f1 < f2;
+	}
+	if (expressionType == LESS_OR_EQUAL_EXPRESSION) {
+		return f1 <= f2;
+	}
+	if (expressionType == EQUAL_EXPRESSION) {
 		return f1 == f2;
 	}
 	return false;
