@@ -65,6 +65,10 @@ class RoutingRulesHandler {
 		}
 	}
 
+	static double parseDoubleQuantized(string value, double def, double step) {
+		return std::round((value.empty() ? def : strtod_li(value)) / step) * step;
+	}
+
 	static void parseRoutingParameter(UNORDERED(map) < string, string > &attrsMap,
 									  SHARED_PTR<GeneralRouter>& currentRouter) {
 		string description = attrValue(attrsMap, "description");
@@ -87,7 +91,8 @@ class RoutingRulesHandler {
 			vector<string> strValues = split_string(values, ",");
 			vector<double> vls;
 			for (int i = 0; i < strValues.size(); i++) {
-				vls.push_back(parseFloat(strValues[i], false));
+				// vls.push_back(parseDoubleQuantized(strValues[i], 0, 0.001));
+				vls.push_back(parseDoubleQuantized(strValues[i], 0, 1));
 			}
 			currentRouter->registerNumericParameter(id, name, description, vls, profiles, vlsDesc, defaultNumeric);
 		}
