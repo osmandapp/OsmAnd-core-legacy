@@ -168,6 +168,8 @@ struct RouteAttributeExpression {
 	static const int EQUAL_EXPRESSION;
 	static const int MIN_EXPRESSION;
 	static const int MAX_EXPRESSION;
+	static const int GREAT_OR_EQUAL_EXPRESSION;
+	static const int LESS_OR_EQUAL_EXPRESSION;
 
 	vector<string> values;
 	int expressionType;
@@ -239,9 +241,21 @@ class RouteAttributeEvalRule {
 		registerExpression(exp);
 	}
 
+	void registerLessOrEqualCondition(string value1, string value2, string valueType) {
+		vector<string> vls{value1, value2};
+		RouteAttributeExpression exp(vls, RouteAttributeExpression::LESS_OR_EQUAL_EXPRESSION, valueType);
+		registerExpression(exp);
+	}
+
 	void registerGreatCondition(string value1, string value2, string valueType) {
 		vector<string> vls{value1, value2};
 		RouteAttributeExpression exp(vls, RouteAttributeExpression::GREAT_EXPRESSION, valueType);
+		registerExpression(exp);
+	}
+
+	void registerGreatOrEqualCondition(string value1, string value2, string valueType) {
+		vector<string> vls{value1, value2};
+		RouteAttributeExpression exp(vls, RouteAttributeExpression::GREAT_OR_EQUAL_EXPRESSION, valueType);
 		registerExpression(exp);
 	}
 
