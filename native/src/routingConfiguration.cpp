@@ -94,8 +94,8 @@ class RoutingRulesHandler {
 	}
 
 	static bool checkTag(const string& pname) {
-		return "select" == pname || "if" == pname || "ifnot" == pname || "gt" == pname || "le" == pname ||
-			   "eq" == pname || "min" == pname || "max" == pname;
+		return "select" == pname || "if" == pname || "ifnot" == pname || "gt" == pname || "ge" == pname
+			|| "lt" == pname || "le" == pname || "eq" == pname || "min" == pname || "max" == pname;
 	}
 
 	static void addSubclause(RoutingRule* rr, RouteAttributeContext& ctx, SHARED_PTR<GeneralRouter>& currentRouter) {
@@ -118,8 +118,12 @@ class RoutingRulesHandler {
 		}
 		if (rr->tagName == "gt") {
 			ctx.getLastRule()->registerGreatCondition(rr->value1, rr->value2, rr->type);
-		} else if (rr->tagName == "le") {
+		} else if (rr->tagName == "ge") {
+			ctx.getLastRule()->registerGreatOrEqualCondition(rr->value1, rr->value2, rr->type);
+		} else if (rr->tagName == "lt") {
 			ctx.getLastRule()->registerLessCondition(rr->value1, rr->value2, rr->type);
+		} else if (rr->tagName == "le") {
+			ctx.getLastRule()->registerLessOrEqualCondition(rr->value1, rr->value2, rr->type);
 		} else if (rr->tagName == "eq") {
 			ctx.getLastRule()->registerEqualCondition(rr->value1, rr->value2, rr->type);
 		} else if (rr->tagName == "min") {
