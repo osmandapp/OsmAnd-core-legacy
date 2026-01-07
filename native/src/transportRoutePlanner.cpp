@@ -268,7 +268,8 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 				break;
 			}
 			sgms.clear();
-			if (segment->getDepth() < ctx->cfg->maxNumberOfChanges + 1) {
+			int segmentDepth = segment->getDepth();
+			if (segmentDepth < ctx->cfg->maxNumberOfChanges + 1) {
 				ctx->getTransportStops(stop->x31, stop->y31, true, sgms);
 				ctx->visitedStops++;
 				for (SHARED_PTR<TransportRouteSegment>& sgm : sgms) {
@@ -292,6 +293,11 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 						ctx->cfg->getChangeTime(segment->road->getType(), sgm->road->getType());
 					nextSegment->distFromStart = segment->distFromStart + travelTime + walkTime;
 					nextSegment->nonce = nonce++;
+					double dynamicDecrease = std::min(1.2, (1 - 0.2 * (segmentDepth - 1))); // -20%
+					double dynamicQueueLimit = ctx->cfg->increaseForAlternativesRoutes * dynamicDecrease;
+					if (nextSegment->distFromStart > finishTime * dynamicQueueLimit) {
+						continue;
+					}
 					if (ctx->cfg->useSchedule) {
 						int tm = (sgm->departureTime - ctx->cfg->scheduleTimeOfDay) * 10;
 						if (tm >= nextSegment->distFromStart) {
