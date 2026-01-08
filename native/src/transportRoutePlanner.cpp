@@ -268,8 +268,7 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 				break;
 			}
 			sgms.clear();
-			int segmentDepth = segment->getDepth();
-			if (segmentDepth < ctx->cfg->maxNumberOfChanges + 1) {
+			if (segment->getDepth() < ctx->cfg->maxNumberOfChanges + 1) {
 				ctx->getTransportStops(stop->x31, stop->y31, true, sgms);
 				ctx->visitedStops++;
 				for (SHARED_PTR<TransportRouteSegment>& sgm : sgms) {
@@ -293,12 +292,6 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 						ctx->cfg->getChangeTime(segment->road->getType(), sgm->road->getType());
 					nextSegment->distFromStart = segment->distFromStart + travelTime + walkTime;
 					nextSegment->nonce = nonce++;
-					if (ctx->cfg->ptLimitResultsByNumber > 0) {
-						int dynamicQueueLimit = std::max(1000, segmentDepth * ctx->cfg->ptLimitResultsByNumber * 50);
-						if (ctx->visitedSegments.size() > dynamicQueueLimit) {
-							continue;
-						}
-					}
 					if (ctx->cfg->useSchedule) {
 						int tm = (sgm->departureTime - ctx->cfg->scheduleTimeOfDay) * 10;
 						if (tm >= nextSegment->distFromStart) {
@@ -351,6 +344,11 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 			if (finish->distFromStart < finishTime * ctx->cfg->increaseForAlternativesRoutes &&
 				(finish->distFromStart < maxTravelTimeCmpToWalk || results.size() == 0)) {
 				results.push_back(finish);
+				// Stop when results reached range [1000 min, 2500 (for default limit * changes), 5000 max]
+				int dynamicResultsLimit = 25 * ctx->cfg->ptLimitResultsByNumber * ctx->cfg->maxNumberOfChanges;
+				if (results.size() > std::min(std::max(1000, dynamicResultsLimit), 5000)) {
+					break;
+				}
 			}
 		}
 
