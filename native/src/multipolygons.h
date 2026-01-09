@@ -33,5 +33,6 @@ bool unifyIncompletedRings(std::vector<std::vector<int_pair> >& incompletedRings
 bool processCoastlines(std::vector<FoundMapDataObject>& coastLines, int leftX, int rightX, int bottomY, int topY,
 					   int zoom, bool showIfThereIncompleted, bool addDebugIncompleted,
 					   std::vector<FoundMapDataObject>& res);
+bool isDegenerateArea(const std::vector<int_pair>& c, int maxSize);
 
 #endif
