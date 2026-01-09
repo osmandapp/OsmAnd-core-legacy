@@ -7,7 +7,6 @@
 
 const bool DEBUG_LINE = false;
 const int CHECK_COMPLETED_RINGS_SIZE = 5;
-const double MIN_AREA_SIZE = 1e-9;
 
 void printLine(OsmAnd::LogSeverityLevel level, std::string msg, int64_t id, coordinates& c, int leftX, int rightX,
 			   int bottomY, int topY) {
@@ -115,7 +114,7 @@ bool processCoastlines(std::vector<FoundMapDataObject>& coastLines, int leftX, i
 	int waterFound = 0;
 	for (uint i = 0; i < completedRings.size(); i++) {
         if (isDegenerateArea(completedRings[i], CHECK_COMPLETED_RINGS_SIZE)) {
-            // avoid rings with too small area < 1e-9
+            // avoid rings with area == 0
             continue;
         }
 		bool clockwise = isClockwiseWay(completedRings[i]);
@@ -344,13 +343,13 @@ bool isDegenerateArea(const std::vector<int_pair>& c, int maxSize) {
         return false;
     }
 
-    double area = 0;
+    int64_t area = 0;
     for (size_t i = 0; i < c.size(); i++) {
         const int_pair & p1 = c[i];
         const int_pair & p2 = c[(i + 1) % c.size()];
-        area += (double)p1.first * p2.second - (double)p2.first * p1.second;
+        area += p1.first * p2.second - p2.first * p1.second;
     }
-    return std::abs(area) < MIN_AREA_SIZE;
+    return std::abs(area) == 0L;
 }
 
 void combineMultipolygonLine(std::vector<coordinates>& completedRings, std::vector<coordinates>& incompletedRings,
