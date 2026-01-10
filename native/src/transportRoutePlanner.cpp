@@ -344,6 +344,11 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 			if (finish->distFromStart < finishTime * ctx->cfg->increaseForAlternativesRoutes &&
 				(finish->distFromStart < maxTravelTimeCmpToWalk || results.size() == 0)) {
 				results.push_back(finish);
+				// Stop when results reached range [1000 min, 2500 (for default limit * changes), 5000 max]
+				int optimalLimitOfResults = 25 * ctx->cfg->ptLimitResultsByNumber * ctx->cfg->maxNumberOfChanges;
+				if (results.size() > std::min(std::max(1000, optimalLimitOfResults), 5000)) {
+					break;
+				}
 			}
 		}
 
