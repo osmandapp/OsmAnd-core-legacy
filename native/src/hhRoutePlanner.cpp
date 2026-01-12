@@ -295,7 +295,8 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
 	int calcCount = 0;
 	do {
 		timer.Restart();
-		progress->hhIteration(RouteCalculationProgress::HHIteration::ROUTING);
+		progress->hhUpdateCalcCounter(calcCount);
+		progress->hhIteration(calcCount == 0 ? RouteCalculationProgress::HHIteration::ROUTING : RouteCalculationProgress::HHIteration::RECALCULATION);
 		iteration++;
 		if (recalc && firstIterationTime == 0) {
 			if (DEBUG_VERBOSE_LEVEL > 0) {
@@ -308,7 +309,6 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
 			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "finalPnt is null (stop)");
 			return new HHNetworkRouteRes("No finalPnt found (points might be filtered by params)");
 		}
-		calcCount++;
 		if (progress->isCancelled()) {
 			return cancelledStatus();
 		}
@@ -317,7 +317,7 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
 		if (!recalc || DEBUG_VERBOSE_LEVEL > 0) {
 			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Routing... %zu segments, cost %.2f, %.f ms", route->segments.size(), route->getHHRoutingTime(), time);
 		}
-		progress->hhIteration(RouteCalculationProgress::HHIteration::DETAILED);
+		progress->hhIteration(calcCount == 0 ? RouteCalculationProgress::HHIteration::DETAILED : RouteCalculationProgress::HHIteration::RECALCULATION);
 		timer.Restart();
 		recalc = retrieveSegmentsGeometry(hctx, route, hctx->config->ROUTE_ALL_SEGMENTS, progress);
 		if (progress->isCancelled()) {
@@ -328,6 +328,7 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
 			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Parse detailed route segments... %.f ms", time);
 		}
 		hctx->stats.routingTime += time;
+		calcCount++;
 		if (recalc) {
 			if (calcCount > hctx->config->MAX_COUNT_REITERATION) {
 				OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Too many recalculations (stop)");
@@ -811,8 +812,13 @@ void HHRoutePlanner::recalculateNetworkCluster(const SHARED_PTR<HHRoutingContext
 
 bool HHRoutePlanner::retrieveSegmentsGeometry(const SHARED_PTR<HHRoutingContext> & hctx, HHNetworkRouteRes * route,
 											  bool routeSegments, SHARED_PTR<RouteCalculationProgress> progress) {
+	if (progress != nullptr && progress->hhGetCalcCounter() > 0) {
+		progress->hhIterationProgress((double) progress->hhGetCalcCounter() / hctx->config->MAX_COUNT_REITERATION);
+	}
 	for (int i = 0; i < route->segments.size(); i++) {
-		progress->hhIterationProgress((double) i / route->segments.size());
+		if (progress != nullptr && progress->hhGetCalcCounter() == 0) {
+			progress->hhIterationProgress((double) i / route->segments.size());
+		}
 		HHNetworkSegmentRes & s = route->segments[i];
 		if (s.segment == nullptr) {
 			// start / end points
@@ -1058,6 +1064,9 @@ NetworkDBPoint * HHRoutePlanner::runRoutingWithInitQueue(const SHARED_PTR<HHRout
 	SHARED_PTR<RouteCalculationProgress> progress = hctx->rctx == nullptr ? nullptr : hctx->rctx->progress;
 	double straightStartEndCost = squareRootDist31(hctx->startX, hctx->startY, hctx->endX, hctx->endY) /
 			hctx->rctx->config->router->getMaxSpeed();
+	if (progress != nullptr && progress->hhGetCalcCounter() > 0) {
+		progress->hhIterationProgress((double) progress->hhGetCalcCounter() / hctx->config->MAX_COUNT_REITERATION);
+	}
 	while (true) {
 		SHARED_PTR<HH_QUEUE> queue;
 		if (hctx->USE_GLOBAL_QUEUE) {
@@ -1125,7 +1134,7 @@ NetworkDBPoint * HHRoutePlanner::runRoutingWithInitQueue(const SHARED_PTR<HHRout
 		hctx->visited.push_back(point);
 		(rev ? hctx->visited : hctx->visitedRev).push_back(point);
 		printPoint(point, rev);
-		if (progress != nullptr && straightStartEndCost > 0) {
+		if (progress != nullptr && straightStartEndCost > 0 && progress->hhGetCalcCounter() == 0) {
 			const double STRAIGHT_TO_ROUTE_COST = 1.25; // approximate, tested on car/bike
 			// correlation between straight-cost and route-cost (enough for the progress bar)
 			double k = (pointCost->cost - straightStartEndCost) / straightStartEndCost * STRAIGHT_TO_ROUTE_COST;
