@@ -57,7 +57,7 @@ class RouteCalculationProgress {
           finalSegmentsFound(0), loadedTiles(0), unloadedTiles(0), loadedPrevUnloadedTiles(0), distinctLoadedTiles(0),
           totalIterations(1), iteration(-1), cancelled(false), maxLoadedTiles(0),
           requestPrivateAccessRouting(false),
-          hhIterationStep(HH_NOT_STARTED), hhCurrentStepProgress(0), hhTargetsDone(0), hhTargetsTotal(0)
+          hhIterationStep(HH_NOT_STARTED), hhCurrentStepProgress(0), hhTargetsDone(0), hhTargetsTotal(0), hhCalcCounter(0)
 		{
 	}
 
@@ -85,6 +85,7 @@ class RouteCalculationProgress {
 		START_END_POINT,
 		ROUTING,
 		DETAILED,
+		RECALCULATION,
 		ALTERNATIVES,
 		DONE,
 		Count
@@ -96,8 +97,9 @@ class RouteCalculationProgress {
 			case SELECT_REGIONS: return 5;
 			case LOAD_POINTS: return 5;
 			case START_END_POINT: return 15;
-			case ROUTING: return 25;
+			case ROUTING: return 15;
 			case DETAILED: return 50;
+			case RECALCULATION: return 10;
 			case ALTERNATIVES: return 0;
 			case DONE: return 0;
 		}
@@ -107,6 +109,10 @@ class RouteCalculationProgress {
 	int hhIterationStep;
 	double hhCurrentStepProgress;
 	int hhTargetsDone, hhTargetsTotal;
+	int hhCalcCounter;
+
+	virtual void hhUpdateCalcCounter(int counter) { hhCalcCounter = counter; }
+	virtual int hhGetCalcCounter() { return hhCalcCounter; }
 
 	virtual void hhTargetsProgress(int done, int total);
 	virtual void hhIteration(HHIteration step);
