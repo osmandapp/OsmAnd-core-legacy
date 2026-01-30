@@ -329,6 +329,9 @@ void GpxMultiSegmentsApproximation::gpxApproximation() {
     RouteSegmentAppr* bestRoute = nullptr;
 
     while (last->gpxNext() < gpxPoints.size()) {
+        if (gctx->ctx->isInterrupted()) {
+            break;
+        }
         RouteSegmentAppr* bestNext = nullptr;
         if (!isVisited(last)) {
             visit(last);
@@ -369,7 +372,7 @@ void GpxMultiSegmentsApproximation::gpxApproximation() {
             visited.clear(); // visited = new TLongHashSet();
             if (pnt == nullptr) {
                 debugln("------------------");
-                break;
+                break; // might be cancelled
             }
             else {
                 debugln(
@@ -379,6 +382,10 @@ void GpxMultiSegmentsApproximation::gpxApproximation() {
                 bestRoute = nullptr;
             }
         }
+    }
+    if (gctx->ctx->isInterrupted()) {
+        OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Native Approximation cancelled");
+        return;
     }
     if (bestRoute == nullptr || bestRoute->gpxNext() < last->gpxNext()) {
         bestRoute = last; // prefer the farthest end-of-the-route
