@@ -201,20 +201,20 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 
 		SHARED_PTR<TransportRouteSegment> segment = queue.top();
 		queue.pop();
-		SHARED_PTR<TransportRouteSegment> ex;
 
 		int64_t segIdWithParent = segmentWithParentId(segment, segment->parentRoute);
 
-		if (ctx->visitedSegments.find(segIdWithParent) != ctx->visitedSegments.end()) {
-			ex = ctx->visitedSegments.find(segIdWithParent)->second;
-			if (ex->distFromStart > segment->distFromStart) {
-				OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "%.1f (%s) > %.1f (%s)", ex->distFromStart,
-								  ex->to_string().c_str(), segment->distFromStart, segment->to_string().c_str());
+		auto visitedIt = ctx->visitedSegmentsDistFromStart.find(segIdWithParent);
+		if (visitedIt != ctx->visitedSegmentsDistFromStart.end()) {
+			double exDistFromStart = visitedIt->second;
+			if (exDistFromStart > segment->distFromStart) {
+				OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "exDistFromStart %.1f > %.1f (%s)", exDistFromStart,
+								  segment->distFromStart, segment->to_string().c_str());
 			}
 			continue;
 		}
 		ctx->visitedRoutesCount++;
-		ctx->visitedSegments.insert({segIdWithParent, segment});
+		ctx->visitedSegmentsDistFromStart.insert({segIdWithParent, segment->distFromStart});
 
 		if (segment->distFromStart > finishTime * ctx->cfg->increaseForAlternativesRoutes ||
 			segment->distFromStart > maxTravelTimeCmpToWalk) {
@@ -251,7 +251,7 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 				return;
 			}
 			segIdWithParent++;
-			ctx->visitedSegments.insert({segIdWithParent, segment});
+			ctx->visitedSegmentsDistFromStart.insert({segIdWithParent, segment->distFromStart});
 			SHARED_PTR<TransportStop> stop = segment->getStop(ind);
 			double segmentDist = getDistance(prevStop->lat, prevStop->lon, stop->lat, stop->lon);
 			travelDist += segmentDist;
@@ -278,7 +278,7 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 					if (segment->wasVisited(sgm)) {
 						continue;
 					}
-					if (ctx->visitedSegments.find(segmentWithParentId(sgm, segment)) != ctx->visitedSegments.end()) {
+					if (ctx->visitedSegmentsDistFromStart.find(segmentWithParentId(sgm, segment)) != ctx->visitedSegmentsDistFromStart.end()) {
 						continue;
 					}
 					SHARED_PTR<TransportRouteSegment> nextSegment = make_shared<TransportRouteSegment>(sgm);

@@ -16,7 +16,7 @@ struct TransportRouteStopsReader;
 
 struct TransportRoutingContext {
 	SHARED_PTR<RouteCalculationProgress> calculationProgress;
-	UNORDERED(map)<int64_t, SHARED_PTR<TransportRouteSegment>> visitedSegments;
+	UNORDERED(map)<int64_t, double> visitedSegmentsDistFromStart;
 	SHARED_PTR<TransportRoutingConfiguration> cfg;
 	UNORDERED(map)<int64_t, SHARED_PTR<TransportRoute>> combinedRouteCache;
 	UNORDERED(map)<SHARED_PTR<TransportStop>, vector<SHARED_PTR<TransportRoute>>> missingStopsCache;
