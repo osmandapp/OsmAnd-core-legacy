@@ -56,7 +56,7 @@ void TransportRoutingContext::getTransportStops(int32_t sx, int32_t sy, bool cha
 			}
 			for (SHARED_PTR<TransportRouteSegment> &it : list) {
 				SHARED_PTR<TransportStop> st = it->getStop(it->segStart);
-				if (abs(st->x31 - sx) > walkRadiusIn31 || abs(st->y31 - sy) > walkRadiusIn31) {
+				if (abs(st->x31 - sx) > d || abs(st->y31 - sy) > d) {
 					wrongLoadedWays++;
 				} else if (alreadyLoaded.count(it->getId()) == 0) {
 					alreadyLoaded.insert(it->getId());
