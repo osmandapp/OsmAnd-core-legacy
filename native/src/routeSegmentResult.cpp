@@ -43,6 +43,12 @@ void RouteSegmentResult::collectNames(SHARED_PTR<RouteDataResources>& resources)
 	}
 	if (object->namesIds.size() > 0) {
 		for (const auto& nameId : object->namesIds) {
+			if (nameId.first >= region->routeEncodingRules.size()) {
+				continue;
+			}
+			if (object->names.find(nameId.first) == object->names.end()) {
+				continue;
+			}
 			const auto& name = object->names[nameId.first];
 			const auto& tag = region->quickGetEncodingRule(nameId.first).getTag();
 			RouteTypeRule r(tag, name);
@@ -59,6 +65,9 @@ void RouteSegmentResult::collectNames(SHARED_PTR<RouteDataResources>& resources)
 			auto& types = object->pointNameTypes[i];
 			if (types.size() > 0) {
 				for (uint32_t type : types) {
+					if (type >= region->routeEncodingRules.size()) {
+						continue;
+					}
 					auto& r = region->quickGetEncodingRule(type);
 					if (rules.find(r) == rules.end()) {
 						rules[r] = (uint32_t)rules.size();
@@ -73,6 +82,9 @@ void RouteSegmentResult::collectNames(SHARED_PTR<RouteDataResources>& resources)
 void RouteSegmentResult::collectRules(UNORDERED_map<RouteTypeRule, uint32_t>& rules, vector<RouteTypeRule>& insertOrder, vector<uint32_t>& types) {
 	const auto& region = object->region;
 	for (uint32_t type : types) {
+		if (type >= region->routeEncodingRules.size()) {
+			continue;
+		}
 		auto& rule = region->quickGetEncodingRule(type);
 		const auto& tag = rule.getTag();
 		if (tag == "osmand_ele_start" || tag == "osmand_ele_end" || tag == "osmand_ele_asc" ||
@@ -94,6 +106,9 @@ vector<uint32_t> RouteSegmentResult::convertTypes(vector<uint32_t>& types,
 	}
 	for (int i = 0; i < types.size(); i++) {
 		uint32_t type = types[i];
+		if (type >= object->region->routeEncodingRules.size()) {
+			continue;
+		}
 		auto& rule = object->region->quickGetEncodingRule(type);
 		if (rules.find(rule) == rules.end())
 			continue;
@@ -130,6 +145,12 @@ vector<uint32_t> RouteSegmentResult::convertNameIds(vector<pair<uint32_t, uint32
 	}
 	for (int i = 0; i < nameIds.size(); i++) {
 		uint32_t nameId = nameIds[i].first;
+		if (nameId >= object->region->routeEncodingRules.size()) {
+			continue;
+		}
+		if (object->names.find(nameId) == object->names.end()) {
+			continue;
+		}
 		auto& name = object->names[nameId];
 		auto& tag = object->region->quickGetEncodingRule(nameId).getTag();
 		RouteTypeRule rule(tag, name);
@@ -157,6 +178,9 @@ vector<vector<uint32_t>> RouteSegmentResult::convertPointNames(vector<vector<uin
 			vector<uint32_t> arr(types.size());
 			for (int k = 0; k < types.size(); k++) {
 				uint32_t type = types[k];
+				if (type >= object->region->routeEncodingRules.size()) {
+					continue;
+				}
 				auto& tag = object->region->quickGetEncodingRule(type).getTag();
 				auto& name = pointNames[i][k];
 				RouteTypeRule rule(tag, name);
@@ -185,8 +209,9 @@ void RouteSegmentResult::fillNames(SHARED_PTR<RouteDataResources>& resources) {
 		object->names = {};
 		for (auto& name : object->namesIds) {
 			uint32_t nameId = name.first;
-			if (nameId >= region->routeEncodingRules.size())
+			if (nameId >= region->routeEncodingRules.size()) {
 				continue;
+			}
 			RouteTypeRule& rule = region->quickGetEncodingRule(nameId);
 
 			if (nameTypeRule != -1 && "name" == rule.getTag()) {
@@ -210,6 +235,9 @@ void RouteSegmentResult::fillNames(SHARED_PTR<RouteDataResources>& resources) {
 			pointNameTypes[i] = vector<uint32_t>(namesIds.size());
 			for (int k = 0; k < namesIds.size(); k++) {
 				uint32_t id = namesIds[k];
+				if (id >= object->region->routeEncodingRules.size()) {
+					continue;
+				}
 				RouteTypeRule& r = object->region->quickGetEncodingRule(id);
 
 				pointNames[i][k] = r.getValue();
