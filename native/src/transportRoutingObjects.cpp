@@ -273,19 +273,15 @@ void TransportRoute::mergeForwardWays(vector<shared_ptr<Way>>& ways) {
 				}
 			}
 			if (secondInd != -1) {
-				shared_ptr<Way> second;
-				if (secondInd == 0) {
-					second = *ways.erase(ways.begin());
-				} else {
-					second = *ways.erase(ways.begin() + secondInd);
-				}
+				shared_ptr<Way> second = ways[secondInd];
+				ways.erase(ways.begin() + secondInd);
 				if (reverseFirst) {
 					first->reverseNodes();
 				}
 				if (reverseSecond) {
 					second->reverseNodes();
 				}
-				if (first->nodes == second->nodes && (first->id < 0 || first->id != second->id)) {
+				if (first != second && (first->id < 0 || first->id != second->id)) {
 					for (int i = 1; i < second->nodes.size(); i++) {
 						first->addNode(second->nodes[i]);
 					}
