@@ -44,6 +44,7 @@ class RouteCalculationProgress {
 	int iteration;
 
 	bool cancelled;
+	bool missingMapsNow;
 
 	int maxLoadedTiles;
 	bool requestPrivateAccessRouting;
@@ -55,7 +56,7 @@ class RouteCalculationProgress {
 		  approximatedDistance(0), routingCalculatedTime(0), visitedSegments(0),
 		  visitedDirectSegments(0), visitedOppositeSegments(0), directQueueSize(0), oppositeQueueSize(0),
           finalSegmentsFound(0), loadedTiles(0), unloadedTiles(0), loadedPrevUnloadedTiles(0), distinctLoadedTiles(0),
-          totalIterations(1), iteration(-1), cancelled(false), maxLoadedTiles(0),
+          totalIterations(1), iteration(-1), cancelled(false), missingMapsNow(false), maxLoadedTiles(0),
           requestPrivateAccessRouting(false),
           hhIterationStep(HH_NOT_STARTED), hhCurrentStepProgress(0), hhTargetsDone(0), hhTargetsTotal(0), hhCalcCounter(0)
 		{
@@ -67,6 +68,7 @@ class RouteCalculationProgress {
 	virtual UNORDERED(map) < string,
 		UNORDERED(map) < string, string >> getInfo(SHARED_PTR<RouteCalculationProgress> firstPhase);
 	virtual bool isCancelled() { return cancelled; }
+	virtual bool hasMissingMapsNow() { return missingMapsNow; }
 	virtual void setSegmentNotFound(int s) { segmentNotFound = s; }
 	virtual void updateIteration(int i) { iteration = i; }
 	virtual void updateTotalEstimatedDistance(float distance) { totalEstimatedDistance = distance; }

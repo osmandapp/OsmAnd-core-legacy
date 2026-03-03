@@ -524,6 +524,7 @@ jfieldID jfield_RouteCalculationProgress_segmentNotFound = NULL;
 jfieldID jfield_RouteCalculationProgress_distanceFromBegin = NULL;
 jfieldID jfield_RouteCalculationProgress_distanceFromEnd = NULL;
 jfieldID jfield_RouteCalculationProgress_isCancelled = NULL;
+jfieldID jfield_RouteCalculationProgress_hasMissingMapsNow = NULL;
 jfieldID jfield_RouteCalculationProgress_totalEstimatedDistance = NULL;
 jfieldID jfield_RouteCalculationProgress_totalApproximateDistance = NULL;
 jfieldID jfield_RouteCalculationProgress_approximatedDistance = NULL;
@@ -948,6 +949,8 @@ void loadJniRenderingContext(JNIEnv* env) {
 
 	jclass_RouteCalculationProgress = findGlobalClass(env, "net/osmand/router/RouteCalculationProgress");
 	jfield_RouteCalculationProgress_isCancelled = getFid(env, jclass_RouteCalculationProgress, "isCancelled", "Z");
+	jfield_RouteCalculationProgress_hasMissingMapsNow =
+		getFid(env, jclass_RouteCalculationProgress, "hasMissingMapsNow", "Z");
 	jfield_RouteCalculationProgress_segmentNotFound =
 		getFid(env, jclass_RouteCalculationProgress, "segmentNotFound", "I");
 	jfield_RouteCalculationProgress_distanceFromBegin =
@@ -1546,7 +1549,20 @@ class RouteCalculationProgressWrapper : public RouteCalculationProgress {
 		if (progress == NULL) {
 			return false;
 		}
+		if (ienv->GetBooleanField(progress, jfield_RouteCalculationProgress_isCancelled)) {
+			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "XXX isCancelled = true");
+		}
 		return ienv->GetBooleanField(progress, jfield_RouteCalculationProgress_isCancelled);
+	}
+
+	virtual bool hasMissingMapsNow() override {
+		if (progress == NULL) {
+			return false;
+		}
+		if (ienv->GetBooleanField(progress, jfield_RouteCalculationProgress_hasMissingMapsNow)) {
+			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "XXX hasMissingMapsNow = true");
+		}
+		return ienv->GetBooleanField(progress, jfield_RouteCalculationProgress_hasMissingMapsNow);
 	}
 
 	virtual void setSegmentNotFound(int s) override {
@@ -2019,7 +2035,7 @@ extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_nativeRo
 
 	vector<SHARED_PTR<RouteSegmentResult>> r;
 	HHRoutingConfig * hhConfig = getHHRoutingConfig(ienv, jHHConfig);
-	if (hhConfig) {
+	if (hhConfig && !c->progress->hasMissingMapsNow()) {
 		RoutePlannerFrontEnd rpfe(hhConfig);
 		r = rpfe.searchHHRoute(c); // HH-cpp: routePlannerFrontEnd.cpp -> hhRoutePlanner.cpp
 	} else {
