@@ -330,7 +330,10 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
 		hctx->stats.routingTime += time;
 		calcCount++;
 		if (recalc) {
-			if (calcCount > hctx->config->MAX_COUNT_REITERATION) {
+			int maxCount = progress->hasMissingMapsNow()
+							   ? hctx->config->MAX_COUNT_REITERATION_WITH_MISSING_MAPS
+							   : hctx->config->MAX_COUNT_REITERATION;
+			if (calcCount > maxCount) {
 				OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Too many recalculations (stop)");
 				HHNetworkRouteRes * res = new HHNetworkRouteRes("Too many recalculations (outdated maps or unsupported parameters).");
 				return res;
@@ -813,7 +816,10 @@ void HHRoutePlanner::recalculateNetworkCluster(const SHARED_PTR<HHRoutingContext
 bool HHRoutePlanner::retrieveSegmentsGeometry(const SHARED_PTR<HHRoutingContext> & hctx, HHNetworkRouteRes * route,
 											  bool routeSegments, SHARED_PTR<RouteCalculationProgress> progress) {
 	if (progress != nullptr && progress->hhGetCalcCounter() > 0) {
-		progress->hhIterationProgress((double) progress->hhGetCalcCounter() / hctx->config->MAX_COUNT_REITERATION);
+		int maxCount = progress->hasMissingMapsNow()
+						   ? hctx->config->MAX_COUNT_REITERATION_WITH_MISSING_MAPS
+						   : hctx->config->MAX_COUNT_REITERATION;
+		progress->hhIterationProgress((double) progress->hhGetCalcCounter() / maxCount);
 	}
 	for (int i = 0; i < route->segments.size(); i++) {
 		if (progress != nullptr && progress->hhGetCalcCounter() == 0) {
@@ -1065,7 +1071,10 @@ NetworkDBPoint * HHRoutePlanner::runRoutingWithInitQueue(const SHARED_PTR<HHRout
 	double straightStartEndCost = squareRootDist31(hctx->startX, hctx->startY, hctx->endX, hctx->endY) /
 			hctx->rctx->config->router->getMaxSpeed();
 	if (progress != nullptr && progress->hhGetCalcCounter() > 0) {
-		progress->hhIterationProgress((double) progress->hhGetCalcCounter() / hctx->config->MAX_COUNT_REITERATION);
+		int maxCount = progress->hasMissingMapsNow()
+			               ? hctx->config->MAX_COUNT_REITERATION_WITH_MISSING_MAPS
+			               : hctx->config->MAX_COUNT_REITERATION;
+		progress->hhIterationProgress((double) progress->hhGetCalcCounter() / maxCount);
 	}
 	while (true) {
 		SHARED_PTR<HH_QUEUE> queue;

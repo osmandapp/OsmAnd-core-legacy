@@ -2035,7 +2035,7 @@ extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_nativeRo
 
 	vector<SHARED_PTR<RouteSegmentResult>> r;
 	HHRoutingConfig * hhConfig = getHHRoutingConfig(ienv, jHHConfig);
-	if (hhConfig && !c->progress->hasMissingMapsNow()) {
+	if (hhConfig) {
 		RoutePlannerFrontEnd rpfe(hhConfig);
 		r = rpfe.searchHHRoute(c); // HH-cpp: routePlannerFrontEnd.cpp -> hhRoutePlanner.cpp
 	} else {
