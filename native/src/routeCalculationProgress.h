@@ -45,6 +45,7 @@ class RouteCalculationProgress {
 
 	bool cancelled;
 	bool missingMapsNow;
+	bool isSlowRoutingActive; // iOS-only, not used with JNI
 
 	int maxLoadedTiles;
 	bool requestPrivateAccessRouting;
@@ -55,10 +56,10 @@ class RouteCalculationProgress {
 		  reverseSegmentQueueSize(0), totalEstimatedDistance(0), totalApproximateDistance(0),
 		  approximatedDistance(0), routingCalculatedTime(0), visitedSegments(0),
 		  visitedDirectSegments(0), visitedOppositeSegments(0), directQueueSize(0), oppositeQueueSize(0),
-          finalSegmentsFound(0), loadedTiles(0), unloadedTiles(0), loadedPrevUnloadedTiles(0), distinctLoadedTiles(0),
-          totalIterations(1), iteration(-1), cancelled(false), missingMapsNow(false), maxLoadedTiles(0),
-          requestPrivateAccessRouting(false),
-          hhIterationStep(HH_NOT_STARTED), hhCurrentStepProgress(0), hhTargetsDone(0), hhTargetsTotal(0), hhCalcCounter(0)
+		  finalSegmentsFound(0), loadedTiles(0), unloadedTiles(0), loadedPrevUnloadedTiles(0), distinctLoadedTiles(0),
+		  totalIterations(1), iteration(-1), cancelled(false), missingMapsNow(false), isSlowRoutingActive(false),
+		  maxLoadedTiles(0), requestPrivateAccessRouting(false), hhIterationStep(HH_NOT_STARTED),
+		  hhCurrentStepProgress(0), hhTargetsDone(0), hhTargetsTotal(0), hhCalcCounter(0)
 		{
 	}
 
@@ -69,6 +70,7 @@ class RouteCalculationProgress {
 		UNORDERED(map) < string, string >> getInfo(SHARED_PTR<RouteCalculationProgress> firstPhase);
 	virtual bool isCancelled() { return cancelled; }
 	virtual bool hasMissingMapsNow() { return missingMapsNow; }
+	virtual void setMissingMapsNow(bool state) { missingMapsNow = state; }
 	virtual void setSegmentNotFound(int s) { segmentNotFound = s; }
 	virtual void updateIteration(int i) { iteration = i; }
 	virtual void updateTotalEstimatedDistance(float distance) { totalEstimatedDistance = distance; }

@@ -1550,17 +1550,17 @@ class RouteCalculationProgressWrapper : public RouteCalculationProgress {
 			return false;
 		}
 		if (ienv->GetBooleanField(progress, jfield_RouteCalculationProgress_isCancelled)) {
-			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "XXX isCancelled = true");
+			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "XXX isCancelled = true"); // TODO remove block
 		}
 		return ienv->GetBooleanField(progress, jfield_RouteCalculationProgress_isCancelled);
 	}
 
-	virtual bool hasMissingMapsNow() override {
-		if (progress == NULL) {
+	bool hasMissingMapsNow() override {
+		if (progress == nullptr) {
 			return false;
 		}
 		if (ienv->GetBooleanField(progress, jfield_RouteCalculationProgress_hasMissingMapsNow)) {
-			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "XXX hasMissingMapsNow = true");
+			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "XXX hasMissingMapsNow = true"); // TODO remove block
 		}
 		return ienv->GetBooleanField(progress, jfield_RouteCalculationProgress_hasMissingMapsNow);
 	}

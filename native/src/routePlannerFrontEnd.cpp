@@ -381,6 +381,9 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 		}
 		ctx->unloadAllData();
 	}
+
+	ctx->progress->isSlowRoutingActive = true; // BRP-ios only
+
 	double maxDistance = measuredDist31(startX, startY, endX, endY);
 	if (!intermediatesEmpty) {
 		int x31 = startX;
