@@ -274,6 +274,13 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
 		HHNetworkRouteRes * res = new HHNetworkRouteRes("Files for hh routing were not initialized. Route couldn't be calculated.");
 		return res;
 	}
+	if (progress != nullptr && progress->hasMissingMapsNow()) {
+		maxStartEndReiterations = config->MAX_START_END_REITERATIONS_WITH_MISSING_MAPS;
+		maxCountReiteration = config->MAX_COUNT_REITERATION_WITH_MISSING_MAPS;
+	} else {
+		maxStartEndReiterations = config->MAX_START_END_REITERATIONS;
+		maxCountReiteration = config->MAX_COUNT_REITERATION;
+	}
 	filterPointsBasedOnConfiguration(hctx);
 	
 	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Routing %.5f %.5f -> %.5f %.5f (HC %d, dir %d)",
@@ -330,10 +337,7 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
 		hctx->stats.routingTime += time;
 		calcCount++;
 		if (recalc) {
-			int maxCount = progress->hasMissingMapsNow()
-							   ? hctx->config->MAX_COUNT_REITERATION_WITH_MISSING_MAPS
-							   : hctx->config->MAX_COUNT_REITERATION;
-			if (calcCount > maxCount) {
+			if (calcCount > maxCountReiteration) {
 				OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Too many recalculations (stop)");
 				HHNetworkRouteRes * res = new HHNetworkRouteRes("Too many recalculations (outdated maps or unsupported parameters).");
 				return res;
@@ -486,7 +490,7 @@ void HHRoutePlanner::findFirstLastSegments(const SHARED_PTR<HHRoutingContext> & 
 	vector<SHARED_PTR<RouteSegmentPoint>> stOthers = startPnt->others;//copy
 	vector<SHARED_PTR<RouteSegmentPoint>> endOthers = endPnt->others;
 	do {
-		if (startReiterate + endReiterate >= hctx->config->MAX_START_END_REITERATIONS) {
+		if (startReiterate + endReiterate >= maxStartEndReiterations) {
 			break;
 		}
 		UNORDERED_map<int64_t, NetworkDBPoint *>::iterator it;
@@ -816,10 +820,7 @@ void HHRoutePlanner::recalculateNetworkCluster(const SHARED_PTR<HHRoutingContext
 bool HHRoutePlanner::retrieveSegmentsGeometry(const SHARED_PTR<HHRoutingContext> & hctx, HHNetworkRouteRes * route,
 											  bool routeSegments, SHARED_PTR<RouteCalculationProgress> progress) {
 	if (progress != nullptr && progress->hhGetCalcCounter() > 0) {
-		int maxCount = progress->hasMissingMapsNow()
-						   ? hctx->config->MAX_COUNT_REITERATION_WITH_MISSING_MAPS
-						   : hctx->config->MAX_COUNT_REITERATION;
-		progress->hhIterationProgress((double) progress->hhGetCalcCounter() / maxCount);
+		progress->hhIterationProgress((double) progress->hhGetCalcCounter() / maxCountReiteration);
 	}
 	for (int i = 0; i < route->segments.size(); i++) {
 		if (progress != nullptr && progress->hhGetCalcCounter() == 0) {
@@ -1071,10 +1072,7 @@ NetworkDBPoint * HHRoutePlanner::runRoutingWithInitQueue(const SHARED_PTR<HHRout
 	double straightStartEndCost = squareRootDist31(hctx->startX, hctx->startY, hctx->endX, hctx->endY) /
 			hctx->rctx->config->router->getMaxSpeed();
 	if (progress != nullptr && progress->hhGetCalcCounter() > 0) {
-		int maxCount = progress->hasMissingMapsNow()
-			               ? hctx->config->MAX_COUNT_REITERATION_WITH_MISSING_MAPS
-			               : hctx->config->MAX_COUNT_REITERATION;
-		progress->hhIterationProgress((double) progress->hhGetCalcCounter() / maxCount);
+		progress->hhIterationProgress((double) progress->hhGetCalcCounter() / maxCountReiteration);
 	}
 	while (true) {
 		SHARED_PTR<HH_QUEUE> queue;
