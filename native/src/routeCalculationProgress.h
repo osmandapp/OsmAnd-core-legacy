@@ -45,12 +45,27 @@ class RouteCalculationProgress {
 
 	bool cancelled;
 	bool missingMapsNow;
-	bool isSlowRoutingActive; // iOS-only, not used with JNI
+	bool isSlowRoutingActive; // iOS-only (Java updates it in RoutePlannerFrontEnd.java)
+	int fastRoutingComplication;
 
 	int maxLoadedTiles;
 	bool requestPrivateAccessRouting;
 
    public:
+	enum FastRoutingComplication {
+		READY,
+		MIXED_MAPS_INTERMEDIATES,
+		MISSING_MAPS_INTERMEDIATES,
+		MIXED_MAPS_AT_START_OR_END,
+		MISSING_MAPS_AT_START_OR_END,
+		FAILED_WITH_MIXED_MAPS,
+		FAILED_WITH_MISSING_MAPS,
+		FAILED_NO_HH_ROUTING_DATA,
+		FAILED_WITHOUT_MAP_ISSUES,
+		CANCELLED,
+		SUCCESS
+	};
+
 	RouteCalculationProgress()
 		: segmentNotFound(-1), distanceFromBegin(0), directSegmentQueueSize(0), distanceFromEnd(0),
 		  reverseSegmentQueueSize(0), totalEstimatedDistance(0), totalApproximateDistance(0),
@@ -58,7 +73,7 @@ class RouteCalculationProgress {
 		  visitedDirectSegments(0), visitedOppositeSegments(0), directQueueSize(0), oppositeQueueSize(0),
 		  finalSegmentsFound(0), loadedTiles(0), unloadedTiles(0), loadedPrevUnloadedTiles(0), distinctLoadedTiles(0),
 		  totalIterations(1), iteration(-1), cancelled(false), missingMapsNow(false), isSlowRoutingActive(false),
-		  maxLoadedTiles(0), requestPrivateAccessRouting(false), hhIterationStep(HH_NOT_STARTED),
+		  fastRoutingComplication(READY), maxLoadedTiles(0), requestPrivateAccessRouting(false), hhIterationStep(HH_NOT_STARTED),
 		  hhCurrentStepProgress(0), hhTargetsDone(0), hhTargetsTotal(0), hhCalcCounter(0)
 		{
 	}
@@ -71,6 +86,8 @@ class RouteCalculationProgress {
 	virtual bool isCancelled() { return cancelled; }
 	virtual bool hasMissingMapsNow() { return missingMapsNow; }
 	virtual void setMissingMapsNow(bool state) { missingMapsNow = state; }
+	virtual int getFastRoutingComplication() { return fastRoutingComplication; }
+	virtual void setFastRoutingComplication(int status) { fastRoutingComplication = status; }
 	virtual void setSegmentNotFound(int s) { segmentNotFound = s; }
 	virtual void updateIteration(int i) { iteration = i; }
 	virtual void updateTotalEstimatedDistance(float distance) { totalEstimatedDistance = distance; }
@@ -81,6 +98,10 @@ class RouteCalculationProgress {
 	virtual float getLinearProgressHH();
 	virtual float getLinearProgress();
 	virtual float getApproximationProgress();
+
+	virtual void resetFastRoutingComplication();
+	virtual void updateFastRoutingComplication(FastRoutingComplication reason);
+	virtual void applyFastRoutingFailureStatus();
 
 	enum HHIteration {
 		HH_NOT_STARTED,

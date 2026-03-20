@@ -259,6 +259,9 @@ SHARED_PTR<HHRoutingContext> HHRoutePlanner::initHCtx(HHRoutingConfig * c, int s
 }
 
 HHNetworkRouteRes * HHRoutePlanner::cancelledStatus() const {
+	if (currentCtx != nullptr && currentCtx->rctx != nullptr && currentCtx->rctx->progress != nullptr) {
+		currentCtx->rctx->progress->updateFastRoutingComplication(RouteCalculationProgress::CANCELLED);
+	}
 	return new HHNetworkRouteRes("Routing was cancelled.");
 }
 
@@ -271,6 +274,9 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
 	config = prepareDefaultRoutingConfig(config);
 	SHARED_PTR<HHRoutingContext> hctx = initHCtx(config, startX, startY, endX, endY);
 	if (hctx == nullptr) {
+		if (progress != nullptr) {
+			progress->updateFastRoutingComplication(RouteCalculationProgress::FAILED_NO_HH_ROUTING_DATA);
+		}
 		HHNetworkRouteRes * res = new HHNetworkRouteRes("Files for hh routing were not initialized. Route couldn't be calculated.");
 		return res;
 	}
@@ -313,6 +319,7 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
 		}
 		NetworkDBPoint * finalPnt = runRoutingPointsToPoints(hctx, stPoints, endPoints);
 		if (finalPnt == nullptr) {
+			progress->applyFastRoutingFailureStatus();
 			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "finalPnt is null (stop)");
 			return new HHNetworkRouteRes("No finalPnt found (points might be filtered by params)");
 		}
@@ -338,6 +345,7 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
 		calcCount++;
 		if (recalc) {
 			if (calcCount > maxCountReiteration) {
+				progress->applyFastRoutingFailureStatus();
 				OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Too many recalculations (stop)");
 				HHNetworkRouteRes * res = new HHNetworkRouteRes("Too many recalculations (outdated maps or unsupported parameters).");
 				return res;
@@ -401,6 +409,7 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
 					hctx->stats.routingTime, hctx->stats.addQueueTime + hctx->stats.pollQueueTime,
 					hctx->stats.loadEdgesTime, hctx->stats.loadEdgesCnt, hctx->stats.prepTime,
 					hctx->getRoutingInfo().c_str());
+	progress->updateFastRoutingComplication(RouteCalculationProgress::SUCCESS);
 
 	return route;
 }

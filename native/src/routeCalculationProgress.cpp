@@ -98,6 +98,36 @@ void RouteCalculationProgress::updateStatus(float distanceFromBegin, int directS
 	this->reverseSegmentQueueSize = reverseSegmentQueueSize;
 }
 
+void RouteCalculationProgress::resetFastRoutingComplication() {
+	setFastRoutingComplication(READY);
+}
+
+void RouteCalculationProgress::updateFastRoutingComplication(FastRoutingComplication reason) {
+	if (reason > getFastRoutingComplication()) {
+		setFastRoutingComplication(reason);
+	}
+}
+
+void RouteCalculationProgress::applyFastRoutingFailureStatus() {
+	const int complication = getFastRoutingComplication();
+	if (complication == FAILED_WITH_MIXED_MAPS
+		|| complication == MIXED_MAPS_INTERMEDIATES
+		|| complication == MIXED_MAPS_AT_START_OR_END)
+	{
+		updateFastRoutingComplication(FAILED_WITH_MIXED_MAPS);
+	}
+	else if (complication == FAILED_WITH_MISSING_MAPS
+		|| complication == MISSING_MAPS_INTERMEDIATES
+		|| complication == MISSING_MAPS_AT_START_OR_END)
+	{
+		updateFastRoutingComplication(FAILED_WITH_MISSING_MAPS);
+	}
+	else
+	{
+		updateFastRoutingComplication(FAILED_WITHOUT_MAP_ISSUES);
+	}
+}
+
 float RouteCalculationProgress::getLinearProgressHH() {
 	float progress = 0;
 

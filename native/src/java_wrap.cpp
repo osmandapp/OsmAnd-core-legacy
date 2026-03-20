@@ -525,6 +525,7 @@ jfieldID jfield_RouteCalculationProgress_distanceFromBegin = NULL;
 jfieldID jfield_RouteCalculationProgress_distanceFromEnd = NULL;
 jfieldID jfield_RouteCalculationProgress_isCancelled = NULL;
 jfieldID jfield_RouteCalculationProgress_hasMissingMapsNow = NULL;
+jfieldID jfield_RouteCalculationProgress_fastRoutingComplication = NULL;
 jfieldID jfield_RouteCalculationProgress_totalEstimatedDistance = NULL;
 jfieldID jfield_RouteCalculationProgress_totalApproximateDistance = NULL;
 jfieldID jfield_RouteCalculationProgress_approximatedDistance = NULL;
@@ -951,6 +952,8 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jfield_RouteCalculationProgress_isCancelled = getFid(env, jclass_RouteCalculationProgress, "isCancelled", "Z");
 	jfield_RouteCalculationProgress_hasMissingMapsNow =
 		getFid(env, jclass_RouteCalculationProgress, "hasMissingMapsNow", "Z");
+	jfield_RouteCalculationProgress_fastRoutingComplication =
+		getFid(env, jclass_RouteCalculationProgress, "fastRoutingComplication", "I");
 	jfield_RouteCalculationProgress_segmentNotFound =
 		getFid(env, jclass_RouteCalculationProgress, "segmentNotFound", "I");
 	jfield_RouteCalculationProgress_distanceFromBegin =
@@ -1563,6 +1566,20 @@ class RouteCalculationProgressWrapper : public RouteCalculationProgress {
 			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "XXX hasMissingMapsNow = true"); // TODO remove block
 		}
 		return ienv->GetBooleanField(progress, jfield_RouteCalculationProgress_hasMissingMapsNow);
+	}
+
+	int getFastRoutingComplication() override {
+		if (progress == nullptr) {
+			return RouteCalculationProgress::getFastRoutingComplication();
+		}
+		return ienv->GetIntField(progress, jfield_RouteCalculationProgress_fastRoutingComplication);
+	}
+
+	void setFastRoutingComplication(int status) override {
+		RouteCalculationProgress::setFastRoutingComplication(status);
+		if (progress != nullptr) {
+			ienv->SetIntField(progress, jfield_RouteCalculationProgress_fastRoutingComplication, status);
+		}
 	}
 
 	virtual void setSegmentNotFound(int s) override {
