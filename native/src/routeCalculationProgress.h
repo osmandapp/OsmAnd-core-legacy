@@ -8,7 +8,7 @@
 #include "commonOsmAndCore.h"
 
 class RouteCalculationProgress {
-	const float INITIAL_PROGRESS = 0.05f;
+	const float INITIAL_PROGRESS = 0.01f;
 	const float FIRST_ITERATION = 0.72f;
    public:
 	OsmAnd::ElapsedTimer timeToLoad;
