@@ -98,34 +98,85 @@ void RouteCalculationProgress::updateStatus(float distanceFromBegin, int directS
 	this->reverseSegmentQueueSize = reverseSegmentQueueSize;
 }
 
-void RouteCalculationProgress::resetFastRoutingComplication() {
-	setFastRoutingComplication(READY);
+bool FastRoutingState::isSuccessStatus(Status status) {
+	return status == SUCCESS;
 }
 
-void RouteCalculationProgress::updateFastRoutingComplication(FastRoutingComplication reason) {
-	if (reason > getFastRoutingComplication()) {
-		setFastRoutingComplication(reason);
+bool FastRoutingState::isCancelledStatus(Status status) {
+	return status == CANCELLED;
+}
+
+bool FastRoutingState::isFailedStatus(Status status) {
+	return status == FAILED_WITH_MIXED_MAPS
+		|| status == FAILED_WITH_MISSING_MAPS
+		|| status == FAILED_NO_HH_ROUTING_DATA
+		|| status == FAILED_WITHOUT_MAP_ISSUES;
+}
+
+FastRoutingState::Status FastRoutingState::get(int ordinal) {
+	return static_cast<Status>(ordinal);
+}
+
+int FastRoutingState::reset() {
+	return READY;
+}
+
+int FastRoutingState::raise(int old, Status status) {
+	return std::max(static_cast<int>(status), old);
+}
+
+int FastRoutingState::fail(int old) {
+	if (isMixedMaps(old)) {
+		return raise(old, FAILED_WITH_MIXED_MAPS);
+	} else if (isMissingMaps(old)) {
+		return raise(old, FAILED_WITH_MISSING_MAPS);
+	} else {
+		return raise(old, FAILED_WITHOUT_MAP_ISSUES);
 	}
 }
 
-void RouteCalculationProgress::applyFastRoutingFailureStatus() {
-	const int complication = getFastRoutingComplication();
-	if (complication == FAILED_WITH_MIXED_MAPS
-		|| complication == MIXED_MAPS_INTERMEDIATES
-		|| complication == MIXED_MAPS_AT_START_OR_END)
-	{
-		updateFastRoutingComplication(FAILED_WITH_MIXED_MAPS);
-	}
-	else if (complication == FAILED_WITH_MISSING_MAPS
-		|| complication == MISSING_MAPS_INTERMEDIATES
-		|| complication == MISSING_MAPS_AT_START_OR_END)
-	{
-		updateFastRoutingComplication(FAILED_WITH_MISSING_MAPS);
-	}
-	else
-	{
-		updateFastRoutingComplication(FAILED_WITHOUT_MAP_ISSUES);
-	}
+bool FastRoutingState::hasMixedOrMissingMaps(int ordinal) {
+	return isMixedMaps(ordinal) || isMissingMaps(ordinal);
+}
+
+bool FastRoutingState::isSlowRoutingActive(int ordinal) {
+	return isFailedStatus(get(ordinal));
+}
+
+bool FastRoutingState::isMixedMaps(int ordinal) {
+	return ordinal == FAILED_WITH_MIXED_MAPS
+		|| ordinal == MIXED_MAPS_INTERMEDIATES
+		|| ordinal == MIXED_MAPS_AT_START_OR_END;
+}
+
+bool FastRoutingState::isMissingMaps(int ordinal) {
+	return ordinal == FAILED_WITH_MISSING_MAPS
+		|| ordinal == MISSING_MAPS_INTERMEDIATES
+		|| ordinal == MISSING_MAPS_AT_START_OR_END;
+}
+
+bool RouteCalculationProgress::hasMixedOrMissingMaps() {
+	return FastRoutingState::hasMixedOrMissingMaps(getFastRoutingStatusOrdinal());
+}
+
+bool RouteCalculationProgress::isSlowRoutingActive() {
+	return FastRoutingState::isSlowRoutingActive(getFastRoutingStatusOrdinal());
+}
+
+FastRoutingState::Status RouteCalculationProgress::getFastRoutingStatus() {
+	return FastRoutingState::get(getFastRoutingStatusOrdinal());
+}
+
+void RouteCalculationProgress::resetFastRoutingStatus() {
+	setFastRoutingStatusOrdinal(FastRoutingState::reset());
+}
+
+void RouteCalculationProgress::failFastRoutingStatus() {
+	setFastRoutingStatusOrdinal(FastRoutingState::fail(getFastRoutingStatusOrdinal()));
+}
+
+void RouteCalculationProgress::raiseFastRoutingStatus(FastRoutingState::Status status) {
+	setFastRoutingStatusOrdinal(FastRoutingState::raise(getFastRoutingStatusOrdinal(), status));
 }
 
 float RouteCalculationProgress::getLinearProgressHH() {

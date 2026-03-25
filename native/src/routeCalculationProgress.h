@@ -7,6 +7,41 @@
 #include "ElapsedTimer.h"
 #include "commonOsmAndCore.h"
 
+struct FastRoutingState {
+	enum Status {
+		READY,
+
+		// MissingMapsCalculator
+		MIXED_MAPS_INTERMEDIATES,
+		MISSING_MAPS_INTERMEDIATES,
+		MIXED_MAPS_AT_START_OR_END,
+		MISSING_MAPS_AT_START_OR_END,
+
+		// HHRoutePlanner
+		FAILED_WITH_MIXED_MAPS,
+		FAILED_WITH_MISSING_MAPS,
+		FAILED_NO_HH_ROUTING_DATA, // pedestrian profile, ancient maps, etc
+		FAILED_WITHOUT_MAP_ISSUES, // unsupported parameters, unusual geometry (Roma to Barcelona), etc
+
+		CANCELLED,
+		SUCCESS
+	};
+
+	static bool isSuccessStatus(Status status);
+	static bool isCancelledStatus(Status status);
+	static bool isFailedStatus(Status status);
+	static Status get(int ordinal);
+	static int reset();
+	static int raise(int old, Status status);
+	static int fail(int old);
+	static bool hasMixedOrMissingMaps(int ordinal);
+	static bool isSlowRoutingActive(int ordinal);
+
+   private:
+	static bool isMixedMaps(int ordinal);
+	static bool isMissingMaps(int ordinal);
+};
+
 class RouteCalculationProgress {
 	const float INITIAL_PROGRESS = 0.01f;
 	const float FIRST_ITERATION = 0.72f;
@@ -44,36 +79,20 @@ class RouteCalculationProgress {
 	int iteration;
 
 	bool cancelled;
-	bool missingMapsNow;
-	bool isSlowRoutingActive; // iOS-only (Java updates it in RoutePlannerFrontEnd.java)
-	int fastRoutingComplication;
+	int fastRoutingStatusOrdinal;
 
 	int maxLoadedTiles;
 	bool requestPrivateAccessRouting;
 
    public:
-	enum FastRoutingComplication {
-		READY,
-		MIXED_MAPS_INTERMEDIATES,
-		MISSING_MAPS_INTERMEDIATES,
-		MIXED_MAPS_AT_START_OR_END,
-		MISSING_MAPS_AT_START_OR_END,
-		FAILED_WITH_MIXED_MAPS,
-		FAILED_WITH_MISSING_MAPS,
-		FAILED_NO_HH_ROUTING_DATA,
-		FAILED_WITHOUT_MAP_ISSUES,
-		CANCELLED,
-		SUCCESS
-	};
-
 	RouteCalculationProgress()
 		: segmentNotFound(-1), distanceFromBegin(0), directSegmentQueueSize(0), distanceFromEnd(0),
 		  reverseSegmentQueueSize(0), totalEstimatedDistance(0), totalApproximateDistance(0),
 		  approximatedDistance(0), routingCalculatedTime(0), visitedSegments(0),
 		  visitedDirectSegments(0), visitedOppositeSegments(0), directQueueSize(0), oppositeQueueSize(0),
 		  finalSegmentsFound(0), loadedTiles(0), unloadedTiles(0), loadedPrevUnloadedTiles(0), distinctLoadedTiles(0),
-		  totalIterations(1), iteration(-1), cancelled(false), missingMapsNow(false), isSlowRoutingActive(false),
-		  fastRoutingComplication(READY), maxLoadedTiles(0), requestPrivateAccessRouting(false), hhIterationStep(HH_NOT_STARTED),
+		  totalIterations(1), iteration(-1), cancelled(false), fastRoutingStatusOrdinal(FastRoutingState::READY), maxLoadedTiles(0),
+		  requestPrivateAccessRouting(false), hhIterationStep(HH_NOT_STARTED),
 		  hhCurrentStepProgress(0), hhTargetsDone(0), hhTargetsTotal(0), hhCalcCounter(0)
 		{
 	}
@@ -84,10 +103,8 @@ class RouteCalculationProgress {
 	virtual UNORDERED(map) < string,
 		UNORDERED(map) < string, string >> getInfo(SHARED_PTR<RouteCalculationProgress> firstPhase);
 	virtual bool isCancelled() { return cancelled; }
-	virtual bool hasMissingMapsNow() { return missingMapsNow; }
-	virtual void setMissingMapsNow(bool state) { missingMapsNow = state; }
-	virtual int getFastRoutingComplication() { return fastRoutingComplication; }
-	virtual void setFastRoutingComplication(int status) { fastRoutingComplication = status; }
+	virtual int getFastRoutingStatusOrdinal() { return fastRoutingStatusOrdinal; }
+	virtual void setFastRoutingStatusOrdinal(int status) { fastRoutingStatusOrdinal = status; }
 	virtual void setSegmentNotFound(int s) { segmentNotFound = s; }
 	virtual void updateIteration(int i) { iteration = i; }
 	virtual void updateTotalEstimatedDistance(float distance) { totalEstimatedDistance = distance; }
@@ -99,9 +116,12 @@ class RouteCalculationProgress {
 	virtual float getLinearProgress();
 	virtual float getApproximationProgress();
 
-	virtual void resetFastRoutingComplication();
-	virtual void updateFastRoutingComplication(FastRoutingComplication reason);
-	virtual void applyFastRoutingFailureStatus();
+	virtual bool hasMixedOrMissingMaps();
+	virtual bool isSlowRoutingActive();
+	virtual FastRoutingState::Status getFastRoutingStatus();
+	virtual void resetFastRoutingStatus();
+	virtual void failFastRoutingStatus();
+	virtual void raiseFastRoutingStatus(FastRoutingState::Status status);
 
 	enum HHIteration {
 		HH_NOT_STARTED,
