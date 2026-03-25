@@ -20,6 +20,7 @@ struct HHRoutingConfig
 	int FULL_DIJKSTRA_NETWORK_RECALC = 10;
 	double MAX_INC_COST_CF = 1.25;
 	int MAX_START_END_REITERATIONS = 50;
+	int MAX_START_END_REITERATIONS_WITH_MISSING_MAPS = 5;
 
 	bool ROUTE_LAST_MILE = false;
 	bool ROUTE_ALL_SEGMENTS = false;
@@ -43,7 +44,9 @@ struct HHRoutingConfig
 	bool USE_MIDPOINT = false;
 	int MIDPOINT_ERROR = 3;
 	int MIDPOINT_MAX_DEPTH = 20 + MIDPOINT_ERROR;
+
 	int MAX_COUNT_REITERATION = 30; // 3 is enough for 90%, 30 is for 10% (100-750km with 1.5m months live updates)
+	int MAX_COUNT_REITERATION_WITH_MISSING_MAPS = 3; // speed up HH-to-A* fallback if outdated maps were found
 
 	bool STRICT_BEST_GROUP_MAPS = false; // derived from RoutePlannerFrontEnd.CALCULATE_MISSING_MAPS
 

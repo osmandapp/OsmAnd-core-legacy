@@ -1,0 +1,27 @@
+--- upstream.original/third_party/skcms/src/Transform_inl.h	2026-03-18 13:03:02.605123041 +0100
++++ upstream.patched/third_party/skcms/src/Transform_inl.h	2026-03-18 13:12:47.789555184 +0100
+@@ -36,7 +36,7 @@
+     #define  USING_AVX
+ #endif
+ #if !defined(USING_AVX_F16C) && defined(USING_AVX) && defined(__F16C__)
+-    #define  USING AVX_F16C
++    #define  USING_AVX_F16C
+ #endif
+ #if !defined(USING_AVX2)     && defined(USING_AVX) && defined(__AVX2__)
+     #define  USING_AVX2
+@@ -159,8 +159,13 @@
+ #elif defined(USING_AVX512F)
+     return (F)_mm512_cvtph_ps((__m256i)half);
+ #elif defined(USING_AVX_F16C)
+-    typedef int16_t __attribute__((vector_size(16))) I16;
+-    return __builtin_ia32_vcvtph2ps256((I16)half);
++    #if defined(__clang__) && !defined(__ANDROID__)
++        typedef _Float16 __attribute__((vector_size(16))) F16;
++        return __builtin_convertvector((F16)half, F);
++    #else
++        typedef int16_t __attribute__((vector_size(16))) I16;
++        return __builtin_ia32_vcvtph2ps256((I16)half);
++    #endif
+ #else
+     U32 wide = cast<U32>(half);
+     // A half is 1-5-10 sign-exponent-mantissa, with 15 exponent bias.

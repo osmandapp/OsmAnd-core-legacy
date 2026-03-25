@@ -381,6 +381,7 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 		}
 		ctx->unloadAllData();
 	}
+
 	double maxDistance = measuredDist31(startX, startY, endX, endY);
 	if (!intermediatesEmpty) {
 		int x31 = startX;
