@@ -22,6 +22,7 @@ class RoutePlannerFrontEnd {
 public:
     bool USE_ONLY_HH_ROUTING = false;
     bool CALCULATE_MISSING_MAPS = true;
+    bool CONTINUE_ON_MISSING_MAPS = true;
     bool useGeometryBasedApproximation = false;
 
     constexpr static int GPX_OSM_POINTS_MATCH_ALGORITHM = 1;
