@@ -10,6 +10,9 @@
 #include "transportRoutingConfiguration.h"
 #include "transportRoutingContext.h"
 #include "transportRoutingObjects.h"
+#if defined(OSMAND_PT_BACKEND_RAPTOR) && OSMAND_PT_BACKEND_RAPTOR
+#include "RaptorEngine/raptorTransportPlanner.h"
+#endif
 
 #define TRACE_ONBOARD_ID 0 // 19728216
 #define TRACE_CHANGE_ID 0 // 19728216
@@ -142,6 +145,12 @@ void TransportRoutePlanner::prepareResults(unique_ptr<TransportRoutingContext>& 
 
 void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingContext>& ctx,
 												vector<SHARED_PTR<TransportRouteResult>>& res) {
+#if defined(OSMAND_PT_BACKEND_RAPTOR) && OSMAND_PT_BACKEND_RAPTOR
+	RaptorTransportPlanner raptorTransportPlanner;
+	if (raptorTransportPlanner.buildTransportRoute(ctx, res))
+		return;
+#endif
+
 	long nonce = 0;
 	OsmAnd::ElapsedTimer pt_timer;
 	pt_timer.Start();
