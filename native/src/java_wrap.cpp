@@ -1970,10 +1970,16 @@ HHRoutingConfig * getHHRoutingConfig(JNIEnv* ienv, jobject jHHConf) {
 extern "C" JNIEXPORT jboolean JNICALL Java_net_osmand_NativeLibrary_nativeNeedRequestPrivateAccessRouting(
 	JNIEnv* ienv, jobject obj, jobject jCtx, jintArray jcoordinatesX, jintArray jcoordinatesY) {
 	jsize size = ienv->GetArrayLength(jcoordinatesX);
+	std::vector<jint> jCoordinatesX(size);
+	std::vector<jint> jCoordinatesY(size);
 	std::vector<int> coordinatesX(size);
 	std::vector<int> coordinatesY(size);
-	ienv->GetIntArrayRegion(jcoordinatesX, jsize{0}, size, &coordinatesX[0]);
-	ienv->GetIntArrayRegion(jcoordinatesY, jsize{0}, size, &coordinatesY[0]);
+	ienv->GetIntArrayRegion(jcoordinatesX, jsize{0}, size, jCoordinatesX.data());
+	ienv->GetIntArrayRegion(jcoordinatesY, jsize{0}, size, jCoordinatesY.data());
+	for (jsize i = 0; i < size; i++) {
+		coordinatesX[i] = static_cast<int>(jCoordinatesX[i]);
+		coordinatesY[i] = static_cast<int>(jCoordinatesY[i]);
+	}
 	jobject progress = ienv->GetObjectField(jCtx, jfield_RoutingContext_calculationProgress);
 	RoutingContext* c = getRoutingContext(ienv, jCtx, NO_DIRECTION, false, progress);
 	SHARED_PTR<RoutePlannerFrontEnd> rpfe = shared_ptr<RoutePlannerFrontEnd>(new RoutePlannerFrontEnd());
@@ -2227,32 +2233,32 @@ jobject convertTransportStopToJava(JNIEnv* ienv, SHARED_PTR<TransportStop>& stop
 
 	if (stop->referencesToRoutes.size() > 0) {
 		jintArray j_referencesToRoutes = ienv->NewIntArray(stop->referencesToRoutes.size());
-		jint tmp[stop->referencesToRoutes.size()];
+		std::vector<jint> tmp(stop->referencesToRoutes.size());
 		for (int i = 0; i < stop->referencesToRoutes.size(); i++) {
 			tmp[i] = (jint)stop->referencesToRoutes.at(i);
 		}
-		ienv->SetIntArrayRegion(j_referencesToRoutes, 0, stop->referencesToRoutes.size(), tmp);
+		ienv->SetIntArrayRegion(j_referencesToRoutes, 0, stop->referencesToRoutes.size(), tmp.data());
 		ienv->SetObjectField(jstop, jfield_NativeTransportStop_referencesToRoutes, j_referencesToRoutes);
 		ienv->DeleteLocalRef(j_referencesToRoutes);
 	}
 
 	if (stop->deletedRoutesIds.size() > 0) {
 		jlongArray j_deletedRoutesIds = ienv->NewLongArray(stop->deletedRoutesIds.size());
-		jlong tmp[stop->deletedRoutesIds.size()];
+		std::vector<jlong> tmp(stop->deletedRoutesIds.size());
 		for (int i = 0; i < stop->deletedRoutesIds.size(); i++) {
 			tmp[i] = (jlong)stop->deletedRoutesIds.at(i);
 		}
-		ienv->SetLongArrayRegion(j_deletedRoutesIds, 0, stop->deletedRoutesIds.size(), tmp);
+		ienv->SetLongArrayRegion(j_deletedRoutesIds, 0, stop->deletedRoutesIds.size(), tmp.data());
 		ienv->SetObjectField(jstop, jfield_NativeTransportStop_deletedRoutesIds, j_deletedRoutesIds);
 		ienv->DeleteLocalRef(j_deletedRoutesIds);
 	}
 	if (stop->routesIds.size() > 0) {
 		jlongArray j_routesIds = ienv->NewLongArray(stop->routesIds.size());
-		jlong tmp[stop->routesIds.size()];
+		std::vector<jlong> tmp(stop->routesIds.size());
 		for (int i = 0; i < stop->routesIds.size(); i++) {
 			tmp[i] = stop->routesIds.at(i);
 		}
-		ienv->SetLongArrayRegion(j_routesIds, 0, stop->routesIds.size(), tmp);
+		ienv->SetLongArrayRegion(j_routesIds, 0, stop->routesIds.size(), tmp.data());
 		ienv->SetObjectField(jstop, jfield_NativeTransportStop_routesIds, j_routesIds);
 		ienv->DeleteLocalRef(j_routesIds);
 	}
@@ -2276,8 +2282,8 @@ jobject convertTransportStopToJava(JNIEnv* ienv, SHARED_PTR<TransportStop>& stop
 		jintArray j_pTStopExit_y31s = ienv->NewIntArray(stop->exits.size());
 		jobjectArray j_pTStopExit_refs = ienv->NewObjectArray(stop->exits.size(), jclassString, NULL);
 
-		jint tmpX[stop->exits.size()];
-		jint tmpY[stop->exits.size()];
+		std::vector<jint> tmpX(stop->exits.size());
+		std::vector<jint> tmpY(stop->exits.size());
 		for (int i = 0; i < stop->exits.size(); i++) {
 			tmpX[i] = stop->exits.at(i)->x31;
 			tmpY[i] = stop->exits.at(i)->y31;
@@ -2285,8 +2291,8 @@ jobject convertTransportStopToJava(JNIEnv* ienv, SHARED_PTR<TransportStop>& stop
 			ienv->SetObjectArrayElement(j_pTStopExit_refs, i, ref);
 			ienv->DeleteLocalRef(ref);
 		}
-		ienv->SetIntArrayRegion(j_pTStopExit_x31s, 0, stop->exits.size(), tmpX);
-		ienv->SetIntArrayRegion(j_pTStopExit_y31s, 0, stop->exits.size(), tmpY);
+		ienv->SetIntArrayRegion(j_pTStopExit_x31s, 0, stop->exits.size(), tmpX.data());
+		ienv->SetIntArrayRegion(j_pTStopExit_y31s, 0, stop->exits.size(), tmpY.data());
 		ienv->SetObjectField(jstop, jfield_NativeTransportStop_pTStopExit_x31s, j_pTStopExit_x31s);
 		ienv->SetObjectField(jstop, jfield_NativeTransportStop_pTStopExit_y31s, j_pTStopExit_y31s);
 		ienv->SetObjectField(jstop, jfield_NativeTransportStop_pTStopExit_refs, j_pTStopExit_refs);
@@ -2352,7 +2358,7 @@ jobject convertTransportRouteToJava(JNIEnv* ienv, SHARED_PTR<TransportRoute>& ro
 	ienv->DeleteLocalRef(j_color);
 
 	jlongArray j_waysIds = ienv->NewLongArray(route->forwardWays.size());
-	jlong tmpIds[route->forwardWays.size()];
+	std::vector<jlong> tmpIds(route->forwardWays.size());
 	jobjectArray j_nodesLats =
 		ienv->NewObjectArray(route->forwardWays.size(), jclassDoubleArray, NULL);  // object longarray
 	jobjectArray j_nodesLons =
@@ -2362,20 +2368,20 @@ jobject convertTransportRouteToJava(JNIEnv* ienv, SHARED_PTR<TransportRoute>& ro
 		int nsize = route->forwardWays.at(k)->nodes.size();
 		jdoubleArray j_wayNodesLats = ienv->NewDoubleArray(nsize);
 		jdoubleArray j_wayNodesLons = ienv->NewDoubleArray(nsize);
-		jdouble tmpNodesLats[nsize];
-		jdouble tmpNodesLons[nsize];
+		std::vector<jdouble> tmpNodesLats(nsize);
+		std::vector<jdouble> tmpNodesLons(nsize);
 		for (n = 0; n < nsize; n++) {
 			tmpNodesLats[n] = route->forwardWays.at(k)->nodes.at(n).lat;
 			tmpNodesLons[n] = route->forwardWays.at(k)->nodes.at(n).lon;
 		}
-		ienv->SetDoubleArrayRegion(j_wayNodesLats, 0, nsize, tmpNodesLats);
-		ienv->SetDoubleArrayRegion(j_wayNodesLons, 0, nsize, tmpNodesLons);
+		ienv->SetDoubleArrayRegion(j_wayNodesLats, 0, nsize, tmpNodesLats.data());
+		ienv->SetDoubleArrayRegion(j_wayNodesLons, 0, nsize, tmpNodesLons.data());
 		ienv->SetObjectArrayElement(j_nodesLats, k, j_wayNodesLats);
 		ienv->SetObjectArrayElement(j_nodesLons, k, j_wayNodesLons);
 		ienv->DeleteLocalRef(j_wayNodesLats);
 		ienv->DeleteLocalRef(j_wayNodesLons);
 	}
-	ienv->SetLongArrayRegion(j_waysIds, 0, route->forwardWays.size(), tmpIds);
+	ienv->SetLongArrayRegion(j_waysIds, 0, route->forwardWays.size(), tmpIds.data());
 	ienv->SetObjectField(jtr, jfield_NativeTransportRoute_waysIds, j_waysIds);
 	ienv->SetObjectField(jtr, jfield_NativeTransportRoute_waysNodesLats, j_nodesLats);
 	ienv->SetObjectField(jtr, jfield_NativeTransportRoute_waysNodesLons, j_nodesLons);

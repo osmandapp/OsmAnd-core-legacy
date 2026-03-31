@@ -64,6 +64,9 @@ file(GLOB gdal_gcore_mdreader "${UPSTREAM}/gdal/gcore/mdreader/*.c*")
 # TODO: gnm
 
 file(GLOB gdal_ogr "${UPSTREAM}/gdal/ogr/*.c*")
+list(REMOVE_ITEM gdal_ogr
+	"${UPSTREAM}/gdal/ogr/generate_encoding_table.c"
+)
 file(GLOB gdal_ogr_ogrfs_frmts "${UPSTREAM}/gdal/ogr/ogrsf_frmts/*.c*")
 file(GLOB gdal_ogr_ogrfs_frmts_generic "${UPSTREAM}/gdal/ogr/ogrsf_frmts/generic/*.c*")
 file(GLOB gdal_ogr_ogrfs_frmts_geojson "${UPSTREAM}/gdal/ogr/ogrsf_frmts/geojson/*.c*")
@@ -203,10 +206,35 @@ target_compile_definitions(gdal_osmand
 		-DCPL_INTERNAL=
 		-DCPL_UNSTABLE_API=
 )
+
+if(CMAKE_TARGET_OS STREQUAL "windows")
+	list(REMOVE_ITEM gdal_port
+		"${UPSTREAM}/gdal/port/cpl_recode_iconv.cpp"
+	)
+endif()
+if(CMAKE_TARGET_OS STREQUAL "windows")
+	target_compile_definitions(gdal_osmand
+		PRIVATE
+			-DNOMINMAX
+			-D_CRT_SECURE_NO_WARNINGS
+			-DVSI_STAT64=_stat64
+			-DVSI_STAT64_T=__stat64
+	)
+	if(CMAKE_COMPILER_FAMILY STREQUAL "msvc")
+		target_compile_options(gdal_osmand
+			PRIVATE
+				/U_LARGEFILE64_SOURCE
+				/UVSI_NEED_LARGEFILE64_SOURCE
+				/UZ_HAVE_UNISTD_H
+		)
+	endif()
+endif()
 target_include_directories(gdal_osmand
 	PUBLIC
 		"${ROOT}"
 		"${CMAKE_CURRENT_BINARY_DIR}"
+		"${OSMAND_ROOT}/externals/skia/upstream.patched/third_party/externals/expat/lib"
+		"${OSMAND_ROOT}/externals/skia/upstream.patched/third_party/externals/zlib"
 		"${UPSTREAM}/gdal/alg"
 		"${UPSTREAM}/gdal/alg/marching_squares"
 		"${UPSTREAM}/gdal/apps"

@@ -5,6 +5,7 @@
 #include "transportRouteStopsReader.h"
 
 #include <algorithm>
+#include <deque>
 #include <iterator>
 
 #include "Logging.h"
@@ -19,7 +20,7 @@ TransportRouteStopsReader::TransportRouteStopsReader(vector<BinaryMapFile*>& fil
 	}
 }
 
-vector<SHARED_PTR<TransportStop>> TransportRouteStopsReader::readMergedTransportStops(SearchQuery* q) {
+vector<SHARED_PTR<TransportStop>> TransportRouteStopsReader::readMergedTransportStops(SearchQuery* q, bool skipRouteGeometry) {
 	UNORDERED(map)<int64_t, SHARED_PTR<TransportStop>> loadedTransportStops;
 
 	for (auto& it : routesFilesCache) {
@@ -28,7 +29,7 @@ vector<SHARED_PTR<TransportStop>> TransportRouteStopsReader::readMergedTransport
 		vector<SHARED_PTR<TransportStop>> stops = q->transportResults;
 		auto& routesToLoad = routesFilesCache[it.first];
 		mergeTransportStops(routesToLoad, loadedTransportStops, stops);
-		loadRoutes(it.first, routesToLoad);
+		loadRoutes(it.first, routesToLoad, skipRouteGeometry);
 
 		for (SHARED_PTR<TransportStop>& stop : stops) {
 			if (stop->isMissingStop()) {
@@ -73,6 +74,10 @@ vector<SHARED_PTR<TransportStop>> TransportRouteStopsReader::readMergedTransport
 	std::transform(loadedTransportStops.begin(), loadedTransportStops.end(), back_inserter(stopsValues),
 				   [](std::pair<int64_t, SHARED_PTR<TransportStop>> const& pair) { return pair.second; });
 	return stopsValues;
+}
+
+vector<SHARED_PTR<TransportStop>> TransportRouteStopsReader::readMergedTransportStops(SearchQuery* q) {
+	return readMergedTransportStops(q, false);
 }
 
 void TransportRouteStopsReader::mergeTransportStops(PT_ROUTE_MAP& routesToLoad, UNORDERED(map) < int64_t,
@@ -135,7 +140,7 @@ void TransportRouteStopsReader::putAll(PT_ROUTE_MAP& routesToLoad, vector<int32_
 	}
 }
 
-void TransportRouteStopsReader::loadRoutes(BinaryMapFile* file, PT_ROUTE_MAP& localFileRoutes) {
+void TransportRouteStopsReader::loadRoutes(BinaryMapFile* file, PT_ROUTE_MAP& localFileRoutes, bool skipRouteGeometry) {
 	if (localFileRoutes.size() > 0) {
 		vector<int32_t> routesToLoad;
 		for (auto& itr : localFileRoutes) {
@@ -144,7 +149,7 @@ void TransportRouteStopsReader::loadRoutes(BinaryMapFile* file, PT_ROUTE_MAP& lo
 			}
 		}
 		sort(routesToLoad.begin(), routesToLoad.end());
-		loadTransportRoutes(file, routesToLoad, localFileRoutes);
+		loadTransportRoutes(file, routesToLoad, localFileRoutes, skipRouteGeometry);
 	}
 }
 

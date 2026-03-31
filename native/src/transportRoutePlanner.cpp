@@ -1,4 +1,5 @@
 #include <inttypes.h>
+#include <set>
 #ifndef _OSMAND_TRANSPORT_ROUTE_PLANNER_CPP
 #define _OSMAND_TRANSPORT_ROUTE_PLANNER_CPP
 #include "transportRoutePlanner.h"
@@ -147,8 +148,11 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 												vector<SHARED_PTR<TransportRouteResult>>& res) {
 #if defined(OSMAND_PT_BACKEND_RAPTOR) && OSMAND_PT_BACKEND_RAPTOR
 	RaptorTransportPlanner raptorTransportPlanner;
-	if (raptorTransportPlanner.buildTransportRoute(ctx, res))
-		return;
+	if (!raptorTransportPlanner.buildTransportRoute(ctx, res)) {
+		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning,
+		                  "RaptorTransportPlanner did not handle PT request; legacy fallback disabled");
+	}
+	return;
 #endif
 
 	long nonce = 0;

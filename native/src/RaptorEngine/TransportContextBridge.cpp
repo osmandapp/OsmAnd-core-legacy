@@ -21,7 +21,7 @@ namespace OsmAnd
                 SearchQuery query;
                 ctx.buildSearchTransportRequest(&query, left, right, top, bottom, -1, stops);
                 ctx.searchTransportIndexTime.Start();
-                stops = ctx.transportStopsReader->readMergedTransportStops(&query);
+                stops = ctx.transportStopsReader->readMergedTransportStops(&query, true);
                 ctx.searchTransportIndexTime.Pause();
                 return stops;
             }

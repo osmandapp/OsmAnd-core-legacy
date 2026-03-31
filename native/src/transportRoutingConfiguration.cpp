@@ -54,6 +54,10 @@ float TransportRoutingConfiguration::getSpeedByRouteType(
 	const auto it = speed.find(routeType);
 	float sl = defaultTravelSpeed;
 	if (it == speed.end()) {
+		if (router == nullptr || !router->isObjContextAvailable(RouteDataObjectAttribute::ROAD_SPEED)) {
+			speed[routeType] = sl;
+			return sl;
+		}
 		dynbitset bs = getRawBitset("route", routeType);
 		sl = router->getObjContext(RouteDataObjectAttribute::ROAD_SPEED)
 				 .evaluateFloat(bs, defaultTravelSpeed);
@@ -87,6 +91,13 @@ int32_t TransportRoutingConfiguration::getStopTime(const std::string &routeType)
 		return it->second;
 	}
 
+	if (router == nullptr || !router->isObjContextAvailable(RouteDataObjectAttribute::ROUTING_OBSTACLES)) {
+		if (defaultStopTime == 0) {
+			defaultStopTime = 30;
+		}
+		return defaultStopTime;
+	}
+
 	RouteAttributeContext &obstacles =
 		router->getObjContext(RouteDataObjectAttribute::ROUTING_OBSTACLES);
 
@@ -107,6 +118,13 @@ int32_t TransportRoutingConfiguration::getBoardingTime(const std::string &routeT
 	auto it = boardingTimes.find(routeType);
 	if (it != boardingTimes.end() && it->second > 0) {
 		return it->second;
+	}
+
+	if (router == nullptr || !router->isObjContextAvailable(RouteDataObjectAttribute::ROUTING_OBSTACLES)) {
+		if (defaultBoardingTime == 0) {
+			defaultBoardingTime = 150;
+		}
+		return defaultBoardingTime;
 	}
 
 	RouteAttributeContext &obstacles =
@@ -131,6 +149,13 @@ int32_t TransportRoutingConfiguration::getChangeTime(const std::string &fromRout
 	auto it = changingTimes.find(key);
 	if (it != changingTimes.end() && it->second > 0) {
 		return it->second;
+	}
+
+	if (router == nullptr || !router->isObjContextAvailable(RouteDataObjectAttribute::ROUTING_OBSTACLES)) {
+		if (defaultChangeTime == 0) {
+			defaultChangeTime = 240;
+		}
+		return defaultChangeTime;
 	}
 
 	RouteAttributeContext &obstacles =

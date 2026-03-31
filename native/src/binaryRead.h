@@ -1089,7 +1089,7 @@ std::vector<BinaryMapFile*> getOpenMapFiles();
 void searchTransportIndex(SearchQuery* q, BinaryMapFile* file);
 
 void loadTransportRoutes(BinaryMapFile* file, vector<int32_t> filePointers, UNORDERED(map) < int64_t,
-						 SHARED_PTR<TransportRoute> > &result);
+						 SHARED_PTR<TransportRoute> > &result, bool skipGeometry = false);
 
 void searchRouteSubregions(SearchQuery* q, std::vector<RouteSubregion>& tempResult, bool basemap, bool geocoding, std::vector<BinaryMapFile*> & mapIndexReaderFilter);
 

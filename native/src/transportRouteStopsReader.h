@@ -22,12 +22,13 @@ struct TransportRouteStopsReader {
 	UNORDERED(map)<BinaryMapFile*, PT_ROUTE_MAP> routesFilesCache;
 
 	PT_STOPS_SEGMENT readMergedTransportStops(SearchQuery* sr);
+	PT_STOPS_SEGMENT readMergedTransportStops(SearchQuery* sr, bool skipRouteGeometry);
 	void mergeTransportStops(PT_ROUTE_MAP& routesToLoad,
 							UNORDERED(map) <int64_t, SHARED_PTR<TransportStop>> &loadedTransportStops,
 							PT_STOPS_SEGMENT &stops);
 
 	void putAll(PT_ROUTE_MAP& routesToLoad, vector<int32_t> referenceToRoutes);
-	void loadRoutes(BinaryMapFile* file, PT_ROUTE_MAP& localFileRoutes);
+	void loadRoutes(BinaryMapFile* file, PT_ROUTE_MAP& localFileRoutes, bool skipRouteGeometry = false);
 	SHARED_PTR<TransportRoute> getCombinedRoute(SHARED_PTR<TransportRoute>& route);
 	SHARED_PTR<TransportRoute> combineRoute(SHARED_PTR<TransportRoute>& route);
 	PT_STOPS_SEGMENT findAndDeleteMinDistance(double lat, double lon, 
