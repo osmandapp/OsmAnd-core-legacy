@@ -515,9 +515,7 @@ SHARED_PTR<RouteDataObject> RouteSegmentResult::getObjectWithShield(vector<SHARE
 }
 
 bool RouteSegmentResult::isLinkRoad() {
-    string highway = object->getHighway();
-    return highway.size() >= kLinkRoadSuffix.size()
-            && highway.rfind(kLinkRoadSuffix) == highway.size() - kLinkRoadSuffix.size();
+    return endsWith(object->getHighway(), kLinkRoadSuffix);
 }
 
 bool RouteSegmentResult::hasExitInfo() {
