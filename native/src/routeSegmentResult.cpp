@@ -523,8 +523,8 @@ bool RouteSegmentResult::hasExitInfo() const {
         string nodeRef = object->getNodeRef();
         string nodeName = object->getNodeName();
         if (!nodeRef.empty() || !nodeName.empty()) {
-            const auto attachedRoutes = getAttachedRoutes(getStartPointIndex());
-            for (const auto& attached : attachedRoutes) {
+            const auto startPointAttachedRoutes = getAttachedRoutes(getStartPointIndex());
+            for (const auto& attached : startPointAttachedRoutes) {
                 if (!nodeRef.empty() && nodeRef == attached->object->getJunctionRef()) {
                     return false;
                 }
