@@ -217,7 +217,7 @@ int RouteDataObject::getOneway() {
 	return 0;
 }
 
-string RouteDataObject::getValue(const string& tag) {
+string RouteDataObject::getValue(const string& tag) const {
 	auto sz = types.size();
 	for (uint32_t i = 0; i < sz; i++) {
 		auto k = types[i];

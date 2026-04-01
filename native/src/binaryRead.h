@@ -374,7 +374,7 @@ struct RouteDataObject {
 		return "";
 	}
 
-	inline bool hasMotorwayJunctionNode() {
+	inline bool hasMotorwayJunctionNode() const {
 		const auto ptSz = pointTypes.size();
 		for (int i = 0; i < ptSz; i++) {
 			const auto& point = pointTypes[i];
@@ -389,37 +389,37 @@ struct RouteDataObject {
 		return false;
 	}
 
-	inline string getJunctionRef() {
+	inline string getJunctionRef() const {
 		return getValue(JUNCTION_REF);
 	}
 
-	inline string getJunctionName() {
+	inline string getJunctionName() const {
 		return getValue(JUNCTION_NAME);
 	}
 
-	inline string getNodeRef() {
+	inline string getNodeRef() const {
 		return getPointNameByTypeRule(region->refTypeRule);
 	}
 
-	inline string getNodeName() {
+	inline string getNodeName() const {
 		return getPointNameByTypeRule(region->nameTypeRule);
 	}
 
-	inline string getExitRef() {
+	inline string getExitRef() const {
 		string junctionRef = getJunctionRef();
 		return !junctionRef.empty() ? junctionRef : getNodeRef();
 	}
 
-	inline string getExitName() {
+	inline string getExitName() const {
 		string junctionName = getJunctionName();
 		return !junctionName.empty() ? junctionName : getNodeName();
 	}
 
-	inline bool isExitPoint() {
+	inline bool isExitPoint() const {
 		return hasMotorwayJunctionNode();
 	}
 
-	inline string getPointNameByTypeRule(int typeRule) {
+	inline string getPointNameByTypeRule(int typeRule) const {
 		if (typeRule == -1) {
 			return "";
 		}
@@ -566,7 +566,7 @@ struct RouteDataObject {
 
 	bool tunnel();
 	int getOneway();
-	string getValue(const string& tag);
+	string getValue(const string& tag) const;
 	string getValue(uint32_t pnt, const string& tag);
 
 	inline int getPointsLength() {

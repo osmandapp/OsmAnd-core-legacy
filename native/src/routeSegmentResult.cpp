@@ -410,7 +410,7 @@ vector<SHARED_PTR<RouteSegmentResult>> RouteSegmentResult::getPreAttachedRoutes(
 	return vector<SHARED_PTR<RouteSegmentResult>>();
 }
 
-vector<SHARED_PTR<RouteSegmentResult>> RouteSegmentResult::getAttachedRoutes(int routeInd) {
+vector<SHARED_PTR<RouteSegmentResult>> RouteSegmentResult::getAttachedRoutes(int routeInd) const {
 	int st = abs(routeInd - startPointIndex);
 	if (st >= attachedRoutesFrontEnd.size()) {
 		return vector<SHARED_PTR<RouteSegmentResult>>();
@@ -514,16 +514,17 @@ SHARED_PTR<RouteDataObject> RouteSegmentResult::getObjectWithShield(vector<SHARE
     return rdo;
 }
 
-bool RouteSegmentResult::isLinkRoad() {
+bool RouteSegmentResult::isLinkRoad() const {
     return endsWith(object->getHighway(), kLinkRoadSuffix);
 }
 
-bool RouteSegmentResult::hasExitInfo() {
+bool RouteSegmentResult::hasExitInfo() const {
     if (object->hasMotorwayJunctionNode()) {
         string nodeRef = object->getNodeRef();
         string nodeName = object->getNodeName();
         if (!nodeRef.empty() || !nodeName.empty()) {
-            for (const auto& attached : getAttachedRoutes(getStartPointIndex())) {
+            const auto attachedRoutes = getAttachedRoutes(getStartPointIndex());
+            for (const auto& attached : attachedRoutes) {
                 if (!nodeRef.empty() && nodeRef == attached->object->getJunctionRef()) {
                     return false;
                 }
