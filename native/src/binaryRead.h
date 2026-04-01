@@ -241,6 +241,8 @@ struct RouteDataObject {
 	const static int RESTRICTION_SHIFT = 3;
 	const static uint64_t RESTRICTION_MASK = 7;
 	const static int HEIGHT_UNDEFINED = -80000;
+	static constexpr const char* JUNCTION_REF = "junction:ref";
+	static constexpr const char* JUNCTION_NAME = "junction:name";
 
 	SHARED_PTR<RoutingIndex> region;
 	std::vector<uint32_t> types;
@@ -372,7 +374,7 @@ struct RouteDataObject {
 		return "";
 	}
 
-	inline bool isExitPoint() {
+	inline bool hasMotorwayJunctionNode() {
 		const auto ptSz = pointTypes.size();
 		for (int i = 0; i < ptSz; i++) {
 			const auto& point = pointTypes[i];
@@ -387,28 +389,46 @@ struct RouteDataObject {
 		return false;
 	}
 
-	inline string getExitName() {
-		const auto pnSz = pointNames.size();
-		for (int i = 0; i < pnSz; i++) {
-			const auto& point = pointNames[i];
+	inline string getJunctionRef() {
+		return getValue(JUNCTION_REF);
+	}
 
-			const auto pSz = point.size();
-			for (int j = 0; j < pSz; j++) {
-				if (pointNameTypes[i][j] == region->nameTypeRule) {
-					return point[j];
-				}
-			}
-		}
-		return "";
+	inline string getJunctionName() {
+		return getValue(JUNCTION_NAME);
+	}
+
+	inline string getNodeRef() {
+		return getPointNameByTypeRule(region->refTypeRule);
+	}
+
+	inline string getNodeName() {
+		return getPointNameByTypeRule(region->nameTypeRule);
 	}
 
 	inline string getExitRef() {
+		string junctionRef = getJunctionRef();
+		return !junctionRef.empty() ? junctionRef : getNodeRef();
+	}
+
+	inline string getExitName() {
+		string junctionName = getJunctionName();
+		return !junctionName.empty() ? junctionName : getNodeName();
+	}
+
+	inline bool isExitPoint() {
+		return hasMotorwayJunctionNode();
+	}
+
+	inline string getPointNameByTypeRule(int typeRule) {
+		if (typeRule == -1) {
+			return "";
+		}
 		const auto pnSz = pointNames.size();
 		for (int i = 0; i < pnSz; i++) {
 			const auto& point = pointNames[i];
 			const auto pSz = point.size();
 			for (int j = 0; j < pSz; j++) {
-				if (pointNameTypes[i][j] == region->refTypeRule) {
+				if (pointNameTypes[i][j] == typeRule) {
 					return point[j];
 				}
 			}

@@ -21,6 +21,7 @@ struct RouteSegmentResult {
 	int endPointIndex;
 	bool leftSide = false;
 	int gpxPointIndex = -1; // used by approximation to reconstruct finalPoints.routeToTarget
+	bool isLinkRoad();
 
 	void collectRules(UNORDERED_map<RouteTypeRule, uint32_t>& rules, vector<RouteTypeRule>& insertOrder, vector<uint32_t>& types);
 	vector<uint32_t> convertTypes(vector<uint32_t>& types, UNORDERED_map<RouteTypeRule, uint32_t>& rules);
@@ -84,6 +85,7 @@ struct RouteSegmentResult {
 	string getStreetName(string lang, bool transliterate, vector<SHARED_PTR<RouteSegmentResult>> &list, int routeInd);
 	string getRef(string lang, bool transliterate);
 	SHARED_PTR<RouteDataObject> getObjectWithShield(vector<SHARED_PTR<RouteSegmentResult>> &list, uint routeInd);
+	bool hasExitInfo();
 
 	inline void updateCapacity() {
 		int capacity = abs(endPointIndex - startPointIndex) + 1;
