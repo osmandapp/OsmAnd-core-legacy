@@ -942,13 +942,21 @@ bool OpeningHoursParser::BasicOpeningHourRule::isOpened(int year, int month, int
 		} else if (year == _year) {
 			if (!_firstYearDayMonth.empty()) {
 				opened = _firstYearDayMonth[month][dmonth];
+			} else {
+				// Year-only and year+month rules do not populate day-month masks, so use the month range directly.
+				opened = _firstYearMonths[month] > 0 && (!hasDayMonths() || _dayMonths[month][dmonth]);
 			}
 		} else {
 			int lastYear = _lastYearMonths[month];
 			if (year < lastYear) {
 				opened = true;
 			} else if (year == lastYear) {
-				opened = _lastYearDayMonth[month][dmonth];
+				if (!_lastYearDayMonth.empty()) {
+					opened = _lastYearDayMonth[month][dmonth];
+				} else {
+					// Mirror the first-year fallback for the final year of a multi-year range.
+					opened = _lastYearMonths[month] > 0 && (!hasDayMonths() || _dayMonths[month][dmonth]);
+				}
 			} else {
 				opened = false;
 			}
@@ -1799,7 +1807,6 @@ void OpeningHoursParser::buildRule(std::shared_ptr<BasicOpeningHourRule>& basic,
 
 							if (array != NULL) {
 								array->at(pair->at(0)->mainNumber) = true;
-								if (prevYearToken) basic->setYear(prevYearToken->mainNumber);
 							}
 						}
 					}
@@ -1816,8 +1823,45 @@ void OpeningHoursParser::buildRule(std::shared_ptr<BasicOpeningHourRule>& basic,
 				auto l = listOfPairs[0];
 				if (l->at(0) && !l->at(0)->text.empty()) basic->setComment(l->at(0)->text);
 			} else if (currentParse == TokenType::TOKEN_YEAR) {
-				auto l = listOfPairs[0];
-				if (l->at(0) && l->at(0)->mainNumber > 1000) prevYearToken = l->at(0);
+				if (listOfPairs.size() > 1) {
+					// Comma-separated years have set semantics, so expand each year / year-range pair
+					// into an independent rule that shares the same month/day tail.
+					for (const auto& pair : listOfPairs) {
+						auto newRule = std::make_shared<BasicOpeningHourRule>(basic->getSequenceIndex());
+						newRule->setFallback(basic->isFallbackRule());
+						newRule->setComment(basic->getComment());
+						std::vector<std::shared_ptr<Token>> yearTokens;
+						if (pair->at(0)) {
+							yearTokens.push_back(pair->at(0));
+						}
+						if (pair->at(1)) {
+							yearTokens.push_back(pair->at(1));
+						}
+						if (i < tokens.size()) {
+							yearTokens.insert(yearTokens.end(), tokens.begin() + i, tokens.end());
+						}
+						buildRule(newRule, yearTokens, rules);
+					}
+					return;
+				}
+				std::shared_ptr<Token> firstYearToken;
+				std::shared_ptr<Token> lastYearToken;
+				for (const auto& pair : listOfPairs) {
+					for (const auto& yearToken : *pair) {
+						if (yearToken && yearToken->mainNumber > 1000) {
+							if (!firstYearToken) {
+								firstYearToken = yearToken;
+							}
+							lastYearToken = yearToken;
+						}
+					}
+				}
+				if (firstYearToken) {
+					if (basic->getYear() == 0) {
+						basic->setYear(firstYearToken->mainNumber);
+					}
+					prevYearToken = lastYearToken;
+				}
 			}
 			listOfPairs.clear();
 
@@ -1835,11 +1879,15 @@ void OpeningHoursParser::buildRule(std::shared_ptr<BasicOpeningHourRule>& basic,
 					currentParseParent = prevToken->type;
 				} else if (t->type == TokenType::TOKEN_MONTH && prevToken &&
 					prevToken->type == TokenType::TOKEN_YEAR) {
-					basic->setYear(prevToken->mainNumber);// add first year for ("2019 Oct - 2024 dec")
+					if (basic->getYear() == 0) {
+						// Add first year for ("2019 Oct - 2024 Dec") without overwriting a prior year range start.
+						basic->setYear(prevToken->mainNumber);
+					}
 				}
 			}
 		} else if (getTokenTypeOrd(t->type) < getTokenTypeOrd(currentParseParent) && indexP == 0 && tokens.size() > i) {
 			auto newRule = std::make_shared<BasicOpeningHourRule>(basic->getSequenceIndex());
+			newRule->setFallback(basic->isFallbackRule());
 			newRule->setComment(basic->getComment());
 			std::vector<std::shared_ptr<Token>> nextTokens(tokens.begin() + i, tokens.end());
 			buildRule(newRule, nextTokens, rules);
@@ -1856,15 +1904,20 @@ void OpeningHoursParser::buildRule(std::shared_ptr<BasicOpeningHourRule>& basic,
 				listOfPairs.push_back(currentPair);
 			}
 		} else if (t->type == TokenType::TOKEN_DASH) {
-		} else if (t->type == TokenType::TOKEN_YEAR) {
-			prevYearToken = t;
 		} else if (getTokenTypeOrd(t->type) == getTokenTypeOrd(currentParse)) {
 			if (indexP < 2) {
 				currentPair->insert(currentPair->begin() + indexP++, t);
 				if (t->type == TokenType::TOKEN_DAY_MONTH && prevToken &&
-					prevToken->type == TokenType::TOKEN_MONTH)
+					prevToken->type == TokenType::TOKEN_MONTH) {
 					t->parent = prevToken;
+				} else if (t->type == TokenType::TOKEN_YEAR) {
+					// Keep the second year inside the current pair so month/day range handling
+					// can build a proper multi-year span instead of collapsing to one year.
+					prevYearToken = t;
+				}
 			}
+		} else if (t->type == TokenType::TOKEN_YEAR) {
+			prevYearToken = t;
 		}
 		prevToken = t;
 	}
