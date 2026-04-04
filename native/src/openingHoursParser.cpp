@@ -942,13 +942,21 @@ bool OpeningHoursParser::BasicOpeningHourRule::isOpened(int year, int month, int
 		} else if (year == _year) {
 			if (!_firstYearDayMonth.empty()) {
 				opened = _firstYearDayMonth[month][dmonth];
+			} else {
+				// Year-only and year+month rules do not populate day-month masks, so use the month range directly.
+				opened = _firstYearMonths[month] > 0 && (!hasDayMonths() || _dayMonths[month][dmonth]);
 			}
 		} else {
 			int lastYear = _lastYearMonths[month];
 			if (year < lastYear) {
 				opened = true;
 			} else if (year == lastYear) {
-				opened = _lastYearDayMonth[month][dmonth];
+				if (!_lastYearDayMonth.empty()) {
+					opened = _lastYearDayMonth[month][dmonth];
+				} else {
+					// Mirror the first-year fallback for the final year of a multi-year range.
+					opened = _lastYearMonths[month] > 0 && (!hasDayMonths() || _dayMonths[month][dmonth]);
+				}
 			} else {
 				opened = false;
 			}
@@ -1799,7 +1807,6 @@ void OpeningHoursParser::buildRule(std::shared_ptr<BasicOpeningHourRule>& basic,
 
 							if (array != NULL) {
 								array->at(pair->at(0)->mainNumber) = true;
-								if (prevYearToken) basic->setYear(prevYearToken->mainNumber);
 							}
 						}
 					}
@@ -1816,8 +1823,45 @@ void OpeningHoursParser::buildRule(std::shared_ptr<BasicOpeningHourRule>& basic,
 				auto l = listOfPairs[0];
 				if (l->at(0) && !l->at(0)->text.empty()) basic->setComment(l->at(0)->text);
 			} else if (currentParse == TokenType::TOKEN_YEAR) {
-				auto l = listOfPairs[0];
-				if (l->at(0) && l->at(0)->mainNumber > 1000) prevYearToken = l->at(0);
+				if (listOfPairs.size() > 1) {
+					// Comma-separated years have set semantics, so expand each year / year-range pair
+					// into an independent rule that shares the same month/day tail.
+					for (const auto& pair : listOfPairs) {
+						auto newRule = std::make_shared<BasicOpeningHourRule>(basic->getSequenceIndex());
+						newRule->setFallback(basic->isFallbackRule());
+						newRule->setComment(basic->getComment());
+						std::vector<std::shared_ptr<Token>> yearTokens;
+						if (pair->at(0)) {
+							yearTokens.push_back(pair->at(0));
+						}
+						if (pair->at(1)) {
+							yearTokens.push_back(pair->at(1));
+						}
+						if (i < tokens.size()) {
+							yearTokens.insert(yearTokens.end(), tokens.begin() + i, tokens.end());
+						}
+						buildRule(newRule, yearTokens, rules);
+					}
+					return;
+				}
+				std::shared_ptr<Token> firstYearToken;
+				std::shared_ptr<Token> lastYearToken;
+				for (const auto& pair : listOfPairs) {
+					for (const auto& yearToken : *pair) {
+						if (yearToken && yearToken->mainNumber > 1000) {
+							if (!firstYearToken) {
+								firstYearToken = yearToken;
+							}
+							lastYearToken = yearToken;
+						}
+					}
+				}
+				if (firstYearToken) {
+					if (basic->getYear() == 0) {
+						basic->setYear(firstYearToken->mainNumber);
+					}
+					prevYearToken = lastYearToken;
+				}
 			}
 			listOfPairs.clear();
 
@@ -1835,11 +1879,15 @@ void OpeningHoursParser::buildRule(std::shared_ptr<BasicOpeningHourRule>& basic,
 					currentParseParent = prevToken->type;
 				} else if (t->type == TokenType::TOKEN_MONTH && prevToken &&
 					prevToken->type == TokenType::TOKEN_YEAR) {
-					basic->setYear(prevToken->mainNumber);// add first year for ("2019 Oct - 2024 dec")
+					if (basic->getYear() == 0) {
+						// Add first year for ("2019 Oct - 2024 Dec") without overwriting a prior year range start.
+						basic->setYear(prevToken->mainNumber);
+					}
 				}
 			}
 		} else if (getTokenTypeOrd(t->type) < getTokenTypeOrd(currentParseParent) && indexP == 0 && tokens.size() > i) {
 			auto newRule = std::make_shared<BasicOpeningHourRule>(basic->getSequenceIndex());
+			newRule->setFallback(basic->isFallbackRule());
 			newRule->setComment(basic->getComment());
 			std::vector<std::shared_ptr<Token>> nextTokens(tokens.begin() + i, tokens.end());
 			buildRule(newRule, nextTokens, rules);
@@ -1856,15 +1904,20 @@ void OpeningHoursParser::buildRule(std::shared_ptr<BasicOpeningHourRule>& basic,
 				listOfPairs.push_back(currentPair);
 			}
 		} else if (t->type == TokenType::TOKEN_DASH) {
-		} else if (t->type == TokenType::TOKEN_YEAR) {
-			prevYearToken = t;
 		} else if (getTokenTypeOrd(t->type) == getTokenTypeOrd(currentParse)) {
 			if (indexP < 2) {
 				currentPair->insert(currentPair->begin() + indexP++, t);
 				if (t->type == TokenType::TOKEN_DAY_MONTH && prevToken &&
-					prevToken->type == TokenType::TOKEN_MONTH)
+					prevToken->type == TokenType::TOKEN_MONTH) {
 					t->parent = prevToken;
+				} else if (t->type == TokenType::TOKEN_YEAR) {
+					// Keep the second year inside the current pair so month/day range handling
+					// can build a proper multi-year span instead of collapsing to one year.
+					prevYearToken = t;
+				}
 			}
+		} else if (t->type == TokenType::TOKEN_YEAR) {
+			prevYearToken = t;
 		}
 		prevToken = t;
 	}
@@ -2177,551 +2230,4 @@ std::vector<std::shared_ptr<OpeningHoursParser::OpeningHours::Info>> OpeningHour
 		return {};
 	else
 		return openingHours->getInfo();
-}
-
-void OpeningHoursParser::runTest() {
-	// 0. not properly supported
-	// hours = parseOpenedHours("Mo-Su (sunrise-00:30)-(sunset+00:30)");
-
-	setenv("TZ", "", 1); // daylight saving off fix testOpened("23.07.2019 04:00", hours, false); 
-	tzset();
-	OpeningHoursParser::setTwelveHourFormattingEnabled(false);
-	auto hours = parseOpenedHours("Mo-Fr 11:00-22:00; Sa,Su,PH 12:00-22:00; 2022 jul 31-2022 Aug 31 off \"Betriebsferien\"");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("25.08.2022 11:30", hours, false);
-	testOpened("31.08.2022 21:59", hours, false);
-	testOpened("01.09.2022 11:00", hours, true); // Thursday
-	testInfo("25.08.2022 11:30", hours, "Will open on 11:00 Thu."); // (2022 jul 31-2022 Aug 31 off "Betriebsferien")
-	
-	hours = parseOpenedHours("Mo-Fr 10:00-18:30; We 10:00-14:00; Sa 10:00-13:00; Dec-Feb Mo-Fr 11:00-17:00; Dec-Feb We off; Dec-Feb Sa 11:00-13:00; Dec 24-Dec 31 off \"Inventurarbeiten\"; PH off");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("05.11.2022 10:30", hours, true); // Saturday
-	testOpened("05.12.2022 10:30", hours, false);// Monday
-	testOpened("05.12.2022 11:30", hours, true);
-	testOpened("30.12.2022 11:00", hours, false);
-	testInfo("29.12.2022 14:00", hours, "Will open on 11:00 Mo.");
-	testInfo("30.12.2022 14:00", hours, "Will open on 11:00 Mo.");
-
-	hours = parseOpenedHours("2022 Oct 24 - 2023 Oct 30");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("20.10.2022 10:00", hours, false);
-	testOpened("20.06.2023 10:00", hours, true);
-	testOpened("01.11.2023 10:00", hours, false);
-	testOpened("31.12.2023 10:00", hours, false);
-
-	hours = parseOpenedHours("2022 Oct 30 - 2023 Oct 24");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("25.10.2023 10:00", hours, false);
-
-	hours = parseOpenedHours("2022 Oct 24 - 2023 Aug 30");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("25.10.2022 10:00", hours, true);
-	testOpened("25.09.2023 10:00", hours, false);
-	testOpened("25.09.2022 10:00", hours, false);
-	testOpened("25.08.2022 10:00", hours, false);
-	testOpened("25.08.2023 10:00", hours, true);
-
-//	test for opening_hours not handled correctly #17521
-	hours = parseOpenedHours("11:00-14:00,17:00-22:00; We off; Fr,Sa 11:00-14:00,17:00-00:00");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("28.06.2023 12:00", hours, false); // We 
-
-	hours = parseOpenedHours("Mo 09:00-12:00; We,Sa 13:30-17:00, Apr 01-Oct 31 We,Sa 17:00-18:30; PH off");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testInfo("03.10.2020 14:00", hours, "Open till 18:30");
-	hours = parseOpenedHours("PH,Mo-Su 09:00-22:00");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("13.10.2021 11:54", hours, true);
-	hours = parseOpenedHours("Mo-We 07:00-21:00, Th-Fr 07:00-21:30, PH,Sa-Su 08:00-21:00");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("29.08.2021 10:09", hours, true);
-	hours = parseOpenedHours("Mo-Fr 08:00-12:30, Mo-We 12:30-16:30 \"Sur rendez-vous\", Fr 12:30-15:30 \"Sur rendez-vous\"");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testInfo("13.10.2019 18:00", hours, "Will open tomorrow at 08:00");
-
-	hours = parseOpenedHours("2019 Oct 1 - 2024 dec 31 ");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("30.09.2019 10:30", hours, false);
-	testOpened("01.10.2019 10:30", hours, true);
-	testOpened("05.02.2023 10:30", hours, true);
-	testOpened("31.12.2024 10:30", hours, true);
-	testOpened("01.01.2025 10:30", hours, false);
-
-	hours = parseOpenedHours("2019 Oct - 2024 dec");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("30.09.2019 10:30", hours, false);
-	testOpened("01.10.2019 10:30", hours, true);
-	testOpened("05.02.2023 10:30", hours, true);
-	testOpened("31.12.2024 10:30", hours, true);
-	testOpened("01.01.2025 10:30", hours, false);
-
-	hours = parseOpenedHours("2019 Apr 1 - 2020 Apr 1");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("01.04.2018 15:00", hours, false);
-	testOpened("01.04.2019 15:00", hours, true);
-	testOpened("01.04.2020 15:00", hours, true);
-	testOpened("01.08.2019 15:00", hours, true);
-
-	hours = parseOpenedHours("2019 Apr 15 -  2020 Mar 1");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("01.04.2018 15:00", hours, false);
-	testOpened("01.04.2019 15:00", hours, false);
-	testOpened("15.04.2019 15:00", hours, true);
-	testOpened("15.09.2019 15:00", hours, true);
-	testOpened("15.02.2020 15:00", hours, true);
-	testOpened("15.03.2020 15:00", hours, false);
-	testOpened("15.04.2020 15:00", hours, false);
-
-	hours = parseOpenedHours("2019 Jul 23 05:00-24:00; 2019 Jul 24-2019 Jul 26 00:00-24:00; 2019 Jul 27 00:00-18:00");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("23.07.2018 15:00", hours, false);
-	testOpened("23.07.2019 15:00", hours, true);
-	testOpened("23.07.2019 04:00", hours, false);
-	testOpened("23.07.2020 15:00", hours, false);
-	testOpened("25.07.2018 15:00", hours, false);
-	testOpened("24.07.2019 15:00", hours, true);
-	testOpened("25.07.2019 04:00", hours, true);
-	testOpened("26.07.2019 15:00", hours, true);
-	testOpened("25.07.2020 15:00", hours, false);
-	testOpened("27.07.2018 15:00", hours, false);
-	testOpened("27.07.2019 15:00", hours, true);
-	testOpened("27.07.2019 19:00", hours, false);
-	testOpened("27.07.2020 15:00", hours, false);
-
-	hours = parseOpenedHours("2019 Sep 1 - 2022 Apr 1");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("01.02.2018 15:00", hours, false);
-	testOpened("29.05.2019 15:00", hours, false);
-	testOpened("05.09.2019 11:00", hours, true);
-	testOpened("05.02.2020 11:00", hours, true);
-	testOpened("03.06.2020 11:00", hours, true);
-	testOpened("05.02.2021 11:00", hours, true);
-	testOpened("05.02.2022 11:00", hours, true);
-	testOpened("05.02.2023 11:00", hours, false);
-
-	hours = parseOpenedHours("2019 Apr 15 - 2019 Sep 1: Mo-Fr 00:00-24:00");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("06.04.2019 15:00", hours, false);
-	testOpened("29.05.2019 15:00", hours, true);
-	testOpened("25.07.2019 11:00", hours, true);
-	testOpened("12.07.2018 11:00", hours, false);
-	testOpened("18.07.2020 11:00", hours, false);
-	testOpened("28.07.2021 11:00", hours, false);
-
-	hours = parseOpenedHours("2019 Sep 1 - 2020 Apr 1");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("01.04.2019 15:00", hours, false);
-	testOpened("29.05.2019 15:00", hours, false);
-	testOpened("05.09.2019 11:00", hours, true);
-	testOpened("05.02.2020 11:00", hours, true);
-	testOpened("05.06.2020 11:00", hours, false);
-	testOpened("05.02.2021 11:00", hours, false);
-
-	hours = parseOpenedHours("2019 Apr 15 - 2019 Sep 1");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("01.04.2019 15:00", hours, false);
-	testOpened("29.05.2019 15:00", hours, true);
-	testOpened("27.07.2019 15:00", hours, true);
-	testOpened("05.09.2019 11:00", hours, false);
-	testOpened("05.06.2018 11:00", hours, false);
-	testOpened("05.06.2020 11:00", hours, false);
-
-	hours = parseOpenedHours("Apr 15 - Sep 1");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("01.04.2019 15:00", hours, false);
-	testOpened("29.05.2019 15:00", hours, true);
-	testOpened("27.07.2019 15:00", hours, true);
-	testOpened("05.09.2019 11:00", hours, false);
-
-	hours = parseOpenedHours("Apr 15 - Sep 1: Mo-Fr 00:00-24:00");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("01.04.2019 15:00", hours, false);
-	testOpened("29.05.2019 15:00", hours, true);
-	testOpened("24.07.2019 15:00", hours, true);
-	testOpened("27.07.2019 15:00", hours, false);
-	testOpened("05.09.2019 11:00", hours, false);
-
-	hours = parseOpenedHours("Apr 05-Oct 24: Fr 08:00-16:00");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("26.08.2018 15:00", hours, false);
-	testOpened("29.03.2019 15:00", hours, false);
-	testOpened("05.04.2019 11:00", hours, true);
-
-	hours = parseOpenedHours("Oct 24-Apr 05: Fr 08:00-16:00");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("26.08.2018 15:00", hours, false);
-	testOpened("29.03.2019 15:00", hours, true);
-	testOpened("26.04.2019 11:00", hours, false);
-
-	hours = parseOpenedHours("Oct 24-Apr 05, Jun 10-Jun 20, Jul 6-12: Fr 08:00-16:00");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("26.08.2018 15:00", hours, false);
-	testOpened("02.01.2019 15:00", hours, false);
-	testOpened("29.03.2019 15:00", hours, true);
-	testOpened("26.04.2019 11:00", hours, false);
-
-	hours = parseOpenedHours("Apr 05-24: Fr 08:00-16:00");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("12.10.2018 11:00", hours, false);
-	testOpened("12.04.2019 15:00", hours, true);
-	testOpened("27.04.2019 15:00", hours, false);
-
-	hours = parseOpenedHours("Apr 5: Fr 08:00-16:00");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("05.04.2019 15:00", hours, true);
-	testOpened("06.04.2019 15:00", hours, false);
-
-	hours = parseOpenedHours("Apr 24-05: Fr 08:00-16:00");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("12.10.2018 11:00", hours, false);
-	testOpened("12.04.2018 15:00", hours, false);
-
-	hours = parseOpenedHours("Apr: Fr 08:00-16:00");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("12.10.2018 11:00", hours, false);
-	testOpened("12.04.2019 15:00", hours, true);
-
-	hours = parseOpenedHours("Apr-Oct: Fr 08:00-16:00");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("09.11.2018 11:00", hours, false);
-	testOpened("12.10.2018 11:00", hours, true);
-	testOpened("24.08.2018 15:00", hours, true);
-	testOpened("09.03.2018 15:00", hours, false);
-
-	hours = parseOpenedHours("Apr, Oct: Fr 08:00-16:00");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("09.11.2018 11:00", hours, false);
-	testOpened("12.10.2018 11:00", hours, true);
-	testOpened("24.08.2018 15:00", hours, false);
-	testOpened("12.04.2019 15:00", hours, true);
-
-	// Test basic case
-	hours = parseOpenedHours("Mo-Fr 08:30-14:40");
-	testOpened("09.08.2012 11:00", hours, true);
-	testOpened("09.08.2012 16:00", hours, false);
-	hours = parseOpenedHours("mo-fr 07:00-19:00; sa 12:00-18:00");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-
-	std::string string = "Mo-Fr 11:30-15:00, 17:30-23:00; Sa, Su, PH 11:30-23:00";
-	hours = parseOpenedHours(string);
-	testParsedAndAssembledCorrectly(string, hours, false);
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("07.09.2015 14:54", hours, true);  // monday
-	testOpened("07.09.2015 15:05", hours, false);
-	testOpened("06.09.2015 16:05", hours, true);
-
-	// two time and date ranges
-	hours = parseOpenedHours("Mo-We, Fr 08:30-14:40,15:00-19:00");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("08.08.2012 14:00", hours, true);
-	testOpened("08.08.2012 14:50", hours, false);
-	testOpened("10.08.2012 15:00", hours, true);
-
-	// test exception on general schema
-	hours = parseOpenedHours("Mo-Sa 08:30-14:40; Tu 08:00 - 14:00");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("07.08.2012 14:20", hours, false);
-	testOpened("07.08.2012 08:15", hours, true);  // Tuesday
-
-	// test off value
-	hours = parseOpenedHours("Mo-Sa 09:00-18:25; Th off");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("08.08.2012 12:00", hours, true);
-	testOpened("09.08.2012 12:00", hours, false);
-
-	// test 24/7
-	hours = parseOpenedHours("24/7");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("08.08.2012 23:59", hours, true);
-	testOpened("08.08.2012 12:23", hours, true);
-	testOpened("08.08.2012 06:23", hours, true);
-	hours = parseOpenedHours("24/7 closed \"Temporarily, for major repairs\"");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("13.10.2019 18:00", hours, false);
-	testInfo("13.10.2019 18:00", hours, "24/7 off - Temporarily, for major repairs");
-
-	// some people seem to use the following syntax:
-	hours = parseOpenedHours("Sa-Su 24/7");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	hours = parseOpenedHours("Mo-Fr 9-19");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	hours = parseOpenedHours("09:00-17:00");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	hours = parseOpenedHours("sunrise-sunset");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	hours = parseOpenedHours("10:00+");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	hours = parseOpenedHours("Su-Th sunset-24:00, 04:00-sunrise; Fr-Sa sunset-sunrise");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("12.08.2012 04:00", hours, true);
-	testOpened("12.08.2012 23:00", hours, true);
-	testOpened("08.08.2012 12:00", hours, false);
-	testOpened("08.08.2012 05:00", hours, true);
-
-	// test simple day wrap
-	hours = parseOpenedHours("Mo 20:00-02:00");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("05.05.2013 10:30", hours, false);
-	testOpened("05.05.2013 23:59", hours, false);
-	testOpened("06.05.2013 10:30", hours, false);
-	testOpened("06.05.2013 20:30", hours, true);
-	testOpened("06.05.2013 23:59", hours, true);
-	testOpened("07.05.2013 00:00", hours, true);
-	testOpened("07.05.2013 00:30", hours, true);
-	testOpened("07.05.2013 01:59", hours, true);
-	testOpened("07.05.2013 20:30", hours, false);
-
-	// test maximum day wrap
-	hours = parseOpenedHours("Su 10:00-10:00");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("05.05.2013 09:59", hours, false);
-	testOpened("05.05.2013 10:00", hours, true);
-	testOpened("05.05.2013 23:59", hours, true);
-	testOpened("06.05.2013 00:00", hours, true);
-	testOpened("06.05.2013 09:59", hours, true);
-	testOpened("06.05.2013 10:00", hours, false);
-
-	// test day wrap as seen on OSM
-	hours = parseOpenedHours("Tu-Th 07:00-2:00; Fr 17:00-4:00; Sa 18:00-05:00; Su,Mo off");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("05.05.2013 04:59", hours, true);  // sunday 05.05.2013
-	testOpened("05.05.2013 05:00", hours, false);
-	testOpened("05.05.2013 12:30", hours, false);
-	testOpened("06.05.2013 10:30", hours, false);
-	testOpened("07.05.2013 01:00", hours, false);
-	testOpened("07.05.2013 20:25", hours, true);
-	testOpened("07.05.2013 23:59", hours, true);
-	testOpened("08.05.2013 00:00", hours, true);
-	testOpened("08.05.2013 02:00", hours, false);
-
-	// test day wrap as seen on OSM
-	hours = parseOpenedHours("Mo-Th 09:00-03:00; Fr-Sa 09:00-04:00; Su off");
-	testOpened("11.05.2015 08:59", hours, false);
-	testOpened("11.05.2015 09:01", hours, true);
-	testOpened("12.05.2015 02:59", hours, true);
-	testOpened("12.05.2015 03:00", hours, false);
-	testOpened("16.05.2015 03:59", hours, true);
-	testOpened("16.05.2015 04:01", hours, false);
-	testOpened("17.05.2015 01:00", hours, true);
-	testOpened("17.05.2015 04:01", hours, false);
-
-	hours = parseOpenedHours("Tu-Th 07:00-2:00; Fr 17:00-4:00; Sa 18:00-05:00; Su,Mo off");
-	testOpened("11.05.2015 08:59", hours, false);
-	testOpened("11.05.2015 09:01", hours, false);
-	testOpened("12.05.2015 01:59", hours, false);
-	testOpened("12.05.2015 02:59", hours, false);
-	testOpened("12.05.2015 03:00", hours, false);
-	testOpened("13.05.2015 01:59", hours, true);
-	testOpened("13.05.2015 02:59", hours, false);
-	testOpened("16.05.2015 03:59", hours, true);
-	testOpened("16.05.2015 04:01", hours, false);
-	testOpened("17.05.2015 01:00", hours, true);
-	testOpened("17.05.2015 05:01", hours, false);
-
-	// tests single month value
-	hours = parseOpenedHours("May: 07:00-19:00");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("05.05.2013 12:00", hours, true);
-	testOpened("05.05.2013 05:00", hours, false);
-	testOpened("05.05.2013 21:00", hours, false);
-	testOpened("05.01.2013 12:00", hours, false);
-	testOpened("05.01.2013 05:00", hours, false);
-
-	// tests multi month value
-	hours = parseOpenedHours("Apr-Sep 8:00-22:00; Oct-Mar 10:00-18:00");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("05.03.2013 15:00", hours, true);
-	testOpened("05.03.2013 20:00", hours, false);
-
-	testOpened("05.05.2013 20:00", hours, true);
-	testOpened("05.05.2013 23:00", hours, false);
-
-	testOpened("05.10.2013 15:00", hours, true);
-	testOpened("05.10.2013 20:00", hours, false);
-
-	// Test time with breaks
-	hours = parseOpenedHours("Mo-Fr: 9:00-13:00, 14:00-18:00");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("02.12.2015 12:00", hours, true);
-	testOpened("02.12.2015 13:30", hours, false);
-	testOpened("02.12.2015 16:00", hours, true);
-
-	testOpened("05.12.2015 16:00", hours, false);
-
-	hours = parseOpenedHours("Mo-Su 07:00-23:00; Dec 25 08:00-20:00");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("25.12.2015 07:00", hours, false);
-	testOpened("24.12.2015 07:00", hours, true);
-	testOpened("24.12.2015 22:00", hours, true);
-	testOpened("25.12.2015 08:00", hours, true);
-	testOpened("25.12.2015 22:00", hours, false);
-
-	hours = parseOpenedHours("Mo-Su 07:00-23:00; Dec 25 off");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("25.12.2015 14:00", hours, false);
-	testOpened("24.12.2015 08:00", hours, true);
-
-	// easter itself as public holiday is not supported
-	hours = parseOpenedHours("Mo-Su 07:00-23:00; Easter off; Dec 25 off");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("25.12.2015 14:00", hours, false);
-	testOpened("24.12.2015 08:00", hours, true);
-
-	// test time off (not days)
-	hours = parseOpenedHours("Mo-Fr 08:30-17:00; 12:00-12:40 off;");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("07.05.2017 14:00", hours, false);  // Sunday
-	testOpened("06.05.2017 12:15", hours, false);  // Saturday
-	testOpened("05.05.2017 14:00", hours, true);   // Friday
-	testOpened("05.05.2017 12:15", hours, false);
-	testOpened("05.05.2017 12:00", hours, false);
-	testOpened("05.05.2017 11:45", hours, true);
-
-	// Test holidays
-	std::string hoursString = "mo-fr 11:00-21:00; PH off";
-	hours = parseOpenedHoursHandleErrors(hoursString);
-	testParsedAndAssembledCorrectly(hoursString, hours, false);
-
-	// test open from/till
-	hours = parseOpenedHours("Mo-Fr 08:30-17:00; 12:00-12:40 off;");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testInfo("15.01.2018 09:00", hours, "Open till 12:00");
-	testInfo("15.01.2018 11:00", hours, "Will close at 12:00");
-	testInfo("15.01.2018 12:00", hours, "Will open at 12:40");
-
-	hours = parseOpenedHours("Mo-Fr: 9:00-13:00, 14:00-18:00");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testInfo("15.01.2018 08:00", hours, "Will open at 09:00");
-	testInfo("15.01.2018 09:00", hours, "Open till 13:00");
-	testInfo("15.01.2018 12:00", hours, "Will close at 13:00");
-	testInfo("15.01.2018 13:10", hours, "Will open at 14:00");
-	testInfo("15.01.2018 14:00", hours, "Open till 18:00");
-	testInfo("15.01.2018 16:00", hours, "Will close at 18:00");
-	testInfo("15.01.2018 18:10", hours, "Will open tomorrow at 09:00");
-
-	hours = parseOpenedHours("Mo-Sa 02:00-10:00; Th off");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testInfo("15.01.2018 23:00", hours, "Will open tomorrow at 02:00");
-
-	hours = parseOpenedHours("Mo-Sa 23:00-02:00; Th off");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testInfo("15.01.2018 22:00", hours, "Will open at 23:00");
-	testInfo("15.01.2018 23:00", hours, "Open till 02:00");
-	testInfo("16.01.2018 00:30", hours, "Will close at 02:00");
-	testInfo("16.01.2018 02:00", hours, "Open from 23:00");
-
-	hours = parseOpenedHours("Mo-Sa 08:30-17:00; Th off");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testInfo("17.01.2018 20:00", hours, "Will open on 08:30 Fr.");
-	testInfo("18.01.2018 05:00", hours, "Will open tomorrow at 08:30");
-	testInfo("20.01.2018 05:00", hours, "Open from 08:30");
-	testInfo("21.01.2018 05:00", hours, "Will open tomorrow at 08:30");
-	testInfo("22.01.2018 02:00", hours, "Open from 08:30");
-	testInfo("22.01.2018 04:00", hours, "Open from 08:30");
-	testInfo("22.01.2018 07:00", hours, "Will open at 08:30");
-	testInfo("23.01.2018 10:00", hours, "Open till 17:00");
-	testInfo("23.01.2018 16:00", hours, "Will close at 17:00");
-
-	hours = parseOpenedHours("24/7");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testInfo("24.01.2018 02:00", hours, "Open 24/7");
-
-	hours = parseOpenedHours("Mo-Su 07:00-23:00, Fr 08:00-20:00");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("15.01.2018 06:45", hours, false);
-	testOpened("15.01.2018 07:45", hours, true);
-	testOpened("15.01.2018 23:45", hours, false);
-	testOpened("19.01.2018 07:45", hours, false);
-	testOpened("19.01.2018 08:45", hours, true);
-	testOpened("19.01.2018 20:45", hours, false);
-
-	// test fallback case
-	hours = parseOpenedHours(
-		"07:00-01:00 open \"Restaurant\" || Mo 00:00-04:00,07:00-04:00; Tu-Th 07:00-04:00; Fr 07:00-24:00; Sa,Su "
-		"00:00-24:00 open \"McDrive\"");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("22.01.2018 00:30", hours, true);
-	testOpened("22.01.2018 08:00", hours, true);
-	testOpened("22.01.2018 03:30", hours, true);
-	testOpened("22.01.2018 05:00", hours, false);
-	testOpened("23.01.2018 05:00", hours, false);
-	testOpened("27.01.2018 05:00", hours, true);
-	testOpened("28.01.2018 05:00", hours, true);
-
-	testInfo("22.01.2018 05:00", hours, "Will open at 07:00 - Restaurant", 0);
-	testInfo("26.01.2018 00:00", hours, "Will close at 01:00 - Restaurant", 0);
-	testInfo("22.01.2018 05:00", hours, "Will open at 07:00 - McDrive", 1);
-	testInfo("22.01.2018 00:00", hours, "Open till 04:00 - McDrive", 1);
-	testInfo("22.01.2018 02:00", hours, "Will close at 04:00 - McDrive", 1);
-	testInfo("27.01.2018 02:00", hours, "Open till 24:00 - McDrive", 1);
-
-	hours = parseOpenedHours("07:00-03:00 open \"Restaurant\" || 24/7 open \"McDrive\"");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("22.01.2018 02:00", hours, true);
-	testOpened("22.01.2018 17:00", hours, true);
-	testInfo("22.01.2018 05:00", hours, "Will open at 07:00 - Restaurant", 0);
-	testInfo("22.01.2018 04:00", hours, "Open 24/7 - McDrive", 1);
-
-	hours = parseOpenedHours("Mo-Fr 12:00-15:00, Tu-Fr 17:00-23:00, Sa 12:00-23:00, Su 14:00-23:00");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("16.02.2018 14:00", hours, true);
-	testOpened("16.02.2018 16:00", hours, false);
-	testOpened("16.02.2018 17:00", hours, true);
-	testInfo("16.02.2018 09:45", hours, "Open from 12:00");
-	testInfo("16.02.2018 12:00", hours, "Open till 15:00");
-	testInfo("16.02.2018 14:00", hours, "Will close at 15:00");
-	testInfo("16.02.2018 16:00", hours, "Will open at 17:00");
-	testInfo("16.02.2018 18:00", hours, "Open till 23:00");
-
-	hours = parseOpenedHours("Mo-Fr 08:00-12:00, Mo,Tu,Th 15:00-17:00; PH off");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testOpened("09.08.2019 15:00", hours, false);
-	testInfo("09.08.2019 15:00", hours, "Will open on 08:00 Mo.");
-
-	hours = parseOpenedHours("Mo-Fr 10:00-21:00; Sa 12:00-23:00; PH \"Wird auf der Homepage bekannt gegeben.\"");
-	testParsedAndAssembledCorrectly("Mo-Fr 10:00-21:00; Sa 12:00-23:00; PH - Wird auf der Homepage bekannt gegeben.", hours, false);
-
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "OpeningHoursParser test done");
-}
-
-void OpeningHoursParser::runTestAmPmEnglish() {
-	OpeningHoursParser::setTwelveHourFormattingEnabled(true);
-	auto hours = parseOpenedHours("Mo-Fr: 9:00-13:00, 14:00-18:00");
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "%s", hours->toString().c_str());
-	testInfo("15.01.2018 08:00", hours, "Will open at 9:00 AM");
-	testInfo("15.01.2018 09:00", hours, "Open till 1:00 PM");
-	testInfo("15.01.2018 12:00", hours, "Will close at 1:00 PM");
-	testInfo("15.01.2018 13:10", hours, "Will open at 2:00 PM");
-	testInfo("15.01.2018 14:00", hours, "Open till 6:00 PM");
-	testInfo("15.01.2018 16:00", hours, "Will close at 6:00 PM");
-	testInfo("15.01.2018 18:10", hours, "Will open tomorrow at 9:00 AM");
-
-	// Don't write AM or PM twice for range
-	std::string string = "Mo-Fr 04:30-10:00, 07:30-23:00; Sa, Su, PH 13:30-23:00";
-	hours = parseOpenedHours(string);
-	testParsedAndAssembledCorrectly("Mon-Fri 4:30-10:00 AM, 7:30 AM-11:00 PM; Sat, Sun, PH 1:30-11:00 PM", hours, true);
-
-	string = "Mo-Fr 00:00-12:00, 12:00-24:00;";
-	hours = parseOpenedHours(string);
-	testParsedAndAssembledCorrectly("Mon-Fri 12:00 AM-12:00 PM, 12:00 PM-12:00 AM", hours, true);
-	
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "OpeningHoursParser test AmPm English done");
-}
-
-void OpeningHoursParser::runTestAmPmChinese() {
-	OpeningHoursParser::setTwelveHourFormattingEnabled(true);
-	std::string string = "Mo-Fr 04:30-10:00, 07:30-23:00; Sa, Su, PH 13:30-23:00";
-	auto hours = parseOpenedHours(string);
-    // TODO: Fixme
-	//testParsedAndAssembledCorrectly("Mon-Fri 上午4:30-10:00, 上午7:30-下午11:00; Sat, Sun, PH 下午1:30-11:00", hours, true);
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "OpeningHoursParser test AmPm Chinese done");
-}
-
-void OpeningHoursParser::runTestAmPmArabic() {
-	// For arabic text NSDateFormatter show whitespace 0xA0 (ascii code 160) instead of 0x20 (ascii code 32)
-	OpeningHoursParser::setTwelveHourFormattingEnabled(true);
-	std::string string = "Mo-Fr 04:30-10:00, 07:30-23:00; Sa, Su, PH 13:30-23:00";
-	auto hours = parseOpenedHours(string);
-	testParsedAndAssembledCorrectly("Mon-Fri ٤:٣٠-١٠:٠٠ ص, ٧:٣٠ ص-١١:٠٠ م; Sat, Sun, PH ١:٣٠-١١:٠٠ م", hours, true);
-	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "OpeningHoursParser test AmPm Arabic done");
 }
