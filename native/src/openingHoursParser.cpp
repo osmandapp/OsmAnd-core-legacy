@@ -2183,7 +2183,12 @@ void OpeningHoursParser::runTest() {
 	// 0. not properly supported
 	// hours = parseOpenedHours("Mo-Su (sunrise-00:30)-(sunset+00:30)");
 
-	setenv("TZ", "", 1); // daylight saving off fix testOpened("23.07.2019 04:00", hours, false); 
+#ifdef _WIN32
+	_putenv_s("TZ", "");
+#else
+	setenv("TZ", "", 1);
+#endif
+	// daylight saving off fix testOpened("23.07.2019 04:00", hours, false);
 	tzset();
 	OpeningHoursParser::setTwelveHourFormattingEnabled(false);
 	auto hours = parseOpenedHours("Mo-Fr 11:00-22:00; Sa,Su,PH 12:00-22:00; 2022 jul 31-2022 Aug 31 off \"Betriebsferien\"");

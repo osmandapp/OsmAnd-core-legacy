@@ -889,8 +889,8 @@ void FontRegistry::drawSkiaTextOnPath(SkCanvas *canvas, std::string textS, SkPat
 		x += font.measureText(symbol, sizeof(symbol), SkTextEncoding::kUTF8, nullptr, &paint);
 	} while (str_i < end);
 
-	SkPoint xy[measureX.size()];	
-	for (int i = 0; i < measureX.size(); ++i) {
+	std::vector<SkPoint> xy(measureX.size());
+	for (size_t i = 0; i < measureX.size(); ++i) {
 		xy[i].set(measureX[i], 0);
 	}
 
@@ -986,7 +986,7 @@ void FontRegistry::drawHbTextOnPath(SkCanvas *canvas, std::string textS, SkPath 
 	hb_glyph_info_t *info = hb_buffer_get_glyph_infos(hb_buffer, NULL);
 	hb_glyph_position_t *pos = hb_buffer_get_glyph_positions(hb_buffer, NULL);
 	double x = 0, y = 0;
-	SkPoint xy[length];
+	std::vector<SkPoint> xy(length);
 	for (unsigned int i = 0; i < length; i++) {
 		glyphs[i] = info[i].codepoint;
 		xy[i].set(x + pos[i].x_offset / HARFBUZZ_FONT_SIZE_SCALE, y - pos[i].y_offset / HARFBUZZ_FONT_SIZE_SCALE);

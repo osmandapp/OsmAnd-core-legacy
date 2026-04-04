@@ -87,17 +87,17 @@ if(CMAKE_TARGET_OS STREQUAL "windows")
 		"${UPSTREAM}/src/fonts/SkFontMgr_indirect.cpp"
 		"${UPSTREAM}/src/ports/SkDebug_win.cpp"
 		"${UPSTREAM}/src/ports/SkOSFile_win.cpp"
-		"${UPSTREAM}/src/ports/SkTime_win.cpp"
 		"${UPSTREAM}/src/ports/SkTLS_win.cpp"
 		"${UPSTREAM}/src/utils/SkThreadUtils_win.cpp"
 		"${UPSTREAM}/src/utils/win/SkAutoCoInitialize.cpp"
 		"${UPSTREAM}/src/utils/win/SkHRESULT.cpp"
 		"${UPSTREAM}/src/utils/win/SkIStream.cpp"
 		"${UPSTREAM}/src/ports/SkFontHost_win.cpp"
-		"${UPSTREAM}/src/ports/SkFontMgr_default_gdi.cpp"
+		"${UPSTREAM}/src/ports/SkFontMgr_empty_factory.cpp"
 	)
 	add_definitions(
 		-DSK_BUILD_FOR_WIN32
+		-DSK_BUILD_NO_OPTS
 		-DSK_FONTHOST_USES_FONTMGR
 		-D_CRT_SECURE_NO_WARNINGS
 		-DGR_GL_FUNCTION_TYPE=__stdcall)
@@ -174,15 +174,19 @@ add_library(skia_osmand STATIC
   	${skia_core}
 	${target_specific_sources}
 )
+if(CMAKE_TARGET_OS STREQUAL "windows")
+	target_compile_features(skia_osmand PRIVATE cxx_std_17)
+	if(CMAKE_COMPILER_FAMILY STREQUAL "msvc")
+		target_compile_options(skia_osmand PRIVATE /FItuple)
+	endif()
+endif()
 
-find_package(Freetype REQUIRED)
 target_link_libraries(skia_osmand LINK_PUBLIC
 	expat_osmand
 	png_osmand
 	jpeg_osmand
-	${FREETYPE_LIBRARIES}
+	freetype2_osmand
 )
-target_include_directories(skia_osmand PRIVATE ${FREETYPE_INCLUDE_DIRS})
 	
 if(CMAKE_TARGET_OS STREQUAL "linux")
 	find_library(FONTCONFIG_LIBRARY fontconfig)

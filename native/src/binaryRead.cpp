@@ -1665,7 +1665,7 @@ MapDataObject* readMapDataObject(CodedInputStream* input, MapTreeBounds* tree, S
 			case OsmAnd::OBF::MapData::kLabelcoordinatesFieldNumber: {
 				input->ReadVarint32(&size);
 				old = input->PushLimit(size);
-				u_int i = 0;
+				unsigned int i = 0;
 				while (input->BytesUntilLimit() > 0) {
 					if (i == 0) {
 						WireFormatLite::ReadPrimitive<int32_t, WireFormatLite::TYPE_SINT32>(input, &labelX);
@@ -2181,13 +2181,8 @@ bool readTransportRouteStop(CodedInputStream* input, SHARED_PTR<TransportStop>& 
 	return true;
 }
 
-bool readTransportRoute(BinaryMapFile* file, SHARED_PTR<TransportRoute>& transportRoute, int32_t filePointer,
-						UNORDERED(map) < int32_t, string > &stringTable, bool onlyDescription) {
-	lseek(file->getRouteFD(), 0, SEEK_SET);
-	FileInputStream stream(file->getRouteFD());
-	stream.SetCloseOnDelete(false);
-	CodedInputStream* input = new CodedInputStream(&stream);
-	input->SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
+static bool readTransportRoute(CodedInputStream* input, SHARED_PTR<TransportRoute>& transportRoute, int32_t filePointer,
+							   UNORDERED(map) < int32_t, string > &stringTable, bool onlyDescription, bool skipGeometry) {
 	input->Seek(filePointer);
 
 	uint32_t routeLength;
@@ -2243,6 +2238,11 @@ bool readTransportRoute(BinaryMapFile* file, SHARED_PTR<TransportRoute>& transpo
 				break;
 			}
 			case OsmAnd::OBF::TransportRoute::kGeometryFieldNumber: {
+				if (skipGeometry) {
+					input->ReadVarint32(&sizeL);
+					input->Skip(sizeL);
+					break;
+				}
 				input->ReadVarint32(&sizeL);
 				pold = input->PushLimit(sizeL);
 				int px = 0;
@@ -2328,6 +2328,16 @@ bool readTransportRoute(BinaryMapFile* file, SHARED_PTR<TransportRoute>& transpo
 	}
 	input->PopLimit(old);
 	return true;
+}
+
+bool readTransportRoute(BinaryMapFile* file, SHARED_PTR<TransportRoute>& transportRoute, int32_t filePointer,
+						UNORDERED(map) < int32_t, string > &stringTable, bool onlyDescription, bool skipGeometry) {
+	lseek(file->getRouteFD(), 0, SEEK_SET);
+	FileInputStream stream(file->getRouteFD());
+	stream.SetCloseOnDelete(false);
+	CodedInputStream input(&stream);
+	input.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
+	return readTransportRoute(&input, transportRoute, filePointer, stringTable, onlyDescription, skipGeometry);
 }
 
 bool initializeStringTable(CodedInputStream* input, const SHARED_PTR<TransportIndex>& ind, UNORDERED(map) < int32_t,
@@ -2507,7 +2517,13 @@ SHARED_PTR<TransportIndex> getTransportIndex(int64_t filePointer) {
 }
 
 void loadTransportRoutes(BinaryMapFile* file, vector<int32_t> filePointers, UNORDERED(map) < int64_t,
-						 SHARED_PTR<TransportRoute> > &result) {
+						 SHARED_PTR<TransportRoute> > &result, bool skipGeometry) {
+	lseek(file->getRouteFD(), 0, SEEK_SET);
+	FileInputStream stream(file->getRouteFD());
+	stream.SetCloseOnDelete(false);
+	CodedInputStream cis(&stream);
+	cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
+
 	UNORDERED(map)<SHARED_PTR<TransportIndex>, vector<int32_t>> groupPoints;
 	for (int i = 0; i < filePointers.size(); i++) {
 		if (auto ind = getTransportIndex(filePointers[i])) {
@@ -2528,16 +2544,11 @@ void loadTransportRoutes(BinaryMapFile* file, vector<int32_t> filePointers, UNOR
 		for (int i = 0; i < pointers.size(); i++) {
 			int32_t filePointer = pointers[i];
 			SHARED_PTR<TransportRoute> transportRoute = make_shared<TransportRoute>();
-			if (readTransportRoute(file, transportRoute, filePointer, stringTable, false)) {
+			if (readTransportRoute(&cis, transportRoute, filePointer, stringTable, false, skipGeometry)) {
 				result[filePointer] = transportRoute;
 				finishInit.push_back(transportRoute);
 			}
 		}
-		lseek(file->getRouteFD(), 0, SEEK_SET);
-		FileInputStream input(file->getRouteFD());
-		input.SetCloseOnDelete(false);
-		CodedInputStream cis(&input);
-		cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 		initializeStringTable(&cis, ind, stringTable);
 		UNORDERED(map)<int32_t, string> indexedStringTable = ind->stringTable->stringTable;
 		for (SHARED_PTR<TransportRoute>& transportRoute : finishInit) {

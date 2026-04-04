@@ -5,6 +5,10 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 include("../../common.cmake")
 
 set(ROOT "${OSMAND_ROOT}/native")
+set(RAPTOR_ROOT "${ROOT}/src/RaptorEngine")
+if(NOT DEFINED OSMAND_PT_BACKEND_RAPTOR)
+	set(OSMAND_PT_BACKEND_RAPTOR 1)
+endif()
 include_directories(AFTER SYSTEM
 	"${OSMAND_ROOT}/externals/skia/upstream.patched"
 	"${OSMAND_ROOT}/externals/skia/upstream.patched/include/core"
@@ -24,10 +28,11 @@ include_directories(AFTER SYSTEM
 	#"${OSMAND_ROOT}/externals/giflib/upstream.patched/lib"
 	"${OSMAND_ROOT}/externals/skia/upstream.patched/third_party/externals/libjpeg-turbo"
 	"${OSMAND_ROOT}/externals/skia/upstream.patched/third_party/libpng"
-	#"${OSMAND_ROOT}/externals/harfbuzz/upstream.patched/src"
+	"${OSMAND_ROOT}/externals/skia/upstream.patched/third_party/externals/harfbuzz/src"
 	"${OSMAND_ROOT}/externals/protobuf/upstream.patched/src"
 	"${OSMAND_ROOT}/native/include"
 	"${OSMAND_ROOT}/native/src"
+	"${RAPTOR_ROOT}"
 	"$ENV{JAVA_HOME}/include"
 )
 if(CMAKE_TARGET_OS STREQUAL "windows")
@@ -50,6 +55,7 @@ elseif(CMAKE_TARGET_OS STREQUAL "linux")
 	add_definitions(-DSK_BUILD_FOR_UNIX)
 endif()
 add_definitions(
+	-DOSMAND_PT_BACKEND_RAPTOR=${OSMAND_PT_BACKEND_RAPTOR}
 	-DGOOGLE_PROTOBUF_NO_RTTI
 	-DSK_ALLOW_STATIC_GLOBAL_INITIALIZERS=0
 	-DSK_RELEASE
@@ -99,6 +105,9 @@ add_library(osmand SHARED
 	"${ROOT}/src/transportRoutingConfiguration.cpp"
 	"${ROOT}/src/transportRoutingContext.cpp"
 	"${ROOT}/src/transportRoutePlanner.cpp"
+	"${RAPTOR_ROOT}/RaptorEngine.cpp"
+	"${RAPTOR_ROOT}/TransportContextBridge.cpp"
+	"${RAPTOR_ROOT}/raptorTransportPlanner.cpp"
 	"${ROOT}/src/transportRouteStopsReader.cpp"
 	"${ROOT}/src/routeDataBundle.cpp"
 	"${ROOT}/src/routeDataResources.cpp"

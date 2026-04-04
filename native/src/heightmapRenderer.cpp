@@ -28,7 +28,7 @@ inline void blendHillshade(
         const auto pixelCount = tileSize * tileSize;
         for (uint32_t idx = 0; idx < pixelCount; idx++)
             blend[idx] =
-                shade[idx] != 0 ? (static_cast<ushort>(shade[idx]) * static_cast<ushort>(slope[idx]) >> 8) + 1 : 0;
+                shade[idx] != 0 ? (static_cast<unsigned short>(shade[idx]) * static_cast<unsigned short>(slope[idx]) >> 8) + 1 : 0;
     }
     else
     {

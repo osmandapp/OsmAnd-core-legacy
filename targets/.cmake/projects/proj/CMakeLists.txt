@@ -44,6 +44,8 @@ add_library(proj_osmand STATIC
 target_compile_definitions(proj_osmand
 	PRIVATE
 		${target_specific_private_definitions}
+	PUBLIC
+		PROJ_DLL=
 )
 target_include_directories(proj_osmand
 	PUBLIC

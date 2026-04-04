@@ -51,7 +51,7 @@ add_dependencies(png_osmand z_osmand)
 add_subdirectory("${OSMAND_PROJECTS_ROOT}/expat" "expat")
 
 # External : freetype2
-#add_subdirectory("${OSMAND_PROJECTS_ROOT}/freetype" "freetype")
+add_subdirectory("${OSMAND_PROJECTS_ROOT}/freetype" "freetype")
 
 # External : gif
 #add_subdirectory("${OSMAND_PROJECTS_ROOT}/giflib" "giflib")

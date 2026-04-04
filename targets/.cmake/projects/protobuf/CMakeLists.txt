@@ -7,6 +7,9 @@ include_directories(AFTER SYSTEM
 	"${UPSTREAM}/src"
 )
 add_definitions(-DGOOGLE_PROTOBUF_NO_RTTI)
+if(CMAKE_TARGET_OS STREQUAL "windows")
+	add_definitions(-D_SILENCE_STDEXT_HASH_DEPRECATION_WARNINGS)
+endif()
 if(CMAKE_COMPILER_FAMILY STREQUAL "gcc" OR CMAKE_COMPILER_FAMILY STREQUAL "clang")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 endif()
@@ -21,6 +24,15 @@ add_library(protobuf_osmand STATIC
 	"${UPSTREAM}/src/google/protobuf/repeated_field.cc"
 	"${UPSTREAM}/src/google/protobuf/stubs/common.cc"
 	"${UPSTREAM}/src/google/protobuf/stubs/once.cc"
-	"${UPSTREAM}/src/google/protobuf/stubs/atomicops_internals_x86_gcc.cc"
 	"${UPSTREAM}/src/google/protobuf/wire_format_lite.cc"
 )
+
+if(CMAKE_TARGET_OS STREQUAL "windows")
+	target_sources(protobuf_osmand PRIVATE
+		"${UPSTREAM}/src/google/protobuf/stubs/atomicops_internals_x86_msvc.cc"
+	)
+else()
+	target_sources(protobuf_osmand PRIVATE
+		"${UPSTREAM}/src/google/protobuf/stubs/atomicops_internals_x86_gcc.cc"
+	)
+endif()

@@ -13,6 +13,7 @@ OSMAND_SKIA := $(LOCAL_PATH)/../../../externals/skia/upstream.patched
 OSMAND_EXPAT := $(LOCAL_PATH)/../../../externals/skia/upstream.patched/third_party/externals/expat
 OSMAND_CORE_RELATIVE := ../../../native
 OSMAND_CORE := $(LOCAL_PATH)/$(OSMAND_CORE_RELATIVE)
+OSMAND_RAPTOR_RELATIVE := ../../../native/src/RaptorEngine
 OSMAND_HARFBUZZ_ROOT := $(LOCAL_PATH)/../../../externals/skia/upstream.patched/third_party/harfbuzz
 OSMAND_HARFBUZZ := $(LOCAL_PATH)/../../../externals/skia/upstream.patched/third_party/externals/harfbuzz
 
@@ -34,6 +35,7 @@ LOCAL_C_INCLUDES := $(LOCAL_PATH)/src \
 	${OSMAND_SKIA}/src/shaders \
 	$(OSMAND_CORE)/include \
 	$(OSMAND_CORE)/src \
+	$(OSMAND_CORE)/src/RaptorEngine \
 	$(OSMAND_HARFBUZZ)/src \
 	$(OSMAND_HARFBUZZ_ROOT)
 
@@ -61,6 +63,9 @@ LOCAL_SRC_FILES := \
 	$(OSMAND_CORE_RELATIVE)/src/transportRoutingConfiguration.cpp \
 	$(OSMAND_CORE_RELATIVE)/src/transportRoutingContext.cpp \
 	$(OSMAND_CORE_RELATIVE)/src/transportRoutePlanner.cpp \
+	$(OSMAND_RAPTOR_RELATIVE)/RaptorEngine.cpp \
+	$(OSMAND_RAPTOR_RELATIVE)/TransportContextBridge.cpp \
+	$(OSMAND_RAPTOR_RELATIVE)/raptorTransportPlanner.cpp \
 	$(OSMAND_CORE_RELATIVE)/src/transportRouteStopsReader.cpp \
 	$(OSMAND_CORE_RELATIVE)/src/routeDataBundle.cpp \
 	$(OSMAND_CORE_RELATIVE)/src/routeDataResources.cpp \
@@ -84,9 +89,14 @@ ifdef OSMAND_PROFILE_NATIVE_OPERATIONS
 		-DOSMAND_NATIVE_PROFILING
 endif
 
+ifndef OSMAND_PT_BACKEND_RAPTOR
+	OSMAND_PT_BACKEND_RAPTOR := 1
+endif
+
 LOCAL_MODULE := osmand
 
 LOCAL_CFLAGS := \
+	-DOSMAND_PT_BACKEND_RAPTOR=$(OSMAND_PT_BACKEND_RAPTOR) \
 	-DGOOGLE_PROTOBUF_NO_RTTI \
 	-DSK_BUILD_FOR_ANDROID \
 	-DSK_BUILD_FOR_ANDROID_NDK \
