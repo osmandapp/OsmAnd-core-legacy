@@ -528,6 +528,11 @@ struct OpeningHoursParser {
 			virtual ~Info();
 
 			std::string getInfo();
+			std::string getShortInfo();
+
+		   private:
+			std::string getInfo(bool brief);
+			std::string formatInfo(const std::string& key, const std::string& value);
 		};
 
 	   private:
