@@ -241,6 +241,8 @@ struct RouteDataObject {
 	const static int RESTRICTION_SHIFT = 3;
 	const static uint64_t RESTRICTION_MASK = 7;
 	const static int HEIGHT_UNDEFINED = -80000;
+	static constexpr const char* JUNCTION_REF = "junction:ref";
+	static constexpr const char* JUNCTION_NAME = "junction:name";
 
 	SHARED_PTR<RoutingIndex> region;
 	std::vector<uint32_t> types;
@@ -372,7 +374,7 @@ struct RouteDataObject {
 		return "";
 	}
 
-	inline bool isExitPoint() {
+	inline bool hasMotorwayJunctionNode() const {
 		const auto ptSz = pointTypes.size();
 		for (int i = 0; i < ptSz; i++) {
 			const auto& point = pointTypes[i];
@@ -387,28 +389,46 @@ struct RouteDataObject {
 		return false;
 	}
 
-	inline string getExitName() {
-		const auto pnSz = pointNames.size();
-		for (int i = 0; i < pnSz; i++) {
-			const auto& point = pointNames[i];
-
-			const auto pSz = point.size();
-			for (int j = 0; j < pSz; j++) {
-				if (pointNameTypes[i][j] == region->nameTypeRule) {
-					return point[j];
-				}
-			}
-		}
-		return "";
+	inline string getJunctionRef() const {
+		return getValue(JUNCTION_REF);
 	}
 
-	inline string getExitRef() {
+	inline string getJunctionName() const {
+		return getValue(JUNCTION_NAME);
+	}
+
+	inline string getNodeRef() const {
+		return getPointNameByTypeRule(region->refTypeRule);
+	}
+
+	inline string getNodeName() const {
+		return getPointNameByTypeRule(region->nameTypeRule);
+	}
+
+	inline string getExitRef() const {
+		string junctionRef = getJunctionRef();
+		return !junctionRef.empty() ? junctionRef : getNodeRef();
+	}
+
+	inline string getExitName() const {
+		string junctionName = getJunctionName();
+		return !junctionName.empty() ? junctionName : getNodeName();
+	}
+
+	inline bool isExitPoint() const {
+		return hasMotorwayJunctionNode();
+	}
+
+	inline string getPointNameByTypeRule(int typeRule) const {
+		if (typeRule == -1) {
+			return "";
+		}
 		const auto pnSz = pointNames.size();
 		for (int i = 0; i < pnSz; i++) {
 			const auto& point = pointNames[i];
 			const auto pSz = point.size();
 			for (int j = 0; j < pSz; j++) {
-				if (pointNameTypes[i][j] == region->refTypeRule) {
+				if (pointNameTypes[i][j] == typeRule) {
 					return point[j];
 				}
 			}
@@ -546,7 +566,7 @@ struct RouteDataObject {
 
 	bool tunnel();
 	int getOneway();
-	string getValue(const string& tag);
+	string getValue(const string& tag) const;
 	string getValue(uint32_t pnt, const string& tag);
 
 	inline int getPointsLength() {

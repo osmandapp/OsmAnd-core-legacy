@@ -6,6 +6,8 @@
 #include "routeDataBundle.h"
 #include "routeDataResources.h"
 
+const string kLinkRoadSuffix = "_link";
+
 void RouteSegmentResult::collectTypes(SHARED_PTR<RouteDataResources>& resources) {
 	auto& rules = resources->rules;
 	if (object->types.size() > 0) {
@@ -408,7 +410,7 @@ vector<SHARED_PTR<RouteSegmentResult>> RouteSegmentResult::getPreAttachedRoutes(
 	return vector<SHARED_PTR<RouteSegmentResult>>();
 }
 
-vector<SHARED_PTR<RouteSegmentResult>> RouteSegmentResult::getAttachedRoutes(int routeInd) {
+vector<SHARED_PTR<RouteSegmentResult>> RouteSegmentResult::getAttachedRoutes(int routeInd) const {
 	int st = abs(routeInd - startPointIndex);
 	if (st >= attachedRoutesFrontEnd.size()) {
 		return vector<SHARED_PTR<RouteSegmentResult>>();
@@ -510,6 +512,32 @@ SHARED_PTR<RouteDataObject> RouteSegmentResult::getObjectWithShield(vector<SHARE
         }
     }
     return rdo;
+}
+
+bool RouteSegmentResult::isLinkRoad() const {
+    return endsWith(object->getHighway(), kLinkRoadSuffix);
+}
+
+bool RouteSegmentResult::hasExitInfo() const {
+    if (object->hasMotorwayJunctionNode()) {
+        string nodeRef = object->getNodeRef();
+        string nodeName = object->getNodeName();
+        if (!nodeRef.empty() || !nodeName.empty()) {
+            const auto startPointAttachedRoutes = getAttachedRoutes(getStartPointIndex());
+            for (const auto& attached : startPointAttachedRoutes) {
+                if (!nodeRef.empty() && nodeRef == attached->object->getJunctionRef()) {
+                    return false;
+                }
+                if (!nodeName.empty() && nodeName == attached->object->getJunctionName()) {
+                    return false;
+                }
+            }
+            if (isLinkRoad()) {
+                return true;
+            }
+        }
+    }
+    return !object->getJunctionRef().empty() || !object->getJunctionName().empty();
 }
 
 #endif /*_OSMAND_ROUTE_SEGMENT_RESULT_CPP*/
