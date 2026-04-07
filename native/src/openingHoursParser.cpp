@@ -168,12 +168,19 @@ StringsHolder::StringsHolder() {
 	additionalStrings["off"] = "off";
 	additionalStrings["is_open"] = "Open";
 	additionalStrings["is_open_24_7"] = "Open 24/7";
+	additionalStrings["is_open_24_7_short"] = "24/7";
 	additionalStrings["will_open_at"] = "Will open at";
+	additionalStrings["will_open_at_short"] = "";
 	additionalStrings["open_from"] = "Open from";
+	additionalStrings["open_from_short"] = "";
 	additionalStrings["will_close_at"] = "Will close at";
+	additionalStrings["will_close_at_short"] = "Until";
 	additionalStrings["open_till"] = "Open till";
+	additionalStrings["open_till_short"] = "Till";
 	additionalStrings["will_open_tomorrow_at"] = "Will open tomorrow at";
+	additionalStrings["will_open_tomorrow_at_short"] = "Tomorrow";
 	additionalStrings["will_open_on"] = "Will open on";
+	additionalStrings["will_open_on_short"] = "";
 }
 
 StringsHolder::~StringsHolder() {
@@ -1095,32 +1102,50 @@ OpeningHoursParser::OpeningHours::Info::~Info() {
 }
 
 std::string OpeningHoursParser::OpeningHours::Info::getInfo() {
+	return getInfo(false);
+}
+
+std::string OpeningHoursParser::OpeningHours::Info::getShortInfo() {
+	return getInfo(true);
+}
+
+std::string OpeningHoursParser::OpeningHours::Info::getInfo(bool brief) {
 	if (opened24_7) {
 		if (!fallback) {
-			if (!ruleString.empty())
+			if (!ruleString.empty()) {
+				if (brief) {
+					return ruleString;
+				}
 				return stringsHolder.additionalStrings["is_open"] + " " + ruleString;
-			else
-				return stringsHolder.additionalStrings["is_open_24_7"];
+			} else {
+				return stringsHolder.additionalStrings[brief ? "is_open_24_7_short" : "is_open_24_7"];
+			}
 		} else {
 			return !ruleString.empty() ? ruleString : "";
 		}
 	} else if (!nearToOpeningTime.empty()) {
-		return stringsHolder.additionalStrings["will_open_at"] + " " + nearToOpeningTime;
+		return formatInfo(brief ? "will_open_at_short" : "will_open_at", nearToOpeningTime);
 	} else if (!openingTime.empty()) {
-		return stringsHolder.additionalStrings["open_from"] + " " + openingTime;
+		return formatInfo(brief ? "open_from_short" : "open_from", openingTime);
 	} else if (!nearToClosingTime.empty()) {
-		return stringsHolder.additionalStrings["will_close_at"] + " " + nearToClosingTime;
+		return formatInfo(brief ? "will_close_at_short" : "will_close_at", nearToClosingTime);
 	} else if (!closingTime.empty()) {
-		return stringsHolder.additionalStrings["open_till"] + " " + closingTime;
+		return formatInfo(brief ? "open_till_short" : "open_till", closingTime);
 	} else if (!openingTomorrow.empty()) {
-		return stringsHolder.additionalStrings["will_open_tomorrow_at"] + " " + openingTomorrow;
+		return formatInfo(brief ? "will_open_tomorrow_at_short" : "will_open_tomorrow_at", openingTomorrow);
 	} else if (!openingDay.empty()) {
-		return stringsHolder.additionalStrings["will_open_on"] + " " + openingDay + ".";
+		const std::string value = brief ? openingDay : openingDay + ".";
+		return formatInfo(brief ? "will_open_on_short" : "will_open_on", value);
 	} else if (!ruleString.empty()) {
 		return ruleString;
 	} else {
 		return !ruleString.empty() ? ruleString : "";
 	}
+}
+
+std::string OpeningHoursParser::OpeningHours::Info::formatInfo(const std::string& key, const std::string& value) {
+	const auto& prefix = stringsHolder.additionalStrings[key];
+	return prefix.empty() ? value : prefix + " " + value;
 }
 
 OpeningHoursParser::OpeningHours::OpeningHours(std::vector<std::shared_ptr<OpeningHoursRule>>& rules) : _rules(rules) {
