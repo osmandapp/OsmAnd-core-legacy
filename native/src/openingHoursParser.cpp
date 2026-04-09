@@ -174,7 +174,7 @@ StringsHolder::StringsHolder() {
 	additionalStrings["open_from"] = "Open from";
 	additionalStrings["open_from_short"] = "";
 	additionalStrings["will_close_at"] = "Will close at";
-	additionalStrings["will_close_at_short"] = "Until";
+	additionalStrings["will_close_at_short"] = "Till";
 	additionalStrings["open_till"] = "Open till";
 	additionalStrings["open_till_short"] = "Till";
 	additionalStrings["will_open_tomorrow_at"] = "Will open tomorrow at";
