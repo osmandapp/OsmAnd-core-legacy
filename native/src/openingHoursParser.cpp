@@ -174,9 +174,9 @@ StringsHolder::StringsHolder() {
 	additionalStrings["open_from"] = "Open from";
 	additionalStrings["open_from_short"] = "";
 	additionalStrings["will_close_at"] = "Will close at";
-	additionalStrings["will_close_at_short"] = "Till";
-	additionalStrings["open_till"] = "Open till";
-	additionalStrings["open_till_short"] = "Till";
+	additionalStrings["will_close_at_short"] = "Until";
+	additionalStrings["open_till"] = "Open until";
+	additionalStrings["open_till_short"] = "Until";
 	additionalStrings["will_open_tomorrow_at"] = "Will open tomorrow at";
 	additionalStrings["will_open_tomorrow_at_short"] = "Tomorrow";
 	additionalStrings["will_open_on"] = "Will open on";
@@ -2147,7 +2147,7 @@ void OpeningHoursParser::testOpened(const std::string& time, const std::shared_p
  * @param expected    the expected string in format:
  *                         "Open from HH:mm"     - open in 5 hours
  *                         "Will open at HH:mm"  - open in 2 hours
- *                         "Open till HH:mm"     - close in 5 hours
+ *                         "Open until HH:mm"    - close in 5 hours
  *                         "Will close at HH:mm" - close in 2 hours
  *                         "Will open on HH:mm (Mo,Tu,We,Th,Fr,Sa,Su)" - open in >5 hours
  *                         "Open 24/7"           - open 24/7
@@ -2165,7 +2165,7 @@ void OpeningHoursParser::testInfo(const std::string& time, const std::shared_ptr
  * @param expected    the expected string in format:
  *                         "Open from HH:mm"     - open in 5 hours
  *                         "Will open at HH:mm"  - open in 2 hours
- *                         "Open till HH:mm"     - close in 5 hours
+ *                         "Open until HH:mm"    - close in 5 hours
  *                         "Will close at HH:mm" - close in 2 hours
  *                         "Will open on HH:mm (Mo,Tu,We,Th,Fr,Sa,Su)" - open in >5 hours
  *                         "Open 24/7"           - open 24/7
