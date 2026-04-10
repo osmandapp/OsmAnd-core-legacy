@@ -159,6 +159,10 @@ bool RouteCalculationProgress::hasMixedOrMissingMaps() {
 	return FastRoutingState::hasMixedOrMissingMaps(getFastRoutingStatusOrdinal());
 }
 
+bool RouteCalculationProgress::hasAnyMissingMaps() {
+	return FastRoutingState::isMissingMaps(getFastRoutingStatusOrdinal());
+}
+
 bool RouteCalculationProgress::isSlowRoutingActive() {
 	return FastRoutingState::isSlowRoutingActive(getFastRoutingStatusOrdinal());
 }

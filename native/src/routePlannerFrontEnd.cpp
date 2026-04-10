@@ -376,7 +376,8 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRoute(
 				dir = (r->detailed[r->detailed.size() - 1]->getBearingEnd() / 180.0) * M_PI;
 			}
 		}
-		if (r && (r->isCorrect() || USE_ONLY_HH_ROUTING)) {
+		bool hasAnyMissingMaps = ctx->progress->hasAnyMissingMaps();
+		if (r && (r->isCorrect() || hasAnyMissingMaps || USE_ONLY_HH_ROUTING)) {
 			return r->detailed; // exit-point
 		}
 		ctx->unloadAllData();
@@ -554,13 +555,16 @@ HHNetworkRouteRes * RoutePlannerFrontEnd::calculateHHRoute(HHRoutePlanner & rout
 		}
 		ctx->progress->hhIteration(RouteCalculationProgress::HHIteration::HH_NOT_STARTED);
 	} catch (const std::exception e) {
+		bool hasAnyMissingMaps = ctx->progress->hasAnyMissingMaps();
 		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "%s", e.what());
-		if (USE_ONLY_HH_ROUTING) {
+		if (hasAnyMissingMaps || USE_ONLY_HH_ROUTING) {
 			std::string ex = "Error during routing calculation : ";
-			ex += e.what();
-			auto * res = new HHNetworkRouteRes(ex);
-			return res;
+			return new HHNetworkRouteRes(ex + e.what());
 		}
+	}
+	bool hasAnyMissingMaps = ctx->progress->hasAnyMissingMaps();
+	if (hasAnyMissingMaps || USE_ONLY_HH_ROUTING) {
+		return new HHNetworkRouteRes("HH failed and A* prevented due to missing maps");
 	}
 	return nullptr;
 }
@@ -622,7 +626,7 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchHHRoute(Routi
 			}
 		}
 		if (r && (r->isCorrect() || USE_ONLY_HH_ROUTING)) {
-			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Finish searchHHRoute Native");
+			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Finish searchHHRoute Native (JNI)");
 			attachConnectedRoads(ctx, r->detailed);
 			return r->detailed;
 		}
