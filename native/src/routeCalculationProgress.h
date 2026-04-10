@@ -80,8 +80,8 @@ struct FastRoutingState {
 
 		// MissingMapsCalculator
 		MIXED_MAPS_INTERMEDIATES,
-		MISSING_MAPS_INTERMEDIATES,
 		MIXED_MAPS_AT_START_OR_END,
+		MISSING_MAPS_INTERMEDIATES,
 		MISSING_MAPS_AT_START_OR_END,
 
 		// HHRoutePlanner
@@ -103,8 +103,6 @@ struct FastRoutingState {
 	static int fail(int old);
 	static bool hasMixedOrMissingMaps(int ordinal);
 	static bool isSlowRoutingActive(int ordinal);
-
-   private:
 	static bool isMixedMaps(int ordinal);
 	static bool isMissingMaps(int ordinal);
 };
@@ -185,6 +183,7 @@ class RouteCalculationProgress {
 	virtual float getApproximationProgress();
 
 	virtual bool hasMixedOrMissingMaps();
+	virtual bool hasAnyMissingMaps();
 	virtual bool isSlowRoutingActive();
 	virtual FastRoutingState::Status getFastRoutingStatus();
 	virtual void resetFastRoutingStatus();
