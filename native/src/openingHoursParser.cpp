@@ -731,7 +731,7 @@ std::string OpeningHoursParser::BasicOpeningHourRule::toRuleString(bool useLocal
 			b << _comment;
 		}
 	}
-	return b.str();
+	return ohp_trim(b.str());
 }
 
 std::string OpeningHoursParser::BasicOpeningHourRule::getTime(const tm& dateTime, bool checkAnotherDay, int limit,
