@@ -170,9 +170,9 @@ StringsHolder::StringsHolder() {
 	additionalStrings["is_open_24_7"] = "Open 24/7";
 	additionalStrings["is_open_24_7_short"] = "24/7";
 	additionalStrings["will_open_at"] = "Will open at";
-	additionalStrings["will_open_at_short"] = "";
+	additionalStrings["will_open_at_short"] = "From";
 	additionalStrings["open_from"] = "Open from";
-	additionalStrings["open_from_short"] = "";
+	additionalStrings["open_from_short"] = "From";
 	additionalStrings["will_close_at"] = "Will close at";
 	additionalStrings["will_close_at_short"] = "Until";
 	additionalStrings["open_till"] = "Open until";
@@ -180,7 +180,7 @@ StringsHolder::StringsHolder() {
 	additionalStrings["will_open_tomorrow_at"] = "Will open tomorrow at";
 	additionalStrings["will_open_tomorrow_at_short"] = "Tomorrow";
 	additionalStrings["will_open_on"] = "Will open on";
-	additionalStrings["will_open_on_short"] = "";
+	additionalStrings["will_open_on_short"] = "From";
 }
 
 StringsHolder::~StringsHolder() {
