@@ -603,6 +603,14 @@ struct RouteDataObject {
 			std::vector<uint32_t> types;
 			pointTypes.insert(pointTypes.begin() + pos, types);
 		}
+		if (pointNames.size() > pos) {
+			std::vector<std::string> names;
+			pointNames.insert(pointNames.begin() + pos, names);
+		}
+		if (pointNameTypes.size() > pos) {
+			std::vector<uint32_t> nameTypes;
+			pointNameTypes.insert(pointNameTypes.begin() + pos, nameTypes);
+		}
 	}
 
 	std::vector<double> calculateHeightArray();

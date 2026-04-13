@@ -7,14 +7,81 @@
 #include "ElapsedTimer.h"
 #include "commonOsmAndCore.h"
 
+struct RoutingContext;
+
+struct MissingMapsCalculationResult {
+	std::weak_ptr<RoutingContext> missingMapsRoutingContext;
+	std::vector<std::pair<double, double>> missingMapsPoints;
+	std::vector<std::string> usedMaps;
+	std::vector<std::string> mapsToDownload;
+	std::vector<std::string> missingMaps;
+	std::vector<std::string> mapsToUpdate;
+
+	MissingMapsCalculationResult(
+		const std::shared_ptr<RoutingContext>& routingContext,
+		const std::vector<std::pair<double, double>>& points)
+		: missingMapsRoutingContext(routingContext), missingMapsPoints(points) {}
+
+	void addMissingMaps(const std::string& region) {
+		addUnique(missingMaps, region);
+		addUnique(mapsToDownload, region);
+	}
+
+	void addUsedMaps(const std::string& region) {
+		addUnique(usedMaps, region);
+	}
+
+	void addMapToUpdate(const std::string& region) {
+		addUnique(mapsToUpdate, region);
+		addUnique(mapsToDownload, region);
+	}
+
+	bool hasMissingMaps() const {
+		return !mapsToDownload.empty();
+	}
+
+	std::string getErrorMessage() const {
+		std::string msg;
+		if (!mapsToUpdate.empty()) {
+			msg = join(mapsToUpdate) + " need to be updated";
+		}
+		if (!missingMaps.empty()) {
+			if (!msg.empty()) {
+				msg += " and ";
+			}
+			msg = join(missingMaps) + " need to be downloaded";
+		}
+		return "To calculate the route maps " + msg;
+	}
+
+private:
+	static void addUnique(std::vector<std::string>& items, const std::string& value) {
+		if (std::find(items.begin(), items.end(), value) == items.end()) {
+			items.push_back(value);
+		}
+	}
+
+	static std::string join(const std::vector<std::string>& items) {
+		std::string result = "[";
+		for (size_t i = 0; i < items.size(); i++) {
+			if (i > 0) {
+				result += ", ";
+			}
+			result += items[i];
+		}
+		result += "]";
+		return result;
+	}
+};
+
 struct FastRoutingState {
 	enum Status {
 		READY,
 
 		// MissingMapsCalculator
 		MIXED_MAPS_INTERMEDIATES,
-		MISSING_MAPS_INTERMEDIATES,
 		MIXED_MAPS_AT_START_OR_END,
+		MISSING_MAPS_INTERMEDIATES,
 		MISSING_MAPS_AT_START_OR_END,
 
 		// HHRoutePlanner
@@ -36,8 +103,6 @@ struct FastRoutingState {
 	static int fail(int old);
 	static bool hasMixedOrMissingMaps(int ordinal);
 	static bool isSlowRoutingActive(int ordinal);
-
-   private:
 	static bool isMixedMaps(int ordinal);
 	static bool isMissingMaps(int ordinal);
 };
@@ -80,6 +145,7 @@ class RouteCalculationProgress {
 
 	bool cancelled;
 	int fastRoutingStatusOrdinal;
+	std::shared_ptr<MissingMapsCalculationResult> missingMapsCalculationResult;
 
 	int maxLoadedTiles;
 	bool requestPrivateAccessRouting;
@@ -91,7 +157,7 @@ class RouteCalculationProgress {
 		  approximatedDistance(0), routingCalculatedTime(0), visitedSegments(0),
 		  visitedDirectSegments(0), visitedOppositeSegments(0), directQueueSize(0), oppositeQueueSize(0),
 		  finalSegmentsFound(0), loadedTiles(0), unloadedTiles(0), loadedPrevUnloadedTiles(0), distinctLoadedTiles(0),
-		  totalIterations(1), iteration(-1), cancelled(false), fastRoutingStatusOrdinal(FastRoutingState::READY), maxLoadedTiles(0),
+		  totalIterations(1), iteration(-1), cancelled(false), fastRoutingStatusOrdinal(FastRoutingState::READY), missingMapsCalculationResult(nullptr), maxLoadedTiles(0),
 		  requestPrivateAccessRouting(false), hhIterationStep(HH_NOT_STARTED),
 		  hhCurrentStepProgress(0), hhTargetsDone(0), hhTargetsTotal(0), hhCalcCounter(0)
 		{
@@ -117,6 +183,7 @@ class RouteCalculationProgress {
 	virtual float getApproximationProgress();
 
 	virtual bool hasMixedOrMissingMaps();
+	virtual bool hasAnyMissingMaps();
 	virtual bool isSlowRoutingActive();
 	virtual FastRoutingState::Status getFastRoutingStatus();
 	virtual void resetFastRoutingStatus();
