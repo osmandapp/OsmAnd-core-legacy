@@ -613,8 +613,11 @@ double GeneralRouter::calculateTurnTime(const SHARED_PTR<RouteSegment>& segment,
 		totalPenalty += abs(ts - prevTs) / 2;
 	}
 
-	if (segment->getRoad()->roundabout() && !prev->getRoad()->roundabout()) {
-		double rt = getRoundaboutTurnPenalty();
+	bool currentRoundAbout = segment->getRoad()->roundabout();
+	bool previousRoundAbout = prev->getRoad()->roundabout();
+
+	if ((currentRoundAbout && !previousRoundAbout) || (!currentRoundAbout && previousRoundAbout)) {
+		float rt = getRoundaboutTurnPenalty() / 2;
 		if (rt > 0) {
 			totalPenalty += rt;
 		}
