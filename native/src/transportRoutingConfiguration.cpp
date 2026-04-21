@@ -33,6 +33,11 @@ TransportRoutingConfiguration::TransportRoutingConfiguration(SHARED_PTR<GeneralR
 		combineAltRoutesSumDiffStops = router->
 			getIntAttribute("combineAltRoutesSumDiffStops", combineAltRoutesSumDiffStops);
 
+		minSegmentDistToIncreaseSpeed = router->
+			getIntAttribute("minSegmentDistToIncreaseSpeed", minSegmentDistToIncreaseSpeed);
+		upperSegmentDistToIncreaseSpeed = router->
+			getIntAttribute("upperSegmentDistToIncreaseSpeed", upperSegmentDistToIncreaseSpeed);
+
 		maxNumberOfChanges = (int)parseNumberSilently<float>(getParamValue("max_num_changes"),
 		                                                     (float)maxNumberOfChanges);
 		ptLimitResultsByNumber = (int)parseNumberSilently<float>(getParamValue("pt_limit"),

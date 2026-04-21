@@ -26,6 +26,8 @@ struct TransportRoutingConfiguration {
 	int32_t maxRouteTime = 60 * 60 * 10;
 	int32_t maxRouteDistance = 0;
 	int32_t maxRouteIncreaseSpeed = 30;
+	int32_t minSegmentDistToIncreaseSpeed = 1000;
+	int32_t upperSegmentDistToIncreaseSpeed = 30000;
 	SHARED_PTR<GeneralRouter> router;
 
 	float walkSpeed = (float)(3.6 / 3.6);

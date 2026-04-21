@@ -233,6 +233,8 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 		if (routeTravelSpeed == 0) {
 			continue;
 		}
+		const float routeTravelSpeedMax = ctx->cfg->getSpeedByRouteType(segment->road->type + "-max");
+
 		SHARED_PTR<TransportStop> prevStop = segment->getStop(segment->segStart);
 		vector<SHARED_PTR<TransportRouteSegment>> sgms;
 
@@ -262,7 +264,16 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 				travelTime += interval * 10;
 			} else {
 				int stopTime = ctx->cfg->getStopTime(segment->road->getType());
-				travelTime += stopTime + segmentDist / routeTravelSpeed;
+				if (routeTravelSpeedMax > 0 && segmentDist > ctx->cfg->minSegmentDistToIncreaseSpeed) {
+					const int min = ctx->cfg->minSegmentDistToIncreaseSpeed;
+					const int upper = ctx->cfg->upperSegmentDistToIncreaseSpeed;
+					const double k = std::max(0.0, std::min(1.0, (segmentDist - min) / (upper - min)));
+					const double increasedSpeed =
+						routeTravelSpeed + (routeTravelSpeedMax - routeTravelSpeed) * k * k;
+					travelTime += stopTime + segmentDist / increasedSpeed;
+				} else {
+					travelTime += stopTime + segmentDist / routeTravelSpeed;
+				}
 			}
 			if (segment->distFromStart + travelTime > finishTime * ctx->cfg->increaseForAlternativesRoutes) {
 				break;

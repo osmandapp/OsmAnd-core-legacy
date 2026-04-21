@@ -583,6 +583,8 @@ jfieldID jfield_TransportRoutingConfiguration_scheduleTimeOfDay = NULL;
 jfieldID jfield_TransportRoutingConfiguration_scheduleMaxTime = NULL;
 jfieldID jfield_TransportRoutingConfiguration_maxRouteDistance = NULL;
 jfieldID jfield_TransportRoutingConfiguration_maxRouteIncreaseSpeed = NULL;
+jfieldID jfield_TransportRoutingConfiguration_minSegmentDistToIncreaseSpeed = NULL;
+jfieldID jfield_TransportRoutingConfiguration_upperSegmentDistToIncreaseSpeed = NULL;
 jfieldID jfield_TransportRoutingConfiguration_increaseForAlternativesRoutes = NULL;
 jfieldID jfield_TransportRoutingConfiguration_increaseForAltRoutesWalking = NULL;
 jfieldID jfield_TransportRoutingConfiguration_combineAltRoutesDiffStops = NULL;
@@ -1040,6 +1042,10 @@ void loadJniRenderingContext(JNIEnv* env) {
 		getFid(env, jclass_TransportRoutingConfiguration, "maxRouteDistance", "I");
 	jfield_TransportRoutingConfiguration_maxRouteIncreaseSpeed =
 		getFid(env, jclass_TransportRoutingConfiguration, "maxRouteIncreaseSpeed", "I");
+	jfield_TransportRoutingConfiguration_minSegmentDistToIncreaseSpeed =
+		getFid(env, jclass_TransportRoutingConfiguration, "minSegmentDistToIncreaseSpeed", "I");
+	jfield_TransportRoutingConfiguration_upperSegmentDistToIncreaseSpeed =
+		getFid(env, jclass_TransportRoutingConfiguration, "upperSegmentDistToIncreaseSpeed", "I");
 	jfield_TransportRoutingConfiguration_increaseForAlternativesRoutes =
 		getFid(env, jclass_TransportRoutingConfiguration, "increaseForAlternativesRoutes", "D");
 	jfield_TransportRoutingConfiguration_increaseForAltRoutesWalking =
@@ -2148,6 +2154,10 @@ void parseTransportRoutingConfiguration(JNIEnv* ienv, shared_ptr<TransportRoutin
 		ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_maxRouteDistance);
 	rConfig->maxRouteIncreaseSpeed =
 		ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_maxRouteIncreaseSpeed);
+	rConfig->minSegmentDistToIncreaseSpeed =
+		ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_minSegmentDistToIncreaseSpeed);
+	rConfig->upperSegmentDistToIncreaseSpeed =
+		ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_upperSegmentDistToIncreaseSpeed);
 	rConfig->increaseForAlternativesRoutes =
 		ienv->GetDoubleField(jTransportConfig, jfield_TransportRoutingConfiguration_increaseForAlternativesRoutes);
 	rConfig->increaseForAltRoutesWalking =
