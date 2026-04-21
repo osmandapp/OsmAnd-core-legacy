@@ -54,14 +54,13 @@ TransportRoutingConfiguration::TransportRoutingConfiguration(SHARED_PTR<GeneralR
 	}
 }
 
-float TransportRoutingConfiguration::getSpeedByRouteType(
-	std::string routeType) {
+float TransportRoutingConfiguration::getSpeedByRouteType(const std::string& routeType, const bool useDefaultSpeed) {
 	const auto it = speed.find(routeType);
-	float sl = defaultTravelSpeed;
+	float sl = 0;
 	if (it == speed.end()) {
 		dynbitset bs = getRawBitset("route", routeType);
 		sl = router->getObjContext(RouteDataObjectAttribute::ROAD_SPEED)
-				 .evaluateFloat(bs, defaultTravelSpeed);
+				 .evaluateFloat(bs, useDefaultSpeed ? defaultTravelSpeed : 0);
 		speed[routeType] = sl;
 	} else {
 		sl = it->second;

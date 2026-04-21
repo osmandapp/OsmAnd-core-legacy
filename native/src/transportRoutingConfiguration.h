@@ -55,7 +55,7 @@ struct TransportRoutingConfiguration {
 	TransportRoutingConfiguration(SHARED_PTR<GeneralRouter> prouter,
 								  MAP_STR_STR params);
 
-	float getSpeedByRouteType(std::string routeType);
+	float getSpeedByRouteType(const std::string& routeType, bool useDefaultSpeed);
 	dynbitset getRawBitset(std::string tg, std::string vl);
 	uint getRawType(string &tg, string &vl);
 

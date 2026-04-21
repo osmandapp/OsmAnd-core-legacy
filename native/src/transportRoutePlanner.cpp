@@ -228,12 +228,12 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 		int seconds = segment->road->calcIntervalInSeconds();
 		double travelTime = seconds > 0 ? (double) seconds / 2 : ctx->cfg->getBoardingTime(segment->road->getType());
 
-		const float routeTravelSpeed = ctx->cfg->getSpeedByRouteType(segment->road->type);
+		const float routeTravelSpeed = ctx->cfg->getSpeedByRouteType(segment->road->type, true);
 
 		if (routeTravelSpeed == 0) {
 			continue;
 		}
-		const float routeTravelSpeedMax = ctx->cfg->getSpeedByRouteType(segment->road->type + "-max");
+		const float routeTravelSpeedMax = ctx->cfg->getSpeedByRouteType(segment->road->type + "-max", false);
 
 		SHARED_PTR<TransportStop> prevStop = segment->getStop(segment->segStart);
 		vector<SHARED_PTR<TransportRouteSegment>> sgms;
