@@ -1353,7 +1353,11 @@ jobject convertRenderedObjectToJava(JNIEnv* ienv, MapDataObject* robj, std::stri
 jobject convertRouteDataObjectToJava(JNIEnv* ienv, RouteDataObject* route, jobject reg) {
 	jintArray nameInts = ienv->NewIntArray(route->names.size());
 	jobjectArray nameStrings = ienv->NewObjectArray(route->names.size(), jclassString, NULL);
-	jint* ar = new jint[route->names.size()];  // NEVER DEALLOCATED
+	if (nameInts == nullptr || nameStrings == nullptr) {
+		// Possible JVM out of memory error - no crash
+		return nullptr; 
+    }
+	std::vector<jint> ar(route->names.size());
 	UNORDERED(map)<int, std::string>::iterator itNames = route->names.begin();
 	jsize sz = 0;
 	for (; itNames != route->names.end(); itNames++, sz++) {
@@ -1363,10 +1367,15 @@ jobject convertRouteDataObjectToJava(JNIEnv* ienv, RouteDataObject* route, jobje
 		ienv->DeleteLocalRef(js);
 		ar[sz] = itNames->first;
 	}
-	ienv->SetIntArrayRegion(nameInts, 0, route->names.size(), ar);
+	if (route->names.size() > 0) {
+		ienv->SetIntArrayRegion(nameInts, 0, route->names.size(), ar.data()); 
+	}
 	jobject robj = ienv->NewObject(jclass_RouteDataObject, jmethod_RouteDataObject_init, reg, nameInts, nameStrings);
 	ienv->DeleteLocalRef(nameInts);
 	ienv->DeleteLocalRef(nameStrings);
+	if (robj == nullptr) { 
+		return nullptr;
+	}
 
 	ienv->SetLongField(robj, jfield_RouteDataObject_id, route->id);
 
