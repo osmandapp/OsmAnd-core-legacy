@@ -78,6 +78,24 @@ double projectDistance(vector<SHARED_PTR<RouteSegmentResult>>& res, int k, int p
 	return currentsDist;
 }
 
+SHARED_PTR<RouteSegmentPoint> RoutePlannerFrontEnd::calcPreciseRouteSegmentPoint(
+	const SHARED_PTR<RouteDataObject>& road, const int x, const int y)
+{
+	SHARED_PTR<RouteSegmentPoint> segmentPoint;
+	for (uint i = 1; i < road->pointsX.size(); i++) {
+		std::pair<int, int> projection = getProjectionPoint(x, y,
+		                                                    (int)road->pointsX[i - 1], (int)road->pointsY[i - 1],
+		                                                    (int)road->pointsX[i], (int)road->pointsY[i]);
+		double currentDist = squareDist31TileMetric(projection.first, projection.second, x, y);
+		if (!segmentPoint || currentDist < segmentPoint->dist) {
+			segmentPoint = std::make_shared<RouteSegmentPoint>(road, i - 1, i, currentDist);
+			segmentPoint->preciseX = projection.first;
+			segmentPoint->preciseY = projection.second;
+		}
+	}
+	return segmentPoint;
+}
+
 bool addSegment(int x31, int y31, RoutingContext* ctx, int indexNotFound, vector<SHARED_PTR<RouteSegmentPoint>>& res,
 				bool transportStop) {
 	auto f = findRouteSegment(x31, y31, ctx, transportStop);
