@@ -8,6 +8,7 @@
 
 struct RouteSegmentResult;
 struct RouteSegmentPoint;
+struct RouteDataObject;
 struct PrecalculatedRouteDirection;
 struct RouteSegment;
 struct RoutingConfiguration;
@@ -60,6 +61,7 @@ public:
     static bool hasSegment(vector<SHARED_PTR<RouteSegmentResult>>& result, SHARED_PTR<RouteSegment>& current);
     HHRoutingConfig* setDefaultRoutingConfig();
 
+    static SHARED_PTR<RouteSegmentPoint> calcPreciseRouteSegmentPoint(const SHARED_PTR<RouteDataObject>& road, int x, int y);
     void makeStartEndPointsPrecise(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResult>>& res, int startX, int startY, int endX, int endY);
     void makeSegmentPointPrecise(RoutingContext* ctx, SHARED_PTR<RouteSegmentResult>& routeSegmentResult, int px, int py, bool st);
     void makeSegmentPointPrecise(RoutingContext* ctx, SHARED_PTR<RouteSegmentResult>& routeSegmentResult, double lat, double lon, bool st);

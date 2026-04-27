@@ -214,6 +214,10 @@ SHARED_PTR<HHRoutingContext> HHRoutePlanner::initHCtx(HHRoutingConfig * c, int s
 	hctx->startY = startY;
 	hctx->endX = endX;
 	hctx->endY = endY;
+	hctx->roadStartX = startX;
+	hctx->roadStartY = startY;
+	hctx->roadEndX = endX;
+	hctx->roadEndY = endY;
 
 	hctx->clearVisited();
 	if (hctx->initialized) {
@@ -653,6 +657,29 @@ UNORDERED_map<int64_t, NetworkDBPoint *> HHRoutePlanner::initStart(const SHARED_
 	hctx->rctx->config->planRoadDirection = savedPlanRoadDirectrion;
 	hctx->rctx->config->MAX_VISITED = savedMaxVisited;
 	if (!frs.empty()) {
+		for (const auto & o : frs) {
+			int64_t pntId = calculateRoutePointInternalId(o->getRoad()->getId(),
+			                                              reverse ? o->getSegmentEnd() : o->getSegmentStart(),
+			                                              reverse ? o->getSegmentStart() : o->getSegmentEnd());
+			if (hctx->pointsByGeo.find(pntId) == hctx->pointsByGeo.end()) {
+				int x = reverse ? hctx->startX : hctx->endX;
+				int y = reverse ? hctx->startY : hctx->endY;
+				SHARED_PTR<RouteSegmentPoint> road =
+					RoutePlannerFrontEnd::calcPreciseRouteSegmentPoint(o->getRoad(), x, y);
+				if (road) {
+					if (reverse) {
+						hctx->roadStartX = road->preciseX;
+						hctx->roadStartY = road->preciseY;
+					} else {
+						hctx->roadEndX = road->preciseX;
+						hctx->roadEndY = road->preciseY;
+					}
+					o->distanceFromStart += calculatePreciseStartTime(hctx->rctx, road->preciseX, road->preciseY, o);
+					break;
+				}
+			}
+		}
+
 		std::set<int64_t> set;
 		for (auto & o : frs) {
 			// duplicates are possible as alternative routes
@@ -676,9 +703,6 @@ UNORDERED_map<int64_t, NetworkDBPoint *> HHRoutePlanner::initStart(const SHARED_
 					pnt->endX = o->getEndPointX();
 					pnt->startY = o->getStartPointY();
 					pnt->endY = o->getEndPointY();
-					int preciseY = reverse? hctx->startY : hctx->endY;
-					int preciseX = reverse? hctx->startX : hctx->endX;
-					o->distanceFromStart += calculatePreciseStartTime(hctx->rctx, preciseX, preciseY, o);
 				} else {
 					float obstacle = hctx->rctx->config->router->defineRoutingObstacle(
 						o->getRoad(), o->getSegmentStart(), o->getSegmentStart() > o->getSegmentEnd());
