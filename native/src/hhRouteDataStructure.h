@@ -492,10 +492,6 @@ struct HHRoutingContext {
 	int32_t startY;
 	int32_t endY;
 	int32_t endX;
-	int32_t roadStartX;
-	int32_t roadStartY;
-	int32_t roadEndX;
-	int32_t roadEndY;
 	bool initialized;
 	
 	std::vector<NetworkDBPoint *> queueAdded;
