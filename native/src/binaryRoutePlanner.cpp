@@ -6,6 +6,7 @@
 
 #include "Logging.h"
 #include "binaryRead.h"
+#include "routePlannerFrontEnd.h"
 #include "routingContext.h"
 
 //	static bool PRINT_TO_CONSOLE_ROUTE_INFORMATION_TO_TEST = true;
@@ -1015,19 +1016,7 @@ SHARED_PTR<RouteSegmentPoint> findRouteSegment(int px, int py, RoutingContext* c
 	for (; it != dataObjects.end(); it++) {
 		SHARED_PTR<RouteDataObject> r = *it;
 		if (r->pointsX.size() > 1) {
-			SHARED_PTR<RouteSegmentPoint> road;
-			for (uint j = 1; j < r->pointsX.size(); j++) {
-				std::pair<int, int> p =
-					getProjectionPoint(px, py, r->pointsX[j - 1], r->pointsY[j - 1], r->pointsX[j], r->pointsY[j]);
-				int prx = p.first;
-				int pry = p.second;
-				double currentsDist = squareDist31TileMetric(prx, pry, px, py);
-				if (!road || currentsDist < road->dist) {
-					road = std::make_shared<RouteSegmentPoint>(r, j - 1, j, currentsDist);
-					road->preciseX = prx;
-					road->preciseY = pry;
-				}
-			}
+			SHARED_PTR<RouteSegmentPoint> road = RoutePlannerFrontEnd::calcPreciseRouteSegmentPoint(r, px, py);
 			if (road) {
 				if (!transportStop) {
 					float prio = ctx->config->router->defineDestinationPriority(road->road);

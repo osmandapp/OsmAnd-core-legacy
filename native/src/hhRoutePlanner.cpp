@@ -676,9 +676,13 @@ UNORDERED_map<int64_t, NetworkDBPoint *> HHRoutePlanner::initStart(const SHARED_
 					pnt->endX = o->getEndPointX();
 					pnt->startY = o->getStartPointY();
 					pnt->endY = o->getEndPointY();
-					int preciseY = reverse? hctx->startY : hctx->endY;
-					int preciseX = reverse? hctx->startX : hctx->endX;
-					o->distanceFromStart += calculatePreciseStartTime(hctx->rctx, preciseX, preciseY, o);
+					int x = reverse ? hctx->startX : hctx->endX;
+					int y = reverse ? hctx->startY : hctx->endY;
+					SHARED_PTR<RouteSegmentPoint> road =
+						RoutePlannerFrontEnd::calcPreciseRouteSegmentPoint(o->getRoad(), x, y);
+					if (road) {
+						o->distanceFromStart += calculatePreciseStartTime(hctx->rctx, road->preciseX, road->preciseY, o);
+					}
 				} else {
 					float obstacle = hctx->rctx->config->router->defineRoutingObstacle(
 						o->getRoad(), o->getSegmentStart(), o->getSegmentStart() > o->getSegmentEnd());
@@ -692,7 +696,8 @@ UNORDERED_map<int64_t, NetworkDBPoint *> HHRoutePlanner::initStart(const SHARED_
 					OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "Illegal state exception (hhRoutePlanner) [Native]");
 					return pnts;
 				}
-				pnt->setDistanceToEnd(reverse, hctx->distanceToEnd(reverse, pnt));
+				pnt->setDistanceToEnd(reverse,
+				                      pnt->index == PNT_SHORT_ROUTE_START_END ? 0 : hctx->distanceToEnd(reverse, pnt));
 				pnt->setDetailedParentRt(reverse, o);
 				pnts.insert(std::pair<int64_t, NetworkDBPoint *>(pnt->index, pnt));
 			}

@@ -87,8 +87,9 @@ double HHRoutingContext::distanceToEnd(bool reverse, NetworkDBPoint * nextPoint)
 	if (config->HEURISTIC_COEFFICIENT > 0) {
 		double distanceToEnd = nextPoint->rt(reverse)->rtDistanceToEnd;
 		if (distanceToEnd == 0) {
-			double dist = squareRootDist31(reverse ? startX : endX, reverse ? startY : endY,
-										   nextPoint->midX(), nextPoint->midY());
+			double dist = squareRootDist31(reverse ? startX : endX,
+			                               reverse ? startY : endY,
+			                               nextPoint->midX(), nextPoint->midY());
 			distanceToEnd = config->HEURISTIC_COEFFICIENT * dist / rctx->config->router->getMaxSpeed();
 			nextPoint->setDistanceToEnd(reverse, distanceToEnd);
 		}
