@@ -360,7 +360,8 @@ bool getGeotiffData(std::string& tilePath, std::string& outColorFilename, std::s
 
     const auto destDataType = toBytes ? GDT_Byte : GDT_Float32;
     auto pByteBuffer = static_cast<char*>(pBuffer);
-    uint32_t bandSize;
+    uint32_t bandSize = destDataType == GDT_Byte ? 1 : (destDataType == GDT_Int16 ? 2 : 4);
+    bandSize *= procParameters ? (tileSize - overlap) * (tileSize - overlap) : valueCount;
 
     // Files can have data for this tile
     bool available = false;
@@ -426,48 +427,72 @@ bool getGeotiffData(std::string& tilePath, std::string& outColorFilename, std::s
                                 dataOffset.y + dataSize.y > rasterSize.y;
                             if (outRaster)
                             {
-                                const double resSize = tileSize;
-                                const PointD resFactor(
-                                    (lowerRight.x - upperLeft.x) / resSize,
-                                    (lowerRight.y - upperLeft.y) / resSize);
-                                tileOffset.x = std::ceil(std::fmax(-upperLeft.x, 0.0) / resFactor.x);
-                                tileOffset.y = std::ceil(std::fmax(-upperLeft.y, 0.0) / resFactor.y);
-                                if (tileOffset.x > 0)
+                                if (compose)
                                 {
-                                    tileLength.x -= tileOffset.x;
-                                    upperLeft.x += static_cast<double>(tileOffset.x) * resFactor.x;
-                                    dataOffset.x = std::floor(upperLeft.x);
-                                    dataSize.x = static_cast<int32_t>(std::ceil(lowerRight.x)) - dataOffset.x;
-                                }
-                                if (tileOffset.y > 0)
-                                {
-                                    tileLength.y -= tileOffset.y;
-                                    upperLeft.y += static_cast<double>(tileOffset.y) * resFactor.y;
-                                    dataOffset.y = std::floor(upperLeft.y);
-                                    dataSize.y = static_cast<int32_t>(std::ceil(lowerRight.y)) - dataOffset.y;
-                                }
-                                if (dataOffset.x + dataSize.x > rasterSize.x)
-                                {
-                                    tileLength.x = rasterSize.x - dataOffset.x;
-                                    tileLength.x = std::floor(static_cast<double>(tileLength.x) / resFactor.x);
-                                    lowerRight.x = upperLeft.x + static_cast<double>(tileLength.x) * resFactor.x;
-                                    dataSize.x = static_cast<int32_t>(std::ceil(lowerRight.x)) - dataOffset.x;
-                                    if (dataOffset.x + dataSize.x > rasterSize.x)
+                                    const double resSize = tileSize;
+                                    const PointD resFactor(
+                                        (lowerRight.x - upperLeft.x) / resSize,
+                                        (lowerRight.y - upperLeft.y) / resSize);
+                                    tileOffset.x = std::ceil(std::fmax(-upperLeft.x, 0.0) / resFactor.x);
+                                    tileOffset.y = std::ceil(std::fmax(-upperLeft.y, 0.0) / resFactor.y);
+                                    if (tileOffset.x > 0)
                                     {
-                                        dataSize.x--;
-                                        lowerRight.x = dataOffset.x + dataSize.x;
+                                        tileLength.x -= tileOffset.x;
+                                        upperLeft.x += static_cast<double>(tileOffset.x) * resFactor.x;
+                                        dataOffset.x = std::floor(upperLeft.x);
+                                        dataSize.x = static_cast<int32_t>(std::ceil(lowerRight.x)) - dataOffset.x;
+                                    }
+                                    if (tileOffset.y > 0)
+                                    {
+                                        tileLength.y -= tileOffset.y;
+                                        upperLeft.y += static_cast<double>(tileOffset.y) * resFactor.y;
+                                        dataOffset.y = std::floor(upperLeft.y);
+                                        dataSize.y = static_cast<int32_t>(std::ceil(lowerRight.y)) - dataOffset.y;
+                                    }
+                                    if (dataOffset.x >= rasterSize.x)
+                                        result = false;
+                                    else if (dataOffset.x + dataSize.x > rasterSize.x)
+                                    {
+                                        auto delta = rasterSize.x - dataOffset.x - dataSize.x;
+                                        dataSize.x -= delta;
+                                        tileLength.x -= std::ceil(static_cast<double>(delta) / resFactor.x);
+                                        lowerRight.x = upperLeft.x + static_cast<double>(tileLength.x) * resFactor.x;
+                                    }
+                                    if (dataOffset.y >= rasterSize.y)
+                                        result = false;
+                                    else if (dataOffset.y + dataSize.y > rasterSize.y)
+                                    {
+                                        auto delta = rasterSize.y - dataOffset.y - dataSize.y;
+                                        dataSize.y -= delta;
+                                        tileLength.y -= std::ceil(static_cast<double>(delta) / resFactor.y);
+                                        lowerRight.y = upperLeft.y + static_cast<double>(tileLength.y) * resFactor.y;
                                     }
                                 }
-                                if (dataOffset.y + dataSize.y > rasterSize.y)
+                                else
                                 {
-                                    tileLength.y = rasterSize.y - dataOffset.y;
-                                    tileLength.y = std::floor(static_cast<double>(tileLength.y) / resFactor.y);
-                                    lowerRight.y = upperLeft.y + static_cast<double>(tileLength.y) * resFactor.y;
-                                    dataSize.y = static_cast<int32_t>(std::ceil(lowerRight.y)) - dataOffset.y;
-                                    if (dataOffset.y + dataSize.y > rasterSize.y)
+                                    if (dataOffset.x < 0)
                                     {
-                                        dataSize.y--;
-                                        lowerRight.y = dataOffset.y + dataSize.y;
+                                        dataOffset.x = 0;
+                                        upperLeft.x = 0.0;
+                                    }
+                                    if (dataOffset.y < 0)
+                                    {
+                                        dataOffset.y = 0;
+                                        upperLeft.y = 0.0;
+                                    }
+                                    if (dataOffset.x >= rasterSize.x)
+                                        result = false;
+                                    else if (dataOffset.x + dataSize.x > rasterSize.x)
+                                    {
+                                        dataSize.x = rasterSize.x - dataOffset.x;
+                                        lowerRight.x = rasterSize.x - upperLeft.x;
+                                    }
+                                    if (dataOffset.y >= rasterSize.y)
+                                        result = false;
+                                    else if (dataOffset.y + dataSize.y > rasterSize.y)
+                                    {
+                                        dataSize.y = rasterSize.y - dataOffset.y;
+                                        lowerRight.y = rasterSize.y - upperLeft.y;
                                     }
                                 }
                             }
