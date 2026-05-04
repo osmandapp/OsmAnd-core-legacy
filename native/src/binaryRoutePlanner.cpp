@@ -171,7 +171,9 @@ float calculatePreciseStartTime(const RoutingContext* ctx, int projX, int projY,
 }
 
 
-SHARED_PTR<RouteSegment> initEdgeSegment(RoutingContext* ctx, SHARED_PTR<RouteSegmentPoint>& pnt, bool originalDir, SEGMENTS_QUEUE& graphSegments, bool reverseSearchWay) {
+SHARED_PTR<RouteSegment> initEdgeSegment(RoutingContext* ctx, SHARED_PTR<RouteSegmentPoint>& pnt, bool originalDir,
+                                         SEGMENTS_QUEUE& graphSegments, const VISITED_MAP* visited,
+                                         bool reverseSearchWay) {
 	if (!pnt) {
 		return nullptr;
 	}
@@ -233,10 +235,12 @@ SHARED_PTR<RouteSegment> initEdgeSegment(RoutingContext* ctx, SHARED_PTR<RouteSe
 		}
 	}
 	if (checkMovementAllowed(ctx, reverseSearchWay, seg)) {
-		seg->distanceToEnd = estimatedDistance(seg, reverseSearchWay, ctx);
-		SHARED_PTR<RouteSegmentCost> rsc = make_shared<RouteSegmentCost>(seg, ctx);
-		graphSegments.push(rsc);
-		return seg;
+		if (visited == nullptr || visited->find(calculateRoutePointId(seg)) == visited->end()) {
+			seg->distanceToEnd = estimatedDistance(seg, reverseSearchWay, ctx);
+			SHARED_PTR<RouteSegmentCost> rsc = make_shared<RouteSegmentCost>(seg, ctx);
+			graphSegments.push(rsc);
+			return seg;
+		}
 	}
 	return nullptr;
 }
@@ -257,10 +261,10 @@ void initQueuesWithStartEnd(RoutingContext* ctx, SHARED_PTR<RouteSegmentPoint>& 
 		ctx->targetX = end->preciseX;
 		ctx->targetY = end->preciseY;
 	}
-	auto startPos = initEdgeSegment(ctx, start, true, graphDirectSegments, false);
-	auto startNeg = initEdgeSegment(ctx, start, false, graphDirectSegments, false);
-	auto endPos = initEdgeSegment(ctx, end, true, graphReverseSegments, true);
-	auto endNeg = initEdgeSegment(ctx, end, false, graphReverseSegments, true);
+	auto startPos = initEdgeSegment(ctx, start, true, graphDirectSegments, nullptr, false);
+	auto startNeg = initEdgeSegment(ctx, start, false, graphDirectSegments, nullptr, false);
+	auto endPos = initEdgeSegment(ctx, end, true, graphReverseSegments, nullptr, true);
+	auto endNeg = initEdgeSegment(ctx, end, false, graphReverseSegments, nullptr, true);
 	if (TRACE_ROUTING) {
 		printRoad("Initial segment start positive: ", startPos);
 		printRoad("Initial segment start negative: ", startNeg);
@@ -275,27 +279,10 @@ bool checkIfGraphIsEmpty(RoutingContext* ctx, bool allowDirection, bool reverseW
 		if (pnt->others.size() > 0) {
 			vector<SHARED_PTR<RouteSegmentPoint>>::iterator pntIterator = pnt->others.begin();
 			while (pntIterator != pnt->others.end()) {
-				SHARED_PTR<RouteSegment> next = *pntIterator;
+				SHARED_PTR<RouteSegmentPoint> next = *pntIterator;
 				pntIterator = pnt->others.erase(pntIterator);
-				float estimatedDist = estimatedDistance(next, reverseWaySearch, ctx);
-				SHARED_PTR<RouteSegment> pos = RouteSegment::initRouteSegment(next, true);
-				if (pos && !containsKey(visited, calculateRoutePointId(pos)) &&
-					checkMovementAllowed(ctx, reverseWaySearch, pos)) {
-					pos->parentRoute.reset();
-					pos->distanceFromStart = 0;
-					pos->distanceToEnd = estimatedDist;
-					SHARED_PTR<RouteSegmentCost> rsc = make_shared<RouteSegmentCost>(pos, ctx);
-					graphSegments.push(rsc);
-				}
-				SHARED_PTR<RouteSegment> neg = RouteSegment::initRouteSegment(next, false);
-				if (neg && !containsKey(visited, calculateRoutePointId(neg)) &&
-					checkMovementAllowed(ctx, reverseWaySearch, neg)) {
-					neg->parentRoute.reset();
-					neg->distanceFromStart = 0;
-					neg->distanceToEnd = estimatedDist;
-					SHARED_PTR<RouteSegmentCost> rsc = make_shared<RouteSegmentCost>(neg, ctx);
-					graphSegments.push(rsc);
-				}
+				initEdgeSegment(ctx, next, true, graphSegments, &visited, reverseWaySearch);
+				initEdgeSegment(ctx, next, false, graphSegments, &visited, reverseWaySearch);
 
 				if (!graphSegments.empty()) {
 					OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "Reiterate point with new %s",
