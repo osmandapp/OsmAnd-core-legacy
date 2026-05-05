@@ -32,6 +32,7 @@ public:
 private:
 	int maxCountReiteration = 0;
 	int maxStartEndReiterations = 0;
+	bool incorrectCostAtStartEnd = false;
 	double smallestSegmentCost(const SHARED_PTR<HHRoutingContext> & hctx, NetworkDBPoint * st, NetworkDBPoint * end) const;
 	bool retrieveSegmentsGeometry(const SHARED_PTR<HHRoutingContext> & hctx, HHNetworkRouteRes * route, bool routeSegments, SHARED_PTR<RouteCalculationProgress> progress);
 	bool retainAll(std::set<int64_t> & d, const std::set<int64_t> & s) const;
