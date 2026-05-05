@@ -19,6 +19,7 @@ struct HHRoutingConfig
 	
 	int FULL_DIJKSTRA_NETWORK_RECALC = 10;
 	double MAX_INC_COST_CF = 1.25;
+	double MAX_INC_COST_CF_VIGILANT = 1.15;
 	int MAX_START_END_REITERATIONS = 50;
 	int MAX_START_END_REITERATIONS_WITH_MISSING_MAPS = 5;
 
@@ -131,6 +132,7 @@ struct NetworkDBPoint {
 	int clusterId;
 	int fileId;
 	short mapId;
+	bool isStartEnd = false;
 			
 	int64_t roadId;
 	short start;
