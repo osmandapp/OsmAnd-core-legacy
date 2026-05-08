@@ -1,11 +1,17 @@
 #ifndef _JAVA_WRAP_H
 #define _JAVA_WRAP_H
 
+#include <vtzero/builder.hpp>
+#include <vtzero/index.hpp>
+
 #include "Logging.h"
 #include "binaryRead.h"
 #include "commonRendering.h"
 #include "generalRouter.h"
 #include "jni.h"
+
+typedef vtzero::key_index<std::unordered_map> KeyIdx;
+typedef vtzero::value_index<vtzero::string_value_type, std::string, std::unordered_map> ValueIdx;
 
 struct ResultJNIPublisher : ResultPublisher {
 	JNIEnv* env;
@@ -108,5 +114,10 @@ RouteAttributeExpression convertExpressionFromJava(JNIEnv* ienv, jobject jExpres
 
 void clearDirectionPointFromRouteResult(SHARED_PTR<RouteSegmentResult> r );
 void deleteRoutingContext(RoutingContext* c, JNIEnv* ienv, jobject jCtx);
+
+inline void addObjectDataToMapboxVectorTile(
+	vtzero::feature_builder* feature, MapDataObject& obj, KeyIdx& keyIdx, ValueIdx& valueIdx);
+
+inline int scaleToTile(int coord, int tileStart, int shift);
 
 #endif

@@ -485,6 +485,76 @@ extern "C" JNIEXPORT jobject JNICALL Java_net_osmand_NativeLibrary_getGeotiffTil
 
 	return resultObject;
 }
+
+extern "C" JNIEXPORT jbyteArray JNICALL Java_net_osmand_NativeLibrary_getMapboxVectorTileData(
+	JNIEnv* ienv, jobject obj, jint zoom, jint x, jint y) {
+
+	ResultPublisher publisher;
+	int s = 31 - zoom;
+	int xs = x << s;
+	int ys = y << s;
+	auto q = SearchQuery(xs, (x + 1) << s, ys, (y + 1) << s, nullptr, &publisher);
+	q.zoom = zoom;
+
+	s -= 12;
+
+	int renderedState = 0;
+	ResultPublisher* res = searchObjectsForRendering(&q, true, "Nothing found", renderedState);
+
+	vtzero::tile_builder tile;
+
+	vtzero::layer_builder layers[] = {{tile, "tunnel_layer"}, {tile, "ground_layer"}, {tile, "bridge_layer"}};
+	KeyIdx key_indices[] = {KeyIdx(layers[0]), KeyIdx(layers[1]), KeyIdx(layers[2])};
+	ValueIdx value_indices[] = {ValueIdx(layers[0]), ValueIdx(layers[1]), ValueIdx(layers[2])};
+
+	for (auto& foundMapDataObject : res->result) {
+		auto& obj = *foundMapDataObject.obj;
+        int layer_idx = obj.getSimpleLayer() + 1;
+		auto& key_index = key_indices[layer_idx];
+		auto& value_index = value_indices[layer_idx];
+
+		const bool isArea = obj.area;
+		const bool isPoint = obj.points.size() == 1;
+		const bool isCycle = obj.cycle();
+
+        if (isPoint && !isArea) {
+			vtzero::point_feature_builder feature(layers[layer_idx]);
+			feature.set_id(obj.id);
+            feature.add_point(scaleToTile(obj.points[0].first, xs, s), scaleToTile(obj.points[0].second, ys, s));
+			addObjectDataToMapboxVectorTile(&feature, obj, key_index, value_index);
+			feature.commit();
+		} else if (!isPoint && (isArea || isCycle)) {
+			vtzero::polygon_feature_builder feature(layers[layer_idx]);
+			feature.set_id(obj.id);
+            feature.add_ring(obj.points.size());
+            for (const auto& p : obj.points)
+				feature.set_point(scaleToTile(p.first, xs, s), scaleToTile(p.second, ys, s));
+            for (const auto& ring : obj.polygonInnerCoordinates) {
+                feature.add_ring(ring.size());
+                for (const auto& p : ring)
+					feature.set_point(scaleToTile(p.first, xs, s), scaleToTile(p.second, ys, s));
+            }
+			addObjectDataToMapboxVectorTile(&feature, obj, key_index, value_index);
+	        feature.commit();
+		} else if (!isPoint || !isArea) {
+			vtzero::linestring_feature_builder feature(layers[layer_idx]);
+			feature.set_id(obj.id);
+            feature.add_linestring(obj.points.size());
+            for (const auto& p : obj.points)
+				feature.set_point(scaleToTile(p.first, xs, s), scaleToTile(p.second, ys, s));
+			addObjectDataToMapboxVectorTile(&feature, obj, key_index, value_index);
+	        feature.commit();
+        }
+    }
+
+	auto blob = tile.serialize();
+	jbyteArray resultObject = ienv->NewByteArray(blob.size());
+	ienv->SetByteArrayRegion(resultObject, 0, blob.size(), (const jbyte*)blob.data());
+
+	fflush(stdout);
+
+	return resultObject;
+}
 #endif
 
 ///////////////////////////////////////////////
@@ -2741,4 +2811,26 @@ void clearDirectionPointFromRouteResult(SHARED_PTR<RouteSegmentResult> r) {
 		std::vector<uint32_t> empty;
 		r->object->pointTypes[clearPointIndex] = empty;
 	}
+}
+
+inline void addObjectDataToMapboxVectorTile(
+	vtzero::feature_builder* feature, MapDataObject& obj, KeyIdx& keyIdx, ValueIdx& valueIdx) {
+
+	for (const auto& tag : obj.types)
+		feature->add_property(keyIdx(tag.first), valueIdx(tag.second));
+	for (const auto& tag : obj.additionalTypes)
+		feature->add_property(keyIdx(tag.first), valueIdx(tag.second));
+	for (const auto& name : obj.namesOrder)
+	{
+		const auto it = obj.objectNames.find(name);
+		if (it != obj.objectNames.end())
+			feature->add_property(keyIdx(name), valueIdx(it->second));
+	}
+}
+
+inline int scaleToTile(int coord, int tileStart, int shift) {
+	if (shift <= 0)
+		return coord - tileStart << -shift;
+	int delta = coord - tileStart;
+	return (delta >> shift) + (delta >> shift - 1 & 1);
 }
