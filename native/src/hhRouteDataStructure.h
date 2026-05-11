@@ -132,7 +132,6 @@ struct NetworkDBPoint {
 	int clusterId;
 	int fileId;
 	short mapId;
-	bool isStartEnd = false;
 			
 	int64_t roadId;
 	short start;

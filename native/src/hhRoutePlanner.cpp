@@ -654,7 +654,6 @@ UNORDERED_map<int64_t, NetworkDBPoint *> HHRoutePlanner::initStart(const SHARED_
 	hctx->rctx->config->planRoadDirection = savedPlanRoadDirectrion;
 	hctx->rctx->config->MAX_VISITED = savedMaxVisited;
 	if (!frs.empty()) {
-		bool isStartEnd = true;
 		std::set<int64_t> set;
 		for (auto & o : frs) {
 			// duplicates are possible as alternative routes
@@ -701,9 +700,7 @@ UNORDERED_map<int64_t, NetworkDBPoint *> HHRoutePlanner::initStart(const SHARED_
 				pnt->setDistanceToEnd(reverse,
 				                      pnt->index == PNT_SHORT_ROUTE_START_END ? 0 : hctx->distanceToEnd(reverse, pnt));
 				pnt->setDetailedParentRt(reverse, o);
-				pnt->isStartEnd = isStartEnd;
 				pnts.insert(std::pair<int64_t, NetworkDBPoint *>(pnt->index, pnt));
-				isStartEnd = false;
 			}
 		}
 	}
@@ -984,6 +981,16 @@ double HHRoutePlanner::smallestSegmentCost(const SHARED_PTR<HHRoutingContext> & 
 	return dist / hctx->rctx->config->router->getMaxSpeed();
 }
 
+bool HHRoutePlanner::touchesStartOrEnd(const NetworkDBPoint * point, const NetworkDBPoint * nextPoint, bool reverse) const {
+	if (reverse) {
+		return (point->rtRev != nullptr && point->rtRev->rtRouteToPoint == nullptr)
+				|| (nextPoint->rtPos != nullptr && nextPoint->rtPos->rtRouteToPoint == nullptr);
+	} else {
+		return (point->rtPos != nullptr && point->rtPos->rtRouteToPoint == nullptr)
+				|| (nextPoint->rtRev != nullptr && nextPoint->rtRev->rtRouteToPoint == nullptr);
+	}
+}
+
 void HHRoutePlanner::addPointToQueue(const SHARED_PTR<HHRoutingContext> & hctx, SHARED_PTR<HH_QUEUE> queue, bool reverse,
 									 NetworkDBPoint * point, NetworkDBPoint * parent, double segmentDist, double cost) {
 	OsmAnd::ElapsedTimer timer;
@@ -1039,7 +1046,7 @@ void HHRoutePlanner::addConnectedToQueue(const SHARED_PTR<HHRoutingContext> & hc
 		}
 		if (ASSERT_AND_CORRECT_DIST_SMALLER && hctx->config->HEURISTIC_COEFFICIENT > 0
 			&& smallestSegmentCost(hctx, point, nextPoint) - connected->dist >  1) {
-			if (point->isStartEnd || nextPoint->isStartEnd) {
+			if (touchesStartOrEnd(point, nextPoint, reverse)) {
 				incorrectCostAtStartEnd = true;
 			}
 			double sSegmentCost = smallestSegmentCost(hctx, point, nextPoint);
