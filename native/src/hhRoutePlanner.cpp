@@ -301,6 +301,7 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
 	}
 	progress->hhIteration(RouteCalculationProgress::HHIteration::START_END_POINT);
 	findFirstLastSegments(hctx, startX, startY, endX, endY, stPoints, endPoints);
+	incorrectCostAtStartEnd = false;
 	HHNetworkRouteRes * route = nullptr;
 	bool recalc = false;
 	double firstIterationTime = 0;
@@ -875,7 +876,10 @@ bool HHRoutePlanner::retrieveSegmentsGeometry(const SHARED_PTR<HHRoutingContext>
 				return false;
 			}
 			float distanceFromStart = f.at(0)->distanceFromStart;
-			if ((distanceFromStart + MAX_INC_COST_CORR) > (s.segment->dist + MAX_INC_COST_CORR) * hctx->config->MAX_INC_COST_CF) {
+			double maxIncCostCoefficient = incorrectCostAtStartEnd
+				? hctx->config->MAX_INC_COST_CF_VIGILANT
+				: hctx->config->MAX_INC_COST_CF;
+			if ((distanceFromStart + MAX_INC_COST_CORR) > (s.segment->dist + MAX_INC_COST_CORR) * maxIncCostCoefficient) {
 				if (DEBUG_VERBOSE_LEVEL > 0) {
 					OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
 									  "Route cost increased (%.2f > %.2f) between %d -> %d: recalculate route\n",
@@ -977,6 +981,16 @@ double HHRoutePlanner::smallestSegmentCost(const SHARED_PTR<HHRoutingContext> & 
 	return dist / hctx->rctx->config->router->getMaxSpeed();
 }
 
+bool HHRoutePlanner::touchesStartOrEnd(const NetworkDBPoint * point, const NetworkDBPoint * nextPoint, bool reverse) const {
+	if (reverse) {
+		return (point->rtRev != nullptr && point->rtRev->rtRouteToPoint == nullptr)
+				|| (nextPoint->rtPos != nullptr && nextPoint->rtPos->rtRouteToPoint == nullptr);
+	} else {
+		return (point->rtPos != nullptr && point->rtPos->rtRouteToPoint == nullptr)
+				|| (nextPoint->rtRev != nullptr && nextPoint->rtRev->rtRouteToPoint == nullptr);
+	}
+}
+
 void HHRoutePlanner::addPointToQueue(const SHARED_PTR<HHRoutingContext> & hctx, SHARED_PTR<HH_QUEUE> queue, bool reverse,
 									 NetworkDBPoint * point, NetworkDBPoint * parent, double segmentDist, double cost) {
 	OsmAnd::ElapsedTimer timer;
@@ -1032,6 +1046,9 @@ void HHRoutePlanner::addConnectedToQueue(const SHARED_PTR<HHRoutingContext> & hc
 		}
 		if (ASSERT_AND_CORRECT_DIST_SMALLER && hctx->config->HEURISTIC_COEFFICIENT > 0
 			&& smallestSegmentCost(hctx, point, nextPoint) - connected->dist >  1) {
+			if (touchesStartOrEnd(point, nextPoint, reverse)) {
+				incorrectCostAtStartEnd = true;
+			}
 			double sSegmentCost = smallestSegmentCost(hctx, point, nextPoint);
 			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
 							  "Incorrect distance Point %u -> Point %u: db = %.2f > fastest %.2f",
