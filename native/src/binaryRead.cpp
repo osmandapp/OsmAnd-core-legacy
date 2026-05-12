@@ -30,7 +30,8 @@ using google::protobuf::io::FileOutputStream;
 
 // using namespace google::protobuf::internal;
 #define INT_MAXIMUM 0x7fffffff
-#define INT_MAX_THRESHOLD 0x77ffffff
+// Keep the hard protobuf read limit but disable noisy warnings for large OBF files.
+#define INT_MAX_THRESHOLD -1
 
 static uint zoomForBaseRouteRendering = 13;
 static uint detailedZoomStartForRouteSection = 13;
