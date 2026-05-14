@@ -507,7 +507,7 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_net_osmand_NativeLibrary_getMapboxV
 	KeyIdx key_indices[] = {KeyIdx(layers[0]), KeyIdx(layers[1]), KeyIdx(layers[2])};
 	ValueIdx value_indices[] = {ValueIdx(layers[0]), ValueIdx(layers[1]), ValueIdx(layers[2])};
 
-	int px, py;
+	int fx, fy, px, py;
 	for (auto& foundMapDataObject : res->result) {
 		auto& obj = *foundMapDataObject.obj;
         int layer_idx = obj.getSimpleLayer() + 1;
@@ -536,14 +536,18 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_net_osmand_NativeLibrary_getMapboxV
             feature.add_ring(isCycle ? size : size + 1);
 			px = -1;
 			py = -1;
+			bool first = true;
 			for (const auto& p : obj.points) {
 				makeNewScaledPoint(p, xs, ys, s, px, py);
 				feature.set_point(px, py);
+				if (first) {
+					fx = px;
+					fy = py;
+					first = false;
+				}
 			}
-			if (!isCycle) {
-				const auto& p = obj.points.front();
-				makeNewScaledPoint(p, xs, ys, s, px, py);
-				feature.set_point(px, py);
+			if (!isCycle && (px != fx || py != fy)) {
+				feature.set_point(fx, fy);
 			}
             for (const auto& ring : obj.polygonInnerCoordinates) {
 				size = ring.size();
@@ -553,14 +557,18 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_net_osmand_NativeLibrary_getMapboxV
                 feature.add_ring(isLoop ? size : size + 1);
 				px = -1;
 				py = -1;
+				first = true;
                 for (const auto& p : ring) {
 					makeNewScaledPoint(p, xs, ys, s, px, py);
 					feature.set_point(px, py);
+					if (first) {
+						fx = px;
+						fy = py;
+						first = false;
+					}
 				}
-				if (!isLoop) {
-					const auto& p = ring.front();
-					makeNewScaledPoint(p, xs, ys, s, px, py);
-					feature.set_point(px, py);
+				if (!isLoop && (px != fx || py != fy)) {
+					feature.set_point(fx, fy);
 				}
 			}
 			addObjectDataToMapboxVectorTile(&feature, obj, key_index, value_index);
