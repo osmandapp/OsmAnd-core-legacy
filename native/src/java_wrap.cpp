@@ -542,6 +542,8 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_net_osmand_NativeLibrary_getMapboxV
             for (const auto& ring : obj.polygonInnerCoordinates) {
 				size = ring.size();
 				bool isLoop = ring.front() == ring.back();
+				if (isLoop && size < 4 || size < 3)
+					continue;
                 feature.add_ring(isLoop ? size : size + 1);
                 for (const auto& p : ring)
 					feature.set_point(scaleToTile(p.first, xs, s), scaleToTile(p.second, ys, s));
