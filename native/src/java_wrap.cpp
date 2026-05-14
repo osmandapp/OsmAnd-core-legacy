@@ -513,8 +513,12 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_net_osmand_NativeLibrary_getMapboxV
 		auto& key_index = key_indices[layer_idx];
 		auto& value_index = value_indices[layer_idx];
 
+		auto size = obj.points.size();
+		if (size < 1)
+			continue;
+
 		const bool isArea = obj.area;
-		const bool isPoint = obj.points.size() == 1;
+		const bool isPoint = size == 1;
 		const bool isCycle = obj.cycle();
 
         if (isPoint && !isArea) {
@@ -524,22 +528,36 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_net_osmand_NativeLibrary_getMapboxV
 			addObjectDataToMapboxVectorTile(&feature, obj, key_index, value_index);
 			feature.commit();
 		} else if (!isPoint && (isArea || isCycle)) {
+			if (isCycle && size < 4 || size < 3)
+				continue;
 			vtzero::polygon_feature_builder feature(layers[layer_idx]);
 			feature.set_id(obj.id);
-            feature.add_ring(obj.points.size());
+            feature.add_ring(isCycle ? size : size + 1);
             for (const auto& p : obj.points)
 				feature.set_point(scaleToTile(p.first, xs, s), scaleToTile(p.second, ys, s));
+			if (!isCycle) {
+				const auto& p = obj.points.front();
+				feature.set_point(scaleToTile(p.first, xs, s), scaleToTile(p.second, ys, s));
+			}
             for (const auto& ring : obj.polygonInnerCoordinates) {
-                feature.add_ring(ring.size());
+				size = ring.size();
+				bool isLoop = ring.front() == ring.back();
+                feature.add_ring(isLoop ? size : size + 1);
                 for (const auto& p : ring)
 					feature.set_point(scaleToTile(p.first, xs, s), scaleToTile(p.second, ys, s));
-            }
+				if (!isLoop) {
+					const auto& p = ring.front();
+					feature.set_point(scaleToTile(p.first, xs, s), scaleToTile(p.second, ys, s));
+				}
+			}
 			addObjectDataToMapboxVectorTile(&feature, obj, key_index, value_index);
 	        feature.commit();
 		} else if (!isPoint || !isArea) {
+			if (isCycle && size < 3 || size < 2)
+				continue;
 			vtzero::linestring_feature_builder feature(layers[layer_idx]);
 			feature.set_id(obj.id);
-            feature.add_linestring(obj.points.size());
+            feature.add_linestring(size);
             for (const auto& p : obj.points)
 				feature.set_point(scaleToTile(p.first, xs, s), scaleToTile(p.second, ys, s));
 			addObjectDataToMapboxVectorTile(&feature, obj, key_index, value_index);
