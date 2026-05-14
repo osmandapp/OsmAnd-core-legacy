@@ -507,6 +507,7 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_net_osmand_NativeLibrary_getMapboxV
 	KeyIdx key_indices[] = {KeyIdx(layers[0]), KeyIdx(layers[1]), KeyIdx(layers[2])};
 	ValueIdx value_indices[] = {ValueIdx(layers[0]), ValueIdx(layers[1]), ValueIdx(layers[2])};
 
+	int px, py;
 	for (auto& foundMapDataObject : res->result) {
 		auto& obj = *foundMapDataObject.obj;
         int layer_idx = obj.getSimpleLayer() + 1;
@@ -533,11 +534,16 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_net_osmand_NativeLibrary_getMapboxV
 			vtzero::polygon_feature_builder feature(layers[layer_idx]);
 			feature.set_id(obj.id);
             feature.add_ring(isCycle ? size : size + 1);
-            for (const auto& p : obj.points)
-				feature.set_point(scaleToTile(p.first, xs, s), scaleToTile(p.second, ys, s));
+			px = -1;
+			py = -1;
+			for (const auto& p : obj.points) {
+				makeNewScaledPoint(p, xs, ys, s, px, py);
+				feature.set_point(px, py);
+			}
 			if (!isCycle) {
 				const auto& p = obj.points.front();
-				feature.set_point(scaleToTile(p.first, xs, s), scaleToTile(p.second, ys, s));
+				makeNewScaledPoint(p, xs, ys, s, px, py);
+				feature.set_point(px, py);
 			}
             for (const auto& ring : obj.polygonInnerCoordinates) {
 				size = ring.size();
@@ -545,11 +551,16 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_net_osmand_NativeLibrary_getMapboxV
 				if (isLoop && size < 4 || size < 3)
 					continue;
                 feature.add_ring(isLoop ? size : size + 1);
-                for (const auto& p : ring)
-					feature.set_point(scaleToTile(p.first, xs, s), scaleToTile(p.second, ys, s));
+				px = -1;
+				py = -1;
+                for (const auto& p : ring) {
+					makeNewScaledPoint(p, xs, ys, s, px, py);
+					feature.set_point(px, py);
+				}
 				if (!isLoop) {
 					const auto& p = ring.front();
-					feature.set_point(scaleToTile(p.first, xs, s), scaleToTile(p.second, ys, s));
+					makeNewScaledPoint(p, xs, ys, s, px, py);
+					feature.set_point(px, py);
 				}
 			}
 			addObjectDataToMapboxVectorTile(&feature, obj, key_index, value_index);
@@ -560,8 +571,12 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_net_osmand_NativeLibrary_getMapboxV
 			vtzero::linestring_feature_builder feature(layers[layer_idx]);
 			feature.set_id(obj.id);
             feature.add_linestring(size);
-            for (const auto& p : obj.points)
-				feature.set_point(scaleToTile(p.first, xs, s), scaleToTile(p.second, ys, s));
+			px = -1;
+			py = -1;
+            for (const auto& p : obj.points) {
+				makeNewScaledPoint(p, xs, ys, s, px, py);
+				feature.set_point(px, py);
+			}
 			addObjectDataToMapboxVectorTile(&feature, obj, key_index, value_index);
 	        feature.commit();
         }
@@ -2853,4 +2868,15 @@ inline int scaleToTile(int coord, int tileStart, int shift) {
 		return (coord - tileStart) << (-shift);
 	int delta = coord - tileStart;
 	return (delta >> shift) + (delta >> (shift - 1) & 1);
+}
+
+inline void makeNewScaledPoint(
+	const std::pair<int, int>& coords, int tileStartX, int tileStartY, int shift, int& x, int& y) {
+	int nx = scaleToTile(coords.first, tileStartX, shift);
+	int ny = scaleToTile(coords.second, tileStartY, shift);
+	if (nx == x && ny == y) {
+		nx ^= 1;
+	}
+	x = nx;
+	y = ny;
 }
