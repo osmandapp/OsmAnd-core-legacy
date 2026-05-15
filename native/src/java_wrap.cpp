@@ -507,7 +507,7 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_net_osmand_NativeLibrary_getMapboxV
 	KeyIdx key_indices[] = {KeyIdx(layers[0]), KeyIdx(layers[1]), KeyIdx(layers[2])};
 	ValueIdx value_indices[] = {ValueIdx(layers[0]), ValueIdx(layers[1]), ValueIdx(layers[2])};
 
-	int fx, fy, px, py;
+	int i, fx, fy, px, py;
 	for (auto& foundMapDataObject : res->result) {
 		auto& obj = *foundMapDataObject.obj;
         int layer_idx = obj.getSimpleLayer() + 1;
@@ -520,7 +520,7 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_net_osmand_NativeLibrary_getMapboxV
 
 		const bool isArea = obj.area;
 		const bool isPoint = size == 1;
-		const bool isCycle = obj.cycle();
+		bool isCycle = obj.cycle();
 
         if (isPoint && !isArea) {
 			vtzero::point_feature_builder feature(layers[layer_idx]);
@@ -534,42 +534,50 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_net_osmand_NativeLibrary_getMapboxV
 			vtzero::polygon_feature_builder feature(layers[layer_idx]);
 			feature.set_id(obj.id);
             feature.add_ring(isCycle ? size : size + 1);
-			px = -1;
-			py = -1;
-			bool first = true;
-			for (const auto& p : obj.points) {
-				makeNewScaledPoint(p, xs, ys, s, px, py);
+			fx = -1;
+			fy = -1;
+			makeNewScaledPoint(obj.points[0], xs, ys, s, fx, fy);
+			px = fx;
+			py = fy;
+			for (i = 1; i < size - 1; i++) {
 				feature.set_point(px, py);
-				if (first) {
-					fx = px;
-					fy = py;
-					first = false;
-				}
+				makeNewScaledPoint(obj.points[i], xs, ys, s, px, py);
 			}
-			if (!isCycle && (px != fx || py != fy)) {
-				feature.set_point(fx, fy);
+			if (isCycle && px == fx && py == fy)
+				py ^= 1;
+			feature.set_point(px, py);
+			if (!isCycle) {
+				makeNewScaledPoint(obj.points[i], xs, ys, s, px, py);
+				if (px == fx && py == fy)
+					py ^= 1;
+				feature.set_point(px, py);
 			}
+			feature.set_point(fx, fy);
             for (const auto& ring : obj.polygonInnerCoordinates) {
 				size = ring.size();
-				bool isLoop = ring.front() == ring.back();
-				if (isLoop && size < 4 || size < 3)
+				isCycle = ring.front() == ring.back();
+				if (isCycle && size < 4 || size < 3)
 					continue;
-                feature.add_ring(isLoop ? size : size + 1);
-				px = -1;
-				py = -1;
-				first = true;
-                for (const auto& p : ring) {
-					makeNewScaledPoint(p, xs, ys, s, px, py);
+                feature.add_ring(isCycle ? size : size + 1);
+				fx = -1;
+				fy = -1;
+				makeNewScaledPoint(ring[0], xs, ys, s, fx, fy);
+				px = fx;
+				py = fy;
+                for (i = 1; i < size - 1; i++) {
 					feature.set_point(px, py);
-					if (first) {
-						fx = px;
-						fy = py;
-						first = false;
-					}
+					makeNewScaledPoint(ring[i], xs, ys, s, px, py);
 				}
-				if (!isLoop && (px != fx || py != fy)) {
-					feature.set_point(fx, fy);
+				if (isCycle && px == fx && py == fy)
+					py ^= 1;
+				feature.set_point(px, py);
+				if (!isCycle) {
+					makeNewScaledPoint(ring[i], xs, ys, s, px, py);
+					if (px == fx && py == fy)
+						py ^= 1;
+					feature.set_point(px, py);
 				}
+				feature.set_point(fx, fy);
 			}
 			addObjectDataToMapboxVectorTile(&feature, obj, key_index, value_index);
 	        feature.commit();
