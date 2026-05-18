@@ -529,7 +529,7 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_net_osmand_NativeLibrary_getMapboxV
 			addObjectDataToMapboxVectorTile(&feature, obj, key_index, value_index);
 			feature.commit();
 		} else if (!isPoint && (isArea || isCycle)) {
-			if (isCycle && size < 4 || size < 3)
+			if ((isCycle && size < 4) || size < 3)
 				continue;
 			vtzero::polygon_feature_builder feature(layers[layer_idx]);
 			feature.set_id(obj.id);
@@ -556,7 +556,7 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_net_osmand_NativeLibrary_getMapboxV
             for (const auto& ring : obj.polygonInnerCoordinates) {
 				size = ring.size();
 				isCycle = ring.front() == ring.back();
-				if (isCycle && size < 4 || size < 3)
+				if ((isCycle && size < 4) || size < 3)
 					continue;
                 feature.add_ring(isCycle ? size : size + 1);
 				fx = -1;
@@ -582,7 +582,7 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_net_osmand_NativeLibrary_getMapboxV
 			addObjectDataToMapboxVectorTile(&feature, obj, key_index, value_index);
 	        feature.commit();
 		} else if (!isPoint || !isArea) {
-			if (isCycle && size < 3 || size < 2)
+			if ((isCycle && size < 3) || size < 2)
 				continue;
 			vtzero::linestring_feature_builder feature(layers[layer_idx]);
 			feature.set_id(obj.id);
