@@ -81,6 +81,11 @@ struct MapRoot : MapTreeBounds {
 	uint minZoom;
 	uint maxZoom;
 	std::vector<MapTreeBounds> bounds;
+
+	// Shared mutex because MapRoot copied by value in readMapIndex() and initBinaryMapFile()
+	std::shared_ptr<std::mutex> boundsMutex;
+
+	MapRoot() : minZoom(0), maxZoom(0), boundsMutex(std::make_shared<std::mutex>()) { }
 };
 
 enum PART_INDEXES {
@@ -107,6 +112,7 @@ struct RoutingIndex : BinaryPartIndex {
 	UNORDERED_map<std::string, uint32_t> decodingRules;
 	std::vector<RouteSubregion> subregions;
 	std::vector<RouteSubregion> basesubregions;
+	std::mutex rulesMutex;
 
 	int nameTypeRule;
 	int refTypeRule;
@@ -851,6 +857,7 @@ struct TransportIndex : BinaryPartIndex {
 
 struct MapIndex : BinaryPartIndex {
 	std::vector<MapRoot> levels;
+	std::mutex initMutex;
 
 	UNORDERED(map)<int, tag_value> decodingRules;
 	// DEFINE hash

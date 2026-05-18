@@ -486,8 +486,6 @@ extern "C" JNIEXPORT jobject JNICALL Java_net_osmand_NativeLibrary_getGeotiffTil
 	return resultObject;
 }
 
-// std::mutex vtzero_mutex; // TODO remove
-
 extern "C" JNIEXPORT jbyteArray JNICALL Java_net_osmand_NativeLibrary_getMapboxVectorTileData(
 	JNIEnv* ienv, jobject obj, jint zoom, jint x, jint y) {
 
@@ -500,14 +498,10 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_net_osmand_NativeLibrary_getMapboxV
 
 	s -= 12;
 
-	// std::lock_guard<std::mutex> lock(vtzero_mutex);
-
 	int renderedState = 0;
 	registerCurrentThreadOnOpenFiles();
 	ResultPublisher* res = searchObjectsForRendering(&q, true, "Nothing found", renderedState);
 	unregisterCurrentThreadOnOpenFiles();
-
-	// std::lock_guard<std::mutex> lock(vtzero_mutex);
 
 	vtzero::tile_builder tile;
 

@@ -65,6 +65,7 @@ uint32_t RoutingIndex::findOrCreateRouteType(const std::string& tag, const std::
 }
 
 uint32_t RoutingIndex::searchRouteEncodingRule(const std::string& tag, const std::string& value) {
+	std::lock_guard<std::mutex> lock(rulesMutex);
 	if (decodingRules.empty()) {
 		for (uint32_t i = 1; i < routeEncodingRules.size(); i++) {
 			RouteTypeRule& rt = routeEncodingRules[i];
@@ -2833,6 +2834,7 @@ void convertRouteDataObjecToMapObjects(SearchQuery* q, std::vector<RouteDataObje
 
 void checkAndInitRouteRegionRules(int fileInd, const SHARED_PTR<RoutingIndex>& routingIndex) {
 	// init decoding rules
+	std::lock_guard<std::mutex> lock(routingIndex->rulesMutex);
 	if (routingIndex->routeEncodingRules.size() == 0) {
 		lseek(fileInd, 0, SEEK_SET);
 		FileInputStream input(fileInd);
@@ -2985,28 +2987,34 @@ void readMapObjects(SearchQuery* q, BinaryMapFile* file) {
 					mapLevel->bottom >= (uint)q->top && (uint)q->bottom >= mapLevel->top) {
 					// OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Search map %s", mapIndex->name.c_str());
 					// lazy initializing rules
-					if (mapIndex->decodingRules.size() == 0) {
-						lseek(file->getFD(), 0, SEEK_SET);
-						FileInputStream input(file->getFD());
-						input.SetCloseOnDelete(false);
-						CodedInputStream cis(&input);
-						cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
-						cis.Seek(mapIndex->filePointer);
-						int oldLimit = cis.PushLimit(mapIndex->length);
-						readMapIndex(&cis, mapIndex, true);
-						cis.PopLimit(oldLimit);
+					{
+						std::lock_guard<std::mutex> lock(mapIndex->initMutex);
+						if (mapIndex->decodingRules.size() == 0) {
+							lseek(file->getFD(), 0, SEEK_SET);
+							FileInputStream input(file->getFD());
+							input.SetCloseOnDelete(false);
+							CodedInputStream cis(&input);
+							cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
+							cis.Seek(mapIndex->filePointer);
+							int oldLimit = cis.PushLimit(mapIndex->length);
+							readMapIndex(&cis, mapIndex, true);
+							cis.PopLimit(oldLimit);
+						}
 					}
 					// lazy initializing subtrees
-					if (mapLevel->bounds.size() == 0) {
-						lseek(file->getFD(), 0, SEEK_SET);
-						FileInputStream input(file->getFD());
-						input.SetCloseOnDelete(false);
-						CodedInputStream cis(&input);
-						cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
-						cis.Seek(mapLevel->filePointer);
-						int oldLimit = cis.PushLimit(mapLevel->length);
-						readMapLevel(&cis, &(*mapLevel), true);
-						cis.PopLimit(oldLimit);
+					{
+						std::lock_guard<std::mutex> lock(*mapLevel->boundsMutex);
+						if (mapLevel->bounds.size() == 0) {
+							lseek(file->getFD(), 0, SEEK_SET);
+							FileInputStream input(file->getFD());
+							input.SetCloseOnDelete(false);
+							CodedInputStream cis(&input);
+							cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
+							cis.Seek(mapLevel->filePointer);
+							int oldLimit = cis.PushLimit(mapLevel->length);
+							readMapLevel(&cis, &(*mapLevel), true);
+							cis.PopLimit(oldLimit);
+						}
 					}
 					lseek(file->getFD(), 0, SEEK_SET);
 					FileInputStream input(file->getFD());
