@@ -4048,34 +4048,65 @@ bool BinaryMapFile::isRegisteredThread() {
 	return currentThreads.find(std::this_thread::get_id()) != currentThreads.end();
 }
 
-int BinaryMapFile::getThreadFD(std::mutex& mapMutex, std::unordered_map<std::thread::id, int>& map) {
+void BinaryMapFile::closeThreadFDs(std::mutex& fdsMutex, std::unordered_map<std::thread::id, int>& fds,
+                                   const std::thread::id* threadId) {
+	std::vector<int> fdsToClose;
+	{
+		std::lock_guard<std::mutex> mapLock(fdsMutex);
+		if (threadId != nullptr) {
+			const auto it = fds.find(*threadId);
+			if (it != fds.end()) {
+				fdsToClose.push_back(it->second);
+				fds.erase(it);
+			}
+		} else {
+			for (const auto& entry : fds) {
+				fdsToClose.push_back(entry.second);
+			}
+			fds.clear();
+		}
+	}
+	for (const int f : fdsToClose) {
+		close(f);
+	}
+}
+
+void BinaryMapFile::closeAllThreadsFDs() {
+	closeThreadFDs(fdThreadsMutex, fd_threads, nullptr);
+	closeThreadFDs(routefdThreadsMutex, routefd_threads, nullptr);
+	closeThreadFDs(geocodingfdThreadsMutex, geocodingfd_threads, nullptr);
+	closeThreadFDs(hhfdThreadsMutex, hhfd_threads, nullptr);
+}
+
+int BinaryMapFile::getThreadFD(std::mutex& fdsMutex, std::unordered_map<std::thread::id, int>& fds) {
 	const std::thread::id currentThreadId = std::this_thread::get_id();
-	std::lock_guard<std::mutex> lock(mapMutex);
-	const auto it = map.find(currentThreadId);
-	if (it != map.end()) {
+	std::lock_guard<std::mutex> lock(fdsMutex);
+	const auto it = fds.find(currentThreadId);
+	if (it != fds.end()) {
 		return it->second;
 	}
 
 	const int threadFD = openFile();
-	map.insert({currentThreadId, threadFD});
+	if (threadFD >= 0) {
+		fds.insert({currentThreadId, threadFD});
+	}
 	return threadFD;
 }
 
 void BinaryMapFile::registerCurrentThread() {
 	std::lock_guard<std::mutex> lock(currentThreadsMutex);
-	if (currentThreads.find(std::this_thread::get_id()) != currentThreads.end()) {
-		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "XXX thread already exists !!!");
-	}
 	currentThreads.insert(std::this_thread::get_id());
 }
 
 void BinaryMapFile::unregisterCurrentThread() {
 	std::lock_guard<std::mutex> lock(currentThreadsMutex);
-	if (currentThreads.find(std::this_thread::get_id()) != currentThreads.end()) {
-		// TODO close fds
-		currentThreads.erase(std::this_thread::get_id());
-	} else {
-		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "XXX thread NOT found !!!");
+	const std::thread::id currentThreadId = std::this_thread::get_id();
+	if (currentThreads.find(currentThreadId) != currentThreads.end()) {
+		closeThreadFDs(fdThreadsMutex, fd_threads, &currentThreadId);
+		closeThreadFDs(routefdThreadsMutex, routefd_threads, &currentThreadId);
+		closeThreadFDs(geocodingfdThreadsMutex, geocodingfd_threads, &currentThreadId);
+		closeThreadFDs(hhfdThreadsMutex, hhfd_threads, &currentThreadId);
+		currentThreads.erase(currentThreadId);
 	}
 }
 

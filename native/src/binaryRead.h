@@ -965,7 +965,7 @@ struct BinaryMapFile {
 			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, " Native File could not be open to read: %s",
 							  inputName.c_str());
 		} else {
-			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Native open file: %s", inputName.c_str());
+			// OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Native open file: %s", inputName.c_str());
 		}
 		return fileDescriptor;
 	}
@@ -1038,13 +1038,17 @@ struct BinaryMapFile {
 		if (hhfd >= 0) {
 			close(hhfd);
 		}
-		// TODO close fds opened by threads
+		closeAllThreadsFDs();
 	}
 
-	bool isRegisteredThread();
-	int getThreadFD(std::mutex& mapMutex, std::unordered_map<std::thread::id, int>& map);
 	void registerCurrentThread(); // register the thread for thread-safe file descriptors
 	void unregisterCurrentThread(); // close all file descriptors and unregister the thread
+
+	bool isRegisteredThread();
+	int getThreadFD(std::mutex& fdsMutex, std::unordered_map<std::thread::id, int>& fds);
+
+	void closeAllThreadsFDs();
+	static void closeThreadFDs(std::mutex&, std::unordered_map<std::thread::id, int>&, const std::thread::id*);
 };
 
 void registerCurrentThreadOnOpenFiles();
