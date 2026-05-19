@@ -65,6 +65,7 @@ uint32_t RoutingIndex::findOrCreateRouteType(const std::string& tag, const std::
 }
 
 uint32_t RoutingIndex::searchRouteEncodingRule(const std::string& tag, const std::string& value) {
+	std::lock_guard<std::mutex> lock(rulesMutex);
 	if (decodingRules.empty()) {
 		for (uint32_t i = 1; i < routeEncodingRules.size(); i++) {
 			RouteTypeRule& rt = routeEncodingRules[i];
@@ -2833,6 +2834,7 @@ void convertRouteDataObjecToMapObjects(SearchQuery* q, std::vector<RouteDataObje
 
 void checkAndInitRouteRegionRules(int fileInd, const SHARED_PTR<RoutingIndex>& routingIndex) {
 	// init decoding rules
+	std::lock_guard<std::mutex> lock(routingIndex->rulesMutex);
 	if (routingIndex->routeEncodingRules.size() == 0) {
 		lseek(fileInd, 0, SEEK_SET);
 		FileInputStream input(fileInd);
@@ -2985,28 +2987,34 @@ void readMapObjects(SearchQuery* q, BinaryMapFile* file) {
 					mapLevel->bottom >= (uint)q->top && (uint)q->bottom >= mapLevel->top) {
 					// OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Search map %s", mapIndex->name.c_str());
 					// lazy initializing rules
-					if (mapIndex->decodingRules.size() == 0) {
-						lseek(file->getFD(), 0, SEEK_SET);
-						FileInputStream input(file->getFD());
-						input.SetCloseOnDelete(false);
-						CodedInputStream cis(&input);
-						cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
-						cis.Seek(mapIndex->filePointer);
-						int oldLimit = cis.PushLimit(mapIndex->length);
-						readMapIndex(&cis, mapIndex, true);
-						cis.PopLimit(oldLimit);
+					{
+						std::lock_guard<std::mutex> lock(mapIndex->initMutex);
+						if (mapIndex->decodingRules.size() == 0) {
+							lseek(file->getFD(), 0, SEEK_SET);
+							FileInputStream input(file->getFD());
+							input.SetCloseOnDelete(false);
+							CodedInputStream cis(&input);
+							cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
+							cis.Seek(mapIndex->filePointer);
+							int oldLimit = cis.PushLimit(mapIndex->length);
+							readMapIndex(&cis, mapIndex, true);
+							cis.PopLimit(oldLimit);
+						}
 					}
 					// lazy initializing subtrees
-					if (mapLevel->bounds.size() == 0) {
-						lseek(file->getFD(), 0, SEEK_SET);
-						FileInputStream input(file->getFD());
-						input.SetCloseOnDelete(false);
-						CodedInputStream cis(&input);
-						cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
-						cis.Seek(mapLevel->filePointer);
-						int oldLimit = cis.PushLimit(mapLevel->length);
-						readMapLevel(&cis, &(*mapLevel), true);
-						cis.PopLimit(oldLimit);
+					{
+						std::lock_guard<std::mutex> lock(*mapLevel->boundsMutex);
+						if (mapLevel->bounds.size() == 0) {
+							lseek(file->getFD(), 0, SEEK_SET);
+							FileInputStream input(file->getFD());
+							input.SetCloseOnDelete(false);
+							CodedInputStream cis(&input);
+							cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
+							cis.Seek(mapLevel->filePointer);
+							int oldLimit = cis.PushLimit(mapLevel->length);
+							readMapLevel(&cis, &(*mapLevel), true);
+							cis.PopLimit(oldLimit);
+						}
 					}
 					lseek(file->getFD(), 0, SEEK_SET);
 					FileInputStream input(file->getFD());
@@ -4033,4 +4041,83 @@ bool writeMapFilesCache(const std::string& filePath) {
 		cacheHasChanged = false;
 	}
 	return true;
+}
+
+bool BinaryMapFile::isRegisteredThread() {
+	std::lock_guard<std::mutex> lock(currentThreadsMutex);
+	return currentThreads.find(std::this_thread::get_id()) != currentThreads.end();
+}
+
+void BinaryMapFile::closeThreadFDs(std::mutex& fdsMutex, std::unordered_map<std::thread::id, int>& fds,
+                                   const std::thread::id* threadId) {
+	std::vector<int> fdsToClose;
+	{
+		std::lock_guard<std::mutex> mapLock(fdsMutex);
+		if (threadId != nullptr) {
+			const auto it = fds.find(*threadId);
+			if (it != fds.end()) {
+				fdsToClose.push_back(it->second);
+				fds.erase(it);
+			}
+		} else {
+			for (const auto& entry : fds) {
+				fdsToClose.push_back(entry.second);
+			}
+			fds.clear();
+		}
+	}
+	for (const int f : fdsToClose) {
+		close(f);
+	}
+}
+
+void BinaryMapFile::closeAllThreadsFDs() {
+	closeThreadFDs(fdThreadsMutex, fd_threads, nullptr);
+	closeThreadFDs(routefdThreadsMutex, routefd_threads, nullptr);
+	closeThreadFDs(geocodingfdThreadsMutex, geocodingfd_threads, nullptr);
+	closeThreadFDs(hhfdThreadsMutex, hhfd_threads, nullptr);
+}
+
+int BinaryMapFile::getThreadFD(std::mutex& fdsMutex, std::unordered_map<std::thread::id, int>& fds) {
+	const std::thread::id currentThreadId = std::this_thread::get_id();
+	std::lock_guard<std::mutex> lock(fdsMutex);
+	const auto it = fds.find(currentThreadId);
+	if (it != fds.end()) {
+		return it->second;
+	}
+
+	const int threadFD = openFile();
+	if (threadFD >= 0) {
+		fds.insert({currentThreadId, threadFD});
+	}
+	return threadFD;
+}
+
+void BinaryMapFile::registerCurrentThread() {
+	std::lock_guard<std::mutex> lock(currentThreadsMutex);
+	currentThreads.insert(std::this_thread::get_id());
+}
+
+void BinaryMapFile::unregisterCurrentThread() {
+	std::lock_guard<std::mutex> lock(currentThreadsMutex);
+	const std::thread::id currentThreadId = std::this_thread::get_id();
+	if (currentThreads.find(currentThreadId) != currentThreads.end()) {
+		closeThreadFDs(fdThreadsMutex, fd_threads, &currentThreadId);
+		closeThreadFDs(routefdThreadsMutex, routefd_threads, &currentThreadId);
+		closeThreadFDs(geocodingfdThreadsMutex, geocodingfd_threads, &currentThreadId);
+		closeThreadFDs(hhfdThreadsMutex, hhfd_threads, &currentThreadId);
+		currentThreads.erase(currentThreadId);
+	}
+}
+
+void registerCurrentThreadOnOpenFiles() {
+	for (auto& mapFile : openFiles) {
+		mapFile->registerCurrentThread();
+	}
+}
+
+void unregisterCurrentThreadOnOpenFiles() {
+	for (auto& mapFile : openFiles) {
+		mapFile->unregisterCurrentThread();
+	}
 }

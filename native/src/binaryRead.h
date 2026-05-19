@@ -5,6 +5,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <algorithm>
+#include <mutex>
+#include <thread>
 #if defined(_WIN32)
 #include <io.h>
 #else
@@ -79,6 +81,11 @@ struct MapRoot : MapTreeBounds {
 	uint minZoom;
 	uint maxZoom;
 	std::vector<MapTreeBounds> bounds;
+
+	// Shared mutex because MapRoot copied by value in readMapIndex() and initBinaryMapFile()
+	std::shared_ptr<std::mutex> boundsMutex;
+
+	MapRoot() : minZoom(0), maxZoom(0), boundsMutex(std::make_shared<std::mutex>()) { }
 };
 
 enum PART_INDEXES {
@@ -105,6 +112,7 @@ struct RoutingIndex : BinaryPartIndex {
 	UNORDERED_map<std::string, uint32_t> decodingRules;
 	std::vector<RouteSubregion> subregions;
 	std::vector<RouteSubregion> basesubregions;
+	std::mutex rulesMutex;
 
 	int nameTypeRule;
 	int refTypeRule;
@@ -849,6 +857,7 @@ struct TransportIndex : BinaryPartIndex {
 
 struct MapIndex : BinaryPartIndex {
 	std::vector<MapRoot> levels;
+	std::mutex initMutex;
 
 	UNORDERED(map)<int, tag_value> decodingRules;
 	// DEFINE hash
@@ -920,10 +929,27 @@ struct BinaryMapFile {
 	std::vector<SHARED_PTR<HHRouteIndex>> hhIndexes;
 	UNORDERED(map)<uint64_t, shared_ptr<IncompleteTransportRoute>> incompleteTransportRoutes;
 	bool incompleteLoaded = false;
+
 	int fd = -1;
 	int routefd = -1;
 	int geocodingfd = -1;
 	int hhfd = -1;
+
+	std::mutex currentThreadsMutex;
+	std::unordered_set<std::thread::id> currentThreads;
+
+	std::mutex fdThreadsMutex;
+	std::unordered_map<std::thread::id, int> fd_threads;
+
+	std::mutex routefdThreadsMutex;
+	std::unordered_map<std::thread::id, int> routefd_threads;
+
+	std::mutex geocodingfdThreadsMutex;
+	std::unordered_map<std::thread::id, int> geocodingfd_threads;
+
+	std::mutex hhfdThreadsMutex;
+	std::unordered_map<std::thread::id, int> hhfd_threads;
+
 	bool basemap;
 	bool external;
 	bool roadOnly;
@@ -939,12 +965,15 @@ struct BinaryMapFile {
 			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, " Native File could not be open to read: %s",
 							  inputName.c_str());
 		} else {
-			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Native open file: %s", inputName.c_str());
+			// OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Native open file: %s", inputName.c_str());
 		}
 		return fileDescriptor;
 	}
 
 	int getFD() {
+		if (isRegisteredThread()) {
+			return getThreadFD(fdThreadsMutex, fd_threads);
+		}
 		if (fd <= 0) {
 			fd = openFile();
 		}
@@ -952,6 +981,9 @@ struct BinaryMapFile {
 	}
 
 	int getRouteFD() {
+		if (isRegisteredThread()) {
+			return getThreadFD(routefdThreadsMutex, routefd_threads);
+		}
 		if (routefd <= 0) {
 			routefd = openFile();
 		}
@@ -959,6 +991,9 @@ struct BinaryMapFile {
 	}
 
 	int getGeocodingFD() {
+		if (isRegisteredThread()) {
+			return getThreadFD(geocodingfdThreadsMutex, geocodingfd_threads);
+		}
 		if (geocodingfd <= 0) {
 			geocodingfd = openFile();
 		}
@@ -966,6 +1001,9 @@ struct BinaryMapFile {
 	}
 	
 	int getHhFD() {
+		if (isRegisteredThread()) {
+			return getThreadFD(hhfdThreadsMutex, hhfd_threads);
+		}
 		if (hhfd <= 0) {
 			hhfd = openFile();
 		}
@@ -1000,8 +1038,21 @@ struct BinaryMapFile {
 		if (hhfd >= 0) {
 			close(hhfd);
 		}
+		closeAllThreadsFDs();
 	}
+
+	void registerCurrentThread(); // register the thread for thread-safe file descriptors
+	void unregisterCurrentThread(); // close all file descriptors and unregister the thread
+
+	bool isRegisteredThread();
+	int getThreadFD(std::mutex& fdsMutex, std::unordered_map<std::thread::id, int>& fds);
+
+	void closeAllThreadsFDs();
+	static void closeThreadFDs(std::mutex&, std::unordered_map<std::thread::id, int>&, const std::thread::id*);
 };
+
+void registerCurrentThreadOnOpenFiles();
+void unregisterCurrentThreadOnOpenFiles();
 
 struct ResultPublisher {
 	std::vector<FoundMapDataObject> result;
