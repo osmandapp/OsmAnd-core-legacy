@@ -67,8 +67,8 @@ uint32_t RoutingIndex::findOrCreateRouteType(const std::string& tag, const std::
 }
 
 uint32_t RoutingIndex::searchRouteEncodingRule(const std::string& tag, const std::string& value) {
-	std::lock_guard<std::mutex> lock(rulesMutex);
 	if (decodingRules.empty()) {
+		std::lock_guard<std::mutex> lock(rulesMutex);
 		for (uint32_t i = 1; i < routeEncodingRules.size(); i++) {
 			RouteTypeRule& rt = routeEncodingRules[i];
 			string ks = rt.getTag() + "#" + rt.getValue();
