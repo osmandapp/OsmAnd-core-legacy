@@ -7,6 +7,8 @@
 #include <algorithm>
 #include <mutex>
 #include <thread>
+#include <memory>
+#include <atomic>
 #if defined(_WIN32)
 #include <io.h>
 #else
@@ -919,6 +921,25 @@ struct MapIndex : BinaryPartIndex {
 };
 
 struct BinaryMapFile {
+	static uint64_t nextId() {
+		static std::atomic<uint64_t> globalId{0};
+		return ++globalId;
+	}
+	const uint64_t fileId;
+	std::atomic<int> refCount;
+
+	void acquire() {
+		refCount++;
+	}
+
+	void release() {
+		if (--refCount == 0) {
+			delete this;
+		}
+	}
+
+	BinaryMapFile() : refCount(1), fileId(nextId()), version(0), dateCreated(0), basemap(false), external(false), roadOnly(false), liveMap(false) {}
+
 	std::string inputName;
 	uint32_t version;
 	uint64_t dateCreated;
@@ -970,45 +991,10 @@ struct BinaryMapFile {
 		return fileDescriptor;
 	}
 
-	int getFD() {
-		if (isRegisteredThread()) {
-			return getThreadFD(fdThreadsMutex, fd_threads);
-		}
-		if (fd <= 0) {
-			fd = openFile();
-		}
-		return fd;
-	}
-
-	int getRouteFD() {
-		if (isRegisteredThread()) {
-			return getThreadFD(routefdThreadsMutex, routefd_threads);
-		}
-		if (routefd <= 0) {
-			routefd = openFile();
-		}
-		return routefd;
-	}
-
-	int getGeocodingFD() {
-		if (isRegisteredThread()) {
-			return getThreadFD(geocodingfdThreadsMutex, geocodingfd_threads);
-		}
-		if (geocodingfd <= 0) {
-			geocodingfd = openFile();
-		}
-		return geocodingfd;
-	}
-	
-	int getHhFD() {
-		if (isRegisteredThread()) {
-			return getThreadFD(hhfdThreadsMutex, hhfd_threads);
-		}
-		if (hhfd <= 0) {
-			hhfd = openFile();
-		}
-		return hhfd;
-	}
+	int getFD();
+	int getRouteFD();
+	int getGeocodingFD();
+	int getHhFD();
 
 	bool isBasemap() {
 		return basemap;

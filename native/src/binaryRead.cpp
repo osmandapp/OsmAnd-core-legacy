@@ -38,6 +38,26 @@ static uint detailedZoomStartForRouteSection = 13;
 static uint zoomOnlyForBasemaps = 11;
 static uint zoomMaxDetailedForCoastlines = 16;
 std::vector<BinaryMapFile*> openFiles;
+static std::mutex openFilesMutex;
+static thread_local std::unordered_map<uint64_t, int> tl_fds;
+static thread_local std::unordered_map<uint64_t, int> tl_routefds;
+static thread_local std::unordered_map<uint64_t, int> tl_geocodingfds;
+static thread_local std::unordered_map<uint64_t, int> tl_hhfds;
+static thread_local bool tl_registered = false;
+
+struct OpenFilesGuard {
+	const std::vector<BinaryMapFile*>& files;
+	OpenFilesGuard(const std::vector<BinaryMapFile*>& files) : files(files) {
+		for (auto f : files) {
+			f->acquire();
+		}
+	}
+	~OpenFilesGuard() {
+		for (auto f : files) {
+			f->release();
+		}
+	}
+};
 OsmAnd::OBF::OsmAndStoredIndex* cache = NULL;
 bool cacheHasChanged = false;
 static const int CACHE_VERSION = 5;// synchronize with CachedOsmandIndexes.java VERSION
@@ -65,17 +85,10 @@ uint32_t RoutingIndex::findOrCreateRouteType(const std::string& tag, const std::
 }
 
 uint32_t RoutingIndex::searchRouteEncodingRule(const std::string& tag, const std::string& value) {
-	std::lock_guard<std::mutex> lock(rulesMutex);
-	if (decodingRules.empty()) {
-		for (uint32_t i = 1; i < routeEncodingRules.size(); i++) {
-			RouteTypeRule& rt = routeEncodingRules[i];
-			string ks = rt.getTag() + "#" + rt.getValue();
-			decodingRules[ks] = i;
-		}
-	}
 	string k = tag + "#" + value;
-	if (decodingRules.count(k) == 1) {
-		return decodingRules[k];
+	auto it = decodingRules.find(k);
+	if (it != decodingRules.end()) {
+		return it->second;
 	}
 	return -1;
 }
@@ -2498,6 +2511,7 @@ void searchTransportIndex(SearchQuery* q, BinaryMapFile* file) {
 }
 
 SHARED_PTR<TransportIndex> getTransportIndex(int64_t filePointer) {
+	std::lock_guard<std::mutex> lock(openFilesMutex);
 	for (BinaryMapFile* mapFile : openFiles) {
 		for (const auto& i : mapFile->transportIndexes) {
 			if (i->filePointer <= filePointer && (filePointer - i->filePointer) < i->length) {
@@ -2846,6 +2860,13 @@ void checkAndInitRouteRegionRules(int fileInd, const SHARED_PTR<RoutingIndex>& r
 		uint32_t old = cis.PushLimit(routingIndex->length);
 		readRoutingIndex(&cis, routingIndex, true);
 		cis.PopLimit(old);
+
+		// Pre-populate decodingRules while holding the lock
+		for (uint32_t i = 1; i < routingIndex->routeEncodingRules.size(); i++) {
+			RouteTypeRule& rt = routingIndex->routeEncodingRules[i];
+			string ks = rt.getTag() + "#" + rt.getValue();
+			routingIndex->decodingRules[ks] = i;
+		}
 	}
 }
 
@@ -2878,8 +2899,14 @@ bool searchRouteSubregionsForBinaryMapFile(BinaryMapFile* file,
 }
 
 void searchRouteSubregions(SearchQuery* q, std::vector<RouteSubregion>& tempResult, bool basemap, bool geocoding, std::vector<BinaryMapFile *> & mapIndexReaderFilter) {
-	vector<BinaryMapFile*>::iterator i = openFiles.begin();
-	for (; i != openFiles.end() && !q->isCancelled(); i++) {
+	std::vector<BinaryMapFile*> openFilesCopy;
+	{
+		std::lock_guard<std::mutex> lock(openFilesMutex);
+		openFilesCopy = openFiles;
+	}
+	OpenFilesGuard guard(openFilesCopy);
+	vector<BinaryMapFile*>::iterator i = openFilesCopy.begin();
+	for (; i != openFilesCopy.end() && !q->isCancelled(); i++) {
 		BinaryMapFile* file = *i;
 		if (!mapIndexReaderFilter.empty()) {
 			bool isUnwantedMap = std::find(mapIndexReaderFilter.begin(), mapIndexReaderFilter.end(), file) == mapIndexReaderFilter.end();
@@ -3033,12 +3060,18 @@ void readMapObjectsForRendering(SearchQuery* q, std::vector<FoundMapDataObject>&
 								std::vector<FoundMapDataObject>& coastLines,
 								std::vector<FoundMapDataObject>& basemapCoastLines, int& count, bool& basemapExists,
 								int& renderedState) {
-	vector<BinaryMapFile*>::iterator i = openFiles.begin();
-	for (; i != openFiles.end() && !q->isCancelled(); i++) {
+	std::vector<BinaryMapFile*> openFilesCopy;
+	{
+		std::lock_guard<std::mutex> lock(openFilesMutex);
+		openFilesCopy = openFiles;
+	}
+	OpenFilesGuard guard(openFilesCopy);
+	vector<BinaryMapFile*>::iterator i = openFilesCopy.begin();
+	for (; i != openFilesCopy.end() && !q->isCancelled(); i++) {
 		BinaryMapFile* file = *i;
 		basemapExists |= file->isBasemap();
 	}
-	i = openFiles.begin();
+	i = openFilesCopy.begin();
 	int oleft, sleft, bleft;
 	int otop, stop, btop;
 	int oright, sright, bright;
@@ -3064,7 +3097,7 @@ void readMapObjectsForRendering(SearchQuery* q, std::vector<FoundMapDataObject>&
 		sbottom = ((q->bottom >> shift) + 1) << shift;
 	}
 	UNORDERED(set)<uint64_t> deletedIds;
-	for (; i != openFiles.end() && !q->isCancelled(); i++) {
+	for (; i != openFilesCopy.end() && !q->isCancelled(); i++) {
 		BinaryMapFile* file = *i;
 		if (q->req != NULL) {
 			q->req->clearState();
@@ -3197,8 +3230,14 @@ ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, 
 	// bool objectsFromMapSectionRead = tempResult.size() > 0;
 	bool objectsFromRoutingSectionRead = false;
 	if (q->zoom >= zoomOnlyForBasemaps) {
-		vector<BinaryMapFile*>::iterator i = openFiles.begin();
-		for (; i != openFiles.end() && !q->isCancelled(); i++) {
+		std::vector<BinaryMapFile*> openFilesCopy;
+		{
+			std::lock_guard<std::mutex> lock(openFilesMutex);
+			openFilesCopy = openFiles;
+		}
+		OpenFilesGuard guard(openFilesCopy);
+		vector<BinaryMapFile*>::iterator i = openFilesCopy.begin();
+		for (; i != openFilesCopy.end() && !q->isCancelled(); i++) {
 			BinaryMapFile* file = *i;
 			// false positive case when we have 2 sep maps Country-roads & Country
 			if (file->isRoadOnly()) {
@@ -3662,9 +3701,15 @@ void searchRouteSubRegion(int fileInd, std::vector<RouteDataObject*>& list, cons
 
 void searchRouteDataForSubRegion(SearchQuery* q, std::vector<RouteDataObject*>& list, RouteSubregion* sub,
 								 bool geocoding) {
-	vector<BinaryMapFile*>::iterator i = openFiles.begin();
+	std::vector<BinaryMapFile*> openFilesCopy;
+	{
+		std::lock_guard<std::mutex> lock(openFilesMutex);
+		openFilesCopy = openFiles;
+	}
+	OpenFilesGuard guard(openFilesCopy);
+	vector<BinaryMapFile*>::iterator i = openFilesCopy.begin();
 	const auto& rs = sub->routingIndex;
-	for (; i != openFiles.end() && !q->isCancelled(); i++) {
+	for (; i != openFilesCopy.end() && !q->isCancelled(); i++) {
 		BinaryMapFile* file = *i;
 		for (const auto& routingIndex : file->routingIndexes) {
 			if (q->isCancelled()) {
@@ -3680,11 +3725,13 @@ void searchRouteDataForSubRegion(SearchQuery* q, std::vector<RouteDataObject*>& 
 }
 
 bool closeBinaryMapFile(std::string inputName) {
+	std::lock_guard<std::mutex> lock(openFilesMutex);
 	std::vector<BinaryMapFile*>::iterator iterator = openFiles.begin();
 	for (; iterator != openFiles.end(); iterator++) {
 		if ((*iterator)->inputName == inputName) {
-			delete *iterator;
+			BinaryMapFile* fileToDelete = *iterator;
 			openFiles.erase(iterator);
+			fileToDelete->release();
 			return true;
 		}
 	}
@@ -3868,7 +3915,10 @@ BinaryMapFile* initBinaryMapFile(std::string inputName, bool useLive, bool routi
 		}
 	}
 
-	openFiles.push_back(mapFile);
+	{
+		std::lock_guard<std::mutex> lock(openFilesMutex);
+		openFiles.push_back(mapFile);
+	}
 	return mapFile;
 }
 
@@ -4022,6 +4072,7 @@ bool addToCache(BinaryMapFile* mapFile, bool routingOnly) {
 }
 
 std::vector<BinaryMapFile*> getOpenMapFiles() {
+	std::lock_guard<std::mutex> lock(openFilesMutex);
 	return openFiles;
 }
 
@@ -4043,9 +4094,72 @@ bool writeMapFilesCache(const std::string& filePath) {
 	return true;
 }
 
+int BinaryMapFile::getFD() {
+	if (isRegisteredThread()) {
+		auto it = tl_fds.find(fileId);
+		if (it != tl_fds.end()) {
+			return it->second;
+		}
+		int threadFD = getThreadFD(fdThreadsMutex, fd_threads);
+		tl_fds[fileId] = threadFD;
+		return threadFD;
+	}
+	if (fd <= 0) {
+		fd = openFile();
+	}
+	return fd;
+}
+
+int BinaryMapFile::getRouteFD() {
+	if (isRegisteredThread()) {
+		auto it = tl_routefds.find(fileId);
+		if (it != tl_routefds.end()) {
+			return it->second;
+		}
+		int threadFD = getThreadFD(routefdThreadsMutex, routefd_threads);
+		tl_routefds[fileId] = threadFD;
+		return threadFD;
+	}
+	if (routefd <= 0) {
+		routefd = openFile();
+	}
+	return routefd;
+}
+
+int BinaryMapFile::getGeocodingFD() {
+	if (isRegisteredThread()) {
+		auto it = tl_geocodingfds.find(fileId);
+		if (it != tl_geocodingfds.end()) {
+			return it->second;
+		}
+		int threadFD = getThreadFD(geocodingfdThreadsMutex, geocodingfd_threads);
+		tl_geocodingfds[fileId] = threadFD;
+		return threadFD;
+	}
+	if (geocodingfd <= 0) {
+		geocodingfd = openFile();
+	}
+	return geocodingfd;
+}
+
+int BinaryMapFile::getHhFD() {
+	if (isRegisteredThread()) {
+		auto it = tl_hhfds.find(fileId);
+		if (it != tl_hhfds.end()) {
+			return it->second;
+		}
+		int threadFD = getThreadFD(hhfdThreadsMutex, hhfd_threads);
+		tl_hhfds[fileId] = threadFD;
+		return threadFD;
+	}
+	if (hhfd <= 0) {
+		hhfd = openFile();
+	}
+	return hhfd;
+}
+
 bool BinaryMapFile::isRegisteredThread() {
-	std::lock_guard<std::mutex> lock(currentThreadsMutex);
-	return currentThreads.find(std::this_thread::get_id()) != currentThreads.end();
+	return tl_registered;
 }
 
 void BinaryMapFile::closeThreadFDs(std::mutex& fdsMutex, std::unordered_map<std::thread::id, int>& fds,
@@ -4087,9 +4201,7 @@ int BinaryMapFile::getThreadFD(std::mutex& fdsMutex, std::unordered_map<std::thr
 	}
 
 	const int threadFD = openFile();
-	if (threadFD >= 0) {
-		fds.insert({currentThreadId, threadFD});
-	}
+	fds.insert({currentThreadId, threadFD});
 	return threadFD;
 }
 
@@ -4107,16 +4219,26 @@ void BinaryMapFile::unregisterCurrentThread() {
 		closeThreadFDs(geocodingfdThreadsMutex, geocodingfd_threads, &currentThreadId);
 		closeThreadFDs(hhfdThreadsMutex, hhfd_threads, &currentThreadId);
 		currentThreads.erase(currentThreadId);
+
+		// Clean up the thread-local cache
+		tl_fds.erase(fileId);
+		tl_routefds.erase(fileId);
+		tl_geocodingfds.erase(fileId);
+		tl_hhfds.erase(fileId);
 	}
 }
 
 void registerCurrentThreadOnOpenFiles() {
+	tl_registered = true;
+	std::lock_guard<std::mutex> lock(openFilesMutex);
 	for (auto& mapFile : openFiles) {
 		mapFile->registerCurrentThread();
 	}
 }
 
 void unregisterCurrentThreadOnOpenFiles() {
+	tl_registered = false;
+	std::lock_guard<std::mutex> lock(openFilesMutex);
 	for (auto& mapFile : openFiles) {
 		mapFile->unregisterCurrentThread();
 	}
