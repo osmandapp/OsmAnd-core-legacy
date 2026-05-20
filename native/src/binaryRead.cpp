@@ -42,6 +42,8 @@ OsmAnd::OBF::OsmAndStoredIndex* cache = NULL;
 bool cacheHasChanged = false;
 static const int CACHE_VERSION = 5;// synchronize with CachedOsmandIndexes.java VERSION
 
+thread_local bool useThreadSpecificFileDescriptors = false;
+
 #ifdef MALLOC_H
 #include <malloc.h>
 void print_dump(const char* msg1, const char* msg2) {
@@ -4044,8 +4046,7 @@ bool writeMapFilesCache(const std::string& filePath) {
 }
 
 bool BinaryMapFile::isRegisteredThread() {
-	std::lock_guard<std::mutex> lock(currentThreadsMutex);
-	return currentThreads.find(std::this_thread::get_id()) != currentThreads.end();
+	return useThreadSpecificFileDescriptors;
 }
 
 void BinaryMapFile::closeThreadFDs(std::mutex& fdsMutex, std::unordered_map<std::thread::id, int>& fds,
@@ -4093,31 +4094,21 @@ int BinaryMapFile::getThreadFD(std::mutex& fdsMutex, std::unordered_map<std::thr
 	return threadFD;
 }
 
-void BinaryMapFile::registerCurrentThread() {
-	std::lock_guard<std::mutex> lock(currentThreadsMutex);
-	currentThreads.insert(std::this_thread::get_id());
-}
-
-void BinaryMapFile::unregisterCurrentThread() {
-	std::lock_guard<std::mutex> lock(currentThreadsMutex);
+void BinaryMapFile::closeCurrentThreadsFDs() {
 	const std::thread::id currentThreadId = std::this_thread::get_id();
-	if (currentThreads.find(currentThreadId) != currentThreads.end()) {
-		closeThreadFDs(fdThreadsMutex, fd_threads, &currentThreadId);
-		closeThreadFDs(routefdThreadsMutex, routefd_threads, &currentThreadId);
-		closeThreadFDs(geocodingfdThreadsMutex, geocodingfd_threads, &currentThreadId);
-		closeThreadFDs(hhfdThreadsMutex, hhfd_threads, &currentThreadId);
-		currentThreads.erase(currentThreadId);
-	}
+	closeThreadFDs(fdThreadsMutex, fd_threads, &currentThreadId);
+	closeThreadFDs(routefdThreadsMutex, routefd_threads, &currentThreadId);
+	closeThreadFDs(geocodingfdThreadsMutex, geocodingfd_threads, &currentThreadId);
+	closeThreadFDs(hhfdThreadsMutex, hhfd_threads, &currentThreadId);
 }
 
-void registerCurrentThreadOnOpenFiles() {
-	for (auto& mapFile : openFiles) {
-		mapFile->registerCurrentThread();
-	}
+void registerCurrentThread() {
+	useThreadSpecificFileDescriptors = true;
 }
 
-void unregisterCurrentThreadOnOpenFiles() {
-	for (auto& mapFile : openFiles) {
-		mapFile->unregisterCurrentThread();
+void unregisterCurrentThread() {
+	for (auto& file : openFiles) {
+		file->closeCurrentThreadsFDs();
 	}
+	useThreadSpecificFileDescriptors = false;
 }

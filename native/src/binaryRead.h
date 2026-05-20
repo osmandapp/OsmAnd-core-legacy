@@ -935,9 +935,6 @@ struct BinaryMapFile {
 	int geocodingfd = -1;
 	int hhfd = -1;
 
-	std::mutex currentThreadsMutex;
-	std::unordered_set<std::thread::id> currentThreads;
-
 	std::mutex fdThreadsMutex;
 	std::unordered_map<std::thread::id, int> fd_threads;
 
@@ -1041,18 +1038,16 @@ struct BinaryMapFile {
 		closeAllThreadsFDs();
 	}
 
-	void registerCurrentThread(); // register the thread for thread-safe file descriptors
-	void unregisterCurrentThread(); // close all file descriptors and unregister the thread
-
-	bool isRegisteredThread();
+	static bool isRegisteredThread();
 	int getThreadFD(std::mutex& fdsMutex, std::unordered_map<std::thread::id, int>& fds);
 
 	void closeAllThreadsFDs();
+	void closeCurrentThreadsFDs();
 	static void closeThreadFDs(std::mutex&, std::unordered_map<std::thread::id, int>&, const std::thread::id*);
 };
 
-void registerCurrentThreadOnOpenFiles();
-void unregisterCurrentThreadOnOpenFiles();
+void registerCurrentThread();
+void unregisterCurrentThread();
 
 struct ResultPublisher {
 	std::vector<FoundMapDataObject> result;
