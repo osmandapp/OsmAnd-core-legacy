@@ -499,9 +499,10 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_net_osmand_NativeLibrary_getMapboxV
 	s -= 12;
 
 	int renderedState = 0;
-	registerCurrentThreadOnOpenFiles();
+
+	registerCurrentThread();
 	ResultPublisher* res = searchObjectsForRendering(&q, true, "Nothing found", renderedState);
-	unregisterCurrentThreadOnOpenFiles();
+	unregisterCurrentThread();
 
 	vtzero::tile_builder tile;
 
