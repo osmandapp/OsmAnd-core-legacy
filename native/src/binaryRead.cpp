@@ -42,7 +42,7 @@ OsmAnd::OBF::OsmAndStoredIndex* cache = NULL;
 bool cacheHasChanged = false;
 static const int CACHE_VERSION = 5;// synchronize with CachedOsmandIndexes.java VERSION
 
-thread_local bool useThreadSpecificFileDescriptors = false;
+static thread_local bool useThreadSpecificFileDescriptors = false;
 
 #ifdef MALLOC_H
 #include <malloc.h>
