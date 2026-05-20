@@ -539,19 +539,20 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_net_osmand_NativeLibrary_getMapboxV
 			fx = -1;
 			fy = -1;
 			makeNewScaledPoint(obj.points[0], xs, ys, s, fx, fy);
+			feature.set_point(fx, fy);
 			px = fx;
 			py = fy;
-			for (i = 1; i < size - 1; i++) {
-				feature.set_point(px, py);
+			for (i = 1; i < size - 2; i++) {
 				makeNewScaledPoint(obj.points[i], xs, ys, s, px, py);
+				feature.set_point(px, py);
 			}
-			if (isCycle && px == fx && py == fy)
-				py ^= 1;
+			if (isCycle)
+				makeNewOriginalPoint(obj.points[i], xs, ys, s, fx, fy, px, py);
+			else
+				makeNewScaledPoint(obj.points[i], xs, ys, s, px, py);
 			feature.set_point(px, py);
 			if (!isCycle) {
-				makeNewScaledPoint(obj.points[i], xs, ys, s, px, py);
-				if (px == fx && py == fy)
-					py ^= 1;
+				makeNewOriginalPoint(obj.points[i + 1], xs, ys, s, fx, fy, px, py);
 				feature.set_point(px, py);
 			}
 			feature.set_point(fx, fy);
@@ -564,19 +565,20 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_net_osmand_NativeLibrary_getMapboxV
 				fx = -1;
 				fy = -1;
 				makeNewScaledPoint(ring[0], xs, ys, s, fx, fy);
+				feature.set_point(fx, fy);
 				px = fx;
 				py = fy;
-                for (i = 1; i < size - 1; i++) {
-					feature.set_point(px, py);
+                for (i = 1; i < size - 2; i++) {
 					makeNewScaledPoint(ring[i], xs, ys, s, px, py);
+					feature.set_point(px, py);
 				}
-				if (isCycle && px == fx && py == fy)
-					py ^= 1;
+				if (isCycle)
+					makeNewOriginalPoint(ring[i], xs, ys, s, fx, fy, px, py);
+				else
+					makeNewScaledPoint(ring[i], xs, ys, s, px, py);
 				feature.set_point(px, py);
 				if (!isCycle) {
-					makeNewScaledPoint(ring[i], xs, ys, s, px, py);
-					if (px == fx && py == fy)
-						py ^= 1;
+					makeNewOriginalPoint(ring[i + 1], xs, ys, s, fx, fy, px, py);
 					feature.set_point(px, py);
 				}
 				feature.set_point(fx, fy);
@@ -2894,6 +2896,25 @@ inline void makeNewScaledPoint(
 	int ny = scaleToTile(coords.second, tileStartY, shift);
 	if (nx == x && ny == y) {
 		nx ^= 1;
+	}
+	x = nx;
+	y = ny;
+}
+
+inline void makeNewOriginalPoint(
+	const std::pair<int, int>& coords, int tileStartX, int tileStartY, int shift, int fx, int fy, int& x, int& y) {
+	int nx = scaleToTile(coords.first, tileStartX, shift);
+	int ny = scaleToTile(coords.second, tileStartY, shift);
+	if (nx == x && ny == y) {
+		nx ^= 1;
+		if (nx == fx && ny == fy) {
+			ny ^= 1;
+		}
+	} else if (nx == fx && ny == fy) {
+		ny ^= 1;
+		if (nx == x && ny == y) {
+			nx ^= 1;
+		}
 	}
 	x = nx;
 	y = ny;
