@@ -123,4 +123,7 @@ inline int scaleToTile(int coord, int tileStart, int shift);
 inline void makeNewScaledPoint(
 	const std::pair<int, int>& coords, int tileStartX, int tileStartY, int shift, int& x, int& y);
 
+inline void makeNewOriginalPoint(
+	const std::pair<int, int>& coords, int tileStartX, int tileStartY, int shift, int fx, int fy, int& x, int& y);
+
 #endif
