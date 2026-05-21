@@ -64,7 +64,7 @@ SHARED_PTR<HHRoutingContext> HHRoutePlanner::selectBestRoutingFiles(int startX, 
 
 	SkRect qr = SkRect::MakeLTRB(std::min(startX, endX), std::min(startY, endY), std::max(startX, endX), std::max(startY, endY));
 
-	const BinaryMapFiles& openFiles = getOpenMapFiles();
+	const BinaryMapFiles& openFiles = getOpenFilesSnapshot();
 	for (const auto& r : openFiles) {
 		for (SHARED_PTR<HHRouteIndex> & hhRegion : r->hhIndexes) {
 			SkRect * hhRegionRect = hhRegion->getSkRect();
