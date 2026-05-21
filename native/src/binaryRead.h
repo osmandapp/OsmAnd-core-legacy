@@ -1161,7 +1161,7 @@ struct SearchQuery {
 	}
 };
 
-BinaryMapFiles getOpenMapFiles();
+BinaryMapFiles getOpenFilesSnapshot();
 
 void searchTransportIndex(SearchQuery* q, BinaryMapFile* file);
 
@@ -1179,9 +1179,9 @@ void searchRouteDataForSubRegion(SearchQuery* q, std::vector<RouteDataObject*>& 
 ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, std::string msgNothingFound,
 										   int& renderedState);
 
-BinaryMapFilePtr initBinaryMapFile(std::string inputName, bool useLive, bool routingOnly);
+BinaryMapFilePtr initBinaryMapFile(const std::string& inputName, bool useLive, bool routingOnly);
 
-bool initMapFilesFromCache(std::string inputName);
+bool initMapFilesFromCache(const std::string& inputName);
 
 bool cacheBinaryMapFileIfNeeded(const std::string& inputName, bool routingOnly);
 
@@ -1189,7 +1189,7 @@ bool addToCache(BinaryMapFile* mapfile, bool routingOnly);
 
 bool writeMapFilesCache(const std::string& filePath);
 
-bool closeBinaryMapFile(std::string inputName);
+bool closeBinaryMapFile(const std::string& inputName);
 
 void getIncompleteTransportRoutes(BinaryMapFile* file);
 
