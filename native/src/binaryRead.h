@@ -1046,6 +1046,9 @@ struct BinaryMapFile {
 	static void closeThreadFDs(std::mutex&, std::unordered_map<std::thread::id, int>&, const std::thread::id*);
 };
 
+using BinaryMapFilePtr = std::shared_ptr<BinaryMapFile>;
+using BinaryMapFiles = std::vector<BinaryMapFilePtr>;
+
 void registerCurrentThread();
 void unregisterCurrentThread();
 
@@ -1158,14 +1161,14 @@ struct SearchQuery {
 	}
 };
 
-std::vector<BinaryMapFile*> getOpenMapFiles();
+BinaryMapFiles getOpenMapFiles();
 
 void searchTransportIndex(SearchQuery* q, BinaryMapFile* file);
 
 void loadTransportRoutes(BinaryMapFile* file, vector<int32_t> filePointers, UNORDERED(map) < int64_t,
 						 SHARED_PTR<TransportRoute> > &result);
 
-void searchRouteSubregions(SearchQuery* q, std::vector<RouteSubregion>& tempResult, bool basemap, bool geocoding, std::vector<BinaryMapFile*> & mapIndexReaderFilter);
+void searchRouteSubregions(SearchQuery* q, std::vector<RouteSubregion>& tempResult, bool basemap, bool geocoding, BinaryMapFiles& mapIndexReaderFilter);
 
 bool searchRouteSubregionsForBinaryMapFile(BinaryMapFile* file,
 										   SearchQuery* q);
@@ -1176,7 +1179,7 @@ void searchRouteDataForSubRegion(SearchQuery* q, std::vector<RouteDataObject*>& 
 ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, std::string msgNothingFound,
 										   int& renderedState);
 
-BinaryMapFile* initBinaryMapFile(std::string inputName, bool useLive, bool routingOnly);
+BinaryMapFilePtr initBinaryMapFile(std::string inputName, bool useLive, bool routingOnly);
 
 bool initMapFilesFromCache(std::string inputName);
 
