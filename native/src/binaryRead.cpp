@@ -3859,8 +3859,8 @@ auto initBinaryMapFile(const std::string& inputName, bool useLive, bool routingO
 			mapFile->hhIndexes.push_back(mi);
 			mapFile->indexes.push_back(mapFile->hhIndexes.back());
 		}
-		// OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "Native file initialized from cache: %s %d ms",
-						  // inputName.c_str(), (int)timer.GetElapsedMs());
+		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "Native file initialized from cache: %s %d ms",
+						  inputName.c_str(), (int)timer.GetElapsedMs());
 	} else {
 		FileInputStream input(mapFile->getFD());
 		input.SetCloseOnDelete(false);
