@@ -4110,11 +4110,11 @@ void BinaryMapFile::closeCurrentThreadsFDs() {
 	closeThreadFDs(hhfdThreadsMutex, hhfd_threads, &currentThreadId);
 }
 
-void registerCurrentThread() {
+void activateThreadSpecificFileDescriptors() {
 	useThreadSpecificFileDescriptors = true;
 }
 
-void unregisterCurrentThread() {
+void deactivateThreadSpecificFileDescriptors() {
 	const auto openFilesSnapshot = getOpenFilesSnapshot();
 	for (auto& file : openFilesSnapshot) {
 		file->closeCurrentThreadsFDs();

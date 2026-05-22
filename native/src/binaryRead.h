@@ -1049,8 +1049,8 @@ struct BinaryMapFile {
 using BinaryMapFilePtr = std::shared_ptr<BinaryMapFile>;
 using BinaryMapFiles = std::vector<BinaryMapFilePtr>;
 
-void registerCurrentThread();
-void unregisterCurrentThread();
+void activateThreadSpecificFileDescriptors();
+void deactivateThreadSpecificFileDescriptors();
 
 struct ResultPublisher {
 	std::vector<FoundMapDataObject> result;
