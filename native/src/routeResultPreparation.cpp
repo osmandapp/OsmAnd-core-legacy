@@ -1138,7 +1138,6 @@ SHARED_PTR<TurnType> getTurnByCurrentTurns(std::vector<SHARED_PTR<AttachedRoadIn
                 }
             }
             if (currentTurns.size() == 1) {
-                //return TurnType::ptrValueOf(*currentTurns.begin(), leftSide);
                 int detectedTurn = currentTurns.front();
                 if (keepTurnType == TurnType::KR && TurnType::isLeftTurn(detectedTurn)) {
                     return TurnType::ptrValueOf(keepTurnType, leftSide);
