@@ -1100,7 +1100,9 @@ bool shouldPreferStraightOverInferredTurn(const vector<int>& lanes, int inferred
 
 bool hasActiveLaneWithTurn(const vector<int>& lanes, int turnType) {
     for (int lane : lanes) {
-        if ((lane & 1) == 1 && TurnType::hasAnyTurnLane(lane, turnType)) {
+        bool isActiveLane = (lane & 1) == 1;
+        bool hasRequestedTurn = TurnType::hasAnyTurnLane(lane, turnType);
+        if (isActiveLane && hasRequestedTurn) {
             return true;
         }
     }
