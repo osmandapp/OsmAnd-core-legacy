@@ -1006,10 +1006,29 @@ void setActiveLanesRange(vector<int> & rawLanes, int activeBeginIndex, int activ
     }
 }
 
-bool hasActiveLaneWithTurn(const vector<int>& lanes, int turnType);
-bool shouldPreferStraightOverInferredTurn(const vector<int>& lanes, int inferredTurn, double deviation);
-SHARED_PTR<TurnType> getTurnByCurrentTurns(std::vector<SHARED_PTR<AttachedRoadInfo>> &otherSideLanesInfo,
-                                           vector<int>& rawLanes, int keepTurnType, bool leftSide);
+bool hasActiveLaneWithTurn(const vector<int>& lanes, int turnType) {
+    for (int lane : lanes) {
+        bool isActiveLane = (lane & 1) == 1;
+        bool hasRequestedTurn = TurnType::hasAnyTurnLane(lane, turnType);
+        if (isActiveLane && hasRequestedTurn) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool shouldPreferStraightOverInferredTurn(const vector<int>& lanes, int inferredTurn, double deviation) {
+    if (inferredTurn == 0 || inferredTurn == TurnType::C) {
+        return false;
+    }
+    if (TurnType::isSlightTurn(inferredTurn) || TurnType::isKeepDirectionTurn(inferredTurn)) {
+        return false;
+    }
+    if (std::abs(deviation) >= TURN_SLIGHT_DEGREE) {
+        return false;
+    }
+    return hasActiveLaneWithTurn(lanes, TurnType::C);
+}
 
 SHARED_PTR<TurnType> createKeepLeftRightTurnBasedOnTurnTypes(RoadSplitStructure& rs, SHARED_PTR<RouteSegmentResult>& prevSegm,
                                                            SHARED_PTR<RouteSegmentResult>& currentSegm, string turnLanes, bool leftSide) {
@@ -1082,30 +1101,6 @@ SHARED_PTR<TurnType> createKeepLeftRightTurnBasedOnTurnTypes(RoadSplitStructure&
     t->setPossibleLeftTurn(possiblyLeftTurn);
     t->setPossibleRightTurn(possiblyRightTurn);
     return t;
-}
-
-bool shouldPreferStraightOverInferredTurn(const vector<int>& lanes, int inferredTurn, double deviation) {
-    if (inferredTurn == 0 || inferredTurn == TurnType::C) {
-        return false;
-    }
-    if (TurnType::isSlightTurn(inferredTurn) || TurnType::isKeepDirectionTurn(inferredTurn)) {
-        return false;
-    }
-    if (std::abs(deviation) >= TURN_SLIGHT_DEGREE) {
-        return false;
-    }
-    return hasActiveLaneWithTurn(lanes, TurnType::C);
-}
-
-bool hasActiveLaneWithTurn(const vector<int>& lanes, int turnType) {
-    for (int lane : lanes) {
-        bool isActiveLane = (lane & 1) == 1;
-        bool hasRequestedTurn = TurnType::hasAnyTurnLane(lane, turnType);
-        if (isActiveLane && hasRequestedTurn) {
-            return true;
-        }
-    }
-    return false;
 }
 
 SHARED_PTR<TurnType> getTurnByCurrentTurns(std::vector<SHARED_PTR<AttachedRoadInfo>> & otherSideLanesInfo, vector<int>& rawLanes,
