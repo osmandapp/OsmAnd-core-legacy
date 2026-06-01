@@ -345,8 +345,8 @@ bool getGeotiffData(std::string& tilePath, std::string& outColorFilename, std::s
         upperLeft31.y = upperLeft31.y - INT32_MAX - 1;
         lowerRight64.y = lowerRight64.y - INT32_MAX - 1;
     }
-    lowerRight31.x = lowerRight64.x - 1;
-    lowerRight31.y = lowerRight64.y - 1;
+    lowerRight31.x = static_cast<int>(lowerRight64.x - 1);
+    lowerRight31.y = static_cast<int>(lowerRight64.y - 1);
 
     PointD upperLeftOverscaled;
     PointD lowerRightOverscaled;
@@ -451,21 +451,29 @@ bool getGeotiffData(std::string& tilePath, std::string& outColorFilename, std::s
                                     }
                                     if (dataOffset.x >= rasterSize.x)
                                         result = false;
-                                    else if (dataOffset.x + dataSize.x > rasterSize.x)
+                                    else
                                     {
-                                        auto delta = rasterSize.x - dataOffset.x - dataSize.x;
-                                        dataSize.x -= delta;
-                                        tileLength.x -= std::ceil(static_cast<double>(delta) / resFactor.x);
-                                        lowerRight.x = upperLeft.x + static_cast<double>(tileLength.x) * resFactor.x;
+                                        auto delta = dataOffset.x + dataSize.x - rasterSize.x;
+                                        if (delta > 0)
+                                        {
+                                            dataSize.x -= delta;
+                                            tileLength.x -= std::ceil(static_cast<double>(delta) / resFactor.x);
+                                            lowerRight.x =
+                                                upperLeft.x + static_cast<double>(tileLength.x) * resFactor.x;
+                                        }
                                     }
                                     if (dataOffset.y >= rasterSize.y)
                                         result = false;
-                                    else if (dataOffset.y + dataSize.y > rasterSize.y)
+                                    else
                                     {
-                                        auto delta = rasterSize.y - dataOffset.y - dataSize.y;
-                                        dataSize.y -= delta;
-                                        tileLength.y -= std::ceil(static_cast<double>(delta) / resFactor.y);
-                                        lowerRight.y = upperLeft.y + static_cast<double>(tileLength.y) * resFactor.y;
+                                        auto delta = dataOffset.y + dataSize.y - rasterSize.y;
+                                        if (delta > 0)
+                                        {
+                                            dataSize.y -= delta;
+                                            tileLength.y -= std::ceil(static_cast<double>(delta) / resFactor.y);
+                                            lowerRight.y =
+                                                upperLeft.y + static_cast<double>(tileLength.y) * resFactor.y;
+                                        }
                                     }
                                 }
                                 else
@@ -485,14 +493,14 @@ bool getGeotiffData(std::string& tilePath, std::string& outColorFilename, std::s
                                     else if (dataOffset.x + dataSize.x > rasterSize.x)
                                     {
                                         dataSize.x = rasterSize.x - dataOffset.x;
-                                        lowerRight.x = rasterSize.x - upperLeft.x;
+                                        lowerRight.x = rasterSize.x;
                                     }
                                     if (dataOffset.y >= rasterSize.y)
                                         result = false;
                                     else if (dataOffset.y + dataSize.y > rasterSize.y)
                                     {
                                         dataSize.y = rasterSize.y - dataOffset.y;
-                                        lowerRight.y = rasterSize.y - upperLeft.y;
+                                        lowerRight.y = rasterSize.y;
                                     }
                                 }
                             }
