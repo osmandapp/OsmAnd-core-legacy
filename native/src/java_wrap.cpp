@@ -9,6 +9,7 @@
 
 #include "CommonCollections.h"
 #include "binaryRead.h"
+#include "mvtWrite.h"
 #include "binaryRoutePlanner.h"
 #include "java_renderRules.h"
 #include "java_wrap.h"
@@ -491,116 +492,14 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_net_osmand_NativeLibrary_getMapboxV
 
 	ResultPublisher publisher;
 	int s = 31 - zoom;
-	int xs = x << s;
-	int ys = y << s;
-	auto q = SearchQuery(xs, (x + 1) << s, ys, (y + 1) << s, nullptr, &publisher);
+	auto brx = static_cast<int>(std::min((static_cast<int64_t>(x) + 1) << s, static_cast<int64_t>(INT32_MAX)));
+	auto bry = static_cast<int>(std::min((static_cast<int64_t>(y) + 1) << s, static_cast<int64_t>(INT32_MAX)));
+	auto q = SearchQuery(x << s, brx, y << s, bry, nullptr, &publisher);
 	q.zoom = zoom;
-
-	s -= 12;
 
 	int renderedState = 0;
 	ResultPublisher* res = searchObjectsForRendering(&q, true, "Nothing found", renderedState);
-
-	vtzero::tile_builder tile;
-
-	vtzero::layer_builder layers[] = {{tile, "tunnel_layer"}, {tile, "ground_layer"}, {tile, "bridge_layer"}};
-	KeyIdx key_indices[] = {KeyIdx(layers[0]), KeyIdx(layers[1]), KeyIdx(layers[2])};
-	ValueIdx value_indices[] = {ValueIdx(layers[0]), ValueIdx(layers[1]), ValueIdx(layers[2])};
-
-	int i, fx, fy, px, py;
-	for (auto& foundMapDataObject : res->result) {
-		auto& obj = *foundMapDataObject.obj;
-        int layer_idx = obj.getSimpleLayer() + 1;
-		auto& key_index = key_indices[layer_idx];
-		auto& value_index = value_indices[layer_idx];
-
-		auto size = obj.points.size();
-		if (size < 1)
-			continue;
-
-		const bool isArea = obj.area;
-		const bool isPoint = size == 1;
-		bool isCycle = obj.cycle();
-
-        if (isPoint && !isArea) {
-			vtzero::point_feature_builder feature(layers[layer_idx]);
-			feature.set_id(obj.id);
-            feature.add_point(scaleToTile(obj.points[0].first, xs, s), scaleToTile(obj.points[0].second, ys, s));
-			addObjectDataToMapboxVectorTile(&feature, obj, key_index, value_index);
-			feature.commit();
-		} else if (!isPoint && (isArea || isCycle)) {
-			if ((isCycle && size < 4) || size < 3)
-				continue;
-			vtzero::polygon_feature_builder feature(layers[layer_idx]);
-			feature.set_id(obj.id);
-            feature.add_ring(isCycle ? size : size + 1);
-			fx = -1;
-			fy = -1;
-			makeNewScaledPoint(obj.points[0], xs, ys, s, fx, fy);
-			feature.set_point(fx, fy);
-			px = fx;
-			py = fy;
-			for (i = 1; i < size - 2; i++) {
-				makeNewScaledPoint(obj.points[i], xs, ys, s, px, py);
-				feature.set_point(px, py);
-			}
-			if (isCycle)
-				makeNewOriginalPoint(obj.points[i], xs, ys, s, fx, fy, px, py);
-			else
-				makeNewScaledPoint(obj.points[i], xs, ys, s, px, py);
-			feature.set_point(px, py);
-			if (!isCycle) {
-				makeNewOriginalPoint(obj.points[i + 1], xs, ys, s, fx, fy, px, py);
-				feature.set_point(px, py);
-			}
-			feature.set_point(fx, fy);
-            for (const auto& ring : obj.polygonInnerCoordinates) {
-				size = ring.size();
-				isCycle = ring.front() == ring.back();
-				if ((isCycle && size < 4) || size < 3)
-					continue;
-                feature.add_ring(isCycle ? size : size + 1);
-				fx = -1;
-				fy = -1;
-				makeNewScaledPoint(ring[0], xs, ys, s, fx, fy);
-				feature.set_point(fx, fy);
-				px = fx;
-				py = fy;
-                for (i = 1; i < size - 2; i++) {
-					makeNewScaledPoint(ring[i], xs, ys, s, px, py);
-					feature.set_point(px, py);
-				}
-				if (isCycle)
-					makeNewOriginalPoint(ring[i], xs, ys, s, fx, fy, px, py);
-				else
-					makeNewScaledPoint(ring[i], xs, ys, s, px, py);
-				feature.set_point(px, py);
-				if (!isCycle) {
-					makeNewOriginalPoint(ring[i + 1], xs, ys, s, fx, fy, px, py);
-					feature.set_point(px, py);
-				}
-				feature.set_point(fx, fy);
-			}
-			addObjectDataToMapboxVectorTile(&feature, obj, key_index, value_index);
-	        feature.commit();
-		} else if (!isPoint || !isArea) {
-			if ((isCycle && size < 3) || size < 2)
-				continue;
-			vtzero::linestring_feature_builder feature(layers[layer_idx]);
-			feature.set_id(obj.id);
-            feature.add_linestring(size);
-			px = -1;
-			py = -1;
-            for (const auto& p : obj.points) {
-				makeNewScaledPoint(p, xs, ys, s, px, py);
-				feature.set_point(px, py);
-			}
-			addObjectDataToMapboxVectorTile(&feature, obj, key_index, value_index);
-	        feature.commit();
-        }
-    }
-
-	auto blob = tile.serialize();
+	auto blob = buildMapboxVectorTile(res->result, x, y, zoom);
 	jbyteArray resultObject = ienv->NewByteArray(blob.size());
 	ienv->SetByteArrayRegion(resultObject, 0, blob.size(), (const jbyte*)blob.data());
 
@@ -2864,56 +2763,4 @@ void clearDirectionPointFromRouteResult(SHARED_PTR<RouteSegmentResult> r) {
 		std::vector<uint32_t> empty;
 		r->object->pointTypes[clearPointIndex] = empty;
 	}
-}
-
-inline void addObjectDataToMapboxVectorTile(
-	vtzero::feature_builder* feature, MapDataObject& obj, KeyIdx& keyIdx, ValueIdx& valueIdx) {
-
-	for (const auto& tag : obj.types)
-		feature->add_property(keyIdx(tag.first), valueIdx(tag.second));
-	for (const auto& tag : obj.additionalTypes)
-		feature->add_property(keyIdx(tag.first), valueIdx(tag.second));
-	for (const auto& name : obj.namesOrder)
-	{
-		const auto it = obj.objectNames.find(name);
-		if (it != obj.objectNames.end())
-			feature->add_property(keyIdx(name), valueIdx(it->second));
-	}
-}
-
-inline int scaleToTile(int coord, int tileStart, int shift) {
-	if (shift <= 0)
-		return (coord - tileStart) << (-shift);
-	int delta = coord - tileStart;
-	return (delta >> shift) + (delta >> (shift - 1) & 1);
-}
-
-inline void makeNewScaledPoint(
-	const std::pair<int, int>& coords, int tileStartX, int tileStartY, int shift, int& x, int& y) {
-	int nx = scaleToTile(coords.first, tileStartX, shift);
-	int ny = scaleToTile(coords.second, tileStartY, shift);
-	if (nx == x && ny == y) {
-		nx ^= 1;
-	}
-	x = nx;
-	y = ny;
-}
-
-inline void makeNewOriginalPoint(
-	const std::pair<int, int>& coords, int tileStartX, int tileStartY, int shift, int fx, int fy, int& x, int& y) {
-	int nx = scaleToTile(coords.first, tileStartX, shift);
-	int ny = scaleToTile(coords.second, tileStartY, shift);
-	if (nx == x && ny == y) {
-		nx ^= 1;
-		if (nx == fx && ny == fy) {
-			ny ^= 1;
-		}
-	} else if (nx == fx && ny == fy) {
-		ny ^= 1;
-		if (nx == x && ny == y) {
-			nx ^= 1;
-		}
-	}
-	x = nx;
-	y = ny;
 }
