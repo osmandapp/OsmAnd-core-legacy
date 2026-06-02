@@ -1086,9 +1086,6 @@ SHARED_PTR<TurnType> getTurnByCurrentTurns(std::vector<SHARED_PTR<AttachedRoadIn
 	for (auto const& ln : rawLanes) {
 		TurnType::collectTurnTypes(ln, currentTurns);
 	}
-
-	// Here we detect single case when turn lane continues on 1 road / single sign and all other lane turns continue on
-	// the other side roads
     vector<int> analyzedList(currentTurns.begin(), currentTurns.end());
     if (analyzedList.size() > 1) {
         if (keepTurnType == TurnType::KL) {
@@ -1098,6 +1095,7 @@ SHARED_PTR<TurnType> getTurnByCurrentTurns(std::vector<SHARED_PTR<AttachedRoadIn
             // no need analyze turns in right side (current direction)
             analyzedList.erase(analyzedList.end() - 1);
         }
+        // Here we detect single case when turn lane continues on 1 road / single sign and all other lane turns continue on the other side roads
         if (containsAll(analyzedList, otherSideTurns)) {
             // currentTurns.removeAll(otherSideTurns);
             for (int i : otherSideTurns) {
@@ -1107,7 +1105,15 @@ SHARED_PTR<TurnType> getTurnByCurrentTurns(std::vector<SHARED_PTR<AttachedRoadIn
                 }
             }
             if (currentTurns.size() == 1) {
-                return TurnType::ptrValueOf(*currentTurns.begin(), leftSide);
+                
+                int detectedTurn = currentTurns.front();
+                if (keepTurnType == TurnType::KR && TurnType::isLeftTurn(detectedTurn)) {
+                    return TurnType::ptrValueOf(keepTurnType, leftSide);
+                }
+                if (keepTurnType == TurnType::KL && TurnType::isRightTurn(detectedTurn)) {
+                    return TurnType::ptrValueOf(keepTurnType, leftSide);
+                }
+                return TurnType::ptrValueOf(detectedTurn, leftSide);
             }
         } else {
             // Avoid "keep" instruction if active side contains only "through" moving
