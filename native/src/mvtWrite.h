@@ -16,6 +16,33 @@
 
 typedef vtzero::key_index<std::unordered_map> KeyIdx;
 typedef vtzero::value_index<vtzero::string_value_type, std::string, std::unordered_map> ValueIdx;
+typedef vtzero::value_index<vtzero::sint_value_type, int32_t, std::unordered_map> IntValueIdx;
+
+inline const std::string& getStrLabelX() {
+    static const std::string strLabelX = "labelX";
+    return strLabelX;
+}
+
+inline const std::string& getStrLabelY() {
+    static const std::string strLabelY = "labelY";
+    return strLabelY;
+}
+
+inline int scaleToTile(int coord, int tileStart, int shift) {
+	if (shift <= 0)
+		return (coord - tileStart) << (-shift);
+	int delta = coord - tileStart;
+	return (delta >> shift) + ((delta >> (shift - 1)) & 1);
+}
+
+inline bool scalePoint(std::pair<int, int>& point, std::pair<int, int> prevPoint,
+	std::pair<int, int> tileCorner, int shift) {
+	point.first = scaleToTile(point.first, tileCorner.first, shift);
+	point.second = scaleToTile(point.second, tileCorner.second, shift);
+	if (point == prevPoint)
+		return false;
+	return true;
+}
 
 inline int computeOutCode(std::pair<int, int> p, std::pair<int, int> topLeft, std::pair<int, int> bottomRight) {
 	int result =
@@ -55,8 +82,9 @@ inline std::pair<int, int> getIntersection(int code, std::pair<int, int> p0, std
 	return getIntersectionY(p0, p1, bottomRight.second);
 }
 
-inline void clipPolylineForTile(const coordinates& polyline,
-	std::pair<int, int> topLeft, std::pair<int, int> bottomRight, std::vector<coordinates>& result) {
+inline void clipPolylineForTile(const coordinates& polyline, std::pair<int, int> topLeft,
+	std::pair<int, int> bottomRight, std::pair<int, int> tileCorner, int shift,
+	std::vector<coordinates>& result, std::pair<int, int>& center) {
 	result.clear();
 	if (polyline.size() < 2)
 		return;
@@ -64,9 +92,15 @@ inline void clipPolylineForTile(const coordinates& polyline,
 	const auto size = polyline.size();
 	segment.reserve(size);
     auto prevPoint = polyline[0];
+	std::pair<int, int> sm(INT32_MIN, INT32_MIN);
+	std::pair<int, int> m;
 	int prevCode = computeOutCode(prevPoint, topLeft, bottomRight);
-    for (size_t i = 1; i < size; i++) {
+	int64_t sumX = prevPoint.first;
+	int64_t sumY = prevPoint.second;
+	for (size_t i = 1; i < size; i++) {
         auto nextPoint = polyline[i];
+		sumX += nextPoint.first;
+		sumY += nextPoint.second;
     	int nextCode = computeOutCode(nextPoint, topLeft, bottomRight);
 		auto p0 = prevPoint;
 		auto p1 = nextPoint;
@@ -88,16 +122,28 @@ inline void clipPolylineForTile(const coordinates& polyline,
 			}
 		}
 		if (accept) {
-            if (segment.empty())
-                segment.emplace_back(p0);
-            else if (segment.back() != p0) {
-				result.push_back(segment);
-				segment.clear();
-				segment.emplace_back(p0);
-            }
-            segment.emplace_back(p1);
+			bool isEmpty = segment.empty();
+			m = p0;
+			if (isEmpty)
+				sm = {INT32_MIN, INT32_MIN};
+			bool withPoint = scalePoint(m, sm, tileCorner, shift);
+			if (isEmpty || segment.back() != m) {
+				if (!isEmpty) {
+			        result.push_back(std::move(segment));
+					segment.clear();
+				}
+				if (withPoint) {
+					segment.emplace_back(m);
+					sm = m;
+				}
+			}
+			m = p1;
+			if (scalePoint(m, sm, tileCorner, shift)) {
+				segment.emplace_back(m);
+				sm = m;
+			}
         } else if (!segment.empty()) {
-			result.push_back(segment);
+	        result.push_back(std::move(segment));
 			segment.clear();
         }
 		prevPoint = nextPoint;
@@ -105,36 +151,66 @@ inline void clipPolylineForTile(const coordinates& polyline,
     }
     if (!segment.empty())
         result.push_back(std::move(segment));
+	center.first = static_cast<int>(sumX / size);
+	center.second = static_cast<int>(sumY / size);
 }
 
 template<bool IsY, bool IsGreater>
 inline bool isOutside(std::pair<int, int> p, int limit) {
-    if constexpr (IsY)
+    if (IsY)
         return IsGreater ? (p.second > limit) : (p.second < limit);
     return IsGreater ? (p.first > limit) : (p.first < limit);
 }
 
 template<bool IsY, bool IsGreater>
-inline bool clipPolygonAgainstEdge(const coordinates& polygon, coordinates& result, int limit) {
-	auto s = polygon.back();
-	bool sOutside = isOutside<IsY, IsGreater>(s, limit);
-    for (const auto& p : polygon) {
+inline bool clipPolygonAgainstEdge(const coordinates& polygon,
+	coordinates& result, int limit, std::pair<int, int> tileCorner, int shift, int64_t& sumX, int64_t& sumY) {
+	auto sp = polygon.back();
+	std::pair<int, int> sm(INT32_MIN, INT32_MIN);
+	std::pair<int, int> m;
+	bool sOutside = isOutside<IsY, IsGreater>(sp, limit);
+    for (const auto p : polygon) {
+		if (IsY && IsGreater)	{
+			sumX += p.first;
+			sumY += p.second;
+		}
 		bool pOutside = isOutside<IsY, IsGreater>(p, limit);
         if (!pOutside) {
             if (sOutside) {
-				if constexpr (IsY)
-                	result.push_back(getIntersectionY(s, p, limit));
+				if (IsY)
+					m = getIntersectionY(sp, p, limit);
 				else
-					result.push_back(getIntersectionX(s, p, limit));
+					m = getIntersectionX(sp, p, limit);
+				if (!IsY && !IsGreater) {
+					if (scalePoint(m, sm, tileCorner, shift)) {
+						result.push_back(m);
+						sm = m;
+					}
+				} else
+					result.push_back(m);
 			}
-            result.push_back(p);
+			if (!IsY && !IsGreater) {
+				m = p;
+				if (scalePoint(m, sm, tileCorner, shift)) {
+					result.push_back(m);
+					sm = m;
+				}
+			} else
+				result.push_back(p);
         } else if (!sOutside) {
-			if constexpr (IsY)
-	            result.push_back(getIntersectionY(s, p, limit));
+			if (IsY)
+				m = getIntersectionY(sp, p, limit);
 			else
-				result.push_back(getIntersectionX(s, p, limit));
+				m = getIntersectionX(sp, p, limit);
+			if (!IsY && !IsGreater) {
+				if (scalePoint(m, sm, tileCorner, shift)) {
+					result.push_back(m);
+					sm = m;
+				}
+			} else
+				result.push_back(m);
 		}
-        s = p;
+        sp = p;
 		sOutside = pOutside;
     }
 	if (result.size() < 3)
@@ -142,8 +218,9 @@ inline bool clipPolygonAgainstEdge(const coordinates& polygon, coordinates& resu
 	return true;
 }
 
-inline void clipPolygonForTile(const coordinates& polygon,
-	std::pair<int, int> topLeft, std::pair<int, int> bottomRight, coordinates& temp, coordinates& result) {
+inline void clipPolygonForTile(const coordinates& polygon, std::pair<int, int> topLeft,
+	std::pair<int, int> bottomRight, std::pair<int, int> tileCorner, int shift,
+	coordinates& temp, coordinates& result, std::pair<int, int>& center) {
 	result.clear();
 	const auto size = polygon.size();
 	if (size < 3)
@@ -151,81 +228,54 @@ inline void clipPolygonForTile(const coordinates& polygon,
     result.reserve(size + 4);
 	temp.clear();
 	temp.reserve(size + 4);
-	if (!clipPolygonAgainstEdge<true, false>(polygon, temp, topLeft.second))
+	int64_t sumX = 0;
+	int64_t sumY = 0;
+	if (!clipPolygonAgainstEdge<true, true>(polygon, temp, bottomRight.second, tileCorner, shift, sumX, sumY))
 		return;
-	if (!clipPolygonAgainstEdge<false, false>(temp, result, topLeft.first)) {
+	if (!clipPolygonAgainstEdge<false, true>(temp, result, bottomRight.first, tileCorner, shift, sumX, sumY)) {
 		result.clear();
 		return;
 	}
 	temp.clear();
-	if (!clipPolygonAgainstEdge<true, true>(result, temp, bottomRight.second)) {
+	if (!clipPolygonAgainstEdge<true, false>(result, temp, topLeft.second, tileCorner, shift, sumX, sumY)) {
 		result.clear();
 		return;
 	}
 	result.clear();
-	if (!clipPolygonAgainstEdge<false, true>(temp, result, bottomRight.first)) {
+	if (!clipPolygonAgainstEdge<false, false>(temp, result, topLeft.first, tileCorner, shift, sumX, sumY)) {
 		result.clear();
 		return;
 	}
+	center.first = static_cast<int>(sumX / size);
+	center.second = static_cast<int>(sumY / size);
 }
 
-inline void addObjectDataToMapboxVectorTile(
-	vtzero::feature_builder* feature, MapDataObject& obj, KeyIdx& keyIdx, ValueIdx& valueIdx) {
+inline void addObjectDataToMapboxVectorTile(vtzero::feature_builder& feature,
+	MapDataObject& obj, std::pair<int, int> center, KeyIdx& keyIdx, ValueIdx& valueIdx, IntValueIdx& intValueIdx) {
 
 	for (const auto& tag : obj.types)
-		feature->add_property(keyIdx(tag.first), valueIdx(tag.second));
+		feature.add_property(keyIdx(tag.first), valueIdx(tag.second));
 	for (const auto& tag : obj.additionalTypes)
-		feature->add_property(keyIdx(tag.first), valueIdx(tag.second));
+		feature.add_property(keyIdx(tag.first), valueIdx(tag.second));
 	for (const auto& name : obj.namesOrder)
 	{
 		const auto it = obj.objectNames.find(name);
 		if (it != obj.objectNames.end())
-			feature->add_property(keyIdx(name), valueIdx(it->second));
+			feature.add_property(keyIdx(name), valueIdx(it->second));
 	}
-}
-
-inline int scaleToTile(int coord, int tileStart, int shift) {
-	if (shift <= 0)
-		return (coord - tileStart) << (-shift);
-	int delta = coord - tileStart;
-	return (delta >> shift) + (delta >> (shift - 1) & 1);
-}
-
-inline void makeNewScaledPoint(std::pair<int, int> point, std::pair<int, int> tileCorner, int shift,
-	std::pair<int, int>& scaled) {
-	std::pair<int, int> result(
-		scaleToTile(point.first, tileCorner.first, shift),
-		scaleToTile(point.second, tileCorner.second, shift));
-	if (result == scaled) {
-		result.first ^= 1;
-	}
-	scaled = result;
-}
-
-inline void makeNewOriginalPoint(std::pair<int, int> point, std::pair<int, int> tileCorner, int shift,
-	std::pair<int, int> start, std::pair<int, int>& scaled) {
-	std::pair<int, int> result(
-		scaleToTile(point.first, tileCorner.first, shift),
-		scaleToTile(point.second, tileCorner.second, shift));
-	if (result == scaled) {
-		result.first ^= 1;
-		if (result == start)
-			result.second ^= 1;
-	} else if (result == start) {
-		result.second ^= 1;
-		if (result == scaled)
-			result.first ^= 1;
-	}
-	scaled = result;
+	feature.add_property(keyIdx(getStrLabelX()), intValueIdx(center.first));
+	feature.add_property(keyIdx(getStrLabelY()), intValueIdx(center.second));
 }
 
 inline std::string buildMapboxVectorTile(
 	std::vector<FoundMapDataObject>& foundMapDataObjects, int x, int y, int zoom) {
 	int s = 31 - zoom;
-	std::pair<int, int> tl(x << s, y << s);
-	std::pair<int, int> br(
-		static_cast<int>(std::min((static_cast<int64_t>(x) + 1) << s, static_cast<int64_t>(INT32_MAX))),
-		static_cast<int>(std::min((static_cast<int64_t>(y) + 1) << s, static_cast<int64_t>(INT32_MAX))));
+	const auto h = 1 << (std::max(s - 1, 0));
+	const std::pair<int, int> corner(x << s, y << s);
+	const std::pair<int, int> tl(std::max(corner.first - h, 0), std::max(corner.second - h, 0));
+	const std::pair<int, int> br(
+		static_cast<int>(std::min(((static_cast<int64_t>(x) + 1) << s) + h, static_cast<int64_t>(INT32_MAX))),
+		static_cast<int>(std::min(((static_cast<int64_t>(y) + 1) << s) + h, static_cast<int64_t>(INT32_MAX))));
 	s -= 12;
 
 	vtzero::tile_builder tile;
@@ -233,12 +283,14 @@ inline std::string buildMapboxVectorTile(
 	vtzero::layer_builder layers[] = {{tile, "tunnel_layer"}, {tile, "ground_layer"}, {tile, "bridge_layer"}};
 	KeyIdx key_indices[] = {KeyIdx(layers[0]), KeyIdx(layers[1]), KeyIdx(layers[2])};
 	ValueIdx value_indices[] = {ValueIdx(layers[0]), ValueIdx(layers[1]), ValueIdx(layers[2])};
+	IntValueIdx int_value_indices[] = {IntValueIdx(layers[0]), IntValueIdx(layers[1]), IntValueIdx(layers[2])};
 
 	size_t i;
-	std::pair<int, int> f, p;
+	std::pair<int, int> center, empty;
 	coordinates temp;
 	coordinates polygon;
 	std::vector<coordinates> polylines;
+	auto LABEL_SHIFT = 31 - LABEL_ZOOM_ENCODE;
 	for (auto& foundMapDataObject : foundMapDataObjects) {
 		auto& obj = *foundMapDataObject.obj;
         int layer_idx = obj.getSimpleLayer() + 1;
@@ -246,6 +298,7 @@ inline std::string buildMapboxVectorTile(
 			continue;
 		auto& key_index = key_indices[layer_idx];
 		auto& value_index = value_indices[layer_idx];
+		auto& int_value_index = int_value_indices[layer_idx];
 
 		auto size = obj.points.size();
 		if (size < 1)
@@ -256,18 +309,22 @@ inline std::string buildMapboxVectorTile(
 		bool isCycle = obj.cycle();
 
         if (isPoint && !isArea) {
-			p = obj.points[0];
+			auto p = obj.points[0];
 			if (p.first < tl.first || p.first >= br.first || p.second < tl.second || p.second >= br.second)
 				continue;
 			vtzero::point_feature_builder feature(layers[layer_idx]);
 			feature.set_id(obj.id);
-            feature.add_point(scaleToTile(p.first, tl.first, s), scaleToTile(p.second, tl.second, s));
-			addObjectDataToMapboxVectorTile(&feature, obj, key_index, value_index);
+            feature.add_point(scaleToTile(p.first, corner.first, s), scaleToTile(p.second, corner.second, s));
+			center.first = scaleToTile(p.first + (obj.labelX * (1 << LABEL_SHIFT)), corner.first, s);
+			center.second = scaleToTile(p.second + (obj.labelY * (1 << LABEL_SHIFT)), corner.second, s);
+			addObjectDataToMapboxVectorTile(feature, obj, center, key_index, value_index, int_value_index);
 			feature.commit();
 		} else if (!isPoint && (isArea || isCycle)) {
 			if ((isCycle && size < 4) || size < 3)
 				continue;
-			clipPolygonForTile(obj.points, tl, br, temp, polygon);
+			clipPolygonForTile(obj.points, tl, br, corner, s, temp, polygon, center);
+			center.first = scaleToTile(center.first + (obj.labelX * (1 << LABEL_SHIFT)), corner.first, s);
+			center.second = scaleToTile(center.second + (obj.labelY * (1 << LABEL_SHIFT)), corner.second, s);
 			size = polygon.size();
 			if (size < 1)
 				continue;
@@ -277,30 +334,17 @@ inline std::string buildMapboxVectorTile(
 			vtzero::polygon_feature_builder feature(layers[layer_idx]);
 			feature.set_id(obj.id);
             feature.add_ring(isCycle ? size : size + 1);
-			f = {-1, -1};
-			makeNewScaledPoint(polygon[0], tl, s, f);
-			feature.set_point(f.first, f.second);
-			p = f;
-			for (i = 1; i < size - 2; i++) {
-				makeNewScaledPoint(polygon[i], tl, s, p);
+			for (auto p : polygon) {
 				feature.set_point(p.first, p.second);
 			}
-			if (isCycle)
-				makeNewOriginalPoint(polygon[i], tl, s, f, p);
-			else
-				makeNewScaledPoint(polygon[i], tl, s, p);
-			feature.set_point(p.first, p.second);
-			if (!isCycle) {
-				makeNewOriginalPoint(polygon[i + 1], tl, s, f, p);
-				feature.set_point(p.first, p.second);
-			}
-			feature.set_point(f.first, f.second);
+			if (!isCycle)
+				feature.set_point(polygon.front().first, polygon.front().second);
             for (const auto& ring : obj.polygonInnerCoordinates) {
 				size = ring.size();
 				isCycle = ring.front() == ring.back();
 				if ((isCycle && size < 4) || size < 3)
 					continue;
-				clipPolygonForTile(ring, tl, br, temp, polygon);
+				clipPolygonForTile(ring, tl, br, corner, s, temp, polygon, empty);
 				size = polygon.size();
 				if (size < 1)
 					continue;
@@ -308,31 +352,22 @@ inline std::string buildMapboxVectorTile(
 				if ((isCycle && size < 4) || size < 3)
 					continue;
 				feature.add_ring(isCycle ? size : size + 1);
-				f = {-1, -1};
-				makeNewScaledPoint(polygon[0], tl, s, f);
-				feature.set_point(f.first, f.second);
-				p = f;
-                for (i = 1; i < size - 2; i++) {
-					makeNewScaledPoint(polygon[i], tl, s, p);
+                for (auto p : polygon) {
 					feature.set_point(p.first, p.second);
 				}
-				if (isCycle)
-					makeNewOriginalPoint(polygon[i], tl, s, f, p);
-				else
-					makeNewScaledPoint(polygon[i], tl, s, p);
-				feature.set_point(p.first, p.second);
-				if (!isCycle) {
-					makeNewOriginalPoint(polygon[i + 1], tl, s, f, p);
-					feature.set_point(p.first, p.second);
-				}
-				feature.set_point(f.first, f.second);
+				if (!isCycle)
+					feature.set_point(polygon.front().first, polygon.front().second);
 			}
-			addObjectDataToMapboxVectorTile(&feature, obj, key_index, value_index);
+			addObjectDataToMapboxVectorTile(feature, obj, center, key_index, value_index, int_value_index);
 	        feature.commit();
 		} else if (!isPoint || !isArea) {
 			if ((isCycle && size < 3) || size < 2)
 				continue;
-			clipPolylineForTile(obj.points, tl, br, polylines);
+			clipPolylineForTile(obj.points, tl, br, corner, s, polylines, center);
+			center.first = scaleToTile(center.first + (obj.labelX * (1 << LABEL_SHIFT)), corner.first, s);
+			center.second = scaleToTile(center.second + (obj.labelY * (1 << LABEL_SHIFT)), corner.second, s);
+			std::unique_ptr<vtzero::linestring_feature_builder> feature;
+			bool withSegments = false;
 			for (const auto& polyline : polylines) {
 				size = polyline.size();
 				if (size < 1)
@@ -340,20 +375,22 @@ inline std::string buildMapboxVectorTile(
 				isCycle = polyline.front() == polyline.back();
 				if ((isCycle && size < 3) || size < 2)
 					continue;
-				vtzero::linestring_feature_builder feature(layers[layer_idx]);
-				feature.set_id(obj.id);
-				feature.add_linestring(size);
-				p = {-1, -1};
-				for (auto point : polyline) {
-					makeNewScaledPoint(point, tl, s, p);
-					feature.set_point(p.first, p.second);
+				if (!withSegments) {
+					feature.reset(new vtzero::linestring_feature_builder(layers[layer_idx]));
+					feature->set_id(obj.id);
+					withSegments = true;
 				}
-				addObjectDataToMapboxVectorTile(&feature, obj, key_index, value_index);
-				feature.commit();
+				feature->add_linestring(size);
+				for (auto p : polyline) {
+					feature->set_point(p.first, p.second);
+				}
+			}
+			if (withSegments) {
+				addObjectDataToMapboxVectorTile(*feature, obj, center, key_index, value_index, int_value_index);
+				feature->commit();
 			}
         }
     }
-
 	return tile.serialize();
 }
 
