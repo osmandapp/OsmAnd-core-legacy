@@ -130,14 +130,14 @@ const char* formatBounds(int left, int right, int top, int bottom) {
 }
 
 void printFileInformation(const char* fileName, VerboseInfo* verbose) {
-	BinaryMapFile* file = initBinaryMapFile(fileName);
-	std::vector<BinaryPartIndex*>::iterator its = file->indexes.begin();
+	auto file = initBinaryMapFile(fileName, false, false);
+	auto its = file->indexes.begin();
 	time_t date = file->dateCreated / 1000;
 	printf("Obf file.\n Version %d, basemap %d, date %s \n", file->version, file->basemap, ctime(&date));
 
 	int i = 1;
 	for (; its != file->indexes.end(); its++, i++) {
-		BinaryPartIndex* it = *its;
+		BinaryPartIndex* it = its->get();
 		std::string partname = "";
 		if (it->type == MAP_INDEX) {
 			partname = "Map";
@@ -303,7 +303,7 @@ int main(int argc, char** argv) {
 				char s[100];
 				for (int i = 1; i != argc; ++i) {
 					if (sscanf(argv[i], "-renderingInputFile=%s", s)) {
-						BinaryMapFile* mf = initBinaryMapFile(s);
+						auto mf = initBinaryMapFile(s, false, false);
 						osmand_log_print(LOG_INFO, "Init %d (success) binary map file %s.", mf->version,
 										 mf->inputName.c_str());
 					}

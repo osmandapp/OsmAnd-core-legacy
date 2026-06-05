@@ -1046,8 +1046,11 @@ struct BinaryMapFile {
 	static void closeThreadFDs(std::mutex&, std::unordered_map<std::thread::id, int>&, const std::thread::id*);
 };
 
-void registerCurrentThread();
-void unregisterCurrentThread();
+using BinaryMapFilePtr = std::shared_ptr<BinaryMapFile>;
+using BinaryMapFiles = std::vector<BinaryMapFilePtr>;
+
+void activateThreadSpecificFileDescriptors();
+void deactivateThreadSpecificFileDescriptors();
 
 struct ResultPublisher {
 	std::vector<FoundMapDataObject> result;
@@ -1158,14 +1161,14 @@ struct SearchQuery {
 	}
 };
 
-std::vector<BinaryMapFile*> getOpenMapFiles();
+BinaryMapFiles getOpenFilesSnapshot();
 
 void searchTransportIndex(SearchQuery* q, BinaryMapFile* file);
 
 void loadTransportRoutes(BinaryMapFile* file, vector<int32_t> filePointers, UNORDERED(map) < int64_t,
 						 SHARED_PTR<TransportRoute> > &result);
 
-void searchRouteSubregions(SearchQuery* q, std::vector<RouteSubregion>& tempResult, bool basemap, bool geocoding, std::vector<BinaryMapFile*> & mapIndexReaderFilter);
+void searchRouteSubregions(SearchQuery* q, std::vector<RouteSubregion>& tempResult, bool basemap, bool geocoding, BinaryMapFiles& mapIndexReaderFilter);
 
 bool searchRouteSubregionsForBinaryMapFile(BinaryMapFile* file,
 										   SearchQuery* q);
@@ -1176,9 +1179,9 @@ void searchRouteDataForSubRegion(SearchQuery* q, std::vector<RouteDataObject*>& 
 ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, std::string msgNothingFound,
 										   int& renderedState);
 
-BinaryMapFile* initBinaryMapFile(std::string inputName, bool useLive, bool routingOnly);
+BinaryMapFilePtr initBinaryMapFile(const std::string& inputName, bool useLive, bool routingOnly);
 
-bool initMapFilesFromCache(std::string inputName);
+bool initMapFilesFromCache(const std::string& inputName);
 
 bool cacheBinaryMapFileIfNeeded(const std::string& inputName, bool routingOnly);
 
@@ -1186,7 +1189,7 @@ bool addToCache(BinaryMapFile* mapfile, bool routingOnly);
 
 bool writeMapFilesCache(const std::string& filePath);
 
-bool closeBinaryMapFile(std::string inputName);
+bool closeBinaryMapFile(const std::string& inputName);
 
 void getIncompleteTransportRoutes(BinaryMapFile* file);
 

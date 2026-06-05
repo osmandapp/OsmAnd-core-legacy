@@ -350,14 +350,14 @@ struct HHNetworkRouteRes : public RouteCalcResult {
 struct HHRouteRegionPointsCtx {
 	short id = 0;
 	SHARED_PTR<HHRouteIndex> fileRegion;
-	BinaryMapFile* file;
+	BinaryMapFilePtr file;
 	int32_t routingProfile = 0;
 	UNORDERED_map<int64_t, NetworkDBPoint *> pntsByFileId;
 	
 	HHRouteRegionPointsCtx(short id): id(id), fileRegion(nullptr), file(nullptr) {
 	}
 	
-	HHRouteRegionPointsCtx(short id, SHARED_PTR<HHRouteIndex> fileRegion, BinaryMapFile* file, int rProf) {
+	HHRouteRegionPointsCtx(short id, SHARED_PTR<HHRouteIndex> fileRegion, BinaryMapFilePtr file, int rProf) {
 		this->id = id;
 		this->fileRegion = fileRegion;
 		this->file = file;
@@ -561,7 +561,7 @@ struct HHRoutingContext {
 		for (auto & r : regions) {
 			if (r->file != nullptr) {
 				UNORDERED_map<int64_t, NetworkDBPoint *> pnts;
-				initHHPoints(r->file, r->fileRegion, this, r->id, pnts);
+				initHHPoints(r->file.get(), r->fileRegion, this, r->id, pnts);
 				
 				for (auto it = pnts.begin(); it != pnts.end(); it++) {
 					auto * pnt = it->second;
@@ -656,7 +656,7 @@ private:
 
 struct HHRouteRegionsGroup {
 	std::vector<SHARED_PTR<HHRouteIndex>> regions;
-	std::vector<BinaryMapFile*> readers;
+	BinaryMapFiles readers;
 	const uint64_t edition;
 	const std::string profileParams;
 	
@@ -672,7 +672,7 @@ struct HHRouteRegionsGroup {
 	HHRouteRegionsGroup(uint64_t edition, std::string params): edition(edition), profileParams(params) {
 	}
 	
-   void appendToGroups(SHARED_PTR<HHRouteIndex> r, BinaryMapFile* rdr, std::vector<SHARED_PTR<HHRouteRegionsGroup>> & groups, double iou) {
+   void appendToGroups(SHARED_PTR<HHRouteIndex> r, const BinaryMapFilePtr& rdr, std::vector<SHARED_PTR<HHRouteRegionsGroup>> & groups, double iou) {
 		for (std::string & params : r->profileParams) {
 			SHARED_PTR<HHRouteRegionsGroup> matchGroup = nullptr;
 			for (auto & g : groups) {
@@ -699,7 +699,7 @@ struct HHRouteRegionsGroup {
 		SearchQuery request((uint32_t)(x << zoomToLoad), (uint32_t)((x + 1) << zoomToLoad), (uint32_t)(y << zoomToLoad), (uint32_t)((y + 1) << zoomToLoad));
 		std::set<string> checked;
 		for (int i = 0; i < regions.size(); i++) {
-			BinaryMapFile * rd = readers.at(i);
+			const auto& rd = readers.at(i);
 			if (rd->routingIndexes.size() > 0) {
 				for (auto & reg : rd->routingIndexes) {
 					if (checked.find(reg->name) != checked.end()) {
@@ -729,7 +729,7 @@ struct HHRouteRegionsGroup {
 		if (regionsCoveringStartAndTargets.size() == 0) {
 			return true;
 		}
-		for (auto* reader : readers) {
+		for (const auto& reader : readers) {
 			for (auto& index : reader->routingIndexes) {
 				for (const auto& region : regionsCoveringStartAndTargets) {
 					if (to_lowercase(region) == to_lowercase(index->name)) {
