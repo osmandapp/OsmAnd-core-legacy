@@ -149,8 +149,9 @@ inline void clipPolylineForTile(const coordinates& polyline, std::pair<int, int>
 		prevPoint = nextPoint;
 		prevCode = nextCode;
     }
-    if (!segment.empty())
-        result.push_back(std::move(segment));
+    if (!segment.empty()) {
+		result.push_back(std::move(segment));
+    }
 	center.first = static_cast<int>(sumX / size);
 	center.second = static_cast<int>(sumY / size);
 }
