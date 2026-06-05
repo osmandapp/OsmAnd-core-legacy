@@ -69,7 +69,6 @@ uint32_t RoutingIndex::findOrCreateRouteType(const std::string& tag, const std::
 
 uint32_t RoutingIndex::searchRouteEncodingRule(const std::string& tag, const std::string& value) {
 	if (decodingRules.empty()) {
-		std::lock_guard<std::mutex> lock(rulesMutex);
 		for (uint32_t i = 1; i < routeEncodingRules.size(); i++) {
 			RouteTypeRule& rt = routeEncodingRules[i];
 			string ks = rt.getTag() + "#" + rt.getValue();
@@ -2838,7 +2837,6 @@ void convertRouteDataObjecToMapObjects(SearchQuery* q, std::vector<RouteDataObje
 
 void checkAndInitRouteRegionRules(int fileInd, const SHARED_PTR<RoutingIndex>& routingIndex) {
 	// init decoding rules
-	std::lock_guard<std::mutex> lock(routingIndex->rulesMutex);
 	if (routingIndex->routeEncodingRules.size() == 0) {
 		lseek(fileInd, 0, SEEK_SET);
 		FileInputStream input(fileInd);

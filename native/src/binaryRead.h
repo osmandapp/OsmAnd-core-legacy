@@ -112,7 +112,6 @@ struct RoutingIndex : BinaryPartIndex {
 	UNORDERED_map<std::string, uint32_t> decodingRules;
 	std::vector<RouteSubregion> subregions;
 	std::vector<RouteSubregion> basesubregions;
-	std::mutex rulesMutex;
 
 	int nameTypeRule;
 	int refTypeRule;
