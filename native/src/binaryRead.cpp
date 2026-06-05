@@ -43,7 +43,7 @@ OsmAnd::OBF::OsmAndStoredIndex* cache = NULL;
 bool cacheHasChanged = false;
 static const int CACHE_VERSION = 5;// synchronize with CachedOsmandIndexes.java VERSION
 
-static thread_local bool useThreadSpecificFileDescriptors = false;
+static thread_local bool useThreadSpecificFileDescriptors = false; // tested with getMapboxVectorTileData only
 
 #ifdef MALLOC_H
 #include <malloc.h>
@@ -2991,7 +2991,10 @@ void readMapObjects(SearchQuery* q, BinaryMapFile* file) {
 					// OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Search map %s", mapIndex->name.c_str());
 					// lazy initializing rules
 					{
-						std::lock_guard<std::mutex> lock(mapIndex->initMutex);
+						std::unique_lock<std::mutex> lock(mapIndex->initMutex, std::defer_lock);
+						if (isThreadSpecificFileDescriptorsEnabled()) {
+							lock.lock();
+						}
 						if (mapIndex->decodingRules.size() == 0) {
 							lseek(file->getFD(), 0, SEEK_SET);
 							FileInputStream input(file->getFD());
@@ -3006,7 +3009,10 @@ void readMapObjects(SearchQuery* q, BinaryMapFile* file) {
 					}
 					// lazy initializing subtrees
 					{
-						std::lock_guard<std::mutex> lock(*mapLevel->boundsMutex);
+						std::unique_lock<std::mutex> lock(*mapLevel->boundsMutex, std::defer_lock);
+						if (isThreadSpecificFileDescriptorsEnabled()) {
+							lock.lock();
+						}
 						if (mapLevel->bounds.size() == 0) {
 							lseek(file->getFD(), 0, SEEK_SET);
 							FileInputStream input(file->getFD());
@@ -4051,10 +4057,6 @@ bool writeMapFilesCache(const std::string& filePath) {
 	return true;
 }
 
-bool BinaryMapFile::isRegisteredThread() {
-	return useThreadSpecificFileDescriptors;
-}
-
 void BinaryMapFile::closeThreadFDs(std::mutex& fdsMutex, std::unordered_map<std::thread::id, int>& fds,
                                    const std::thread::id* threadId) {
 	std::vector<int> fdsToClose;
@@ -4118,4 +4120,8 @@ void deactivateThreadSpecificFileDescriptors() {
 		file->closeCurrentThreadsFDs();
 	}
 	useThreadSpecificFileDescriptors = false;
+}
+
+bool isThreadSpecificFileDescriptorsEnabled() {
+	return useThreadSpecificFileDescriptors;
 }

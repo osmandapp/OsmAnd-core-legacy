@@ -61,6 +61,8 @@ struct RestrictionInfo {
 	}
 };
 
+bool isThreadSpecificFileDescriptorsEnabled();
+
 struct RoutingIndex;
 struct RouteSubregion {
 	uint64_t length;
@@ -967,7 +969,7 @@ struct BinaryMapFile {
 	}
 
 	int getFD() {
-		if (isRegisteredThread()) {
+		if (isThreadSpecificFileDescriptorsEnabled()) {
 			return getThreadFD(fdThreadsMutex, fd_threads);
 		}
 		if (fd <= 0) {
@@ -977,7 +979,7 @@ struct BinaryMapFile {
 	}
 
 	int getRouteFD() {
-		if (isRegisteredThread()) {
+		if (isThreadSpecificFileDescriptorsEnabled()) {
 			return getThreadFD(routefdThreadsMutex, routefd_threads);
 		}
 		if (routefd <= 0) {
@@ -987,7 +989,7 @@ struct BinaryMapFile {
 	}
 
 	int getGeocodingFD() {
-		if (isRegisteredThread()) {
+		if (isThreadSpecificFileDescriptorsEnabled()) {
 			return getThreadFD(geocodingfdThreadsMutex, geocodingfd_threads);
 		}
 		if (geocodingfd <= 0) {
@@ -997,7 +999,7 @@ struct BinaryMapFile {
 	}
 	
 	int getHhFD() {
-		if (isRegisteredThread()) {
+		if (isThreadSpecificFileDescriptorsEnabled()) {
 			return getThreadFD(hhfdThreadsMutex, hhfd_threads);
 		}
 		if (hhfd <= 0) {
@@ -1037,7 +1039,6 @@ struct BinaryMapFile {
 		closeAllThreadsFDs();
 	}
 
-	static bool isRegisteredThread();
 	int getThreadFD(std::mutex& fdsMutex, std::unordered_map<std::thread::id, int>& fds);
 
 	void closeAllThreadsFDs();
