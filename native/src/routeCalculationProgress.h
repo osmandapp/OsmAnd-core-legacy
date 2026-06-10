@@ -88,7 +88,8 @@ struct FastRoutingState {
 		FAILED_WITH_MIXED_MAPS,
 		FAILED_WITH_MISSING_MAPS,
 		FAILED_NO_HH_ROUTING_DATA, // pedestrian profile, ancient maps, etc
-		FAILED_WITHOUT_MAP_ISSUES, // unsupported parameters, unusual geometry (Roma to Barcelona), etc
+		FAILED_NEED_MORE_LAND_MAPS, // unusual geometry, e.g. Istanbul to Chisinau without the Bulgaria map
+		FAILED_UNSUPPORTED_PARAMETERS, // highly likely unsupported routing parameters (too many recalculations)
 
 		CANCELLED,
 		SUCCESS
@@ -100,7 +101,7 @@ struct FastRoutingState {
 	static Status get(int ordinal);
 	static int reset();
 	static int raise(int old, Status status);
-	static int fail(int old);
+	static int fail(int old, bool hasUnsupportedParameters);
 	static bool hasMixedOrMissingMaps(int ordinal);
 	static bool isSlowRoutingActive(int ordinal);
 	static bool isMixedMaps(int ordinal);
@@ -187,7 +188,7 @@ class RouteCalculationProgress {
 	virtual bool isSlowRoutingActive();
 	virtual FastRoutingState::Status getFastRoutingStatus();
 	virtual void resetFastRoutingStatus();
-	virtual void failFastRoutingStatus();
+	virtual void failFastRoutingStatus(bool hasUnsupportedParameters);
 	virtual void raiseFastRoutingStatus(FastRoutingState::Status status);
 
 	enum HHIteration {
