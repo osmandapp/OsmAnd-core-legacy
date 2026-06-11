@@ -651,7 +651,22 @@ jfieldID jfield_GeneralRouter_shortestRoute = NULL;
 jfieldID jfield_GeneralRouter_objectAttributes = NULL;
 jfieldID jfield_GeneralRouter_hhNativeFilter = NULL;
 jfieldID jfield_GeneralRouter_hhNativeParameterValues = NULL;
+jmethodID jmethod_GeneralRouter_getParameters = NULL;
 jmethodID jmethod_GeneralRouter_getImpassableRoadIds = NULL;
+
+jclass jclass_Map = NULL;
+jmethodID jmethod_Map_entrySet = NULL;
+jclass jclass_Set = NULL;
+jmethodID jmethod_Set_toArray = NULL;
+jclass jclass_MapEntry = NULL;
+jmethodID jmethod_MapEntry_getKey = NULL;
+jmethodID jmethod_MapEntry_getValue = NULL;
+jclass jclass_Enum = NULL;
+jmethodID jmethod_Enum_name = NULL;
+jclass jclass_RoutingParameter = NULL;
+jmethodID jmethod_RoutingParameter_getType = NULL;
+jmethodID jmethod_RoutingParameter_getDefaultBoolean = NULL;
+jmethodID jmethod_RoutingParameter_getDefaultNumeric = NULL;
 
 jclass jclass_RouteAttributeContext = NULL;
 jmethodID jmethod_RouteAttributeContext_getRules = NULL;
@@ -1125,7 +1140,23 @@ void loadJniRenderingContext(JNIEnv* env) {
 												   "[Lnet/osmand/router/GeneralRouter$RouteAttributeContext;");
 	jfield_GeneralRouter_hhNativeFilter = getFid(env, jclass_GeneralRouter, "hhNativeFilter", "[Ljava/lang/String;");
 	jfield_GeneralRouter_hhNativeParameterValues = getFid(env, jclass_GeneralRouter, "hhNativeParameterValues", "[Ljava/lang/String;");
+	jmethod_GeneralRouter_getParameters = env->GetMethodID(jclass_GeneralRouter, "getParameters", "()Ljava/util/Map;");
 	jmethod_GeneralRouter_getImpassableRoadIds = env->GetMethodID(jclass_GeneralRouter, "getImpassableRoadIds", "()[J");
+
+	jclass_Map = findGlobalClass(env, "java/util/Map");
+	jmethod_Map_entrySet = env->GetMethodID(jclass_Map, "entrySet", "()Ljava/util/Set;");
+	jclass_Set = findGlobalClass(env, "java/util/Set");
+	jmethod_Set_toArray = env->GetMethodID(jclass_Set, "toArray", "()[Ljava/lang/Object;");
+	jclass_MapEntry = findGlobalClass(env, "java/util/Map$Entry");
+	jmethod_MapEntry_getKey = env->GetMethodID(jclass_MapEntry, "getKey", "()Ljava/lang/Object;");
+	jmethod_MapEntry_getValue = env->GetMethodID(jclass_MapEntry, "getValue", "()Ljava/lang/Object;");
+	jclass_Enum = findGlobalClass(env, "java/lang/Enum");
+	jmethod_Enum_name = env->GetMethodID(jclass_Enum, "name", "()Ljava/lang/String;");
+	jclass_RoutingParameter = findGlobalClass(env, "net/osmand/router/GeneralRouter$RoutingParameter");
+	jmethod_RoutingParameter_getType = env->GetMethodID(
+		jclass_RoutingParameter, "getType", "()Lnet/osmand/router/GeneralRouter$RoutingParameterType;");
+	jmethod_RoutingParameter_getDefaultBoolean = env->GetMethodID(jclass_RoutingParameter, "getDefaultBoolean", "()Z");
+	jmethod_RoutingParameter_getDefaultNumeric = env->GetMethodID(jclass_RoutingParameter, "getDefaultNumeric", "()D");
 
 	jclass_RenderedObject = findGlobalClass(env, "net/osmand/NativeLibrary$RenderedObject");
 	jmethod_RenderedObject_putTag =
@@ -1762,6 +1793,42 @@ RouteAttributeExpression convertExpressionFromJava(JNIEnv* ienv, jobject jExpres
 	return RouteAttributeExpression(values, expressionType, valueType);
 }
 
+void parseRoutingParameters(JNIEnv* ienv, SHARED_PTR<GeneralRouter>& router, jobject jRouter) {
+	jobject jparameters = ienv->CallObjectMethod(jRouter, jmethod_GeneralRouter_getParameters);
+	if (!jparameters) {
+		return;
+	}
+	jobject jentrySet = ienv->CallObjectMethod(jparameters, jmethod_Map_entrySet);
+	jobjectArray entries = (jobjectArray)ienv->CallObjectMethod(jentrySet, jmethod_Set_toArray);
+	for (int i = 0; i < ienv->GetArrayLength(entries); i++) {
+		jobject entry = ienv->GetObjectArrayElement(entries, i);
+		jstring jkey = (jstring)ienv->CallObjectMethod(entry, jmethod_MapEntry_getKey);
+		jobject jparam = ienv->CallObjectMethod(entry, jmethod_MapEntry_getValue);
+		jobject jtype = ienv->CallObjectMethod(jparam, jmethod_RoutingParameter_getType);
+		jstring jtypeName = (jstring)ienv->CallObjectMethod(jtype, jmethod_Enum_name);
+		string key = getString(ienv, jkey);
+		string typeName = getString(ienv, jtypeName);
+		vector<string> profiles;
+		if (typeName == "BOOLEAN") {
+			bool defaultBoolean = ienv->CallBooleanMethod(jparam, jmethod_RoutingParameter_getDefaultBoolean);
+			router->registerBooleanParameter(key, "", "", "", profiles, defaultBoolean);
+		} else if (typeName == "NUMERIC") {
+			double defaultNumeric = ienv->CallDoubleMethod(jparam, jmethod_RoutingParameter_getDefaultNumeric);
+			vector<double> values;
+			vector<string> valueDescriptions;
+			router->registerNumericParameter(key, "", "", values, profiles, valueDescriptions, defaultNumeric);
+		}
+		ienv->DeleteLocalRef(jtypeName);
+		ienv->DeleteLocalRef(jtype);
+		ienv->DeleteLocalRef(jparam);
+		ienv->DeleteLocalRef(jkey);
+		ienv->DeleteLocalRef(entry);
+	}
+	ienv->DeleteLocalRef(entries);
+	ienv->DeleteLocalRef(jentrySet);
+	ienv->DeleteLocalRef(jparameters);
+}
+
 void parseRouteConfiguration(JNIEnv* ienv, SHARED_PTR<RoutingConfiguration> rConfig, jobject jRouteConfig) {
 	rConfig->planRoadDirection = ienv->GetIntField(jRouteConfig, jfield_RoutingConfiguration_planRoadDirection);
 	jlong nativeMemoryLimitation = ienv->GetLongField(jRouteConfig, jfield_RoutingConfiguration_nativeMemoryLimitation);
@@ -1811,8 +1878,8 @@ void parseRouteConfiguration(JNIEnv* ienv, SHARED_PTR<RoutingConfiguration> rCon
 		rConfig->router->insertParameterValues(params[i], params[i + 1]);
 	}
 
+	parseRoutingParameters(ienv, rConfig->router, router); // need for FastRoutingState.FAILED_UNSUPPORTED_PARAMETERS
 	// Map<String, String> attributes; // Attributes are not sync not used for calculation
-	// Map<String, RoutingParameter> parameters;  // not used for calculation
 	// Map<String, Integer> universalRules; // dynamically managed
 	// List<String> universalRulesById // dynamically managed
 	// Map<String, BitSet> tagRuleMask // dynamically managed

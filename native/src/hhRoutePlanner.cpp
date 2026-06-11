@@ -19,6 +19,9 @@ const int HHRoutePlanner::ROUTE_POINTS = 11;
 const std::unordered_set<std::string> HHRoutePlanner::HIGH_COST_PARAMS =
 		{ "prefer_unpaved", "avoid_motorway", "driving_style_prefer_unpaved" };
 
+const std::unordered_set<std::string> HHRoutePlanner::IGNORE_FAILED_UNSUPPORTED_PARAMETERS =
+		{ "allow_private" };
+
 HHRoutePlanner::HHRoutePlanner(RoutingContext * ctx) {
 	std::vector<SHARED_PTR<HHRouteRegionPointsCtx>> regions;
 	initNewContext(ctx, regions);
@@ -60,7 +63,6 @@ SHARED_PTR<HHRoutingContext> HHRoutePlanner::selectBestRoutingFiles(int startX, 
 	std::vector<SHARED_PTR<HHRouteRegionsGroup>> groups;
 	SHARED_PTR<GeneralRouter> router = hctx->rctx->config->router;
 	string profile = profileToString(router->getProfile()); // use base profile
-	std::vector<string> ls = router->serializeParameterValues(router->getParameterValues());
 
 	SkRect qr = SkRect::MakeLTRB(std::min(startX, endX), std::min(startY, endY), std::max(startX, endX), std::max(startY, endY));
 
@@ -78,19 +80,7 @@ SHARED_PTR<HHRoutingContext> HHRoutePlanner::selectBestRoutingFiles(int startX, 
 		g->containsStartEnd = g->contains(startX, startY, hctx) && g->contains(endX, endY, hctx)
 			&& g->containsStartEndRegion(hctx->rctx->regionsCoveringStartAndTargets);
 		vector<string> params = split_string(g->profileParams, ",");
-		for (string & p : params) {
-			if (trim(p).length() == 0) {
-				continue;
-			}
-			if (std::find(ls.begin(), ls.end(), p) == ls.end()) {
-				g->extraParam++;
-			} else {
-				if (HIGH_COST_PARAMS.count(p)) {
-					g->highCostParam++;
-				}
-				g->matchParam++;
-			}
-		}
+		matchGroupRoutingParams(params, router, g);
 	}
 	std::sort(groups.begin(), groups.end(), [](const SHARED_PTR<HHRouteRegionsGroup> o1, const SHARED_PTR<HHRouteRegionsGroup> o2) {
 		if (o1->containsStartEnd != o2->containsStartEnd) {
@@ -148,7 +138,57 @@ SHARED_PTR<HHRoutingContext> HHRoutePlanner::selectBestRoutingFiles(int startX, 
 			}
 		}
 	}
+	hctx->rctx->hhHasUnsupportedParameters = bestGroup->unsupportedParams > 0;
 	return initNewContext(hctx->rctx, regions);
+}
+
+void HHRoutePlanner::matchGroupRoutingParams(const std::vector<std::string> & hhParams,
+		const SHARED_PTR<GeneralRouter> & router, const SHARED_PTR<HHRouteRegionsGroup> & group) const {
+	std::vector<string> routerParams = router->serializeParameterValues(router->getParameterValues());
+
+	for (string p : hhParams) {
+		p = trim(p);
+		if (p.empty()) {
+			continue;
+		}
+		if (std::find(routerParams.begin(), routerParams.end(), p) == routerParams.end()) {
+			group->extraParam++;
+		} else {
+			if (HIGH_COST_PARAMS.count(p)) {
+				group->highCostParam++;
+			}
+			group->matchParam++;
+		}
+	}
+
+	UNORDERED_map<string, RoutingParameter> & parameters = router->getParameters();
+	for (const string & keyVal : routerParams) {
+		string key = split_string(keyVal, "=")[0];
+		auto paramIt = parameters.find(key);
+		if (paramIt == parameters.end()
+				|| IGNORE_FAILED_UNSUPPORTED_PARAMETERS.count(key)
+				|| std::find(hhParams.begin(), hhParams.end(), keyVal) != hhParams.end()) {
+			continue;
+		}
+		const RoutingParameter & param = paramIt->second;
+		double doubleValue = 0;
+		bool booleanValue = true;
+		if (keyVal.find("=") != string::npos) {
+			string value = split_string(keyVal, "=")[1];
+			if (value == "true" || value == "false") {
+				booleanValue = value == "true";
+			} else {
+				doubleValue = OsmAndAlgorithms::parseNumberSilently<double>(value, 0);
+			}
+		}
+		if (param.type == RoutingParameterType::BOOLEAN && booleanValue == param.defaultBoolean) {
+			continue;
+		}
+		if (param.type == RoutingParameterType::NUMERIC && doubleValue == param.defaultNumeric) {
+			continue;
+		}
+		group->unsupportedParams++;
+	}
 }
 
 MAP_VECTORS_NETWORK_DB_POINTS HHRoutePlanner::groupByClusters( UNORDERED_map<int64_t, NetworkDBPoint *> & pointsById, bool out) {
@@ -320,7 +360,7 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
 		}
 		NetworkDBPoint * finalPnt = runRoutingPointsToPoints(hctx, stPoints, endPoints);
 		if (finalPnt == nullptr) {
-			progress->failFastRoutingStatus();
+			progress->failFastRoutingStatus(hctx->rctx->hhHasUnsupportedParameters);
 			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "finalPnt is null (stop)");
 			return new HHNetworkRouteRes("No finalPnt found (points might be filtered by params)");
 		}
@@ -346,7 +386,7 @@ HHNetworkRouteRes * HHRoutePlanner::runRouting(int startX, int startY, int endX,
 		calcCount++;
 		if (recalc) {
 			if (calcCount > maxCountReiteration) {
-				progress->failFastRoutingStatus();
+				progress->failFastRoutingStatus(hctx->rctx->hhHasUnsupportedParameters);
 				OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Too many recalculations (stop)");
 				HHNetworkRouteRes * res = new HHNetworkRouteRes("Too many recalculations (outdated maps or unsupported parameters).");
 				return res;

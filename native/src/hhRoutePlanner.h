@@ -25,6 +25,7 @@ public:
 	// this constant should dynamically change if route is not found
 	constexpr static const double EXCLUDE_PRIORITY_CONSTANT = 0.0; // see comments below
 	static const std::unordered_set<std::string> HIGH_COST_PARAMS; // initialized in hhRoutePlanner.cpp
+	static const std::unordered_set<std::string> IGNORE_FAILED_UNSUPPORTED_PARAMETERS; // initialized in hhRoutePlanner.cpp
 	
 	HHRoutingConfig * prepareDefaultRoutingConfig(HHRoutingConfig * c);
 	HHNetworkRouteRes * runRouting(int startX, int startY, int endX, int endY, HHRoutingConfig * config);
@@ -47,6 +48,7 @@ private:
 	SHARED_PTR<HHRoutingContext> initHCtx(HHRoutingConfig * c, int startX, int startY, int endX, int endY);
 	SHARED_PTR<HHRoutingContext> initNewContext(RoutingContext * ctx, std::vector<SHARED_PTR<HHRouteRegionPointsCtx>> & regions);
 	SHARED_PTR<HHRoutingContext> selectBestRoutingFiles(int startX, int startY, int endX, int endY, const SHARED_PTR<HHRoutingContext> & hctx, bool strictBestGroupMaps);
+	void matchGroupRoutingParams(const std::vector<std::string> & hhParams, const SHARED_PTR<GeneralRouter> & router, const SHARED_PTR<HHRouteRegionsGroup> & group) const;
 	SHARED_PTR<RouteSegmentPoint> loadPoint(RoutingContext * ctx, const NetworkDBPoint * pnt);
 	SHARED_PTR<HHRouteRegionsGroup> hhRouteRegionGroup;
 	void findFirstLastSegments(const SHARED_PTR<HHRoutingContext> & hctx, int startX, int startY, int endX, int endY,
