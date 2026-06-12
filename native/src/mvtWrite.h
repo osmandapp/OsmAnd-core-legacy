@@ -29,9 +29,16 @@ inline const std::string& getStrLabelY() {
 }
 
 inline int scaleToTile(int coord, int tileStart, int shift) {
-	if (shift <= 0)
-		return (coord - tileStart) << (-shift);
 	int delta = coord - tileStart;
+	if (shift == 0)
+		return delta;
+	if (shift < 0)
+		return delta * (1u << (-shift));
+	if (delta < 0)
+	{
+        auto udelta = (1u << 31) + static_cast<unsigned int>(delta);
+        return static_cast<int>((udelta >> shift) + ((udelta >> (shift - 1)) & 1) - (1u << (31 - shift)));
+	}
 	return (delta >> shift) + ((delta >> (shift - 1)) & 1);
 }
 
