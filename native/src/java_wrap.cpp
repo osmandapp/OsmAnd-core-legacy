@@ -109,11 +109,11 @@ extern "C" JNIEXPORT jboolean JNICALL Java_net_osmand_NativeLibrary_initBinaryMa
 	const char* utf = ienv->GetStringUTFChars((jstring)path, NULL);
 	std::string inputName(utf);
 	ienv->ReleaseStringUTFChars((jstring)path, utf);
-	BinaryMapFile* fl = initBinaryMapFile(inputName, useLive, false);
-	if (fl == NULL) {
+	auto fl = initBinaryMapFile(inputName, useLive, false);
+	if (fl == nullptr) {
 		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "File %s was not initialized", inputName.c_str());
 	}
-	return fl != NULL;
+	return fl != nullptr;
 }
 
 extern "C" JNIEXPORT jboolean JNICALL Java_net_osmand_NativeLibrary_initFontType(JNIEnv* ienv, jobject obj,
@@ -497,8 +497,14 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_net_osmand_NativeLibrary_getMapboxV
 	auto q = SearchQuery(x << s, brx, y << s, bry, nullptr, &publisher);
 	q.zoom = zoom;
 
+	s -= 12;
+
 	int renderedState = 0;
+
+	activateThreadSpecificFileDescriptors();
 	ResultPublisher* res = searchObjectsForRendering(&q, true, "Nothing found", renderedState);
+	deactivateThreadSpecificFileDescriptors();
+
 	auto blob = buildMapboxVectorTile(res->result, x, y, zoom);
 	jbyteArray resultObject = ienv->NewByteArray(blob.size());
 	ienv->SetByteArrayRegion(resultObject, 0, blob.size(), (const jbyte*)blob.data());

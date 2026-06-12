@@ -156,8 +156,9 @@ inline void clipPolylineForTile(const coordinates& polyline, std::pair<int, int>
 		prevPoint = nextPoint;
 		prevCode = nextCode;
     }
-    if (!segment.empty())
-        result.push_back(std::move(segment));
+    if (!segment.empty()) {
+		result.push_back(std::move(segment));
+    }
 	center.first = static_cast<int>(sumX / size);
 	center.second = static_cast<int>(sumY / size);
 }
@@ -272,6 +273,7 @@ inline void addObjectDataToMapboxVectorTile(vtzero::feature_builder& feature,
 	}
 	feature.add_property(keyIdx(getStrLabelX()), intValueIdx(center.first));
 	feature.add_property(keyIdx(getStrLabelY()), intValueIdx(center.second));
+	feature.add_property(keyIdx("osm_id"), OsmAndObfConstants::getOsmIdFromBinaryMapObjectId(obj.id));
 }
 
 inline std::string buildMapboxVectorTile(

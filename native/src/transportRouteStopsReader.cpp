@@ -11,7 +11,7 @@
 #include "binaryRead.h"
 #include "transportRoutingObjects.h"
 
-TransportRouteStopsReader::TransportRouteStopsReader(vector<BinaryMapFile*>& files) {
+TransportRouteStopsReader::TransportRouteStopsReader(const std::vector<std::shared_ptr<BinaryMapFile>>& files) {
 	for (auto& f : files) {
 		if (f->transportIndexes.size() > 0) {
 			routesFilesCache.insert(make_pair(f, PT_ROUTE_MAP()));
@@ -24,7 +24,7 @@ vector<SHARED_PTR<TransportStop>> TransportRouteStopsReader::readMergedTransport
 
 	for (auto& it : routesFilesCache) {
 		q->transportResults.clear();
-		searchTransportIndex(q, it.first);
+		searchTransportIndex(q, it.first.get());
 		vector<SHARED_PTR<TransportStop>> stops = q->transportResults;
 		auto& routesToLoad = routesFilesCache[it.first];
 		mergeTransportStops(routesToLoad, loadedTransportStops, stops);
@@ -135,7 +135,7 @@ void TransportRouteStopsReader::putAll(PT_ROUTE_MAP& routesToLoad, vector<int32_
 	}
 }
 
-void TransportRouteStopsReader::loadRoutes(BinaryMapFile* file, PT_ROUTE_MAP& localFileRoutes) {
+void TransportRouteStopsReader::loadRoutes(const std::shared_ptr<BinaryMapFile>& file, PT_ROUTE_MAP& localFileRoutes) {
 	if (localFileRoutes.size() > 0) {
 		vector<int32_t> routesToLoad;
 		for (auto& itr : localFileRoutes) {
@@ -144,7 +144,7 @@ void TransportRouteStopsReader::loadRoutes(BinaryMapFile* file, PT_ROUTE_MAP& lo
 			}
 		}
 		sort(routesToLoad.begin(), routesToLoad.end());
-		loadTransportRoutes(file, routesToLoad, localFileRoutes);
+		loadTransportRoutes(file.get(), routesToLoad, localFileRoutes);
 	}
 }
 
@@ -411,7 +411,7 @@ vector<SHARED_PTR<TransportRoute>> TransportRouteStopsReader::findIncompleteRout
 		// here we could limit routeMap indexes by only certain bbox around start / end (check comment on field)
 		vector<int32_t> lst;
 
-		getIncompleteTransportRoutes(f.first);
+		getIncompleteTransportRoutes(f.first.get());
 
 		if (f.first->incompleteTransportRoutes.find(baseRoute->id) != f.first->incompleteTransportRoutes.end()) {
 			shared_ptr<IncompleteTransportRoute> ptr = f.first->incompleteTransportRoutes[baseRoute->id];
@@ -422,7 +422,7 @@ vector<SHARED_PTR<TransportRoute>> TransportRouteStopsReader::findIncompleteRout
 		}
 		if (lst.size() > 0) {
 			sort(lst.begin(), lst.end());
-			loadTransportRoutes(f.first, lst, filesRoutesMap);
+			loadTransportRoutes(f.first.get(), lst, filesRoutesMap);
 			for (auto& r : filesRoutesMap) {
 				allRoutes.push_back(r.second);
 			}
