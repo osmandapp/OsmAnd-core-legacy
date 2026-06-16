@@ -663,6 +663,7 @@ struct HHRouteRegionsGroup {
 	int extraParam = 0;
 	int matchParam = 0;
 	int highCostParam = 0;
+	int unsupportedParams = 0;
 	bool containsStartEnd = false;
 	double sumIntersects = 0;
 	

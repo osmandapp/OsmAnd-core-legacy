@@ -119,6 +119,7 @@ struct RoutingContext {
 	BinaryMapFiles mapIndexReaderFilter;
 
 	std::vector<std::string> regionsCoveringStartAndTargets;
+	bool hhHasUnsupportedParameters;
 
 	int alertFasterRoadToVisitedSegments;
 	int alertSlowerSegmentedWasVisitedEarlier;
@@ -134,6 +135,7 @@ struct RoutingContext {
 		this->conditionalTimeStr = cp->conditionalTimeStr;
 		this->basemap = cp->basemap;
 		this->geocoding = cp->geocoding;
+		this->hhHasUnsupportedParameters = cp->hhHasUnsupportedParameters;
 		this->progress = cp->progress;
 		this->calculationProgressFirstPhase = std::make_shared<RouteCalculationProgress>();
 		this->alertFasterRoadToVisitedSegments = 0;
@@ -145,7 +147,7 @@ struct RoutingContext {
 		: calculationMode(calcMode), config(config), progress(new RouteCalculationProgress()),
 		  calculationProgressFirstPhase(new RouteCalculationProgress()), leftSideNavigation(false),
 		  startTransportStop(false), targetTransportStop(false), publicTransport(false), geocoding(false),
-		  conditionalTime(0), precalcRoute(new PrecalculatedRouteDirection()), alertFasterRoadToVisitedSegments(0),
+		  conditionalTime(0), precalcRoute(new PrecalculatedRouteDirection()), hhHasUnsupportedParameters(false), alertFasterRoadToVisitedSegments(0),
 		  alertSlowerSegmentedWasVisitedEarlier(0) {
 		this->basemap = RouteCalculationMode::BASE == calcMode;
 	}
