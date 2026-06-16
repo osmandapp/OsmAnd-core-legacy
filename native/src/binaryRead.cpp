@@ -3271,7 +3271,8 @@ ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, 
 #endif						  
 		deleteObjects(basemapCoastLines);
 		deleteObjects(coastLines);
-		if (!coastlinesWereAdded && ocean > 0.5) {
+		// ocean=0.5 on /vector/3/1/5.mvt with https://www.openstreetmap.org/node/305640292 etc
+		if (!coastlinesWereAdded && ocean >= 0.5) {
 			MapDataObject* o = new MapDataObject();
 			o->points.push_back(int_pair(q->left, q->top));
 			o->points.push_back(int_pair(q->right, q->top));
