@@ -1800,7 +1800,8 @@ void parseRoutingParameters(JNIEnv* ienv, SHARED_PTR<GeneralRouter>& router, job
 	}
 	jobject jentrySet = ienv->CallObjectMethod(jparameters, jmethod_Map_entrySet);
 	jobjectArray entries = (jobjectArray)ienv->CallObjectMethod(jentrySet, jmethod_Set_toArray);
-	for (int i = 0; i < ienv->GetArrayLength(entries); i++) {
+	int size = ienv->GetArrayLength(entries);
+	for (int i = 0; i < size; i++) {
 		jobject entry = ienv->GetObjectArrayElement(entries, i);
 		jstring jkey = (jstring)ienv->CallObjectMethod(entry, jmethod_MapEntry_getKey);
 		jobject jparam = ienv->CallObjectMethod(entry, jmethod_MapEntry_getValue);

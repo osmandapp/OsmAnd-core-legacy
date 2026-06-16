@@ -146,8 +146,7 @@ void HHRoutePlanner::matchGroupRoutingParams(const std::vector<std::string> & hh
 		const SHARED_PTR<GeneralRouter> & router, const SHARED_PTR<HHRouteRegionsGroup> & group) const {
 	std::vector<string> routerParams = router->serializeParameterValues(router->getParameterValues());
 
-	for (string p : hhParams) {
-		p = trim(p);
+	for (const string & p : hhParams) {
 		if (p.empty()) {
 			continue;
 		}
