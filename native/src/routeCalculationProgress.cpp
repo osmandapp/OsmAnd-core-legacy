@@ -110,7 +110,8 @@ bool FastRoutingState::isFailedStatus(Status status) {
 	return status == FAILED_WITH_MIXED_MAPS
 		|| status == FAILED_WITH_MISSING_MAPS
 		|| status == FAILED_NO_HH_ROUTING_DATA
-		|| status == FAILED_WITHOUT_MAP_ISSUES;
+		|| status == FAILED_NEED_MORE_LAND_MAPS
+		|| status == FAILED_UNSUPPORTED_PARAMETERS;
 }
 
 FastRoutingState::Status FastRoutingState::get(int ordinal) {
@@ -125,13 +126,13 @@ int FastRoutingState::raise(int old, Status status) {
 	return std::max(static_cast<int>(status), old);
 }
 
-int FastRoutingState::fail(int old) {
+int FastRoutingState::fail(int old, bool hasUnsupportedParameters) {
 	if (isMixedMaps(old)) {
 		return raise(old, FAILED_WITH_MIXED_MAPS);
 	} else if (isMissingMaps(old)) {
 		return raise(old, FAILED_WITH_MISSING_MAPS);
 	} else {
-		return raise(old, FAILED_WITHOUT_MAP_ISSUES);
+		return raise(old, hasUnsupportedParameters ? FAILED_UNSUPPORTED_PARAMETERS : FAILED_NEED_MORE_LAND_MAPS);
 	}
 }
 
@@ -175,8 +176,8 @@ void RouteCalculationProgress::resetFastRoutingStatus() {
 	setFastRoutingStatusOrdinal(FastRoutingState::reset());
 }
 
-void RouteCalculationProgress::failFastRoutingStatus() {
-	setFastRoutingStatusOrdinal(FastRoutingState::fail(getFastRoutingStatusOrdinal()));
+void RouteCalculationProgress::failFastRoutingStatus(bool hasUnsupportedParameters) {
+	setFastRoutingStatusOrdinal(FastRoutingState::fail(getFastRoutingStatusOrdinal(), hasUnsupportedParameters));
 }
 
 void RouteCalculationProgress::raiseFastRoutingStatus(FastRoutingState::Status status) {
