@@ -258,6 +258,30 @@ inline void clipPolygonForTile(const coordinates& polygon, std::pair<int, int> t
 	center.second = static_cast<int>(sumY / size);
 }
 
+inline void scalePolygonForTile(const coordinates& polygon, std::pair<int, int> tileCorner, int shift,
+	coordinates& result, std::pair<int, int>& center) {
+	result.clear();
+	const auto size = polygon.size();
+	if (size < 3)
+		return;
+	result.reserve(size);
+	std::pair<int, int> sm(INT32_MIN, INT32_MIN);
+	std::pair<int, int> m;
+	int64_t sumX = 0;
+	int64_t sumY = 0;
+	for (const auto p : polygon) {
+		sumX += p.first;
+		sumY += p.second;
+		m = p;
+		if (scalePoint(m, sm, tileCorner, shift)) {
+			result.push_back(m);
+			sm = m;
+		}
+	}
+	center.first = static_cast<int>(sumX / size);
+	center.second = static_cast<int>(sumY / size);
+}
+
 inline void addObjectDataToMapboxVectorTile(vtzero::feature_builder& feature,
 	MapDataObject& obj, std::pair<int, int> center, KeyIdx& keyIdx, ValueIdx& valueIdx, IntValueIdx& intValueIdx) {
 
@@ -331,7 +355,13 @@ inline std::string buildMapboxVectorTile(
 		} else if (!isPoint && (isArea || isCycle)) {
 			if ((isCycle && size < 4) || size < 3)
 				continue;
-			clipPolygonForTile(obj.points, tl, br, corner, s, temp, polygon, center);
+			const bool skipPolygonClipping = obj.contains("natural", "coastline")
+				|| obj.contains("natural", "coastline_line");
+			if (skipPolygonClipping) {
+				scalePolygonForTile(obj.points, corner, s, polygon, center);
+			} else {
+				clipPolygonForTile(obj.points, tl, br, corner, s, temp, polygon, center);
+			}
 			center.first = scaleToTile(center.first + (obj.labelX * (1 << LABEL_SHIFT)), corner.first, s);
 			center.second = scaleToTile(center.second + (obj.labelY * (1 << LABEL_SHIFT)), corner.second, s);
 			size = polygon.size();
@@ -353,7 +383,11 @@ inline std::string buildMapboxVectorTile(
 				isCycle = ring.front() == ring.back();
 				if ((isCycle && size < 4) || size < 3)
 					continue;
-				clipPolygonForTile(ring, tl, br, corner, s, temp, polygon, empty);
+				if (skipPolygonClipping) {
+					scalePolygonForTile(ring, corner, s, polygon, empty);
+				} else {
+					clipPolygonForTile(ring, tl, br, corner, s, temp, polygon, empty);
+				}
 				size = polygon.size();
 				if (size < 1)
 					continue;
