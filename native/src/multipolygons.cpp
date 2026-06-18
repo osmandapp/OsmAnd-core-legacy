@@ -95,6 +95,7 @@ bool processCoastlines(std::vector<FoundMapDataObject>& coastLines, int leftX, i
 			o->points = uncompletedRings[i];
 			o->types.push_back(tag_value("natural", "coastline_broken"));
 			res.push_back(FoundMapDataObject(o, NULL, zoom));
+			delete o;
 		}
 		// draw completed for debug purpose
 		for (uint i = 0; i < completedRings.size(); i++) {
@@ -102,6 +103,7 @@ bool processCoastlines(std::vector<FoundMapDataObject>& coastLines, int leftX, i
 			o->points = completedRings[i];
 			o->types.push_back(tag_value("natural", "coastline_line"));
 			res.push_back(FoundMapDataObject(o, NULL, zoom));
+			delete o;
 		}
 	}
 	if (!showIfThereIncompleted && uncompletedRings.size() > 0) {
@@ -130,6 +132,7 @@ bool processCoastlines(std::vector<FoundMapDataObject>& coastLines, int leftX, i
 		o->id = dbId--;
 		o->area = true;
 		res.push_back(FoundMapDataObject(o, NULL, zoom));
+		delete o;
 	}
 	//OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "Ocean: islands %d, closed water %d, coastline touches screen %d",
 	//				  landFound, waterFound, unifiedUncompletedRings);
@@ -144,6 +147,7 @@ bool processCoastlines(std::vector<FoundMapDataObject>& coastLines, int leftX, i
 		o->id = dbId--;
 		o->types.push_back(tag_value("natural", "coastline"));
 		res.push_back(FoundMapDataObject(o, NULL, zoom));
+		delete o;
 	}
 	return true;
 }
