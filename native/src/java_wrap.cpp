@@ -2811,8 +2811,14 @@ std::string JNIRenderingContext::getReshapedString(const std::string& name) {
 void clearDirectionPointFromRouteResult(SHARED_PTR<RouteSegmentResult> r) {
 	// Delete dynamicaly DirectionPoint types for backward compatibility with Java (avoid crash in
 	// BinaryMapRouteReaderAdapter quickGetEncodingRule)
-	uint32_t createType = r->object->region->findOrCreateRouteType(DirectionPoint_TAG, DirectionPoint_CREATE_TYPE);
-	uint32_t deleteType = r->object->region->findOrCreateRouteType(DirectionPoint_TAG, DirectionPoint_DELETE_TYPE);
+	uint32_t createType = r->object->region->searchRouteEncodingRule(DirectionPoint_TAG, DirectionPoint_CREATE_TYPE);
+	if (createType == (uint32_t)-1) {
+		createType = r->object->region->findOrCreateRouteType(DirectionPoint_TAG, DirectionPoint_CREATE_TYPE);
+	}
+	uint32_t deleteType = r->object->region->searchRouteEncodingRule(DirectionPoint_TAG, DirectionPoint_DELETE_TYPE);
+	if (deleteType == (uint32_t)-1) {
+		deleteType = r->object->region->findOrCreateRouteType(DirectionPoint_TAG, DirectionPoint_DELETE_TYPE);
+	}
 	int clearPointIndex = -1;
 	for (int i = 0; i < r->object->pointTypes.size() && i < r->object->pointsX.size(); i++) {
 		if (r->object->pointTypes[i].size() > 0) {

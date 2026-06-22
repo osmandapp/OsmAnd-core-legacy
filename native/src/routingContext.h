@@ -308,6 +308,8 @@ struct RoutingContext {
 		}
 		if (load) {
 			UNORDERED(set)<int64_t> excludedIds;
+			RouteSubregionReadContext* readContext = createRouteSubregionReadContext();
+			SearchQuery q;
 			for (uint j = 0; j < subregions.size() && !isInterrupted(); j++) {
 				if (!subregions[j]->isLoaded()) {
 					std::vector<SHARED_PTR<DirectionPoint>> points;
@@ -317,8 +319,12 @@ struct RoutingContext {
 						SkIRect rect =
 							SkIRect::MakeLTRB(subregion.left, subregion.top, subregion.right, subregion.bottom);
 						config->directionPoints.query_in_box(rect, points);
-						uint32_t createType = subregion.routingIndex->findOrCreateRouteType(DirectionPoint_TAG,
-																							DirectionPoint_CREATE_TYPE);
+						uint32_t createType = subregion.routingIndex->searchRouteEncodingRule(DirectionPoint_TAG,
+																							   DirectionPoint_CREATE_TYPE);
+						if (createType == (uint32_t)-1) {
+							createType = subregion.routingIndex->findOrCreateRouteType(DirectionPoint_TAG,
+																					   DirectionPoint_CREATE_TYPE);
+						}
 						for (SHARED_PTR<DirectionPoint>& d : points) {
 							d->types.clear();
 							for (std::pair<std::string, std::string>& e : d->tags) {
@@ -342,9 +348,8 @@ struct RoutingContext {
 						progress->loadedTiles++;
 					}
 					subregions[j]->setLoaded();
-					SearchQuery q;
 					vector<RouteDataObject*> res;
-					searchRouteDataForSubRegion(&q, res, &subregions[j]->subregion, geocoding);
+					searchRouteDataForSubRegion(readContext, &q, res, &subregions[j]->subregion, geocoding);
 					vector<RouteDataObject*>::iterator i = res.begin();
 					for (; i != res.end(); i++) {
 						if (*i != NULL) {
@@ -371,6 +376,7 @@ struct RoutingContext {
 					excludedIds.insert(subregions[j]->excludedIds.begin(), subregions[j]->excludedIds.end());
 				}
 			}
+			deleteRouteSubregionReadContext(readContext);
 		}
 	}
 
@@ -540,8 +546,14 @@ struct RoutingContext {
 
 	void connectPoint(SHARED_PTR<RoutingSubregionTile> subRegTile, SHARED_PTR<RouteDataObject> ro,
 					  std::vector<SHARED_PTR<DirectionPoint>>& points) {
-		uint32_t createType = ro->region->findOrCreateRouteType(DirectionPoint_TAG, DirectionPoint_CREATE_TYPE);
-		uint32_t deleteType = ro->region->findOrCreateRouteType(DirectionPoint_TAG, DirectionPoint_DELETE_TYPE);
+		uint32_t createType = ro->region->searchRouteEncodingRule(DirectionPoint_TAG, DirectionPoint_CREATE_TYPE);
+		if (createType == (uint32_t)-1) {
+			createType = ro->region->findOrCreateRouteType(DirectionPoint_TAG, DirectionPoint_CREATE_TYPE);
+		}
+		uint32_t deleteType = ro->region->searchRouteEncodingRule(DirectionPoint_TAG, DirectionPoint_DELETE_TYPE);
+		if (deleteType == (uint32_t)-1) {
+			deleteType = ro->region->findOrCreateRouteType(DirectionPoint_TAG, DirectionPoint_DELETE_TYPE);
+		}
 
 		for (SHARED_PTR<DirectionPoint>& np : points) {
 			if (np->types.size() == 0) {

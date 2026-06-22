@@ -66,13 +66,17 @@ SHARED_PTR<HHRoutingContext> HHRoutePlanner::selectBestRoutingFiles(int startX, 
 
 	SkRect qr = SkRect::MakeLTRB(std::min(startX, endX), std::min(startY, endY), std::max(startX, endX), std::max(startY, endY));
 
-	const std::vector<BinaryMapFile*> & openFiles = getOpenMapFiles();
-	for (BinaryMapFile * r : openFiles) {
-		for (SHARED_PTR<HHRouteIndex> & hhRegion : r->hhIndexes) {
-			SkRect * hhRegionRect = hhRegion->getSkRect();
-			if (hhRegion->profile == profile && SkRect::Intersects(qr, *hhRegionRect)) {
+	const auto openFiles = getOpenFilesSnapshot();
+	for (const auto& fileRef : *openFiles) {
+		const auto prepared = getPreparedHHData(fileRef);
+		if (!prepared) {
+			continue;
+		}
+		for (const SHARED_PTR<HHRouteIndex> & hhRegion : prepared->hhIndexes) {
+			SkRect hhRegionRect = hhRegion->getSkRect();
+			if (hhRegion->profile == profile && SkRect::Intersects(qr, hhRegionRect)) {
 				double intersect = hhRegion->intersectionArea(qr);
-				hhRouteRegionGroup->appendToGroups(hhRegion, r, groups, intersect);
+				hhRouteRegionGroup->appendToGroups(hhRegion, fileRef, groups, intersect);
 			}
 		}
 	}
@@ -107,7 +111,8 @@ SHARED_PTR<HHRoutingContext> HHRoutePlanner::selectBestRoutingFiles(int startX, 
 		auto it = find(params.begin(), params.end(), bestGroup->profileParams);
 		if (it != params.end()) {
 			int rProf = (int) (it - params.begin());
-			SHARED_PTR<HHRouteRegionPointsCtx> reg = std::make_shared<HHRouteRegionPointsCtx>(mapId, bestGroup->regions.at(mapId), bestGroup->readers.at(mapId), rProf);
+			SHARED_PTR<HHRouteRegionPointsCtx> reg = std::make_shared<HHRouteRegionPointsCtx>(
+				mapId, cloneHHRouteIndexForRead(bestGroup->regions.at(mapId)), bestGroup->readers.at(mapId), rProf);
 			regions.push_back(reg);
 		}
 	}
@@ -116,7 +121,8 @@ SHARED_PTR<HHRoutingContext> HHRoutePlanner::selectBestRoutingFiles(int startX, 
 	for (auto & r : regions) {
 		bool match = false;
 		for (auto & p : currentCtx->regions) {
-			if (p->file == r->file && p->fileRegion == r->fileRegion && p->routingProfile == r->routingProfile) {
+			if (p->file == r->file && p->fileRegion->filePointer == r->fileRegion->filePointer &&
+				p->routingProfile == r->routingProfile) {
 				match = true;
 				break;
 			}

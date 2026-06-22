@@ -272,6 +272,7 @@ inline void addObjectDataToMapboxVectorTile(vtzero::feature_builder& feature,
 	}
 	feature.add_property(keyIdx(getStrLabelX()), intValueIdx(center.first));
 	feature.add_property(keyIdx(getStrLabelY()), intValueIdx(center.second));
+	feature.add_property(keyIdx("osm_id"), OsmAndObfConstants::getOsmIdFromBinaryMapObjectId(obj.id));
 }
 
 inline std::string buildMapboxVectorTile(

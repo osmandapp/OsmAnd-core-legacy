@@ -13,9 +13,12 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include <atomic>
 #include <fstream>
 #include <map>
+#include <memory>
 #include <string>
+#include <vector>
 
 #include "CommonCollections.h"
 #include "commonOsmAndCore.h"
@@ -60,6 +63,15 @@ struct RestrictionInfo {
 };
 
 struct RoutingIndex;
+struct BinaryMapFile;
+struct PreparedMapData;
+struct PreparedRoutingData;
+struct PreparedTransportData;
+struct PreparedHHData;
+using BinaryMapFilePtr = std::shared_ptr<BinaryMapFile>;
+using BinaryMapFiles = std::vector<BinaryMapFilePtr>;
+using BinaryMapFilesSnapshot = std::shared_ptr<const BinaryMapFiles>;
+
 struct RouteSubregion {
 	uint64_t length;
 	uint64_t filePointer;
@@ -69,7 +81,9 @@ struct RouteSubregion {
 	uint32_t top;
 	uint32_t bottom;
 	std::vector<RouteSubregion> subregions;
+	mutable std::shared_ptr<const std::vector<RouteSubregion>> preparedSubregions;
 	SHARED_PTR<RoutingIndex> routingIndex;
+	BinaryMapFilePtr fileRef;
 
 	RouteSubregion(const SHARED_PTR<RoutingIndex>& ind) : length(0), filePointer(0), mapDataBlock(0), routingIndex(ind) {
 	}
@@ -189,40 +203,28 @@ struct HHRouteIndex : BinaryPartIndex {
 	std::string profile;
 	std::vector<std::string> profileParams;
 	SHARED_PTR<HHRoutePointsBox> top;
-	// not stored in cache
 	std::vector<HHRouteBlockSegments *> segments;
-	SkRect * rect;
 	std::vector<TagValuePair> encodingRules;
 	
-	HHRouteIndex() : BinaryPartIndex(HH_INDEX), edition(0), profile(""), rect(nullptr) {
+	HHRouteIndex() : BinaryPartIndex(HH_INDEX), edition(0), profile("") {
 	}
 	
 	~HHRouteIndex() {
 		for (auto & s : segments) {
 			delete s;
 		}
-		delete rect;
 	}
 	
-	SkRect * getSkRect() {
-		if (rect == nullptr) {
-			if (!top) {
-				rect = new SkRect();
-			} else {
-				rect = new SkRect(top->getSkRect());
-			}
-		}
-		return rect;
+	SkRect getSkRect() const {
+		return top ? top->getSkRect() : SkRect();
 	}
 	
-	double intersectionArea(SkRect b) {
-		if (rect == nullptr) {
-			rect = getSkRect();
-		}
-		double xleft = std::max(std::min(rect->left(), rect->right()), std::min(b.left(), b.right()));
-		double xright = std::min(std::max(rect->left(), rect->right()), std::max(b.left(), b.right()));
-		double ytop = std::max(std::min(rect->top(), rect->bottom()), std::min(b.top(), b.bottom()));
-		double ybottom = std::min(std::max(rect->top(), rect->bottom()), std::max(b.top(), b.bottom()));
+	double intersectionArea(SkRect b) const {
+		SkRect rect = getSkRect();
+		double xleft = std::max(std::min(rect.left(), rect.right()), std::min(b.left(), b.right()));
+		double xright = std::min(std::max(rect.left(), rect.right()), std::max(b.left(), b.right()));
+		double ytop = std::max(std::min(rect.top(), rect.bottom()), std::min(b.top(), b.bottom()));
+		double ybottom = std::min(std::max(rect.top(), rect.bottom()), std::max(b.top(), b.bottom()));
 		if (xright <= xleft || ybottom <= ytop) {
 			return 0;
 		}
@@ -843,7 +845,11 @@ struct TransportIndex : BinaryPartIndex {
 
 	IndexStringTable* stringTable;
 
-	TransportIndex() : BinaryPartIndex(TRANSPORT_INDEX), left(0), right(0), top(0), bottom(0) {
+	TransportIndex() : BinaryPartIndex(TRANSPORT_INDEX), left(0), right(0), top(0), bottom(0), stringTable(nullptr) {
+	}
+
+	~TransportIndex() {
+		delete stringTable;
 	}
 };
 
@@ -909,6 +915,23 @@ struct MapIndex : BinaryPartIndex {
 	}
 };
 
+struct PreparedMapData {
+	std::vector<SHARED_PTR<MapIndex>> mapIndexes;
+};
+
+struct PreparedRoutingData {
+	std::vector<SHARED_PTR<RoutingIndex>> routingIndexes;
+};
+
+struct PreparedTransportData {
+	std::vector<SHARED_PTR<TransportIndex>> transportIndexes;
+	UNORDERED(map)<uint64_t, shared_ptr<IncompleteTransportRoute>> incompleteTransportRoutes;
+};
+
+struct PreparedHHData {
+	std::vector<SHARED_PTR<HHRouteIndex>> hhIndexes;
+};
+
 struct BinaryMapFile {
 	std::string inputName;
 	uint32_t version;
@@ -918,59 +941,14 @@ struct BinaryMapFile {
 	std::vector<SHARED_PTR<TransportIndex>> transportIndexes;
 	std::vector<SHARED_PTR<BinaryPartIndex>> indexes;
 	std::vector<SHARED_PTR<HHRouteIndex>> hhIndexes;
-	UNORDERED(map)<uint64_t, shared_ptr<IncompleteTransportRoute>> incompleteTransportRoutes;
-	bool incompleteLoaded = false;
-	int fd = -1;
-	int routefd = -1;
-	int geocodingfd = -1;
-	int hhfd = -1;
-	bool basemap;
-	bool external;
-	bool roadOnly;
-	bool liveMap;
-
-	int openFile() {
-#if defined(_WIN32)
-		int fileDescriptor = open(inputName.c_str(), O_RDONLY | O_BINARY);
-#else
-		int fileDescriptor = open(inputName.c_str(), O_RDONLY);
-#endif
-		if (fileDescriptor < 0) {
-			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, " Native File could not be open to read: %s",
-							  inputName.c_str());
-		} else {
-			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Native open file: %s", inputName.c_str());
-		}
-		return fileDescriptor;
-	}
-
-	int getFD() {
-		if (fd <= 0) {
-			fd = openFile();
-		}
-		return fd;
-	}
-
-	int getRouteFD() {
-		if (routefd <= 0) {
-			routefd = openFile();
-		}
-		return routefd;
-	}
-
-	int getGeocodingFD() {
-		if (geocodingfd <= 0) {
-			geocodingfd = openFile();
-		}
-		return geocodingfd;
-	}
-	
-	int getHhFD() {
-		if (hhfd <= 0) {
-			hhfd = openFile();
-		}
-		return hhfd;
-	}
+	std::shared_ptr<const PreparedMapData> preparedMapData;
+	std::shared_ptr<const PreparedRoutingData> preparedRoutingData;
+	std::shared_ptr<const PreparedTransportData> preparedTransportData;
+	std::shared_ptr<const PreparedHHData> preparedHHData;
+	bool basemap = false;
+	bool external = false;
+	bool roadOnly = false;
+	bool liveMap = false;
 
 	bool isBasemap() {
 		return basemap;
@@ -986,22 +964,18 @@ struct BinaryMapFile {
 	bool isRoadOnly() {
 		return roadOnly;
 	}
-
-	~BinaryMapFile() {
-		if (fd >= 0) {
-			close(fd);
-		}
-		if (routefd >= 0) {
-			close(routefd);
-		}
-		if (geocodingfd >= 0) {
-			close(geocodingfd);
-		}
-		if (hhfd >= 0) {
-			close(hhfd);
-		}
-	}
 };
+
+BinaryMapFilesSnapshot getOpenFilesSnapshot();
+std::shared_ptr<const PreparedMapData> getPreparedMapData(const BinaryMapFilePtr& file);
+std::shared_ptr<const PreparedRoutingData> getPreparedRoutingData(const BinaryMapFilePtr& file);
+std::shared_ptr<const PreparedTransportData> getPreparedTransportData(const BinaryMapFilePtr& file);
+std::shared_ptr<const PreparedHHData> getPreparedHHData(const BinaryMapFilePtr& file);
+std::shared_ptr<const PreparedMapData> getPreparedMapData(BinaryMapFile* file);
+std::shared_ptr<const PreparedRoutingData> getPreparedRoutingData(BinaryMapFile* file);
+std::shared_ptr<const PreparedTransportData> getPreparedTransportData(BinaryMapFile* file);
+std::shared_ptr<const PreparedHHData> getPreparedHHData(BinaryMapFile* file);
+SHARED_PTR<HHRouteIndex> cloneHHRouteIndexForRead(const SHARED_PTR<HHRouteIndex>& source);
 
 struct ResultPublisher {
 	std::vector<FoundMapDataObject> result;
@@ -1124,8 +1098,15 @@ void searchRouteSubregions(SearchQuery* q, std::vector<RouteSubregion>& tempResu
 bool searchRouteSubregionsForBinaryMapFile(BinaryMapFile* file,
 										   SearchQuery* q);
 
+struct RouteSubregionReadContext;
+RouteSubregionReadContext* createRouteSubregionReadContext();
+void deleteRouteSubregionReadContext(RouteSubregionReadContext* context);
+
 void searchRouteDataForSubRegion(SearchQuery* q, std::vector<RouteDataObject*>& list, RouteSubregion* sub,
 								 bool geocoding);
+
+void searchRouteDataForSubRegion(RouteSubregionReadContext* context, SearchQuery* q,
+								 std::vector<RouteDataObject*>& list, RouteSubregion* sub, bool geocoding);
 
 ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, std::string msgNothingFound,
 										   int& renderedState);

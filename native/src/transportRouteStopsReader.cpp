@@ -11,9 +11,11 @@
 #include "binaryRead.h"
 #include "transportRoutingObjects.h"
 
-TransportRouteStopsReader::TransportRouteStopsReader(vector<BinaryMapFile*>& files) {
-	for (auto& f : files) {
-		if (f->transportIndexes.size() > 0) {
+TransportRouteStopsReader::TransportRouteStopsReader(const BinaryMapFilesSnapshot& files) : filesSnapshot(files) {
+	for (auto& fileRef : *filesSnapshot) {
+		BinaryMapFile* f = fileRef.get();
+		const auto prepared = getPreparedTransportData(fileRef);
+		if (prepared && prepared->transportIndexes.size() > 0) {
 			routesFilesCache.insert(make_pair(f, PT_ROUTE_MAP()));
 		}
 	}
@@ -411,10 +413,9 @@ vector<SHARED_PTR<TransportRoute>> TransportRouteStopsReader::findIncompleteRout
 		// here we could limit routeMap indexes by only certain bbox around start / end (check comment on field)
 		vector<int32_t> lst;
 
-		getIncompleteTransportRoutes(f.first);
-
-		if (f.first->incompleteTransportRoutes.find(baseRoute->id) != f.first->incompleteTransportRoutes.end()) {
-			shared_ptr<IncompleteTransportRoute> ptr = f.first->incompleteTransportRoutes[baseRoute->id];
+		const auto prepared = getPreparedTransportData(f.first);
+		if (prepared && prepared->incompleteTransportRoutes.find(baseRoute->id) != prepared->incompleteTransportRoutes.end()) {
+			shared_ptr<IncompleteTransportRoute> ptr = prepared->incompleteTransportRoutes.at(baseRoute->id);
 			while (ptr != nullptr) {
 				lst.push_back(ptr->routeOffset);
 				ptr = ptr->getNextLinkedRoute();

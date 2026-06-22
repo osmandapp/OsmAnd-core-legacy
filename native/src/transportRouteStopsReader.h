@@ -1,11 +1,11 @@
 #ifndef _OSMAND_TRANSPORT_ROUTE_STOPS_READER_H
 #define _OSMAND_TRANSPORT_ROUTE_STOPS_READER_H
 
+#include "binaryRead.h"
 #include "CommonCollections.h"
 #include "commonOsmAndCore.h"
 // #include <queue> //check
 
-struct BinaryMapFile;
 struct SearchQuery;
 struct TransportStop;
 struct TransportRoute;
@@ -16,8 +16,9 @@ typedef UNORDERED(map)<int64_t, shared_ptr<TransportRoute>> PT_ROUTE_MAP;
 typedef vector<SHARED_PTR<TransportStop>> PT_STOPS_SEGMENT;
 
 struct TransportRouteStopsReader {
-	TransportRouteStopsReader(vector<BinaryMapFile*>& files);
+	TransportRouteStopsReader(const BinaryMapFilesSnapshot& files);
 
+	BinaryMapFilesSnapshot filesSnapshot;
 	PT_ROUTE_MAP combinedRoutesCache;
 	UNORDERED(map)<BinaryMapFile*, PT_ROUTE_MAP> routesFilesCache;
 
