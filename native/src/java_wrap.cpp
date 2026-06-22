@@ -495,7 +495,7 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_net_osmand_NativeLibrary_getMapboxV
 	auto brx = static_cast<int>(std::min((static_cast<int64_t>(x) + 1) << s, static_cast<int64_t>(INT32_MAX)));
 	auto bry = static_cast<int>(std::min((static_cast<int64_t>(y) + 1) << s, static_cast<int64_t>(INT32_MAX)));
 	auto q = SearchQuery(x << s, brx, y << s, bry, nullptr, &publisher);
-	q.zoom = zoom;
+	q.zoom = std::max(1, zoom); // Allows Web to display World at the minimal zoom (currently only contours displayed)
 
 	s -= 12;
 
