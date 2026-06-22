@@ -18,15 +18,8 @@ typedef vtzero::key_index<std::unordered_map> KeyIdx;
 typedef vtzero::value_index<vtzero::string_value_type, std::string, std::unordered_map> ValueIdx;
 typedef vtzero::value_index<vtzero::sint_value_type, int32_t, std::unordered_map> IntValueIdx;
 
-inline const std::string& getStrLabelX() {
-    static const std::string strLabelX = "labelX";
-    return strLabelX;
-}
-
-inline const std::string& getStrLabelY() {
-    static const std::string strLabelY = "labelY";
-    return strLabelY;
-}
+static const int MVT_TILE_EXTENT_SHIFT = 12;
+static const int MVT_TILE_WIDTH = 1 << MVT_TILE_EXTENT_SHIFT; // 4096
 
 inline const std::string& getStrOsmandLayer() {
 	static const std::string strOsmandLayer = "osmand_layer";
@@ -277,9 +270,11 @@ inline void addObjectDataToMapboxVectorTile(vtzero::feature_builder& feature,
 		if (it != obj.objectNames.end())
 			feature.add_property(keyIdx(name), valueIdx(it->second));
 	}
-	feature.add_property(keyIdx(getStrLabelX()), intValueIdx(center.first));
-	feature.add_property(keyIdx(getStrLabelY()), intValueIdx(center.second));
+	feature.add_property(keyIdx("labelX"), intValueIdx(center.first));
+	feature.add_property(keyIdx("labelY"), intValueIdx(center.second));
 	feature.add_property(keyIdx("osm_id"), OsmAndObfConstants::getOsmIdFromBinaryMapObjectId(obj.id));
+	if (center.first < 0 || center.first >= MVT_TILE_WIDTH || center.second < 0 || center.second >= MVT_TILE_WIDTH)
+		feature.add_property(keyIdx("hide_caption"), valueIdx("yes")); // out-of-tile (later parsed by style)
 }
 
 inline std::string buildMapboxVectorTile(
@@ -291,7 +286,7 @@ inline std::string buildMapboxVectorTile(
 	const std::pair<int, int> br(
 		static_cast<int>(std::min(((static_cast<int64_t>(x) + 1) << s) + h, static_cast<int64_t>(INT32_MAX))),
 		static_cast<int>(std::min(((static_cast<int64_t>(y) + 1) << s) + h, static_cast<int64_t>(INT32_MAX))));
-	s -= 12;
+	s -= MVT_TILE_EXTENT_SHIFT;
 
 	vtzero::tile_builder tile;
 
