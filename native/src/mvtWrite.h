@@ -28,6 +28,11 @@ inline const std::string& getStrLabelY() {
     return strLabelY;
 }
 
+inline const std::string& getStrOsmandLayer() {
+	static const std::string strOsmandLayer = "osmand_layer";
+	return strOsmandLayer;
+}
+
 inline int scaleToTile(int coord, int tileStart, int shift) {
 	int delta = coord - tileStart;
 	if (shift == 0)
@@ -258,12 +263,14 @@ inline void clipPolygonForTile(const coordinates& polygon, std::pair<int, int> t
 }
 
 inline void addObjectDataToMapboxVectorTile(vtzero::feature_builder& feature,
-	MapDataObject& obj, std::pair<int, int> center, KeyIdx& keyIdx, ValueIdx& valueIdx, IntValueIdx& intValueIdx) {
+	MapDataObject& obj, std::pair<int, int> center, const std::string& osmandLayer,
+	KeyIdx& keyIdx, ValueIdx& valueIdx, IntValueIdx& intValueIdx) {
 
 	for (const auto& tag : obj.types)
 		feature.add_property(keyIdx(tag.first), valueIdx(tag.second));
 	for (const auto& tag : obj.additionalTypes)
 		feature.add_property(keyIdx(tag.first), valueIdx(tag.second));
+	feature.add_property(keyIdx(getStrOsmandLayer()), valueIdx(osmandLayer));
 	for (const auto& name : obj.namesOrder)
 	{
 		const auto it = obj.objectNames.find(name);
@@ -288,10 +295,11 @@ inline std::string buildMapboxVectorTile(
 
 	vtzero::tile_builder tile;
 
-	vtzero::layer_builder layers[] = {{tile, "tunnel_layer"}, {tile, "ground_layer"}, {tile, "bridge_layer"}};
-	KeyIdx key_indices[] = {KeyIdx(layers[0]), KeyIdx(layers[1]), KeyIdx(layers[2])};
-	ValueIdx value_indices[] = {ValueIdx(layers[0]), ValueIdx(layers[1]), ValueIdx(layers[2])};
-	IntValueIdx int_value_indices[] = {IntValueIdx(layers[0]), IntValueIdx(layers[1]), IntValueIdx(layers[2])};
+	vtzero::layer_builder layer{tile, "osmand"};
+	const std::string osmandLayers[] = {"tunnel_layer", "ground_layer", "bridge_layer"};
+	KeyIdx key_index(layer);
+	ValueIdx value_index(layer);
+	IntValueIdx int_value_index(layer);
 
 	size_t i;
 	std::pair<int, int> center, empty;
@@ -301,12 +309,10 @@ inline std::string buildMapboxVectorTile(
 	auto LABEL_SHIFT = 31 - LABEL_ZOOM_ENCODE;
 	for (auto& foundMapDataObject : foundMapDataObjects) {
 		auto& obj = *foundMapDataObject.obj;
-        int layer_idx = obj.getSimpleLayer() + 1;
+	    int layer_idx = obj.getSimpleLayer() + 1;
 		if (layer_idx < 0 || layer_idx > 2)
 			continue;
-		auto& key_index = key_indices[layer_idx];
-		auto& value_index = value_indices[layer_idx];
-		auto& int_value_index = int_value_indices[layer_idx];
+		const auto& osmandLayer = osmandLayers[layer_idx];
 
 		auto size = obj.points.size();
 		if (size < 1)
@@ -320,12 +326,12 @@ inline std::string buildMapboxVectorTile(
 			auto p = obj.points[0];
 			if (p.first < tl.first || p.first >= br.first || p.second < tl.second || p.second >= br.second)
 				continue;
-			vtzero::point_feature_builder feature(layers[layer_idx]);
+			vtzero::point_feature_builder feature(layer);
 			feature.set_id(obj.id);
-            feature.add_point(scaleToTile(p.first, corner.first, s), scaleToTile(p.second, corner.second, s));
+	        feature.add_point(scaleToTile(p.first, corner.first, s), scaleToTile(p.second, corner.second, s));
 			center.first = scaleToTile(p.first + (obj.labelX * (1 << LABEL_SHIFT)), corner.first, s);
 			center.second = scaleToTile(p.second + (obj.labelY * (1 << LABEL_SHIFT)), corner.second, s);
-			addObjectDataToMapboxVectorTile(feature, obj, center, key_index, value_index, int_value_index);
+			addObjectDataToMapboxVectorTile(feature, obj, center, osmandLayer, key_index, value_index, int_value_index);
 			feature.commit();
 		} else if (!isPoint && (isArea || isCycle)) {
 			if ((isCycle && size < 4) || size < 3)
@@ -339,9 +345,9 @@ inline std::string buildMapboxVectorTile(
 			isCycle = polygon.front() == polygon.back();
 			if ((isCycle && size < 4) || size < 3)
 				continue;
-			vtzero::polygon_feature_builder feature(layers[layer_idx]);
+			vtzero::polygon_feature_builder feature(layer);
 			feature.set_id(obj.id);
-            feature.add_ring(isCycle ? size : size + 1);
+	        feature.add_ring(isCycle ? size : size + 1);
 			for (auto p : polygon) {
 				feature.set_point(p.first, p.second);
 			}
@@ -366,7 +372,7 @@ inline std::string buildMapboxVectorTile(
 				if (!isCycle)
 					feature.set_point(polygon.front().first, polygon.front().second);
 			}
-			addObjectDataToMapboxVectorTile(feature, obj, center, key_index, value_index, int_value_index);
+			addObjectDataToMapboxVectorTile(feature, obj, center, osmandLayer, key_index, value_index, int_value_index);
 	        feature.commit();
 		} else if (!isPoint || !isArea) {
 			if ((isCycle && size < 3) || size < 2)
@@ -384,7 +390,7 @@ inline std::string buildMapboxVectorTile(
 				if ((isCycle && size < 3) || size < 2)
 					continue;
 				if (!withSegments) {
-					feature.reset(new vtzero::linestring_feature_builder(layers[layer_idx]));
+					feature.reset(new vtzero::linestring_feature_builder(layer));
 					feature->set_id(obj.id);
 					withSegments = true;
 				}
@@ -394,7 +400,7 @@ inline std::string buildMapboxVectorTile(
 				}
 			}
 			if (withSegments) {
-				addObjectDataToMapboxVectorTile(*feature, obj, center, key_index, value_index, int_value_index);
+				addObjectDataToMapboxVectorTile(*feature, obj, center, osmandLayer, key_index, value_index, int_value_index);
 				feature->commit();
 			}
         }
