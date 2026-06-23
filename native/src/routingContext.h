@@ -116,7 +116,7 @@ struct RoutingContext {
 
 	MAP_SUBREGION_TILES subregionTiles;
 	UNORDERED(map)<int64_t, std::vector<SHARED_PTR<RoutingSubregionTile>>> indexedSubregions;
-	vector<BinaryMapFile *> mapIndexReaderFilter;
+	BinaryMapFiles mapIndexReaderFilter;
 
 	std::vector<std::string> regionsCoveringStartAndTargets;
 	bool hhHasUnsupportedParameters;

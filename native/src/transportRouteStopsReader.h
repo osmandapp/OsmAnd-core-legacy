@@ -16,10 +16,10 @@ typedef UNORDERED(map)<int64_t, shared_ptr<TransportRoute>> PT_ROUTE_MAP;
 typedef vector<SHARED_PTR<TransportStop>> PT_STOPS_SEGMENT;
 
 struct TransportRouteStopsReader {
-	TransportRouteStopsReader(vector<BinaryMapFile*>& files);
+	TransportRouteStopsReader(const std::vector<std::shared_ptr<BinaryMapFile>>& files);
 
 	PT_ROUTE_MAP combinedRoutesCache;
-	UNORDERED(map)<BinaryMapFile*, PT_ROUTE_MAP> routesFilesCache;
+	UNORDERED(map)<std::shared_ptr<BinaryMapFile>, PT_ROUTE_MAP> routesFilesCache;
 
 	PT_STOPS_SEGMENT readMergedTransportStops(SearchQuery* sr);
 	void mergeTransportStops(PT_ROUTE_MAP& routesToLoad,
@@ -27,7 +27,7 @@ struct TransportRouteStopsReader {
 							PT_STOPS_SEGMENT &stops);
 
 	void putAll(PT_ROUTE_MAP& routesToLoad, vector<int32_t> referenceToRoutes);
-	void loadRoutes(BinaryMapFile* file, PT_ROUTE_MAP& localFileRoutes);
+	void loadRoutes(const std::shared_ptr<BinaryMapFile>& file, PT_ROUTE_MAP& localFileRoutes);
 	SHARED_PTR<TransportRoute> getCombinedRoute(SHARED_PTR<TransportRoute>& route);
 	SHARED_PTR<TransportRoute> combineRoute(SHARED_PTR<TransportRoute>& route);
 	PT_STOPS_SEGMENT findAndDeleteMinDistance(double lat, double lon, 
