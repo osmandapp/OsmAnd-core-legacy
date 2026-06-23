@@ -53,8 +53,6 @@ static int openBinaryMapFileDescriptor(const std::string& inputName) {
 	if (fileDescriptor < 0) {
 		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, " Native File could not be open to read: %s",
 						  inputName.c_str());
-	} else {
-		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Native open file: %s", inputName.c_str());
 	}
 	return fileDescriptor;
 }
