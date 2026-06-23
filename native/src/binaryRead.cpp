@@ -66,12 +66,7 @@ struct LocalBinaryMapInput {
 
 	explicit LocalBinaryMapInput(const std::string& inputName) {
 		fileDescriptor = openBinaryMapFileDescriptor(inputName);
-		if (fileDescriptor >= 0) {
-			fileInput.reset(new FileInputStream(fileDescriptor));
-			fileInput->SetCloseOnDelete(false);
-			codedInput.reset(new CodedInputStream(fileInput.get()));
-			codedInput->SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
-		}
+		resetStream();
 	}
 
 	LocalBinaryMapInput(const LocalBinaryMapInput&) = delete;
@@ -91,6 +86,34 @@ struct LocalBinaryMapInput {
 
 	CodedInputStream* get() const {
 		return codedInput.get();
+	}
+
+	bool seek(uint64_t absoluteOffset) {
+		if (absoluteOffset > INT_MAXIMUM || !isOpen()) {
+			return false;
+		}
+		const int targetOffset = static_cast<int>(absoluteOffset);
+		if (targetOffset < codedInput->TotalBytesRead() && !resetStream()) {
+			return false;
+		}
+		return codedInput->Seek(targetOffset);
+	}
+
+private:
+	bool resetStream() {
+		codedInput.reset();
+		fileInput.reset();
+		if (fileDescriptor < 0) {
+			return false;
+		}
+		if (lseek(fileDescriptor, 0, SEEK_SET) < 0) {
+			return false;
+		}
+		fileInput.reset(new FileInputStream(fileDescriptor));
+		fileInput->SetCloseOnDelete(false);
+		codedInput.reset(new CodedInputStream(fileInput.get()));
+		codedInput->SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
+		return true;
 	}
 };
 
@@ -535,9 +558,9 @@ bool RouteDataObject::hasTrafficLightAt(int i) {
 	return false;
 }
 
-void searchRouteSubRegion(CodedInputStream* input, std::vector<RouteDataObject*>& list, const SHARED_PTR<RoutingIndex>& routingIndex,
+void searchRouteSubRegion(LocalBinaryMapInput& input, std::vector<RouteDataObject*>& list, const SHARED_PTR<RoutingIndex>& routingIndex,
 						  RouteSubregion* sub);
-void searchRouteRegion(CodedInputStream* input, SearchQuery* q, const SHARED_PTR<RoutingIndex>& ind,
+void searchRouteRegion(LocalBinaryMapInput& input, SearchQuery* q, const SHARED_PTR<RoutingIndex>& ind,
 					   const std::vector<RouteSubregion>& subregions, std::vector<RouteSubregion>& toLoad,
 					   const BinaryMapFilePtr& fileRef);
 bool readRouteTreeData(CodedInputStream* input, RouteSubregion* s, std::vector<RouteDataObject*>& dataObjects,
@@ -1157,8 +1180,10 @@ void initHHPoints(BinaryMapFile* file, SHARED_PTR<HHRouteIndex> reg, HHRoutingCo
 	if (!localInput.isOpen()) {
 		return;
 	}
+	if (!localInput.seek(reg->filePointer)) {
+		return;
+	}
 	CodedInputStream* input = localInput.get();
-	input->Seek(reg->filePointer);
 	int oldLimit = input->PushLimit(reg->length);
 	for (auto& segment : reg->segments) {
 		delete segment;
@@ -1276,7 +1301,7 @@ void setSegments(CodedInputStream * input, HHRoutingContext * ctx, std::vector<i
 	input->PopLimit(oldLimit);
 }
 
-int loadNetworkSegmentPoint(CodedInputStream * input, HHRoutingContext * ctx, SHARED_PTR<HHRouteRegionPointsCtx> regCtx, HHRouteBlockSegments * block, int searchInd) {
+int loadNetworkSegmentPoint(LocalBinaryMapInput& input, HHRoutingContext * ctx, SHARED_PTR<HHRouteRegionPointsCtx> regCtx, HHRouteBlockSegments * block, int searchInd) {
 	if (block->sublist.size() > 0) {
 		for (auto * s : block->sublist) {
 			if (HHRoutingContext::checkId(searchInd, s)) {
@@ -1285,54 +1310,56 @@ int loadNetworkSegmentPoint(CodedInputStream * input, HHRoutingContext * ctx, SH
 		}
 		return 0;
 	}
-	if (input->TotalBytesRead() != block->filePointer) {
-		input->Seek(block->filePointer);
+	if (!input.seek(block->filePointer)) {
+		return 0;
 	}
-	int oldLimit = input->PushLimit(block->length);
+	CodedInputStream* codedInput = input.get();
+	int oldLimit = codedInput->PushLimit(block->length);
 	uint32_t tag;
 	int loaded = 0;
 	int ind = 0;
 	while (true) {
-		tag = input->ReadTag();
+		tag = codedInput->ReadTag();
 		switch (WireFormatLite::GetTagFieldNumber(tag)) {
 			case 0:
-				input->PopLimit(oldLimit);
+				codedInput->PopLimit(oldLimit);
 				return loaded;
 			case OsmAnd::OBF::OsmAndHHRoutingIndex_HHRouteBlockSegments::kIdRangeLengthFieldNumber:
-				WireFormatLite::ReadPrimitive<int32_t, WireFormatLite::TYPE_INT32>(input, &block->idRangeLength);
+				WireFormatLite::ReadPrimitive<int32_t, WireFormatLite::TYPE_INT32>(codedInput, &block->idRangeLength);
 				break;
 			case OsmAnd::OBF::OsmAndHHRoutingIndex_HHRouteBlockSegments::kIdRangeStartFieldNumber:
-				WireFormatLite::ReadPrimitive<int32_t, WireFormatLite::TYPE_INT32>(input, &block->idRangeStart);
+				WireFormatLite::ReadPrimitive<int32_t, WireFormatLite::TYPE_INT32>(codedInput, &block->idRangeStart);
 				break;
 			case OsmAnd::OBF::OsmAndHHRoutingIndex_HHRouteBlockSegments::kProfileIdFieldNumber:
-				WireFormatLite::ReadPrimitive<int32_t, WireFormatLite::TYPE_INT32>(input, &block->profileId);
+				WireFormatLite::ReadPrimitive<int32_t, WireFormatLite::TYPE_INT32>(codedInput, &block->profileId);
 				break;
 			case OsmAnd::OBF::OsmAndHHRoutingIndex_HHRouteBlockSegments::kInnerBlocksFieldNumber:
 				if (!HHRoutingContext::checkId(searchInd, block)) {
-					input->Skip(input->BytesUntilLimit());
+					codedInput->Skip(codedInput->BytesUntilLimit());
 				} else {
 					// read all sublist
 					HHRouteBlockSegments * child = regCtx->fileRegion->createHHRouteBlockSegments();
-					readInt(input, &child->length);
-					child->filePointer = input->TotalBytesRead();
-					int olLimit = input->PushLimit(child->length);
+					readInt(codedInput, &child->length);
+					child->filePointer = codedInput->TotalBytesRead();
+					int olLimit = codedInput->PushLimit(child->length);
 //                    OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
 //                                      "BLOCK I:%d %d/%d - %d - %d %d",
 //                                      block->filePointer, block->idRangeStart, block->idRangeLength, block->sublist.size(), child->length, child->filePointer);
 					loaded += loadNetworkSegmentPoint(input, ctx, regCtx, child, searchInd);
-					input->PopLimit(olLimit);
+					codedInput = input.get();
+					codedInput->PopLimit(olLimit);
 					block->sublist.push_back(child);
 				}
 				break;
 			case OsmAnd::OBF::OsmAndHHRoutingIndex_HHRouteBlockSegments::kPointSegmentsFieldNumber:
 				if (!HHRoutingContext::checkId(searchInd, block)) {
-					input->Skip(input->BytesUntilLimit());
+					codedInput->Skip(codedInput->BytesUntilLimit());
 				} else {
 					int pntFileId = (ind++) + block->idRangeStart;
 					NetworkDBPoint * point = regCtx->getPoint(pntFileId);
 					std::vector<int32_t> segmentsIn;
 					std::vector<int32_t> segmentsOut;
-					setSegments(input, ctx, segmentsIn, segmentsOut);
+					setSegments(codedInput, ctx, segmentsIn, segmentsOut);
 					if (point != nullptr) {
 						// not used from this file
 						point->connectedSet(true, parseSegments(ctx, segmentsIn, ctx->getIncomingPoints(point), point, false));
@@ -1342,11 +1369,11 @@ int loadNetworkSegmentPoint(CodedInputStream * input, HHRoutingContext * ctx, SH
 				}
 				break;
 			default:
-				skipUnknownFields(input, tag);
+				skipUnknownFields(codedInput, tag);
 				break;
 		}
 	}
-	input->PopLimit(oldLimit);
+	codedInput->PopLimit(oldLimit);
 	return 0;
 }
 
@@ -1358,9 +1385,10 @@ int loadNetworkSegmentPoint(HHRoutingContext * ctx, SHARED_PTR<HHRouteRegionPoin
 	if (!localInput.isOpen()) {
 		return 0;
 	}
-	CodedInputStream * input = localInput.get();
-	input->Seek(reg->filePointer);
-	return loadNetworkSegmentPoint(input, ctx, regCtx, block, searchInd);
+	if (!localInput.seek(reg->filePointer)) {
+		return 0;
+	}
+	return loadNetworkSegmentPoint(localInput, ctx, regCtx, block, searchInd);
 }
 
 bool readTransportBounds(CodedInputStream* input, TransportIndex* ind) {
@@ -2268,7 +2296,7 @@ bool readTransportRouteStop(CodedInputStream* input, SHARED_PTR<TransportStop>& 
 	return true;
 }
 
-bool readTransportRoute(CodedInputStream* input, SHARED_PTR<TransportRoute>& transportRoute, int32_t filePointer,
+bool readTransportRoute(LocalBinaryMapInput& input, SHARED_PTR<TransportRoute>& transportRoute, int32_t filePointer,
 						UNORDERED(map) < int32_t, string > &stringTable, bool onlyDescription);
 
 bool readTransportRoute(BinaryMapFile* file, SHARED_PTR<TransportRoute>& transportRoute, int32_t filePointer,
@@ -2277,13 +2305,15 @@ bool readTransportRoute(BinaryMapFile* file, SHARED_PTR<TransportRoute>& transpo
 	if (!localInput.isOpen()) {
 		return false;
 	}
-	CodedInputStream* input = localInput.get();
-	return readTransportRoute(input, transportRoute, filePointer, stringTable, onlyDescription);
+	return readTransportRoute(localInput, transportRoute, filePointer, stringTable, onlyDescription);
 }
 
-bool readTransportRoute(CodedInputStream* input, SHARED_PTR<TransportRoute>& transportRoute, int32_t filePointer,
+bool readTransportRoute(LocalBinaryMapInput& localInput, SHARED_PTR<TransportRoute>& transportRoute, int32_t filePointer,
 						UNORDERED(map) < int32_t, string > &stringTable, bool onlyDescription) {
-	input->Seek(filePointer);
+	if (!localInput.seek(filePointer)) {
+		return false;
+	}
+	CodedInputStream* input = localInput.get();
 
 	uint32_t routeLength;
 	input->ReadVarint32(&routeLength);
@@ -2425,15 +2455,18 @@ bool readTransportRoute(CodedInputStream* input, SHARED_PTR<TransportRoute>& tra
 	return true;
 }
 
-bool initializeStringTable(CodedInputStream* input, const SHARED_PTR<TransportIndex>& ind, UNORDERED(map) < int32_t,
+bool initializeStringTable(LocalBinaryMapInput& input, const SHARED_PTR<TransportIndex>& ind, UNORDERED(map) < int32_t,
 						   string > &requested) {
 	if (ind->stringTable->stringTable.size() == 0) {
-		input->Seek(ind->stringTable->fileOffset);
-		int oldLimit = input->PushLimit(ind->stringTable->length);
+		if (!input.seek(ind->stringTable->fileOffset)) {
+			return false;
+		}
+		CodedInputStream* codedInput = input.get();
+		int oldLimit = codedInput->PushLimit(ind->stringTable->length);
 		int current = 0;
 		bool end = false;
 		while (!end) {
-			int t = input->ReadTag();
+			int t = codedInput->ReadTag();
 			int tag = WireFormatLite::GetTagFieldNumber(t);
 			switch (tag) {
 				case 0:
@@ -2441,20 +2474,20 @@ bool initializeStringTable(CodedInputStream* input, const SHARED_PTR<TransportIn
 					break;
 				case OsmAnd::OBF::StringTable::kSFieldNumber: {
 					string value;
-					DO_((WireFormatLite::ReadString(input, &value)));
+					DO_((WireFormatLite::ReadString(codedInput, &value)));
 					ind->stringTable->stringTable.insert({current, value});
 					current++;
 					break;
 				}
 				default: {
-					if (!skipUnknownFields(input, t)) {
+					if (!skipUnknownFields(codedInput, t)) {
 						return false;
 					}
 					break;
 				}
 			}
 		}
-		input->PopLimit(oldLimit);
+		codedInput->PopLimit(oldLimit);
 	}
 	return true;
 }
@@ -2554,17 +2587,20 @@ void initializeNames(bool onlyDescription, SHARED_PTR<TransportRoute>& dataObjec
 	}
 }
 
-void searchTransportIndex(const SHARED_PTR<TransportIndex>& index, SearchQuery* q, CodedInputStream* input) {
+void searchTransportIndex(const SHARED_PTR<TransportIndex>& index, SearchQuery* q, LocalBinaryMapInput& input) {
 	if (index->stopsFileLength == 0 || index->right < q->left || index->left > q->right || index->top > q->bottom ||
 		index->bottom < q->top) {
 		return;
 	}
-	input->Seek(index->stopsFileOffset);
-	int oldLimit = input->PushLimit(index->stopsFileLength);
+	if (!input.seek(index->stopsFileOffset)) {
+		return;
+	}
+	CodedInputStream* codedInput = input.get();
+	int oldLimit = codedInput->PushLimit(index->stopsFileLength);
 	uint32_t offset = q->transportResults.size();
 	UNORDERED(map)<int32_t, string> stringTable;
-	searchTransportTreeBounds(input, 0, 0, 0, 0, q, stringTable);
-	input->PopLimit(oldLimit);
+	searchTransportTreeBounds(codedInput, 0, 0, 0, 0, q, stringTable);
+	codedInput->PopLimit(oldLimit);
 	UNORDERED(map)<int32_t, string> indexedStringTable;
 	if (index->stringTable) {
 		indexedStringTable = index->stringTable->stringTable;
@@ -2585,7 +2621,7 @@ void searchTransportIndex(SearchQuery* q, BinaryMapFile* file) {
 		return;
 	}
 	for (const auto& transportIndex : prepared->transportIndexes) {
-		searchTransportIndex(transportIndex, q, input.get());
+		searchTransportIndex(transportIndex, q, input);
 	}
 	if (q->numberOfVisitedObjects > 0) {
 		// OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug,  "Search is done. Visit %d objects. Read %d objects.",
@@ -2635,7 +2671,7 @@ void loadTransportRoutes(BinaryMapFile* file, vector<int32_t> filePointers, UNOR
 		for (int i = 0; i < pointers.size(); i++) {
 			int32_t filePointer = pointers[i];
 			SHARED_PTR<TransportRoute> transportRoute = make_shared<TransportRoute>();
-			if (readTransportRoute(input.get(), transportRoute, filePointer, stringTable, false)) {
+			if (readTransportRoute(input, transportRoute, filePointer, stringTable, false)) {
 				result[filePointer] = transportRoute;
 				finishInit.push_back(transportRoute);
 			}
@@ -2682,33 +2718,42 @@ SHARED_PTR<HHRouteIndex> cloneHHRouteIndexForRead(const SHARED_PTR<HHRouteIndex>
 	return copy;
 }
 
-static bool readMapIndexSectionForPrepared(CodedInputStream* input, const SHARED_PTR<MapIndex>& mapIndex,
+static bool readMapIndexSectionForPrepared(LocalBinaryMapInput& input, const SHARED_PTR<MapIndex>& mapIndex,
 										   bool onlyInitEncodingRules) {
-	input->Seek(mapIndex->filePointer);
-	int oldLimit = input->PushLimit(mapIndex->length);
-	bool ok = readMapIndex(input, mapIndex, onlyInitEncodingRules);
-	input->PopLimit(oldLimit);
+	if (!input.seek(mapIndex->filePointer)) {
+		return false;
+	}
+	CodedInputStream* codedInput = input.get();
+	int oldLimit = codedInput->PushLimit(mapIndex->length);
+	bool ok = readMapIndex(codedInput, mapIndex, onlyInitEncodingRules);
+	codedInput->PopLimit(oldLimit);
 	return ok;
 }
 
-static bool readMapLevelBoundsForPrepared(CodedInputStream* input, MapRoot& mapLevel) {
-	input->Seek(mapLevel.filePointer);
-	int oldLimit = input->PushLimit(mapLevel.length);
+static bool readMapLevelBoundsForPrepared(LocalBinaryMapInput& input, MapRoot& mapLevel) {
+	if (!input.seek(mapLevel.filePointer)) {
+		return false;
+	}
+	CodedInputStream* codedInput = input.get();
+	int oldLimit = codedInput->PushLimit(mapLevel.length);
 	mapLevel.bounds.clear();
-	bool ok = readMapLevel(input, &mapLevel, true);
-	input->PopLimit(oldLimit);
+	bool ok = readMapLevel(codedInput, &mapLevel, true);
+	codedInput->PopLimit(oldLimit);
 	return ok;
 }
 
-static bool readRoutingIndexForPrepared(CodedInputStream* input, const SHARED_PTR<RoutingIndex>& routingIndex) {
-	input->Seek(routingIndex->filePointer);
-	uint32_t oldLimit = input->PushLimit(routingIndex->length);
-	bool ok = readRoutingIndex(input, routingIndex, false);
-	input->PopLimit(oldLimit);
+static bool readRoutingIndexForPrepared(LocalBinaryMapInput& input, const SHARED_PTR<RoutingIndex>& routingIndex) {
+	if (!input.seek(routingIndex->filePointer)) {
+		return false;
+	}
+	CodedInputStream* codedInput = input.get();
+	uint32_t oldLimit = codedInput->PushLimit(routingIndex->length);
+	bool ok = readRoutingIndex(codedInput, routingIndex, false);
+	codedInput->PopLimit(oldLimit);
 	return ok;
 }
 
-static void readTransportStringTableForPrepared(CodedInputStream* input,
+static void readTransportStringTableForPrepared(LocalBinaryMapInput& input,
 												const SHARED_PTR<TransportIndex>& transportIndex) {
 	if (!transportIndex->stringTable || transportIndex->stringTable->length == 0) {
 		return;
@@ -2717,47 +2762,53 @@ static void readTransportStringTableForPrepared(CodedInputStream* input,
 	initializeStringTable(input, transportIndex, requested);
 }
 
-static void readIncompleteTransportRoutesForPrepared(CodedInputStream* input, PreparedTransportData& prepared) {
+static void readIncompleteTransportRoutesForPrepared(LocalBinaryMapInput& input, PreparedTransportData& prepared) {
 	for (const auto& transportIndex : prepared.transportIndexes) {
 		if (transportIndex->incompleteRoutesLength > 0) {
-			input->Seek(transportIndex->incompleteRoutesOffset);
-			int oldLimit = input->PushLimit(transportIndex->incompleteRoutesLength);
-			readIncompleteRoutesList(input, prepared.incompleteTransportRoutes, transportIndex->filePointer);
-			input->PopLimit(oldLimit);
+			if (!input.seek(transportIndex->incompleteRoutesOffset)) {
+				continue;
+			}
+			CodedInputStream* codedInput = input.get();
+			int oldLimit = codedInput->PushLimit(transportIndex->incompleteRoutesLength);
+			readIncompleteRoutesList(codedInput, prepared.incompleteTransportRoutes, transportIndex->filePointer);
+			codedInput->PopLimit(oldLimit);
 		}
 	}
 }
 
-static void readHHEncodingRulesForPrepared(CodedInputStream* input, const SHARED_PTR<HHRouteIndex>& hhIndex) {
-	input->Seek(hhIndex->filePointer);
-	int oldLimit = input->PushLimit(hhIndex->length);
+static void readHHEncodingRulesForPrepared(LocalBinaryMapInput& input, const SHARED_PTR<HHRouteIndex>& hhIndex) {
+	if (!input.seek(hhIndex->filePointer)) {
+		return;
+	}
+	CodedInputStream* codedInput = input.get();
+	int oldLimit = codedInput->PushLimit(hhIndex->length);
 	uint32_t tag;
-	while ((tag = input->ReadTag()) != 0) {
+	while ((tag = codedInput->ReadTag()) != 0) {
 		switch (WireFormatLite::GetTagFieldNumber(tag)) {
 			case OsmAnd::OBF::OsmAndHHRoutingIndex::kTagValuesTableFieldNumber: {
 				int32_t length;
-				WireFormatLite::ReadPrimitive<int32_t, WireFormatLite::TYPE_INT32>(input, &length);
-				int old = input->PushLimit(length);
+				WireFormatLite::ReadPrimitive<int32_t, WireFormatLite::TYPE_INT32>(codedInput, &length);
+				int old = codedInput->PushLimit(length);
 				std::vector<std::string> values;
-				readStringTable(input, values);
+				readStringTable(codedInput, values);
 				for (const std::string& value : values) {
 					size_t i = value.find_first_of('=');
 					if (i != string::npos) {
 						hhIndex->encodingRules.push_back(TagValuePair(value.substr(0, i), value.substr(i + 1), -1));
 					}
 				}
-				input->PopLimit(old);
+				codedInput->PopLimit(old);
 				break;
 			}
 			default:
-				if (!skipUnknownFields(input, tag)) {
-					input->PopLimit(oldLimit);
+				if (!skipUnknownFields(codedInput, tag)) {
+					codedInput->PopLimit(oldLimit);
 					return;
 				}
 				break;
 		}
 	}
-	input->PopLimit(oldLimit);
+	codedInput->PopLimit(oldLimit);
 }
 
 static SHARED_PTR<TransportIndex> cloneTransportIndexMetadata(const SHARED_PTR<TransportIndex>& source) {
@@ -2794,14 +2845,14 @@ static std::shared_ptr<const PreparedMapData> buildPreparedMapData(BinaryMapFile
 		mapIndex->filePointer = sourceMapIndex->filePointer;
 		mapIndex->length = sourceMapIndex->length;
 		mapIndex->name = sourceMapIndex->name;
-		if (!readMapIndexSectionForPrepared(input.get(), mapIndex, false)) {
+		if (!readMapIndexSectionForPrepared(input, mapIndex, false)) {
 			continue;
 		}
-		if (!readMapIndexSectionForPrepared(input.get(), mapIndex, true)) {
+		if (!readMapIndexSectionForPrepared(input, mapIndex, true)) {
 			continue;
 		}
 		for (auto& mapLevel : mapIndex->levels) {
-			readMapLevelBoundsForPrepared(input.get(), mapLevel);
+			readMapLevelBoundsForPrepared(input, mapLevel);
 		}
 		prepared->mapIndexes.push_back(mapIndex);
 	}
@@ -2821,7 +2872,7 @@ static std::shared_ptr<const PreparedRoutingData> buildPreparedRoutingData(Binar
 		routingIndex->filePointer = sourceRoutingIndex->filePointer;
 		routingIndex->length = sourceRoutingIndex->length;
 		routingIndex->name = sourceRoutingIndex->name;
-		if (readRoutingIndexForPrepared(input.get(), routingIndex)) {
+		if (readRoutingIndexForPrepared(input, routingIndex)) {
 			routingIndex->findOrCreateRouteType("osmand_dp", "osmand_add_point");
 			routingIndex->findOrCreateRouteType("osmand_dp", "osmand_delete_point");
 			rebuildRouteDecodingRules(*routingIndex);
@@ -2841,10 +2892,10 @@ static std::shared_ptr<const PreparedTransportData> buildPreparedTransportData(B
 
 	for (const auto& sourceTransportIndex : file.transportIndexes) {
 		auto transportIndex = cloneTransportIndexMetadata(sourceTransportIndex);
-		readTransportStringTableForPrepared(input.get(), transportIndex);
+		readTransportStringTableForPrepared(input, transportIndex);
 		prepared->transportIndexes.push_back(transportIndex);
 	}
-	readIncompleteTransportRoutesForPrepared(input.get(), *prepared);
+	readIncompleteTransportRoutesForPrepared(input, *prepared);
 
 	return prepared;
 }
@@ -2858,7 +2909,7 @@ static std::shared_ptr<const PreparedHHData> buildPreparedHHData(BinaryMapFile& 
 
 	for (const auto& sourceHHIndex : file.hhIndexes) {
 		auto hhIndex = cloneHHRouteIndexForRead(sourceHHIndex);
-		readHHEncodingRulesForPrepared(input.get(), hhIndex);
+		readHHEncodingRulesForPrepared(input, hhIndex);
 		prepared->hhIndexes.push_back(hhIndex);
 	}
 
@@ -3191,7 +3242,7 @@ bool sortTreeBounds(const MapTreeBounds& i, const MapTreeBounds& j) {
 	return (i.mapDataBlock < j.mapDataBlock);
 }
 
-void searchMapData(CodedInputStream* input, MapRoot* root, MapIndex* ind, SearchQuery* req) {
+void searchMapData(LocalBinaryMapInput& input, MapRoot* root, MapIndex* ind, SearchQuery* req) {
 	// search
 	for (std::vector<MapTreeBounds>::iterator i = root->bounds.begin(); i != root->bounds.end(); i++) {
 		if (req->isCancelled()) {
@@ -3203,10 +3254,13 @@ void searchMapData(CodedInputStream* input, MapRoot* root, MapIndex* ind, Search
 		}
 		std::vector<MapTreeBounds> foundSubtrees;
 		MapTreeBounds bounds = *i;
-		input->Seek(bounds.filePointer);
-		int oldLimit = input->PushLimit(bounds.length);
-		searchMapTreeBounds(input, &bounds, root, req, &foundSubtrees);
-		input->PopLimit(oldLimit);
+		if (!input.seek(bounds.filePointer)) {
+			continue;
+		}
+		CodedInputStream* codedInput = input.get();
+		int oldLimit = codedInput->PushLimit(bounds.length);
+		searchMapTreeBounds(codedInput, &bounds, root, req, &foundSubtrees);
+		codedInput->PopLimit(oldLimit);
 
 		sort(foundSubtrees.begin(), foundSubtrees.end(), sortTreeBounds);
 		uint32_t length;
@@ -3214,11 +3268,14 @@ void searchMapData(CodedInputStream* input, MapRoot* root, MapIndex* ind, Search
 			if (req->isCancelled()) {
 				return;
 			}
-			input->Seek(tree->mapDataBlock);
-			WireFormatLite::ReadPrimitive<uint32_t, WireFormatLite::TYPE_UINT32>(input, &length);
-			int oldLimit = input->PushLimit(length);
-			readMapDataBlocks(input, req, &(*tree), ind);
-			input->PopLimit(oldLimit);
+			if (!input.seek(tree->mapDataBlock)) {
+				continue;
+			}
+			codedInput = input.get();
+			WireFormatLite::ReadPrimitive<uint32_t, WireFormatLite::TYPE_UINT32>(codedInput, &length);
+			int oldLimit = codedInput->PushLimit(length);
+			readMapDataBlocks(codedInput, req, &(*tree), ind);
+			codedInput->PopLimit(oldLimit);
 		}
 	}
 }
@@ -3303,13 +3360,13 @@ bool searchRouteSubregionsForBinaryMapFile(BinaryMapFile* file,
 				contains = true;
 			}
 		}
-		if (contains) {
-			LocalBinaryMapInput input(file->inputName);
-			if (input.isOpen()) {
-				searchRouteRegion(input.get(), q, routeIndex, subs, tempResult, fileRef);
+			if (contains) {
+				LocalBinaryMapInput input(file->inputName);
+				if (input.isOpen()) {
+					searchRouteRegion(input, q, routeIndex, subs, tempResult, fileRef);
+				}
+				return true;
 			}
-			return true;
-		}
 	}
 	return false;
 }
@@ -3351,7 +3408,7 @@ void searchRouteSubregions(SearchQuery* q, std::vector<RouteSubregion>& tempResu
 					input.reset(new LocalBinaryMapInput(file->inputName));
 				}
 				if (input->isOpen()) {
-					searchRouteRegion(input->get(), q, routeIndex, subs, tempResult, fileRef);
+					searchRouteRegion(*input, q, routeIndex, subs, tempResult, fileRef);
 				}
 			}
 		}
@@ -3365,10 +3422,12 @@ void readRouteMapObjects(SearchQuery* q, const std::string& inputName, vector<Ro
 	if (!input.isOpen()) {
 		return;
 	}
-	CodedInputStream* cis = input.get();
 	for (std::vector<RouteSubregion>::iterator sub = found.begin(); sub != found.end(); sub++) {
 		std::vector<RouteDataObject*> list;
-		cis->Seek(sub->filePointer + sub->mapDataBlock);
+		if (!input.seek(sub->filePointer + sub->mapDataBlock)) {
+			continue;
+		}
+		CodedInputStream* cis = input.get();
 		uint32_t length;
 		cis->ReadVarint32(&length);
 		uint32_t old = cis->PushLimit(length);
@@ -3399,14 +3458,14 @@ void readRouteDataAsMapObjects(SearchQuery* q, BinaryMapFile* file, std::vector<
 				contains = true;
 			}
 		}
-		if (contains) {
-			vector<RouteSubregion> found;
-			LocalBinaryMapInput input(file->inputName);
-			if (input.isOpen()) {
-				searchRouteRegion(input.get(), q, routeIndex, subs, found, fileRef);
+			if (contains) {
+				vector<RouteSubregion> found;
+				LocalBinaryMapInput input(file->inputName);
+				if (input.isOpen()) {
+					searchRouteRegion(input, q, routeIndex, subs, found, fileRef);
+				}
+				readRouteMapObjects(q, file->inputName, found, routeIndex, tempResult, renderedState);
 			}
-			readRouteMapObjects(q, file->inputName, found, routeIndex, tempResult, renderedState);
-		}
 	}
 }
 
@@ -3425,7 +3484,7 @@ void readMapObjects(SearchQuery* q, const std::string& inputName, const Prepared
 			if (mapLevel->minZoom <= q->zoom && mapLevel->maxZoom >= q->zoom) {
 				if (mapLevel->right >= (uint)q->left && (uint)q->right >= mapLevel->left &&
 					mapLevel->bottom >= (uint)q->top && (uint)q->bottom >= mapLevel->top) {
-					searchMapData(input.get(), &(*mapLevel), &(*mapIndex), q);
+					searchMapData(input, &(*mapLevel), &(*mapIndex), q);
 				}
 			}
 		}
@@ -3736,7 +3795,7 @@ ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, 
 }
 
 static std::shared_ptr<const std::vector<RouteSubregion>> getPreparedRouteSubregions(
-	CodedInputStream* input, const SHARED_PTR<RoutingIndex>& ind, const RouteSubregion& subregion) {
+	LocalBinaryMapInput& input, const SHARED_PTR<RoutingIndex>& ind, const RouteSubregion& subregion) {
 	auto prepared = std::atomic_load(&subregion.preparedSubregions);
 	if (prepared) {
 		return prepared;
@@ -3759,10 +3818,13 @@ static std::shared_ptr<const std::vector<RouteSubregion>> getPreparedRouteSubreg
 	expanded.subregions.clear();
 	expanded.preparedSubregions.reset();
 	expanded.fileRef.reset();
-	input->Seek(expanded.filePointer);
-	int oldLimit = input->PushLimit(expanded.length);
-	readRouteTree(input, &expanded, NULL, ind, -1 /*contains? -1 : 1*/, false);
-	input->PopLimit(oldLimit);
+	if (!input.seek(expanded.filePointer)) {
+		return std::make_shared<const std::vector<RouteSubregion>>();
+	}
+	CodedInputStream* codedInput = input.get();
+	int oldLimit = codedInput->PushLimit(expanded.length);
+	readRouteTree(codedInput, &expanded, NULL, ind, -1 /*contains? -1 : 1*/, false);
+	codedInput->PopLimit(oldLimit);
 
 	auto builtData = std::make_shared<std::vector<RouteSubregion>>(std::move(expanded.subregions));
 	std::shared_ptr<const std::vector<RouteSubregion>> built = builtData;
@@ -3774,7 +3836,7 @@ static std::shared_ptr<const std::vector<RouteSubregion>> getPreparedRouteSubreg
 	return prepared ? prepared : built;
 }
 
-void searchRouteRegion(CodedInputStream* input, SearchQuery* q, const SHARED_PTR<RoutingIndex>& ind,
+void searchRouteRegion(LocalBinaryMapInput& input, SearchQuery* q, const SHARED_PTR<RoutingIndex>& ind,
 					   const std::vector<RouteSubregion>& subregions, std::vector<RouteSubregion>& toLoad,
 					   const BinaryMapFilePtr& fileRef) {
 	for (std::vector<RouteSubregion>::const_iterator subreg = subregions.begin(); subreg != subregions.end(); subreg++) {
@@ -4078,14 +4140,17 @@ bool readRouteTreeData(CodedInputStream* input, RouteSubregion* s, std::vector<R
 	return true;
 }
 
-void searchRouteSubRegion(CodedInputStream* input, std::vector<RouteDataObject*>& list, const SHARED_PTR<RoutingIndex>& routingIndex,
+void searchRouteSubRegion(LocalBinaryMapInput& input, std::vector<RouteDataObject*>& list, const SHARED_PTR<RoutingIndex>& routingIndex,
 						  RouteSubregion* sub) {
-	input->Seek(sub->filePointer + sub->mapDataBlock);
+	if (!input.seek(sub->filePointer + sub->mapDataBlock)) {
+		return;
+	}
+	CodedInputStream* codedInput = input.get();
 	uint32_t length;
-	input->ReadVarint32(&length);
-	uint32_t old = input->PushLimit(length);
-	readRouteTreeData(input, &(*sub), list, routingIndex);
-	input->PopLimit(old);
+	codedInput->ReadVarint32(&length);
+	uint32_t old = codedInput->PushLimit(length);
+	readRouteTreeData(codedInput, &(*sub), list, routingIndex);
+	codedInput->PopLimit(old);
 }
 
 struct RouteSubregionReadContext {
@@ -4130,12 +4195,12 @@ void searchRouteDataForSubRegion(RouteSubregionReadContext* context, SearchQuery
 		if (context) {
 			LocalBinaryMapInput* input = context->inputFor(sub->fileRef);
 			if (input && input->isOpen()) {
-				searchRouteSubRegion(input->get(), list, rs, sub);
+				searchRouteSubRegion(*input, list, rs, sub);
 			}
 		} else {
 			LocalBinaryMapInput input(sub->fileRef->inputName);
 			if (input.isOpen()) {
-				searchRouteSubRegion(input.get(), list, rs, sub);
+				searchRouteSubRegion(input, list, rs, sub);
 			}
 		}
 		return;
@@ -4159,12 +4224,12 @@ void searchRouteDataForSubRegion(RouteSubregionReadContext* context, SearchQuery
 			if (context) {
 				LocalBinaryMapInput* input = context->inputFor(fileRef);
 				if (input && input->isOpen()) {
-					searchRouteSubRegion(input->get(), list, routingIndex, sub);
+					searchRouteSubRegion(*input, list, routingIndex, sub);
 				}
 			} else {
 				LocalBinaryMapInput input(fileRef->inputName);
 				if (input.isOpen()) {
-					searchRouteSubRegion(input.get(), list, routingIndex, sub);
+					searchRouteSubRegion(input, list, routingIndex, sub);
 				}
 			}
 			return;
