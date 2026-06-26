@@ -3038,11 +3038,13 @@ void readMapObjects(SearchQuery* q, BinaryMapFile* file) {
 	}
 }
 
+static bool hasLandCoverTag(const MapDataObject* obj);
+
 void readMapObjectsForRendering(SearchQuery* q, std::vector<FoundMapDataObject>& basemapResult,
 								std::vector<FoundMapDataObject>& tempResult, std::vector<FoundMapDataObject>& extResult,
 								std::vector<FoundMapDataObject>& coastLines,
 								std::vector<FoundMapDataObject>& basemapCoastLines, int& count, bool& basemapExists,
-								int& renderedState) {
+								int& renderedState, bool& hasLandCover) {
 	const auto openFilesSnapshot = getOpenFilesSnapshot();
 	auto i = openFilesSnapshot.begin();
 	for (; i != openFilesSnapshot.end() && !q->isCancelled(); i++) {
@@ -3126,6 +3128,9 @@ void readMapObjectsForRendering(SearchQuery* q, std::vector<FoundMapDataObject>&
 					}
 				} else {
 					// do not mess coastline and other types
+					if (!hasLandCover && hasLandCoverTag(r->obj)) {
+						hasLandCover = true;
+					}
 					if (basemap) {
 						basemapResult.push_back(*r);
 					} else if (external) {
@@ -3191,7 +3196,31 @@ void uniq(std::vector<FoundMapDataObject>& r, std::vector<FoundMapDataObject>& u
 	}
 }
 
-static void logOceanTileStats(SearchQuery* q, float ocean, bool coastlinesWereAdded,
+static bool isLandCoverTag(const tag_value& tag) {
+	if (tag.first == "natural") {
+		return tag.second != "water" && tag.second != "lake" && tag.second != "bay" &&
+			   tag.second != "coastline" && tag.second != "coastline_line" &&
+			   tag.second != "coastline_broken" && tag.second != "land" && tag.second != "spring";
+	}
+	if (tag.first == "landuse") {
+		return tag.second != "water" && tag.second != "reservoir" && tag.second != "basin";
+	}
+	return false;
+}
+
+static bool hasLandCoverTag(const MapDataObject* obj) {
+	if (obj == NULL) {
+		return false;
+	}
+	for (const auto& tag : obj->types) {
+		if (isLandCoverTag(tag)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+static void logOceanTileStats(SearchQuery* q, float ocean, bool coastlinesWereAdded, bool hasLandCover,
 							  const std::vector<FoundMapDataObject>& tempResult,
 							  const std::vector<FoundMapDataObject>& basemapResult,
 							  const std::vector<FoundMapDataObject>& extResult) {
@@ -3208,9 +3237,9 @@ static void logOceanTileStats(SearchQuery* q, float ocean, bool coastlinesWereAd
 	const int tileX = tileShift >= 0 ? q->left >> tileShift : 0;
 	const int tileY = tileShift >= 0 ? q->top >> tileShift : 0;
 	printf("XXX ocean z=%d x=%d y=%d qZoom=%d ocean=%u oceanTiles=%u oceanRatio=%f "
-		   "coastlinesWereAdded=%d tempResult=%zu basemapResult=%zu extResult=%zu "
+		   "coastlinesWereAdded=%d hasLandCover=%d tempResult=%zu basemapResult=%zu extResult=%zu "
 		   "left=%d right=%d top=%d bottom=%d\n",
-		   tileZoom, tileX, tileY, q->zoom, q->ocean, q->oceanTiles, ocean, coastlinesWereAdded,
+		   tileZoom, tileX, tileY, q->zoom, q->ocean, q->oceanTiles, ocean, coastlinesWereAdded, hasLandCover,
 		   tempResult.size(), basemapResult.size(), extResult.size(), q->left, q->right, q->top, q->bottom);
 	fflush(stdout);
 }
@@ -3226,8 +3255,9 @@ ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, 
 	std::vector<FoundMapDataObject> basemapCoastLines;
 
 	bool basemapExists = false;
+	bool hasLandCover = false;
 	readMapObjectsForRendering(q, basemapResult, tempResult, extResult, coastLines, basemapCoastLines, count,
-							   basemapExists, renderedState);
+							   basemapExists, renderedState, hasLandCover);
 
 	// bool objectsFromMapSectionRead = tempResult.size() > 0;
 	bool objectsFromRoutingSectionRead = false;
@@ -3316,8 +3346,8 @@ ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, 
 		deleteObjects(basemapCoastLines);
 		deleteObjects(coastLines);
 		// ocean=0.5 on /vector/3/1/5.mvt with https://www.openstreetmap.org/node/305640292 etc
-		logOceanTileStats(q, ocean, coastlinesWereAdded, tempResult, basemapResult, extResult);
-		if (!coastlinesWereAdded && ocean >= 0.5) {
+		logOceanTileStats(q, ocean, coastlinesWereAdded, hasLandCover, tempResult, basemapResult, extResult);
+		if (!coastlinesWereAdded && (ocean > 0.5 || (ocean >= 0.25 && !hasLandCover))) {
 			MapDataObject* o = new MapDataObject();
 			o->points.push_back(int_pair(q->left, q->top));
 			o->points.push_back(int_pair(q->right, q->top));
