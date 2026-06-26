@@ -1,6 +1,7 @@
 #include "generalRouter.h"
 
 #include <fcntl.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -3190,6 +3191,30 @@ void uniq(std::vector<FoundMapDataObject>& r, std::vector<FoundMapDataObject>& u
 	}
 }
 
+static void logOceanTileStats(SearchQuery* q, float ocean, bool coastlinesWereAdded,
+							  const std::vector<FoundMapDataObject>& tempResult,
+							  const std::vector<FoundMapDataObject>& basemapResult,
+							  const std::vector<FoundMapDataObject>& extResult) {
+	int tileZoom = q->zoom;
+	const int tileWidth = q->right - q->left;
+	if (tileWidth > 0 && (tileWidth & (tileWidth - 1)) == 0) {
+		int shift = 0;
+		for (int width = tileWidth; width > 1; width >>= 1) {
+			shift++;
+		}
+		tileZoom = 31 - shift;
+	}
+	const int tileShift = 31 - tileZoom;
+	const int tileX = tileShift >= 0 ? q->left >> tileShift : 0;
+	const int tileY = tileShift >= 0 ? q->top >> tileShift : 0;
+	printf("XXX ocean z=%d x=%d y=%d qZoom=%d ocean=%u oceanTiles=%u oceanRatio=%f "
+		   "coastlinesWereAdded=%d tempResult=%zu basemapResult=%zu extResult=%zu "
+		   "left=%d right=%d top=%d bottom=%d\n",
+		   tileZoom, tileX, tileY, q->zoom, q->ocean, q->oceanTiles, ocean, coastlinesWereAdded,
+		   tempResult.size(), basemapResult.size(), extResult.size(), q->left, q->right, q->top, q->bottom);
+	fflush(stdout);
+}
+
 ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, std::string msgNothingFound,
 										   int& renderedState) {
 	int count = 0;
@@ -3291,6 +3316,7 @@ ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, 
 		deleteObjects(basemapCoastLines);
 		deleteObjects(coastLines);
 		// ocean=0.5 on /vector/3/1/5.mvt with https://www.openstreetmap.org/node/305640292 etc
+		logOceanTileStats(q, ocean, coastlinesWereAdded, tempResult, basemapResult, extResult);
 		if (!coastlinesWereAdded && ocean >= 0.5) {
 			MapDataObject* o = new MapDataObject();
 			o->points.push_back(int_pair(q->left, q->top));
