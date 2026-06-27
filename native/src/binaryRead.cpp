@@ -3205,7 +3205,8 @@ static bool isLandCoverTags(const std::vector<tag_value>& tags, const tag_value*
 			tag.second != "spring" && tag.second != "sand" &&
 			tag.second != "desert" && tag.second != "beach" &&
 			tag.second != "wetland" && tag.second != "strait" &&
-			tag.second != "glacier" && tag.second != "bare_rock") {
+			tag.second != "glacier" && tag.second != "bare_rock" &&
+			tag.second != "ridge") {
 			landCoverTag = &tag;
 			return true;
 		}
