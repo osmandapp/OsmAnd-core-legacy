@@ -3,41 +3,64 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <string>
 #include <vector>
 
 #include "binaryRead.h"
+
+static const float TAG_BASED_OCEAN_MIN_RATIO = 0.25f;
+static const float TAG_BASED_OCEAN_PLACE_SIGNAL_THRESHOLD = 0.5f;
+static const float TAG_BASED_OCEAN_STRONG_SIGNAL_THRESHOLD = 0.75f;
+static const int TAG_BASED_OCEAN_SIGNALS_TO_BLOCK = 2;
 
 struct TagBasedOceanDetectionContext {
 	bool hasLandCover = false;
 	float landSignalBlockThreshold = 0;
 	int landSignalCount = 0;
-	bool hasOceanContext = false;
+	bool hasBayContext = false;
 };
 
-inline bool isTagBasedOceanLandCoverTags(const std::vector<tag_value>& tags, const tag_value*& landCoverTag,
-										 bool& hasSeamarkType) {
+struct TagBasedOceanLandCoverScan {
+	bool hasNaturalLandCover = false;
+	bool hasLanduseCandidate = false;
+	bool hasSeamarkType = false;
+};
+
+inline bool isTagBasedOceanIgnoredNatural(const std::string& value) {
+	return value == "water" || value == "lake" || value == "bay" ||
+		   value == "coastline" || value == "coastline_line" ||
+		   value == "coastline_broken" || value == "land" ||
+		   value == "spring" || value == "sand" || value == "desert" ||
+		   value == "beach" || value == "wetland" || value == "strait" ||
+		   value == "glacier" || value == "bare_rock" || value == "ridge";
+}
+
+inline bool isTagBasedOceanIgnoredLanduse(const std::string& value) {
+	return value == "water" || value == "reservoir" || value == "basin" ||
+		   value == "military" || value == "residential";
+}
+
+inline void scanTagBasedOceanLandCoverTags(const std::vector<tag_value>& tags, TagBasedOceanLandCoverScan& scan) {
 	for (const auto& tag : tags) {
-		if (tag.first == "natural" &&
-			tag.second != "water" && tag.second != "lake" && tag.second != "bay" &&
-			tag.second != "coastline" && tag.second != "coastline_line" &&
-			tag.second != "coastline_broken" && tag.second != "land" &&
-			tag.second != "spring" && tag.second != "sand" &&
-			tag.second != "desert" && tag.second != "beach" &&
-			tag.second != "wetland" && tag.second != "strait" &&
-			tag.second != "glacier" && tag.second != "bare_rock" &&
-			tag.second != "ridge") {
-			landCoverTag = &tag;
-			return true;
+		if (tag.first == "natural" && !isTagBasedOceanIgnoredNatural(tag.second)) {
+			scan.hasNaturalLandCover = true;
+			return;
 		}
-		if (tag.first == "landuse" &&
-			tag.second != "water" && tag.second != "reservoir" && tag.second != "basin" &&
-			tag.second != "military" && tag.second != "residential") {
-			landCoverTag = &tag;
+		if (tag.first == "landuse" && !isTagBasedOceanIgnoredLanduse(tag.second)) {
+			scan.hasLanduseCandidate = true;
 		} else if (tag.first == "seamark:type") {
-			hasSeamarkType = true;
+			scan.hasSeamarkType = true;
 		}
 	}
-	return false;
+}
+
+inline bool hasTagBasedOceanLandCoverTags(const MapDataObject* obj) {
+	TagBasedOceanLandCoverScan scan;
+	scanTagBasedOceanLandCoverTags(obj->types, scan);
+	if (!scan.hasNaturalLandCover) {
+		scanTagBasedOceanLandCoverTags(obj->additionalTypes, scan);
+	}
+	return scan.hasNaturalLandCover || (scan.hasLanduseCandidate && !scan.hasSeamarkType);
 }
 
 inline bool isTagBasedOceanSettlementPlace(const tag_value& tag) {
@@ -51,13 +74,13 @@ inline bool isTagBasedOceanSettlementPlace(const tag_value& tag) {
 
 inline float getTagBasedOceanLandSignalThreshold(const tag_value& tag) {
 	if (isTagBasedOceanSettlementPlace(tag)) {
-		return 0.5f;
+		return TAG_BASED_OCEAN_PLACE_SIGNAL_THRESHOLD;
 	}
 	if (tag.first == "waterway") {
-		return (tag.second == "river" || tag.second == "stream") ? 0.75f : 0;
+		return (tag.second == "river" || tag.second == "stream") ? TAG_BASED_OCEAN_STRONG_SIGNAL_THRESHOLD : 0;
 	}
 	if (tag.first == "natural") {
-		return tag.second == "volcano" ? 0.75f : 0;
+		return tag.second == "volcano" ? TAG_BASED_OCEAN_STRONG_SIGNAL_THRESHOLD : 0;
 	}
 	return 0;
 }
@@ -66,11 +89,14 @@ inline float getTagBasedOceanLandSignalThreshold(const std::vector<tag_value>& t
 	float threshold = 0;
 	for (const auto& tag : tags) {
 		threshold = std::max(threshold, getTagBasedOceanLandSignalThreshold(tag));
+		if (threshold >= TAG_BASED_OCEAN_STRONG_SIGNAL_THRESHOLD) {
+			break;
+		}
 	}
 	return threshold;
 }
 
-inline bool getTagBasedOceanTileOverlap(SearchQuery* q, const MapDataObject* obj, int64_t& overlap, int64_t& tile) {
+inline bool doesTagBasedOceanObjectCoverHalfTile(const SearchQuery* q, const MapDataObject* obj) {
 	if (obj->points.empty()) {
 		return false;
 	}
@@ -91,36 +117,30 @@ inline bool getTagBasedOceanTileOverlap(SearchQuery* q, const MapDataObject* obj
 	if (left >= right || top >= bottom) {
 		return false;
 	}
-	overlap = (int64_t)(right - left) * (bottom - top);
-	tile = (int64_t)(q->oceanRight - q->oceanLeft) * (q->oceanBottom - q->oceanTop);
+	const int64_t overlap = (int64_t)(right - left) * (bottom - top);
+	const int64_t tile = (int64_t)(q->oceanRight - q->oceanLeft) * (q->oceanBottom - q->oceanTop);
 	return tile > 0 && overlap >= tile / 2;
 }
 
-inline bool isTagBasedOceanLandCoverObject(SearchQuery* q, const MapDataObject* obj) {
+inline bool isTagBasedOceanLandCoverObject(const SearchQuery* q, const MapDataObject* obj) {
 	if (obj == NULL) {
 		return false;
 	}
-	const tag_value* landCoverTag = NULL;
-	bool hasSeamarkType = false;
-	bool hasLandCoverTag = isTagBasedOceanLandCoverTags(obj->types, landCoverTag, hasSeamarkType);
-	hasLandCoverTag = isTagBasedOceanLandCoverTags(obj->additionalTypes, landCoverTag, hasSeamarkType) || hasLandCoverTag;
-	if (hasLandCoverTag || (landCoverTag != NULL && !hasSeamarkType)) {
-		int64_t overlap = 0;
-		int64_t tile = 0;
-		return getTagBasedOceanTileOverlap(q, obj, overlap, tile);
-	}
-	return false;
+	return hasTagBasedOceanLandCoverTags(obj) && doesTagBasedOceanObjectCoverHalfTile(q, obj);
 }
 
 inline float getTagBasedOceanLandSignalBlockThreshold(const MapDataObject* obj) {
 	if (obj == NULL) {
 		return 0;
 	}
-	return std::max(getTagBasedOceanLandSignalThreshold(obj->types),
-					getTagBasedOceanLandSignalThreshold(obj->additionalTypes));
+	float threshold = getTagBasedOceanLandSignalThreshold(obj->types);
+	if (threshold < TAG_BASED_OCEAN_STRONG_SIGNAL_THRESHOLD) {
+		threshold = std::max(threshold, getTagBasedOceanLandSignalThreshold(obj->additionalTypes));
+	}
+	return threshold;
 }
 
-inline bool isTagBasedOceanContextTags(const std::vector<tag_value>& tags) {
+inline bool hasTagBasedOceanBayTag(const std::vector<tag_value>& tags) {
 	for (const auto& tag : tags) {
 		if (tag.first == "natural" && tag.second == "bay") {
 			return true;
@@ -129,19 +149,19 @@ inline bool isTagBasedOceanContextTags(const std::vector<tag_value>& tags) {
 	return false;
 }
 
-inline bool isTagBasedOceanContextObject(const MapDataObject* obj) {
-	return obj != NULL && (isTagBasedOceanContextTags(obj->types) || isTagBasedOceanContextTags(obj->additionalTypes));
+inline bool hasTagBasedOceanBayTag(const MapDataObject* obj) {
+	return obj != NULL && (hasTagBasedOceanBayTag(obj->types) || hasTagBasedOceanBayTag(obj->additionalTypes));
 }
 
-inline void collectTagBasedOceanDetectionData(SearchQuery* q, const MapDataObject* obj,
+inline void collectTagBasedOceanDetectionData(const SearchQuery* q, const MapDataObject* obj,
 											  TagBasedOceanDetectionContext& context) {
-	if (q == NULL || !q->useTagBasedOceanDetection || obj == NULL) {
+	if (obj == NULL) {
 		return;
 	}
 	if (!context.hasLandCover && isTagBasedOceanLandCoverObject(q, obj)) {
 		context.hasLandCover = true;
 	}
-	if (context.landSignalCount < 2) {
+	if (context.landSignalCount < TAG_BASED_OCEAN_SIGNALS_TO_BLOCK) {
 		float objectLandSignalBlockThreshold = getTagBasedOceanLandSignalBlockThreshold(obj);
 		if (objectLandSignalBlockThreshold > 0) {
 			context.landSignalBlockThreshold =
@@ -149,19 +169,16 @@ inline void collectTagBasedOceanDetectionData(SearchQuery* q, const MapDataObjec
 			context.landSignalCount++;
 		}
 	}
-	if (!context.hasOceanContext && isTagBasedOceanContextObject(obj)) {
-		context.hasOceanContext = true;
+	if (!context.hasBayContext && hasTagBasedOceanBayTag(obj)) {
+		context.hasBayContext = true;
 	}
 }
 
-inline bool shouldAddOceanObjectTagBased(SearchQuery* q, float ocean, bool coastlinesWereAdded,
+inline bool shouldAddOceanObjectTagBased(const SearchQuery* q, float ocean, bool coastlinesWereAdded,
 										 const TagBasedOceanDetectionContext& context) {
-	if (q == NULL || !q->useTagBasedOceanDetection) {
-		return !coastlinesWereAdded && ocean >= 0.5;
-	}
 	bool landSignalBlocksOcean = context.landSignalBlockThreshold > 0 && ocean <= context.landSignalBlockThreshold &&
-								 context.landSignalCount > 1;
-	bool enoughOceanEvidence = ocean >= 0.25 || (q->ocean > 0 && context.hasOceanContext);
+								 context.landSignalCount >= TAG_BASED_OCEAN_SIGNALS_TO_BLOCK;
+	bool enoughOceanEvidence = ocean >= TAG_BASED_OCEAN_MIN_RATIO || (q->ocean > 0 && context.hasBayContext);
 	return !coastlinesWereAdded && enoughOceanEvidence && !context.hasLandCover && !landSignalBlocksOcean;
 }
 

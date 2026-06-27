@@ -3126,7 +3126,9 @@ void readMapObjectsForRendering(SearchQuery* q, std::vector<FoundMapDataObject>&
 					}
 				} else {
 					// do not mess coastline and other types
-					collectTagBasedOceanDetectionData(q, r->obj, tagBasedOceanContext);
+					if (q->useTagBasedOceanDetection) {
+						collectTagBasedOceanDetectionData(q, r->obj, tagBasedOceanContext);
+					}
 					if (basemap) {
 						basemapResult.push_back(*r);
 					} else if (external) {
