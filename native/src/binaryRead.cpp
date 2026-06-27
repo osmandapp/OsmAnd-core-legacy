@@ -3038,7 +3038,7 @@ void readMapObjects(SearchQuery* q, BinaryMapFile* file) {
 	}
 }
 
-static bool hasLandCoverTag(const MapDataObject* obj);
+static bool isLandCoverObject(const MapDataObject* obj);
 
 void readMapObjectsForRendering(SearchQuery* q, std::vector<FoundMapDataObject>& basemapResult,
 								std::vector<FoundMapDataObject>& tempResult, std::vector<FoundMapDataObject>& extResult,
@@ -3128,7 +3128,7 @@ void readMapObjectsForRendering(SearchQuery* q, std::vector<FoundMapDataObject>&
 					}
 				} else {
 					// do not mess coastline and other types
-					if (!hasLandCover && hasLandCoverTag(r->obj)) {
+					if (!hasLandCover && isLandCoverObject(r->obj)) {
 						hasLandCover = true;
 					}
 					if (basemap) {
@@ -3196,28 +3196,38 @@ void uniq(std::vector<FoundMapDataObject>& r, std::vector<FoundMapDataObject>& u
 	}
 }
 
-static bool isLandCoverTag(const tag_value& tag) {
-	if (tag.first == "natural") {
-		return tag.second != "water" && tag.second != "lake" && tag.second != "bay" &&
-			   tag.second != "coastline" && tag.second != "coastline_line" &&
-			   tag.second != "coastline_broken" && tag.second != "land" && tag.second != "spring";
-	}
-	if (tag.first == "landuse") {
-		return tag.second != "water" && tag.second != "reservoir" && tag.second != "basin";
+static bool isLandCoverTags(const std::vector<tag_value>& tags, bool& hasLanduse, bool& hasSeamarkType) {
+	for (const auto& tag : tags) {
+		if (tag.first == "natural" &&
+			tag.second != "water" && tag.second != "lake" && tag.second != "bay" &&
+			tag.second != "coastline" && tag.second != "coastline_line" &&
+			tag.second != "coastline_broken" && tag.second != "land" &&
+			tag.second != "spring" && tag.second != "sand" &&
+			tag.second != "beach" && tag.second != "wetland") {
+			return true;
+		}
+		if (tag.first == "landuse" &&
+			tag.second != "water" && tag.second != "reservoir" && tag.second != "basin" &&
+			tag.second != "military") {
+			hasLanduse = true;
+		} else if (tag.first == "seamark:type") {
+			hasSeamarkType = true;
+		}
 	}
 	return false;
 }
 
-static bool hasLandCoverTag(const MapDataObject* obj) {
+static bool isLandCoverObject(const MapDataObject* obj) {
 	if (obj == NULL) {
 		return false;
 	}
-	for (const auto& tag : obj->types) {
-		if (isLandCoverTag(tag)) {
-			return true;
-		}
+	bool hasLanduse = false;
+	bool hasSeamarkType = false;
+	if (isLandCoverTags(obj->types, hasLanduse, hasSeamarkType) ||
+		isLandCoverTags(obj->additionalTypes, hasLanduse, hasSeamarkType)) {
+		return true;
 	}
-	return false;
+	return hasLanduse && !hasSeamarkType;
 }
 
 static void logOceanTileStats(SearchQuery* q, float ocean, bool coastlinesWereAdded, bool hasLandCover,
