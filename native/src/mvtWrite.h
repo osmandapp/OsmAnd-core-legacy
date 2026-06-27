@@ -21,6 +21,7 @@ typedef vtzero::value_index<vtzero::sint_value_type, int32_t, std::unordered_map
 static const int MVT_TILE_EXTENT_SHIFT = 12;
 static const int MVT_TILE_WIDTH = 1 << MVT_TILE_EXTENT_SHIFT; // 4096
 static const int MVT_TILE_INCREASE_DETAILS_BEFORE_DETAILED_ZOOM = 9; // increase basemap details
+static const int MVT_METATILE_SIZE_LOG = 3; // 8x8 tiles, matches server metatile-size 2048
 
 inline const std::string& getStrOsmandLayer() {
 	static const std::string strOsmandLayer = "osmand_layer";

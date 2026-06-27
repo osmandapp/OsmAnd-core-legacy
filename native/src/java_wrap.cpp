@@ -492,9 +492,12 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_net_osmand_NativeLibrary_getMapboxV
 
 	ResultPublisher publisher;
 	int s = 31 - zoom;
-	auto brx = static_cast<int>(std::min((static_cast<int64_t>(x) + 1) << s, static_cast<int64_t>(INT32_MAX)));
-	auto bry = static_cast<int>(std::min((static_cast<int64_t>(y) + 1) << s, static_cast<int64_t>(INT32_MAX)));
-	auto q = SearchQuery(x << s, brx, y << s, bry, nullptr, &publisher);
+	const int metaSizeLog = zoom <= 1 ? 0 : std::min(MVT_METATILE_SIZE_LOG, zoom - 1);
+	const int metaX = (x >> metaSizeLog) << metaSizeLog;
+	const int metaY = (y >> metaSizeLog) << metaSizeLog;
+	auto brx = static_cast<int>(std::min((static_cast<int64_t>(metaX) + (1 << metaSizeLog)) << s, static_cast<int64_t>(INT32_MAX)));
+	auto bry = static_cast<int>(std::min((static_cast<int64_t>(metaY) + (1 << metaSizeLog)) << s, static_cast<int64_t>(INT32_MAX)));
+	auto q = SearchQuery(metaX << s, brx, metaY << s, bry, nullptr, &publisher);
 
 	q.zoom = zoom < MVT_TILE_INCREASE_DETAILS_BEFORE_DETAILED_ZOOM - 1 ? zoom + 1 : zoom;
 
