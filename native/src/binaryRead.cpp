@@ -3239,6 +3239,25 @@ static const tag_value* getSettlementPlaceTag(const std::vector<tag_value>& tags
 	return NULL;
 }
 
+static bool isLandMarkerTag(const tag_value& tag) {
+	if (tag.first == "waterway") {
+		return tag.second == "river" || tag.second == "stream";
+	}
+	if (tag.first == "natural") {
+		return tag.second == "peak" || tag.second == "volcano";
+	}
+	return false;
+}
+
+static const tag_value* getLandMarkerTag(const std::vector<tag_value>& tags) {
+	for (const auto& tag : tags) {
+		if (isLandMarkerTag(tag)) {
+			return &tag;
+		}
+	}
+	return NULL;
+}
+
 static bool getTileOverlap(SearchQuery* q, const MapDataObject* obj, int64_t& overlap, int64_t& tile) {
 	if (obj->points.empty()) {
 		return false;
@@ -3296,6 +3315,14 @@ static bool isLandCoverObject(SearchQuery* q, const MapDataObject* obj) {
 	}
 	if (placeTag != NULL) {
 		logLandCoverObject(q, obj, placeTag, 0, 0);
+		return true;
+	}
+	const tag_value* landMarkerTag = getLandMarkerTag(obj->types);
+	if (landMarkerTag == NULL) {
+		landMarkerTag = getLandMarkerTag(obj->additionalTypes);
+	}
+	if (landMarkerTag != NULL) {
+		logLandCoverObject(q, obj, landMarkerTag, 0, 0);
 		return true;
 	}
 	bool hasLandCoverTag = isLandCoverTags(obj->types, landCoverTag, hasSeamarkType);
@@ -3438,7 +3465,7 @@ ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, 
 		deleteObjects(coastLines);
 		// ocean=0.5 on /vector/3/1/5.mvt with https://www.openstreetmap.org/node/305640292 etc
 		logOceanTileStats(q, ocean, coastlinesWereAdded, hasLandCover, tempResult, basemapResult, extResult);
-		if (!coastlinesWereAdded && (ocean > 0.5 || (q->ocean > 0 && !hasLandCover))) {
+		if (!coastlinesWereAdded && ocean >= 0.25 && !hasLandCover) {
 			MapDataObject* o = new MapDataObject();
 			o->points.push_back(int_pair(q->left, q->top));
 			o->points.push_back(int_pair(q->right, q->top));
