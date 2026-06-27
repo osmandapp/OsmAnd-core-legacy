@@ -3203,12 +3203,13 @@ static bool isLandCoverTags(const std::vector<tag_value>& tags, bool& hasLanduse
 			tag.second != "coastline" && tag.second != "coastline_line" &&
 			tag.second != "coastline_broken" && tag.second != "land" &&
 			tag.second != "spring" && tag.second != "sand" &&
-			tag.second != "beach" && tag.second != "wetland") {
+			tag.second != "desert" && tag.second != "beach" &&
+			tag.second != "wetland" && tag.second != "strait") {
 			return true;
 		}
 		if (tag.first == "landuse" &&
 			tag.second != "water" && tag.second != "reservoir" && tag.second != "basin" &&
-			tag.second != "military") {
+			tag.second != "military" && tag.second != "residential") {
 			hasLanduse = true;
 		} else if (tag.first == "seamark:type") {
 			hasSeamarkType = true;
