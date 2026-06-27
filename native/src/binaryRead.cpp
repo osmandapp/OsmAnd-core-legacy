@@ -3038,7 +3038,7 @@ void readMapObjects(SearchQuery* q, BinaryMapFile* file) {
 	}
 }
 
-static bool isLandCoverObject(const MapDataObject* obj);
+static bool isLandCoverObject(SearchQuery* q, const MapDataObject* obj);
 
 void readMapObjectsForRendering(SearchQuery* q, std::vector<FoundMapDataObject>& basemapResult,
 								std::vector<FoundMapDataObject>& tempResult, std::vector<FoundMapDataObject>& extResult,
@@ -3128,7 +3128,7 @@ void readMapObjectsForRendering(SearchQuery* q, std::vector<FoundMapDataObject>&
 					}
 				} else {
 					// do not mess coastline and other types
-					if (!hasLandCover && isLandCoverObject(r->obj)) {
+					if (!hasLandCover && isLandCoverObject(q, r->obj)) {
 						hasLandCover = true;
 					}
 					if (basemap) {
@@ -3196,7 +3196,7 @@ void uniq(std::vector<FoundMapDataObject>& r, std::vector<FoundMapDataObject>& u
 	}
 }
 
-static bool isLandCoverTags(const std::vector<tag_value>& tags, bool& hasLanduse, bool& hasSeamarkType) {
+static bool isLandCoverTags(const std::vector<tag_value>& tags, const tag_value*& landCoverTag, bool& hasSeamarkType) {
 	for (const auto& tag : tags) {
 		if (tag.first == "natural" &&
 			tag.second != "water" && tag.second != "lake" && tag.second != "bay" &&
@@ -3204,13 +3204,15 @@ static bool isLandCoverTags(const std::vector<tag_value>& tags, bool& hasLanduse
 			tag.second != "coastline_broken" && tag.second != "land" &&
 			tag.second != "spring" && tag.second != "sand" &&
 			tag.second != "desert" && tag.second != "beach" &&
-			tag.second != "wetland" && tag.second != "strait") {
+			tag.second != "wetland" && tag.second != "strait" &&
+			tag.second != "glacier" && tag.second != "bare_rock") {
+			landCoverTag = &tag;
 			return true;
 		}
 		if (tag.first == "landuse" &&
 			tag.second != "water" && tag.second != "reservoir" && tag.second != "basin" &&
 			tag.second != "military" && tag.second != "residential") {
-			hasLanduse = true;
+			landCoverTag = &tag;
 		} else if (tag.first == "seamark:type") {
 			hasSeamarkType = true;
 		}
@@ -3218,17 +3220,68 @@ static bool isLandCoverTags(const std::vector<tag_value>& tags, bool& hasLanduse
 	return false;
 }
 
-static bool isLandCoverObject(const MapDataObject* obj) {
+static bool getTileOverlap(SearchQuery* q, const MapDataObject* obj, int64_t& overlap, int64_t& tile) {
+	if (obj->points.empty()) {
+		return false;
+	}
+	int minX = INT_MAXIMUM;
+	int maxX = -INT_MAXIMUM;
+	int minY = INT_MAXIMUM;
+	int maxY = -INT_MAXIMUM;
+	for (const auto& point : obj->points) {
+		minX = std::min(minX, point.first);
+		maxX = std::max(maxX, point.first);
+		minY = std::min(minY, point.second);
+		maxY = std::max(maxY, point.second);
+	}
+	const int left = std::max(minX, q->oceanLeft);
+	const int right = std::min(maxX, q->oceanRight);
+	const int top = std::max(minY, q->oceanTop);
+	const int bottom = std::min(maxY, q->oceanBottom);
+	if (left >= right || top >= bottom) {
+		return false;
+	}
+	overlap = (int64_t)(right - left) * (bottom - top);
+	tile = (int64_t)(q->oceanRight - q->oceanLeft) * (q->oceanBottom - q->oceanTop);
+	return tile > 0 && overlap >= tile / 2;
+}
+
+static void logLandCoverObject(SearchQuery* q, const MapDataObject* obj, const tag_value* tag, int64_t overlap, int64_t tile) {
+	int tileZoom = q->zoom;
+	const int tileWidth = q->oceanRight - q->oceanLeft;
+	if (tileWidth > 0 && (tileWidth & (tileWidth - 1)) == 0) {
+		int shift = 0;
+		for (int width = tileWidth; width > 1; width >>= 1) {
+			shift++;
+		}
+		tileZoom = 31 - shift;
+	}
+	const int tileShift = 31 - tileZoom;
+	const int tileX = tileShift >= 0 ? q->oceanLeft >> tileShift : 0;
+	const int tileY = tileShift >= 0 ? q->oceanTop >> tileShift : 0;
+	printf("XXX landCover z=%d x=%d y=%d tag=%s value=%s objId=%lld overlap=%lld tile=%lld overlapRatio=%f\n",
+		   tileZoom, tileX, tileY, tag->first.c_str(), tag->second.c_str(), (long long)obj->id,
+		   (long long)overlap, (long long)tile, tile > 0 ? ((double)overlap) / tile : 0);
+	fflush(stdout);
+}
+
+static bool isLandCoverObject(SearchQuery* q, const MapDataObject* obj) {
 	if (obj == NULL) {
 		return false;
 	}
-	bool hasLanduse = false;
+	const tag_value* landCoverTag = NULL;
 	bool hasSeamarkType = false;
-	if (isLandCoverTags(obj->types, hasLanduse, hasSeamarkType) ||
-		isLandCoverTags(obj->additionalTypes, hasLanduse, hasSeamarkType)) {
-		return true;
+	bool hasLandCoverTag = isLandCoverTags(obj->types, landCoverTag, hasSeamarkType);
+	hasLandCoverTag = isLandCoverTags(obj->additionalTypes, landCoverTag, hasSeamarkType) || hasLandCoverTag;
+	if (hasLandCoverTag || (landCoverTag != NULL && !hasSeamarkType)) {
+		int64_t overlap = 0;
+		int64_t tile = 0;
+		if (getTileOverlap(q, obj, overlap, tile)) {
+			logLandCoverObject(q, obj, landCoverTag, overlap, tile);
+			return true;
+		}
 	}
-	return hasLanduse && !hasSeamarkType;
+	return false;
 }
 
 static void logOceanTileStats(SearchQuery* q, float ocean, bool coastlinesWereAdded, bool hasLandCover,
@@ -3358,7 +3411,7 @@ ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, 
 		deleteObjects(coastLines);
 		// ocean=0.5 on /vector/3/1/5.mvt with https://www.openstreetmap.org/node/305640292 etc
 		logOceanTileStats(q, ocean, coastlinesWereAdded, hasLandCover, tempResult, basemapResult, extResult);
-		if (!coastlinesWereAdded && (ocean > 0.5 || (ocean >= 0.25 && !hasLandCover))) {
+		if (!coastlinesWereAdded && (ocean > 0.5 || (q->ocean > 0 && !hasLandCover))) {
 			MapDataObject* o = new MapDataObject();
 			o->points.push_back(int_pair(q->left, q->top));
 			o->points.push_back(int_pair(q->right, q->top));
