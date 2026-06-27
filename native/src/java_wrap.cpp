@@ -497,6 +497,7 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_net_osmand_NativeLibrary_getMapboxV
 	auto q = SearchQuery(x << s, brx, y << s, bry, nullptr, &publisher);
 
 	q.zoom = zoom < MVT_TILE_INCREASE_DETAILS_BEFORE_DETAILED_ZOOM - 1 ? zoom + 1 : zoom;
+	q.useTagBasedOceanDetection = true;
 
 	int renderedState = 0;
 

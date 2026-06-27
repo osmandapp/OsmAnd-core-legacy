@@ -1,7 +1,6 @@
 #include "generalRouter.h"
 
 #include <fcntl.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -20,6 +19,7 @@
 #endif
 
 #include "hhRouteDataStructure.h"
+#include "tagBasedOceanDetection.h"
 
 using namespace std;
 #define DO_(EXPRESSION) \
@@ -3038,16 +3038,11 @@ void readMapObjects(SearchQuery* q, BinaryMapFile* file) {
 	}
 }
 
-static bool isLandCoverObject(SearchQuery* q, const MapDataObject* obj);
-static float getLandSignalBlockThreshold(SearchQuery* q, const MapDataObject* obj);
-static bool isOceanContextObject(const MapDataObject* obj);
-
 void readMapObjectsForRendering(SearchQuery* q, std::vector<FoundMapDataObject>& basemapResult,
 								std::vector<FoundMapDataObject>& tempResult, std::vector<FoundMapDataObject>& extResult,
 								std::vector<FoundMapDataObject>& coastLines,
 								std::vector<FoundMapDataObject>& basemapCoastLines, int& count, bool& basemapExists,
-								int& renderedState, bool& hasLandCover, float& landSignalBlockThreshold,
-								int& landSignalCount, bool& hasOceanContext) {
+								int& renderedState, TagBasedOceanDetectionContext& tagBasedOceanContext) {
 	const auto openFilesSnapshot = getOpenFilesSnapshot();
 	auto i = openFilesSnapshot.begin();
 	for (; i != openFilesSnapshot.end() && !q->isCancelled(); i++) {
@@ -3131,20 +3126,7 @@ void readMapObjectsForRendering(SearchQuery* q, std::vector<FoundMapDataObject>&
 					}
 				} else {
 					// do not mess coastline and other types
-					if (!hasLandCover && isLandCoverObject(q, r->obj)) {
-						hasLandCover = true;
-					}
-					if (landSignalCount < 2) {
-						float objectLandSignalBlockThreshold = getLandSignalBlockThreshold(q, r->obj);
-						if (objectLandSignalBlockThreshold > 0) {
-							landSignalBlockThreshold =
-								std::max(landSignalBlockThreshold, objectLandSignalBlockThreshold);
-							landSignalCount++;
-						}
-					}
-					if (!hasOceanContext && isOceanContextObject(r->obj)) {
-						hasOceanContext = true;
-					}
+					collectTagBasedOceanDetectionData(q, r->obj, tagBasedOceanContext);
 					if (basemap) {
 						basemapResult.push_back(*r);
 					} else if (external) {
@@ -3210,187 +3192,6 @@ void uniq(std::vector<FoundMapDataObject>& r, std::vector<FoundMapDataObject>& u
 	}
 }
 
-static bool isLandCoverTags(const std::vector<tag_value>& tags, const tag_value*& landCoverTag, bool& hasSeamarkType) {
-	for (const auto& tag : tags) {
-		if (tag.first == "natural" &&
-			tag.second != "water" && tag.second != "lake" && tag.second != "bay" &&
-			tag.second != "coastline" && tag.second != "coastline_line" &&
-			tag.second != "coastline_broken" && tag.second != "land" &&
-			tag.second != "spring" && tag.second != "sand" &&
-			tag.second != "desert" && tag.second != "beach" &&
-			tag.second != "wetland" && tag.second != "strait" &&
-			tag.second != "glacier" && tag.second != "bare_rock" &&
-			tag.second != "ridge") {
-			landCoverTag = &tag;
-			return true;
-		}
-		if (tag.first == "landuse" &&
-			tag.second != "water" && tag.second != "reservoir" && tag.second != "basin" &&
-			tag.second != "military" && tag.second != "residential") {
-			landCoverTag = &tag;
-		} else if (tag.first == "seamark:type") {
-			hasSeamarkType = true;
-		}
-	}
-	return false;
-}
-
-static bool isSettlementPlace(const tag_value& tag) {
-	if (tag.first != "place") {
-		return false;
-	}
-	return tag.second == "city" || tag.second == "town" || tag.second == "village" || tag.second == "hamlet" ||
-		   tag.second == "suburb" || tag.second == "neighbourhood" || tag.second == "quarter" ||
-		   tag.second == "farm" || tag.second == "isolated_dwelling";
-}
-
-static float getLandSignalTagBlockThreshold(const tag_value& tag) {
-	if (isSettlementPlace(tag)) {
-		return 0.5f;
-	}
-	if (tag.first == "waterway") {
-		return (tag.second == "river" || tag.second == "stream") ? 0.75f : 0;
-	}
-	if (tag.first == "natural") {
-		return tag.second == "volcano" ? 0.75f : 0;
-	}
-	return 0;
-}
-
-static const tag_value* getLandSignalTag(const std::vector<tag_value>& tags, float& blockThreshold) {
-	const tag_value* landSignalTag = NULL;
-	for (const auto& tag : tags) {
-		float tagBlockThreshold = getLandSignalTagBlockThreshold(tag);
-		if (tagBlockThreshold > blockThreshold) {
-			blockThreshold = tagBlockThreshold;
-			landSignalTag = &tag;
-		}
-	}
-	return landSignalTag;
-}
-
-static bool getTileOverlap(SearchQuery* q, const MapDataObject* obj, int64_t& overlap, int64_t& tile) {
-	if (obj->points.empty()) {
-		return false;
-	}
-	int minX = INT_MAXIMUM;
-	int maxX = -INT_MAXIMUM;
-	int minY = INT_MAXIMUM;
-	int maxY = -INT_MAXIMUM;
-	for (const auto& point : obj->points) {
-		minX = std::min(minX, point.first);
-		maxX = std::max(maxX, point.first);
-		minY = std::min(minY, point.second);
-		maxY = std::max(maxY, point.second);
-	}
-	const int left = std::max(minX, q->oceanLeft);
-	const int right = std::min(maxX, q->oceanRight);
-	const int top = std::max(minY, q->oceanTop);
-	const int bottom = std::min(maxY, q->oceanBottom);
-	if (left >= right || top >= bottom) {
-		return false;
-	}
-	overlap = (int64_t)(right - left) * (bottom - top);
-	tile = (int64_t)(q->oceanRight - q->oceanLeft) * (q->oceanBottom - q->oceanTop);
-	return tile > 0 && overlap >= tile / 2;
-}
-
-static void logLandEvidenceObject(const char* evidence, SearchQuery* q, const MapDataObject* obj, const tag_value* tag,
-								  int64_t overlap, int64_t tile) {
-	int tileZoom = q->zoom;
-	const int tileWidth = q->oceanRight - q->oceanLeft;
-	if (tileWidth > 0 && (tileWidth & (tileWidth - 1)) == 0) {
-		int shift = 0;
-		for (int width = tileWidth; width > 1; width >>= 1) {
-			shift++;
-		}
-		tileZoom = 31 - shift;
-	}
-	const int tileShift = 31 - tileZoom;
-	const int tileX = tileShift >= 0 ? q->oceanLeft >> tileShift : 0;
-	const int tileY = tileShift >= 0 ? q->oceanTop >> tileShift : 0;
-	printf("XXX %s z=%d x=%d y=%d tag=%s value=%s objId=%lld overlap=%lld tile=%lld overlapRatio=%f\n",
-		   evidence, tileZoom, tileX, tileY, tag->first.c_str(), tag->second.c_str(), (long long)obj->id,
-		   (long long)overlap, (long long)tile, tile > 0 ? ((double)overlap) / tile : 0);
-	fflush(stdout);
-}
-
-static bool isLandCoverObject(SearchQuery* q, const MapDataObject* obj) {
-	if (obj == NULL) {
-		return false;
-	}
-	const tag_value* landCoverTag = NULL;
-	bool hasSeamarkType = false;
-	bool hasLandCoverTag = isLandCoverTags(obj->types, landCoverTag, hasSeamarkType);
-	hasLandCoverTag = isLandCoverTags(obj->additionalTypes, landCoverTag, hasSeamarkType) || hasLandCoverTag;
-	if (hasLandCoverTag || (landCoverTag != NULL && !hasSeamarkType)) {
-		int64_t overlap = 0;
-		int64_t tile = 0;
-		if (getTileOverlap(q, obj, overlap, tile)) {
-			logLandEvidenceObject("landCover", q, obj, landCoverTag, overlap, tile);
-			return true;
-		}
-	}
-	return false;
-}
-
-static float getLandSignalBlockThreshold(SearchQuery* q, const MapDataObject* obj) {
-	if (obj == NULL) {
-		return 0;
-	}
-	float blockThreshold = 0;
-	const tag_value* landSignalTag = getLandSignalTag(obj->types, blockThreshold);
-	const tag_value* additionalLandSignalTag = getLandSignalTag(obj->additionalTypes, blockThreshold);
-	landSignalTag = additionalLandSignalTag != NULL ? additionalLandSignalTag : landSignalTag;
-	if (landSignalTag != NULL) {
-		logLandEvidenceObject("landSignal", q, obj, landSignalTag, 0, 0);
-	}
-	return blockThreshold;
-}
-
-static bool isOceanContextTags(const std::vector<tag_value>& tags) {
-	for (const auto& tag : tags) {
-		if (tag.first == "natural" && tag.second == "bay") {
-			return true;
-		}
-	}
-	return false;
-}
-
-static bool isOceanContextObject(const MapDataObject* obj) {
-	return obj != NULL && (isOceanContextTags(obj->types) || isOceanContextTags(obj->additionalTypes));
-}
-
-static void logOceanTileStats(SearchQuery* q, float ocean, bool coastlinesWereAdded, bool hasLandCover,
-							  float landSignalBlockThreshold, int landSignalCount, bool hasOceanContext,
-							  bool landSignalBlocksOcean, bool enoughOceanEvidence,
-							  const std::vector<FoundMapDataObject>& tempResult,
-							  const std::vector<FoundMapDataObject>& basemapResult,
-							  const std::vector<FoundMapDataObject>& extResult) {
-	int tileZoom = q->zoom;
-	const int tileWidth = q->right - q->left;
-	if (tileWidth > 0 && (tileWidth & (tileWidth - 1)) == 0) {
-		int shift = 0;
-		for (int width = tileWidth; width > 1; width >>= 1) {
-			shift++;
-		}
-		tileZoom = 31 - shift;
-	}
-	const int tileShift = 31 - tileZoom;
-	const int tileX = tileShift >= 0 ? q->left >> tileShift : 0;
-	const int tileY = tileShift >= 0 ? q->top >> tileShift : 0;
-	printf("XXX ocean z=%d x=%d y=%d qZoom=%d ocean=%u oceanTiles=%u oceanRatio=%f "
-		   "coastlinesWereAdded=%d hasLandCover=%d hasLandSignal=%d landSignalBlockThreshold=%f "
-		   "landSignalCount=%d hasOceanContext=%d landSignalBlocksOcean=%d enoughOceanEvidence=%d "
-		   "tempResult=%zu basemapResult=%zu extResult=%zu "
-		   "left=%d right=%d top=%d bottom=%d\n",
-		   tileZoom, tileX, tileY, q->zoom, q->ocean, q->oceanTiles, ocean, coastlinesWereAdded, hasLandCover,
-		   landSignalBlockThreshold > 0, landSignalBlockThreshold, landSignalCount, hasOceanContext,
-		   landSignalBlocksOcean, enoughOceanEvidence,
-		   tempResult.size(), basemapResult.size(), extResult.size(), q->left, q->right, q->top, q->bottom);
-	fflush(stdout);
-}
-
 ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, std::string msgNothingFound,
 										   int& renderedState) {
 	int count = 0;
@@ -3402,13 +3203,9 @@ ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, 
 	std::vector<FoundMapDataObject> basemapCoastLines;
 
 	bool basemapExists = false;
-	bool hasLandCover = false;
-	float landSignalBlockThreshold = 0;
-	int landSignalCount = 0;
-	bool hasOceanContext = false;
+	TagBasedOceanDetectionContext tagBasedOceanContext;
 	readMapObjectsForRendering(q, basemapResult, tempResult, extResult, coastLines, basemapCoastLines, count,
-							   basemapExists, renderedState, hasLandCover, landSignalBlockThreshold, landSignalCount,
-							   hasOceanContext);
+							   basemapExists, renderedState, tagBasedOceanContext);
 
 	// bool objectsFromMapSectionRead = tempResult.size() > 0;
 	bool objectsFromRoutingSectionRead = false;
@@ -3497,14 +3294,11 @@ ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, 
 		deleteObjects(basemapCoastLines);
 		deleteObjects(coastLines);
 		// ocean=0.5 on /vector/3/1/5.mvt with https://www.openstreetmap.org/node/305640292 etc
-		bool strongLandSignal = landSignalBlockThreshold >= 0.75f;
-		bool landSignalBlocksOcean = landSignalBlockThreshold > 0 && ocean <= landSignalBlockThreshold &&
-									 (!strongLandSignal || landSignalCount > 1);
-		bool enoughOceanEvidence = ocean >= 0.25 || (q->ocean > 0 && hasOceanContext);
-		logOceanTileStats(q, ocean, coastlinesWereAdded, hasLandCover, landSignalBlockThreshold, landSignalCount,
-						  hasOceanContext, landSignalBlocksOcean, enoughOceanEvidence, tempResult, basemapResult,
-						  extResult);
-		if (!coastlinesWereAdded && enoughOceanEvidence && !hasLandCover && !landSignalBlocksOcean) {
+		bool addOceanObject = !coastlinesWereAdded && ocean >= 0.5;
+		if (q->useTagBasedOceanDetection) {
+			addOceanObject = shouldAddOceanObjectTagBased(q, ocean, coastlinesWereAdded, tagBasedOceanContext);
+		}
+		if (addOceanObject) {
 			MapDataObject* o = new MapDataObject();
 			o->points.push_back(int_pair(q->left, q->top));
 			o->points.push_back(int_pair(q->right, q->top));

@@ -1114,6 +1114,7 @@ struct SearchQuery {
 	coordinates cacheCoordinates;
 	uint ocean = 0;
 	uint oceanTiles = 0;
+	bool useTagBasedOceanDetection = false;
 
 	uint numberOfVisitedObjects = 0;
 	uint numberOfAcceptedObjects = 0;
