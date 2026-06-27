@@ -3220,6 +3220,24 @@ static bool isLandCoverTags(const std::vector<tag_value>& tags, const tag_value*
 	return false;
 }
 
+static bool isSettlementPlace(const tag_value& tag) {
+	if (tag.first != "place") {
+		return false;
+	}
+	return tag.second == "city" || tag.second == "town" || tag.second == "village" || tag.second == "hamlet" ||
+		   tag.second == "suburb" || tag.second == "neighbourhood" || tag.second == "quarter" ||
+		   tag.second == "farm" || tag.second == "isolated_dwelling";
+}
+
+static const tag_value* getSettlementPlaceTag(const std::vector<tag_value>& tags) {
+	for (const auto& tag : tags) {
+		if (isSettlementPlace(tag)) {
+			return &tag;
+		}
+	}
+	return NULL;
+}
+
 static bool getTileOverlap(SearchQuery* q, const MapDataObject* obj, int64_t& overlap, int64_t& tile) {
 	if (obj->points.empty()) {
 		return false;
@@ -3271,6 +3289,14 @@ static bool isLandCoverObject(SearchQuery* q, const MapDataObject* obj) {
 	}
 	const tag_value* landCoverTag = NULL;
 	bool hasSeamarkType = false;
+	const tag_value* placeTag = getSettlementPlaceTag(obj->types);
+	if (placeTag == NULL) {
+		placeTag = getSettlementPlaceTag(obj->additionalTypes);
+	}
+	if (placeTag != NULL) {
+		logLandCoverObject(q, obj, placeTag, 0, 0);
+		return true;
+	}
 	bool hasLandCoverTag = isLandCoverTags(obj->types, landCoverTag, hasSeamarkType);
 	hasLandCoverTag = isLandCoverTags(obj->additionalTypes, landCoverTag, hasSeamarkType) || hasLandCoverTag;
 	if (hasLandCoverTag || (landCoverTag != NULL && !hasSeamarkType)) {
