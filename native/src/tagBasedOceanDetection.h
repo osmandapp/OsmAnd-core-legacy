@@ -159,9 +159,8 @@ inline bool shouldAddOceanObjectTagBased(SearchQuery* q, float ocean, bool coast
 	if (q == NULL || !q->useTagBasedOceanDetection) {
 		return !coastlinesWereAdded && ocean >= 0.5;
 	}
-	bool strongLandSignal = context.landSignalBlockThreshold >= 0.75f;
 	bool landSignalBlocksOcean = context.landSignalBlockThreshold > 0 && ocean <= context.landSignalBlockThreshold &&
-								 (!strongLandSignal || context.landSignalCount > 1);
+								 context.landSignalCount > 1;
 	bool enoughOceanEvidence = ocean >= 0.25 || (q->ocean > 0 && context.hasOceanContext);
 	return !coastlinesWereAdded && enoughOceanEvidence && !context.hasLandCover && !landSignalBlocksOcean;
 }
