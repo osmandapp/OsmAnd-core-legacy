@@ -487,24 +487,64 @@ extern "C" JNIEXPORT jobject JNICALL Java_net_osmand_NativeLibrary_getGeotiffTil
 	return resultObject;
 }
 
+static SearchQuery createMvtSearchQuery(int zoom, int x, int y, int metaSizeLog, ResultPublisher* publisher) {
+	int s = 31 - zoom;
+	const int metaX = (x >> metaSizeLog) << metaSizeLog;
+	const int metaY = (y >> metaSizeLog) << metaSizeLog;
+	auto brx = static_cast<int>(
+		std::min((static_cast<int64_t>(metaX) + (1 << metaSizeLog)) << s, static_cast<int64_t>(INT32_MAX)));
+	auto bry = static_cast<int>(
+		std::min((static_cast<int64_t>(metaY) + (1 << metaSizeLog)) << s, static_cast<int64_t>(INT32_MAX)));
+	return SearchQuery(metaX << s, brx, metaY << s, bry, nullptr, publisher);
+}
+
+static bool isGeneratedMvtOceanBackground(const FoundMapDataObject& object) {
+	return object.obj != NULL && object.ind == NULL && object.obj->area &&
+		   (object.obj->contains("natural", "coastline") || object.obj->contains("natural", "land"));
+}
+
+static void removeGeneratedMvtOceanBackground(ResultPublisher* publisher) {
+	auto& result = publisher->result;
+	for (auto it = result.begin(); it != result.end();) {
+		if (isGeneratedMvtOceanBackground(*it)) {
+			delete it->obj;
+			it = result.erase(it);
+		} else {
+			++it;
+		}
+	}
+}
+
+static void transferGeneratedMvtOceanBackground(ResultPublisher* from, ResultPublisher* to) {
+	for (auto& object : from->result) {
+		if (isGeneratedMvtOceanBackground(object)) {
+			to->result.push_back(object);
+			object.obj = NULL;
+		}
+	}
+}
+
 extern "C" JNIEXPORT jbyteArray JNICALL Java_net_osmand_NativeLibrary_getMapboxVectorTileData(
 	JNIEnv* ienv, jobject obj, jint zoom, jint x, jint y) {
 
-	ResultPublisher publisher;
-	int s = 31 - zoom;
-	const int metaSizeLog = zoom <= 1 ? 0 : std::min(MVT_METATILE_SIZE_LOG, zoom - 1);
-	const int metaX = (x >> metaSizeLog) << metaSizeLog;
-	const int metaY = (y >> metaSizeLog) << metaSizeLog;
-	auto brx = static_cast<int>(std::min((static_cast<int64_t>(metaX) + (1 << metaSizeLog)) << s, static_cast<int64_t>(INT32_MAX)));
-	auto bry = static_cast<int>(std::min((static_cast<int64_t>(metaY) + (1 << metaSizeLog)) << s, static_cast<int64_t>(INT32_MAX)));
-	auto q = SearchQuery(metaX << s, brx, metaY << s, bry, nullptr, &publisher);
-
-	q.zoom = zoom < MVT_TILE_INCREASE_DETAILS_BEFORE_DETAILED_ZOOM - 1 ? zoom + 1 : zoom;
+	int queryZoom = zoom < MVT_TILE_INCREASE_DETAILS_BEFORE_DETAILED_ZOOM - 1 ? zoom + 1 : zoom;
+	int metaSizeLog = zoom <= 1 ? 0 : std::min(MVT_METATILE_SIZE_LOG, zoom - 1);
 
 	int renderedState = 0;
 
 	activateThreadSpecificFileDescriptors();
+	ResultPublisher oceanPublisher;
+	auto oceanQuery = createMvtSearchQuery(zoom, x, y, metaSizeLog, &oceanPublisher);
+	oceanQuery.zoom = queryZoom;
+	searchObjectsForRendering(&oceanQuery, true, "Nothing found", renderedState);
+
+	ResultPublisher publisher;
+	auto q = createMvtSearchQuery(zoom, x, y, 0, &publisher);
+	q.zoom = queryZoom;
+	renderedState = 0;
 	ResultPublisher* res = searchObjectsForRendering(&q, true, "Nothing found", renderedState);
+	removeGeneratedMvtOceanBackground(res);
+	transferGeneratedMvtOceanBackground(&oceanPublisher, res);
 	deactivateThreadSpecificFileDescriptors();
 
 	auto blob = buildMapboxVectorTile(res->result, x, y, zoom);
