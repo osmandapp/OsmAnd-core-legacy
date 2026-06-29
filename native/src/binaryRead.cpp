@@ -2637,8 +2637,8 @@ bool searchMapTreeBounds(CodedInputStream* input, MapTreeBounds* current, MapTre
 		}
 	}
 	if (oceanTag >= 0) {
-		if (current->right < (uint)req->oceanLeft || current->left > (uint)req->oceanRight ||
-			current->top > (uint)req->oceanBottom || current->bottom < (uint)req->oceanTop) {
+		if (current->right < (uint)req->oceanLeft || current->left >= (uint)req->oceanRight ||
+			current->top >= (uint)req->oceanBottom || current->bottom < (uint)req->oceanTop) {
 			// OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug,  "Ocean tile = %d %d %d zoom=12",
 			//		oceanTag, current->left >> 19, current->top >> 19);
 		} else {
