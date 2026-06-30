@@ -22,11 +22,6 @@ static const int MVT_TILE_EXTENT_SHIFT = 12;
 static const int MVT_TILE_WIDTH = 1 << MVT_TILE_EXTENT_SHIFT; // 4096
 static const int MVT_TILE_INCREASE_DETAILS_BEFORE_DETAILED_ZOOM = 9; // increase basemap details
 
-inline const std::string& getStrOsmandLayer() {
-	static const std::string strOsmandLayer = "osmand_layer";
-	return strOsmandLayer;
-}
-
 inline int scaleToTile(int coord, int tileStart, int shift) {
 	int delta = coord - tileStart;
 	if (shift == 0)
@@ -265,15 +260,15 @@ inline void addObjectDataToMapboxVectorTile(vtzero::feature_builder& feature,
 		feature.add_property(keyIdx(tag.first), valueIdx(tag.second));
 	for (const auto& tag : obj.additionalTypes)
 		feature.add_property(keyIdx(tag.first), valueIdx(tag.second));
-	feature.add_property(keyIdx(getStrOsmandLayer()), valueIdx(osmandLayer));
+	// feature.add_property(keyIdx("osmand_layer"), valueIdx(osmandLayer)); // flatten into single layer
 	for (const auto& name : obj.namesOrder)
 	{
 		const auto it = obj.objectNames.find(name);
 		if (it != obj.objectNames.end())
 			feature.add_property(keyIdx(name), valueIdx(it->second));
 	}
-	feature.add_property(keyIdx("labelX"), intValueIdx(center.first));
-	feature.add_property(keyIdx("labelY"), intValueIdx(center.second));
+	// feature.add_property(keyIdx("labelX"), intValueIdx(center.first)); // not supported by MVT renderer
+	// feature.add_property(keyIdx("labelY"), intValueIdx(center.second)); // replaced with hide_caption
 	feature.add_property(keyIdx("osm_id"), OsmAndObfConstants::getOsmIdFromBinaryMapObjectId(obj.id));
 	if (center.first < 0 || center.first >= MVT_TILE_WIDTH || center.second < 0 || center.second >= MVT_TILE_WIDTH)
 		feature.add_property(keyIdx("hide_caption"), valueIdx("yes")); // out-of-tile (later parsed by style)
