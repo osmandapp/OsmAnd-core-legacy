@@ -889,17 +889,17 @@ void FontRegistry::drawSkiaTextOnPath(SkCanvas *canvas, std::string textS, SkPat
 		x += font.measureText(symbol, sizeof(symbol), SkTextEncoding::kUTF8, nullptr, &paint);
 	} while (str_i < end);
 
-	SkPoint xy[measureX.size()];	
-	for (int i = 0; i < measureX.size(); ++i) {
-		xy[i].set(measureX[i], 0);
-	}
-
 	const char *text = textS.c_str();
 	const int length = strlen(text);	
 	unsigned int count = font.countText(text, length, SkTextEncoding::kUTF8);
 
-	if (count != measureX.size())
+	if (count == 0 || count != measureX.size())
 		return;
+
+	SkPoint xy[measureX.size()];
+	for (int i = 0; i < measureX.size(); ++i) {
+		xy[i].set(measureX[i], 0);
+	}
 
 	size_t size = count * (sizeof(SkRSXform) + sizeof(SkScalar));
 	SkAutoSMalloc<512> storage(size);
@@ -964,6 +964,10 @@ void FontRegistry::drawHbTextOnPath(SkCanvas *canvas, std::string textS, SkPath 
 		// fonts are not initialized
 		return;
 	}
+	SkPathMeasure meas(path, false);
+	if (path.countPoints() < 2 || meas.getLength() <= 0) {
+		return;
+	}
 	font.setTypeface(face->fSkiaTypeface);
 	const char *text = textS.c_str();
 
@@ -1001,10 +1005,6 @@ void FontRegistry::drawHbTextOnPath(SkCanvas *canvas, std::string textS, SkPath 
 	hb_buffer_destroy(hb_buffer);
 	hb_font_destroy(hb_font);
 
-	SkPathMeasure meas(path, false);
-	if (path.countPoints() < 2 || meas.getLength() <= 0) {
-		return;
-	}
 	// check correlation between harfbuzz and skia
 	if (xy[length - 1].x() > meas.getLength()) {
 		SkScalar correlation = meas.getLength() / xy[length - 1].x();
