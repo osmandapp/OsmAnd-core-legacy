@@ -910,6 +910,9 @@ void FontRegistry::drawSkiaTextOnPath(SkCanvas *canvas, std::string textS, SkPat
 	font.textToGlyphs(text, length, SkTextEncoding::kUTF8, glyphs.get(), count);
 	font.getWidths(glyphs.get(), count, widths);
 	SkPathMeasure meas(path, false);
+	if (path.countPoints() < 2 || meas.getLength() <= 0) {
+		return;
+	}
 
 	// set text to the middle of the path
 	float textLength = xy[count - 1].x() + widths[count - 1];
@@ -999,6 +1002,9 @@ void FontRegistry::drawHbTextOnPath(SkCanvas *canvas, std::string textS, SkPath 
 	hb_font_destroy(hb_font);
 
 	SkPathMeasure meas(path, false);
+	if (path.countPoints() < 2 || meas.getLength() <= 0) {
+		return;
+	}
 	// check correlation between harfbuzz and skia
 	if (xy[length - 1].x() > meas.getLength()) {
 		SkScalar correlation = meas.getLength() / xy[length - 1].x();
@@ -1042,12 +1048,17 @@ void FontRegistry::drawHbTextOnPath(SkCanvas *canvas, std::string textS, SkPath 
 			SkScalar s = start + xy[i].x();
 			SkScalar e = start + xy[i + 1].x() + widths[i + 1];
 			SkPath textPath;
-			meas.getSegment(s, e, &textPath, true);
+			if (!meas.getSegment(s, e, &textPath, true) || textPath.countPoints() == 0) {
+				return;
+			}
 			simplePath.lineTo(textPath.getPoint(0));
 			simplePath.lineTo(textPath.getPoint(textPath.countPoints() - 1));
 		}
 		SkPath allPath;
-		meas.getSegment(start, start + xy[length - 1].x() + widths[length - 1], &allPath, true);
+		if (!meas.getSegment(start, start + xy[length - 1].x() + widths[length - 1], &allPath, true) ||
+			allPath.countPoints() == 0) {
+			return;
+		}
 		simplePath.lineTo(allPath.getPoint(allPath.countPoints() - 1));
 	}
 
