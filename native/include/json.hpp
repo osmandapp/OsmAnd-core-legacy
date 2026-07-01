@@ -392,13 +392,23 @@ class JSON {
 				bool skip = true;
 				for (auto &p : *Internal.Map) {
 					if (!skip) s += ",\n";
-					s += (pad + "\"" + p.first + "\" : " + p.second.dump(depth + 1, tab));
+					s += pad;
+					s += "\"";
+					s += p.first;
+					s += "\" : ";
+                    printf("XXX Class::Object-1 (%d) (%s)\n", depth, p.first.c_str()); fflush(stdout);
+					s += p.second.dump(depth + 1, tab);
+                    printf("XXX Class::Object-2 (%d) (%s)\n", depth, p.first.c_str()); fflush(stdout);
 					skip = false;
 				}
-				s += ("\n" + pad.erase(0, 2) + "}");
+				s += "\n";
+				s += pad.erase(0, 2);
+				s += "}";
 				return s;
+				// return "null";
 			}
 			case Class::Array: {
+				printf("XXX Class::Array\n"); fflush(stdout);
 				string s = "[";
 				bool skip = true;
 				for (auto &p : *Internal.List) {
@@ -408,16 +418,28 @@ class JSON {
 				}
 				s += "]";
 				return s;
+				// return "null";
 			}
-			case Class::String:
-				return "\"" + json_escape(*Internal.String) + "\"";
+			case Class::String: {
+				printf("XXX Class::String\n"); fflush(stdout);
+				string s = "\"";
+				s += json_escape(*Internal.String);
+				s += "\"";
+				return s;
+				// return "null";
+			}
 			case Class::Floating:
+				// return "null";
 				return std::to_string(Internal.Float);
 			case Class::Integral:
+				// return "null";
 				return std::to_string(Internal.Int);
 			case Class::Boolean:
-				return Internal.Bool ? "true" : "false";
-			default:
+					// return "null";
+					printf("XXX Class::Bool-1\n"); fflush(stdout);
+					printf("XXX Class::Bool-2 (%s)\n", Internal.Bool ? "true" : "false"); fflush(stdout);
+					return Internal.Bool ? "true" : "false";
+				default:
 				return "";
 		}
 		return "";

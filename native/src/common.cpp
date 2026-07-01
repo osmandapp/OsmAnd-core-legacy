@@ -563,7 +563,11 @@ std::string RenderableObject::toJson() const {
 	j["shieldRes"] = shieldRes;
 	j["shieldResIcon"] = shieldResIcon;
 
-	return j.dump();
+	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "XXX before dump"); fflush(stdout); fflush(stderr);
+	std::string s = j.dump();
+	OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "XXX after dump"); fflush(stdout); fflush(stderr);
+	return s;
+	// return j.dump();
 }
 
 std::string splitAndClearRepeats(std::string str, std::string del) {
