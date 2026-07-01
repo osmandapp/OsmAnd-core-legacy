@@ -382,7 +382,18 @@ struct RenderableObject {
 	std::string shieldResIcon;
 
 	RenderableObject(MapDataObject* _obj)
-		: obj(_obj) {
+		: obj(_obj),
+		  iconOrder(0),
+		  iconSize(0),
+		  iconX(0),
+		  iconY(0),
+		  textSize(0),
+		  textOnPath(0),
+		  textColor(0),
+		  textShadow(0),
+		  textShadowColor(0),
+		  bold(false),
+		  italic(false) {
 	}
 
 	int64_t getId() const {
