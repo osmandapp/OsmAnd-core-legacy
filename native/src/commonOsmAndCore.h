@@ -364,25 +364,36 @@ struct RenderableObject {
 	std::string mainIcon;
 	std::vector<std::string> additionalIcons;
 	std::string shield;
-	int iconOrder = 0;
-	int iconSize = 0;
-	int iconX = 0;
-	int iconY = 0;
+	int iconOrder;
+	int iconSize;
+	int iconX;
+	int iconY;
 
 	// text
 	std::string text;
-	int textSize = 0;
-	int textOnPath = 0;
-	int textColor = 0;
-	int textShadow = 0;
-	int textShadowColor = 0;
-	bool bold = false;
-	bool italic = false;
+	int textSize;
+	int textOnPath;
+	int textColor;
+	int textShadow;
+	int textShadowColor;
+	bool bold;
+	bool italic;
 	std::string shieldRes;
 	std::string shieldResIcon;
 
 	RenderableObject(MapDataObject* _obj)
-		: obj(_obj) {
+		: obj(_obj),
+		  iconOrder(0),
+		  iconSize(0),
+		  iconX(0),
+		  iconY(0),
+		  textSize(0),
+		  textOnPath(0),
+		  textColor(0),
+		  textShadow(0),
+		  textShadowColor(0),
+		  bold(false),
+		  italic(false) {
 	}
 
 	int64_t getId() const {
