@@ -202,6 +202,7 @@ struct OpeningHoursParser {
 		bool isOpened(int year, int month, int dmonth) const;
 		bool matchesDayNth(int day, const tm& dateTime) const;
 		bool matchesPreviousDayNth(int previousDay, const tm& dateTime) const;
+		static int getLastDayOfMonth(const tm& dateTime);
 		static void appendNthString(std::stringstream& builder, int mask);
 		static bool appendNthValue(std::stringstream& builder, int mask, int nth, bool first);
 		

@@ -1025,18 +1025,22 @@ bool OpeningHoursParser::BasicOpeningHourRule::matchesDayNth(int day, const tm& 
 	int mask = _dayNth[day];
 	int dayOfMonth = dateTime.tm_mday;
 	int nthFromStart = (dayOfMonth - 1) / DAYS_IN_WEEK + 1;
-
-	tm cal = dateTime;
-	cal.tm_mday = 1;
-	cal.tm_mon += 1;
-	cal.tm_hour = 12;
-	cal.tm_min = 0;
-	cal.tm_sec = 0;
-	std::mktime(&cal);
-	cal.tm_mday -= 1;
-	std::mktime(&cal);
-	int nthFromEnd = (cal.tm_mday - dayOfMonth) / DAYS_IN_WEEK + 1;
+	int nthFromEnd = (getLastDayOfMonth(dateTime) - dayOfMonth) / DAYS_IN_WEEK + 1;
 	return hasNthWeekday(mask, nthFromStart) || hasNthWeekday(mask, -nthFromEnd);
+}
+
+int OpeningHoursParser::BasicOpeningHourRule::getLastDayOfMonth(const tm& dateTime) {
+	tm nextMonth = dateTime;
+	nextMonth.tm_mday = 1;
+	nextMonth.tm_mon += 1;
+	nextMonth.tm_hour = 12;
+	nextMonth.tm_min = 0;
+	nextMonth.tm_sec = 0;
+	nextMonth.tm_isdst = -1;
+	std::mktime(&nextMonth);
+	nextMonth.tm_mday -= 1;
+	std::mktime(&nextMonth);
+	return nextMonth.tm_mday;
 }
 
 bool OpeningHoursParser::BasicOpeningHourRule::matchesPreviousDayNth(int previousDay, const tm& dateTime) const {
