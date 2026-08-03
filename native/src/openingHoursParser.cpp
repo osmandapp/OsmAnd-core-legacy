@@ -10,6 +10,12 @@
 static const int LOW_TIME_LIMIT = 120;
 static const int WITHOUT_TIME_LIMIT = -1;
 static const int CURRENT_DAY_TIME_LIMIT = -2;
+static const int NO_TIME_MINUTES = -1;
+static const int NO_NTH_WEEKDAY = 0;
+static const int FIRST_NTH_WEEKDAY = 1;
+static const int LAST_NTH_WEEKDAY = 5;
+static const int DAYS_IN_WEEK = 7;
+static const int NTH_WEEKDAY_FROM_END_OFFSET = LAST_NTH_WEEKDAY;
 
 static StringsHolder stringsHolder;
 
@@ -221,6 +227,7 @@ OpeningHoursParser::BasicOpeningHourRule::~BasicOpeningHourRule() {
 void OpeningHoursParser::BasicOpeningHourRule::init() {
 	_hasDays = false;
 	for (int i = 0; i < 7; i++) _days.push_back(false);
+	for (int i = 0; i < 7; i++) _dayNth.push_back(NO_NTH_WEEKDAY);
 
 	for (int i = 0; i < 12; i++) _months.push_back(false);
 
@@ -327,6 +334,10 @@ bool OpeningHoursParser::BasicOpeningHourRule::appliesToSchoolHolidays() const {
 
 bool OpeningHoursParser::BasicOpeningHourRule::appliesOff() const {
 	return _off;
+}
+
+void OpeningHoursParser::BasicOpeningHourRule::setDayNthMask(int day, int mask) {
+	_dayNth[day] = mask;
 }
 
 std::string OpeningHoursParser::BasicOpeningHourRule::getComment() const {
@@ -490,15 +501,15 @@ bool OpeningHoursParser::BasicOpeningHourRule::isOpenedForTime(const tm& dateTim
 		int endTime = _endTimes[i];
 		if (startTime < endTime || endTime == -1) {
 			// one day working like 10:00-20:00 (not 20:00-04:00)
-			if (_days[d] && !checkPrevious) {
+			if (_days[d] && matchesDayNth(d, dateTime) && !checkPrevious) {
 				if (time >= startTime && (endTime == -1 || time <= endTime)) return !_off;
 			}
 		} else {
 			// opening_hours includes day wrap like
 			// "We 20:00-03:00" or "We 07:00-07:00"
-			if (time >= startTime && _days[d] && !checkPrevious) {
+			if (time >= startTime && _days[d] && matchesDayNth(d, dateTime) && !checkPrevious) {
 				return !_off;
-			} else if (time < endTime && _days[p] && checkPrevious) {
+			} else if (time < endTime && _days[p] && matchesPreviousDayNth(p, dateTime) && checkPrevious) {
 				// check in previous day
 				return !_off;
 			}
@@ -736,7 +747,11 @@ std::string OpeningHoursParser::BasicOpeningHourRule::toRuleString(bool useLocal
 
 std::string OpeningHoursParser::BasicOpeningHourRule::getTime(const tm& dateTime, bool checkAnotherDay, int limit,
 															  bool opening) const {
-	std::stringstream sb;
+	return formatResult(getTimeMinutes(dateTime, checkAnotherDay, limit, opening));
+}
+
+int OpeningHoursParser::BasicOpeningHourRule::getTimeMinutes(const tm& dateTime, bool checkAnotherDay, int limit,
+															 bool opening) const {
 	int d = getCurrentDay(dateTime);
 	int ad = opening ? getNextDay(d) : getPreviousDay(d);
 	int time = getCurrentTimeInMinutes(dateTime);
@@ -747,10 +762,10 @@ std::string OpeningHoursParser::BasicOpeningHourRule::getTime(const tm& dateTime
 			if (startTime < endTime || endTime == -1) {
 				if (_days[d] && !checkAnotherDay) {
 					int diff = startTime - time;
-					if (limit == WITHOUT_TIME_LIMIT ||
+					// For "off" rules skip time ranges that are already over.
+					if ((limit == WITHOUT_TIME_LIMIT && (!_off || diff >= 0)) ||
 						(time <= startTime && (diff <= limit || limit == CURRENT_DAY_TIME_LIMIT))) {
-						formatTime(startTime, sb);
-						break;
+						return startTime;
 					}
 				}
 			} else {
@@ -760,9 +775,10 @@ std::string OpeningHoursParser::BasicOpeningHourRule::getTime(const tm& dateTime
 				else if (time > endTime && _days[ad] && checkAnotherDay)
 					diff = 24 * 60 - endTime + time;
 
-				if (limit == WITHOUT_TIME_LIMIT || ((diff != -1 && diff <= limit) || limit == CURRENT_DAY_TIME_LIMIT)) {
-					formatTime(startTime, sb);
-					break;
+				// Don't accept the time if the day checks above didn't match (diff == -1),
+				// otherwise a "Mo-Th 09:00-00:30" rule reports Friday night as opening at 09:00.
+				if (limit == WITHOUT_TIME_LIMIT || (diff != -1 && (diff <= limit || limit == CURRENT_DAY_TIME_LIMIT))) {
+					return startTime;
 				}
 			}
 		} else {
@@ -770,28 +786,66 @@ std::string OpeningHoursParser::BasicOpeningHourRule::getTime(const tm& dateTime
 				if (_days[d] && !checkAnotherDay) {
 					int diff = endTime - time;
 					if ((limit == WITHOUT_TIME_LIMIT && diff >= 0) || (time <= endTime && diff <= limit)) {
-						formatTime(endTime, sb);
-						break;
+						return endTime;
 					}
 				}
 			} else {
 				int diff = -1;
-				if (time <= endTime && _days[d] && !checkAnotherDay)
+				if ((time >= startTime || time <= endTime) && _days[d] && !checkAnotherDay) {
+					// Still inside an overnight session of the current day: the closing
+					// time is "endTime" on the next calendar day, so during the evening
+					// part (time >= startTime) the minutes-to-close must cross midnight.
 					diff = 24 * 60 - time + endTime;
-				else if (time < endTime && _days[ad] && checkAnotherDay)
+				} else if (time < endTime && _days[ad] && checkAnotherDay) {
 					diff = endTime - time;
+				}
 
 				if (limit == WITHOUT_TIME_LIMIT || (diff != -1 && diff <= limit)) {
-					formatTime(endTime, sb);
-					break;
+					return endTime;
 				}
 			}
 		}
 	}
+	return NO_TIME_MINUTES;
+}
+
+std::string OpeningHoursParser::BasicOpeningHourRule::formatResult(int timeMinutes) const {
+	if (timeMinutes == NO_TIME_MINUTES) return "";
+	std::stringstream sb;
+	formatTime(timeMinutes, sb);
 	std::string res = sb.str();
 	if (res.length() > 0 && !_comment.empty()) res = res + " - " + _comment;
 
 	return res;
+}
+
+bool OpeningHoursParser::BasicOpeningHourRule::containsTime(int timeMinutes) const {
+	// Check if the time "timeMinutes" (in minutes of the day) is within the time ranges of this rule.
+	for (int i = 0; i < _startTimes.size(); i++) {
+		int startTime = _startTimes[i];
+		int endTime = _endTimes[i];
+		if (endTime == -1 || startTime >= endTime) {
+			if (timeMinutes >= startTime || (endTime != -1 && timeMinutes < endTime)) return true;
+		} else if (timeMinutes >= startTime && timeMinutes < endTime) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool OpeningHoursParser::BasicOpeningHourRule::appliesToDay(const tm& dateTime) const {
+	// Check if the rule applies to the calendar day of "dateTime", including rules defined
+	// by day-month or year ranges which don't set weekdays.
+	if (!containsMonth(dateTime)) return false;
+	int month = dateTime.tm_mon;
+	int dmonth = dateTime.tm_mday - 1;
+	bool thisDay = true;
+	if (hasYears()) {
+		thisDay = isOpened(dateTime.tm_year + 1900, month, dmonth);
+	} else if (hasDayMonths()) {
+		thisDay = _dayMonths[month][dmonth];
+	}
+	return thisDay && (!_hasDays || (containsDay(dateTime) && matchesDayNth(getCurrentDay(dateTime), dateTime)));
 }
 
 std::string OpeningHoursParser::BasicOpeningHourRule::toRuleString() const {
@@ -828,7 +882,8 @@ void OpeningHoursParser::BasicOpeningHourRule::appendDaysString(std::stringstrea
 	bool first = true;
 	for (int i = 0; i < 7; i++) {
 		if (_days[i]) {
-			if (i > 0 && _days[i - 1] && i < 6 && _days[i + 1]) {
+			if (_dayNth[i] == NO_NTH_WEEKDAY && i > 0 && _days[i - 1] && _dayNth[i - 1] == NO_NTH_WEEKDAY &&
+				i < 6 && _days[i + 1] && _dayNth[i + 1] == NO_NTH_WEEKDAY) {
 				if (!dash) {
 					dash = true;
 					builder << "-";
@@ -841,6 +896,9 @@ void OpeningHoursParser::BasicOpeningHourRule::appendDaysString(std::stringstrea
 				builder << ", ";
 
 			builder << daysNames[getDayIndex(i)];
+			if (_dayNth[i] != NO_NTH_WEEKDAY) {
+				appendNthString(builder, _dayNth[i]);
+			}
 			dash = false;
 		}
 	}
@@ -863,6 +921,26 @@ void OpeningHoursParser::BasicOpeningHourRule::appendDaysString(std::stringstrea
 		first = false;
 	}
 	if (!first) builder << " ";
+}
+
+void OpeningHoursParser::BasicOpeningHourRule::appendNthString(std::stringstream& builder, int mask) {
+	builder << "[";
+	bool first = true;
+	for (int nth = FIRST_NTH_WEEKDAY; nth <= LAST_NTH_WEEKDAY; nth++) {
+		first = appendNthValue(builder, mask, nth, first);
+	}
+	for (int nth = -FIRST_NTH_WEEKDAY; nth >= -LAST_NTH_WEEKDAY; nth--) {
+		first = appendNthValue(builder, mask, nth, first);
+	}
+	builder << "]";
+}
+
+bool OpeningHoursParser::BasicOpeningHourRule::appendNthValue(std::stringstream& builder, int mask, int nth,
+															  bool first) {
+	if (!hasNthWeekday(mask, nth)) return first;
+	if (!first) builder << ",";
+	builder << nth;
+	return false;
 }
 
 void OpeningHoursParser::BasicOpeningHourRule::addTimeRange(int startTime, int endTime) {
@@ -897,7 +975,7 @@ int OpeningHoursParser::BasicOpeningHourRule::calculate(const tm& dateTime) cons
 		}
 	}
 	if (thisDay && _hasDays) {
-		thisDay = _days[day];
+		thisDay = _days[day] && matchesDayNth(day, dateTime);
 	}
 	// potential error for Dec 31 12:00-01:00
 	bool previousDay = true; //_hasDays || hasDayMonths() || hasFullYears();
@@ -911,7 +989,7 @@ int OpeningHoursParser::BasicOpeningHourRule::calculate(const tm& dateTime) cons
 		}
 	}
 	if (previousDay && _hasDays) {
-		previousDay = _days[previous];
+		previousDay = _days[previous] && matchesPreviousDayNth(previous, dateTime);
 	}
 	if (!thisDay && !previousDay) return 0;
 
@@ -939,6 +1017,34 @@ int OpeningHoursParser::BasicOpeningHourRule::calculate(const tm& dateTime) cons
 		return -1;
 
 	return 0;
+}
+
+bool OpeningHoursParser::BasicOpeningHourRule::matchesDayNth(int day, const tm& dateTime) const {
+	// Check if the day of "dateTime" matches the nth weekday restriction of "day" (like "Su[1]"), if any.
+	if (_dayNth[day] == NO_NTH_WEEKDAY) return true;
+	int mask = _dayNth[day];
+	int dayOfMonth = dateTime.tm_mday;
+	int nthFromStart = (dayOfMonth - 1) / DAYS_IN_WEEK + 1;
+
+	tm cal = dateTime;
+	cal.tm_mday = 1;
+	cal.tm_mon += 1;
+	cal.tm_hour = 12;
+	cal.tm_min = 0;
+	cal.tm_sec = 0;
+	std::mktime(&cal);
+	cal.tm_mday -= 1;
+	std::mktime(&cal);
+	int nthFromEnd = (cal.tm_mday - dayOfMonth) / DAYS_IN_WEEK + 1;
+	return hasNthWeekday(mask, nthFromStart) || hasNthWeekday(mask, -nthFromEnd);
+}
+
+bool OpeningHoursParser::BasicOpeningHourRule::matchesPreviousDayNth(int previousDay, const tm& dateTime) const {
+	if (_dayNth[previousDay] == NO_NTH_WEEKDAY) return true;
+	tm previousDateTime = dateTime;
+	previousDateTime.tm_mday -= 1;
+	std::mktime(&previousDateTime);
+	return matchesDayNth(previousDay, previousDateTime);
 }
 
 bool OpeningHoursParser::BasicOpeningHourRule::isOpened(int year, int month, int dmonth) const {
@@ -1346,7 +1452,7 @@ std::string OpeningHoursParser::OpeningHours::getOpeningTomorrow(const tm& dateT
 	std::shared_ptr<OpeningHoursRule> openingRule = nullptr;
 	const auto& rules = getRules(sequenceIndex);
 	for (const auto& r : rules) {
-		if (r->contains(cal)) {
+		if (!isTimeRestrictedOffRule(r) && r->contains(cal)) {
 			std::string time = r->getTime(cal, false, WITHOUT_TIME_LIMIT, true);
 			if (time.empty() || openingCalTime == 0 || difftime(calTime, openingCalTime) < 0 
 				|| r->hasOverlapTimes(cal, openingRule, false)) {
@@ -1371,7 +1477,7 @@ std::string OpeningHoursParser::OpeningHours::getOpeningDay(const tm& dateTime, 
 		time_t openingCalTime = 0;
 		std::shared_ptr<OpeningHoursRule> openingRule = nullptr;
 		for (const auto& r : rules) {
-			if (r->contains(cal)) {
+			if (!isTimeRestrictedOffRule(r) && r->contains(cal)) {
 				std::string time = r->getTime(cal, false, WITHOUT_TIME_LIMIT, true);
 				if (time.empty() || openingCalTime == 0 || difftime(calTime, openingCalTime) < 0
 					|| r->hasOverlapTimes(cal, openingRule, false)) {
@@ -1394,28 +1500,78 @@ std::string OpeningHoursParser::OpeningHours::getOpeningDay(const tm& dateTime, 
 
 std::string OpeningHoursParser::OpeningHours::getTime(const tm& dateTime, int limit, bool opening,
 													  int sequenceIndex) const {
+	if (!opening) {
+		// An overnight session of the previous day which is still open ends before
+		// anything the rules of the current day contribute (like "Fr 09:00-16:30"
+		// while a "Mo-Th 09:00-00:30" session is running at Friday 00:15).
+		std::string spillOverClosing = getSpillOverClosing(dateTime, limit, sequenceIndex);
+		if (!spillOverClosing.empty()) return spillOverClosing;
+	}
 	std::string time = getTimeDay(dateTime, limit, opening, sequenceIndex);
 	if (time.empty()) time = getTimeAnotherDay(dateTime, limit, opening, sequenceIndex);
 
 	return time;
 }
 
+std::string OpeningHoursParser::OpeningHours::getSpillOverClosing(const tm& dateTime, int limit, int sequenceIndex) const {
+	const auto& rules = getRules(sequenceIndex);
+	for (const auto& r : rules) {
+		if (r->containsPreviousDay(dateTime) && r->containsMonth(dateTime) && r->isOpenedForTime(dateTime, true)) {
+			return r->getTime(dateTime, true, limit, false);
+		}
+	}
+	return "";
+}
+
 std::string OpeningHoursParser::OpeningHours::getTimeDay(const tm& dateTime, int limit, bool opening,
 														 int sequenceIndex) const {
 	std::string atTime = "";
+	int atTimeMinutes = NO_TIME_MINUTES;
 	const auto& rules = getRules(sequenceIndex);
 	std::shared_ptr<OpeningHoursRule> prevRule = nullptr;
 	for (const auto& r : rules) {
-		if (r->containsDay(dateTime) && r->containsMonth(dateTime)) {
+		if (appliesToDay(r, dateTime)) {
 			if (atTime.length() > 0 && prevRule && !r->hasOverlapTimes(dateTime, prevRule, true))
 				return atTime;
-			else
+			if (isTimeRestrictedOffRule(r) && atTimeMinutes >= 0) {
+				const auto& offRule = std::static_pointer_cast<BasicOpeningHourRule>(r);
+				int offTimeMinutes = offRule->getTimeMinutes(dateTime, false, limit, opening);
+				int currentTimeMinutes = dateTime.tm_hour * 60 + dateTime.tm_min;
+				if (opening) {
+					if (offRule->containsTime(atTimeMinutes)) {
+						// The opening time found before is turned off, it moves to the end of the "off" range.
+						atTimeMinutes = offTimeMinutes;
+						atTime = offRule->formatResult(offTimeMinutes);
+					}
+				} else if (offTimeMinutes >= currentTimeMinutes && offTimeMinutes < atTimeMinutes) {
+					// The "off" range starts before the closing time found before, so it closes earlier.
+					atTimeMinutes = offTimeMinutes;
+					atTime = offRule->formatResult(offTimeMinutes);
+				}
+			} else if (const auto& basicRule = std::dynamic_pointer_cast<BasicOpeningHourRule>(r)) {
+				atTimeMinutes = basicRule->getTimeMinutes(dateTime, false, limit, opening);
+				atTime = basicRule->formatResult(atTimeMinutes);
+			} else {
 				atTime = r->getTime(dateTime, false, limit, opening);
+				atTimeMinutes = NO_TIME_MINUTES;
+			}
+			prevRule = r;
 		}
-
-		prevRule = r;
 	}
 	return atTime;
+}
+
+bool OpeningHoursParser::OpeningHours::appliesToDay(const std::shared_ptr<OpeningHoursRule>& rule,
+													const tm& dateTime) const {
+	if (const auto& basicRule = std::dynamic_pointer_cast<BasicOpeningHourRule>(rule)) {
+		return basicRule->appliesToDay(dateTime);
+	}
+	return rule->containsDay(dateTime) && rule->containsMonth(dateTime);
+}
+
+bool OpeningHoursParser::OpeningHours::isTimeRestrictedOffRule(const std::shared_ptr<OpeningHoursRule>& rule) const {
+	const auto& basicRule = std::dynamic_pointer_cast<BasicOpeningHourRule>(rule);
+	return basicRule && basicRule->appliesOff() && basicRule->timesSize() > 0;
 }
 
 std::string OpeningHoursParser::OpeningHours::getTimeAnotherDay(const tm& dateTime, int limit, bool opening,
@@ -1490,7 +1646,7 @@ std::string OpeningHoursParser::OpeningHours::getOriginal() const {
 	return _original;
 }
 
-OpeningHoursParser::Token::Token(TokenType tokenType, const std::string& string) : mainNumber(-1) {
+OpeningHoursParser::Token::Token(TokenType tokenType, const std::string& string) : mainNumber(-1), nthMask(0) {
 	type = tokenType;
 	text = string;
 	char* p;
@@ -1498,7 +1654,7 @@ OpeningHoursParser::Token::Token(TokenType tokenType, const std::string& string)
 	if (!*p) mainNumber = val;
 }
 
-OpeningHoursParser::Token::Token(TokenType tokenType, int mainNumber_) : mainNumber(mainNumber_) {
+OpeningHoursParser::Token::Token(TokenType tokenType, int mainNumber_) : mainNumber(mainNumber_), nthMask(0) {
 	type = tokenType;
 	text = ohp_to_string(mainNumber);
 }
@@ -1540,6 +1696,56 @@ void OpeningHoursParser::findInArray(std::shared_ptr<Token>& t, const std::vecto
 			break;
 		}
 	}
+}
+
+void OpeningHoursParser::findNthWeekday(std::shared_ptr<Token>& t, const std::vector<std::string>& daysStr) {
+	// Recognize nth weekday tokens like "su[1]", "su[-1]" or "su[1,3]".
+	size_t bracket = t->text.find('[');
+	if (bracket == std::string::npos || bracket == 0 || t->text.back() != ']') return;
+	std::string day = t->text.substr(0, bracket);
+	for (int i = 0; i < (int)daysStr.size(); i++) {
+		if (daysStr[i] == day) {
+			int mask = parseNthMask(t->text.substr(bracket + 1, t->text.length() - bracket - 2));
+			if (mask != NO_NTH_WEEKDAY) {
+				t->type = TokenType::TOKEN_DAY_WEEK;
+				t->mainNumber = i;
+				t->nthMask = mask;
+			}
+			return;
+		}
+	}
+}
+
+int OpeningHoursParser::parseNthMask(const std::string& list) {
+	// Parse an nth weekday list like "1", "-1" or "1,3" into a bit mask:
+	// positive values count from the month start, negative values count from the month end.
+	int mask = NO_NTH_WEEKDAY;
+	const auto& parts = ohp_split_string(list, ",");
+	for (const auto& part : parts) {
+		std::string trimmed = ohp_trim(part);
+		char* p;
+		int n = (int)strtol(trimmed.c_str(), &p, 10);
+		if (*p) return NO_NTH_WEEKDAY;
+		int nthMask = getNthWeekdayMask(n);
+		if (nthMask == NO_NTH_WEEKDAY) return NO_NTH_WEEKDAY;
+		mask |= nthMask;
+	}
+	return mask;
+}
+
+bool OpeningHoursParser::hasNthWeekday(int mask, int nth) {
+	int nthMask = getNthWeekdayMask(nth);
+	return nthMask != NO_NTH_WEEKDAY && (mask & nthMask) != 0;
+}
+
+int OpeningHoursParser::getNthWeekdayMask(int nth) {
+	if (nth >= FIRST_NTH_WEEKDAY && nth <= LAST_NTH_WEEKDAY) {
+		return 1 << (nth - FIRST_NTH_WEEKDAY);
+	}
+	if (nth <= -FIRST_NTH_WEEKDAY && nth >= -LAST_NTH_WEEKDAY) {
+		return 1 << (NTH_WEEKDAY_FROM_END_OFFSET + (-nth - FIRST_NTH_WEEKDAY));
+	}
+	return NO_NTH_WEEKDAY;
 }
 
 std::vector<std::vector<std::string>> OpeningHoursParser::splitSequences(const std::string& format) {
@@ -1617,17 +1823,26 @@ void OpeningHoursParser::parseRuleV2(const std::string& rl, int sequenceIndex,
 	int startWord = 0;
 	std::stringstream commentStr;
 	bool comment = false;
+	bool bracket = false;
 	for (int i = 0; i <= localRuleString.length(); i++) {
 		unsigned char ch = i == localRuleString.length() ? ' ' : localRuleString[i];
+		if (i == localRuleString.length()) {
+			bracket = false;
+		}
 		bool delimiter = false;
 		std::shared_ptr<Token> del = nullptr;
-		if (std::isspace(ch)) {
-			delimiter = true;
+		if (ch == '[' && !comment) {
+			// Keep nth weekday brackets like "Su[1]" or "Su[-1]" together as one token.
+			bracket = true;
+		} else if (ch == ']' && !comment) {
+			bracket = false;
+		} else if (std::isspace(ch)) {
+			delimiter = !bracket;
 		} else if (ch == ':') {
 			del = std::make_shared<Token>(TokenType::TOKEN_COLON, ":");
-		} else if (ch == '-') {
+		} else if (ch == '-' && !bracket) {
 			del = std::make_shared<Token>(TokenType::TOKEN_DASH, "-");
-		} else if (ch == ',') {
+		} else if (ch == ',' && !bracket) {
 			del = std::make_shared<Token>(TokenType::TOKEN_COMMA, ",");
 		} else if (ch == '"') {
 			if (comment) {
@@ -1656,6 +1871,8 @@ void OpeningHoursParser::parseRuleV2(const std::string& rl, int sequenceIndex,
 	// recognize day of week
 	for (auto& t : tokens) {
 		if (t->type == TokenType::TOKEN_UNKNOWN) findInArray(t, daysStr, TokenType::TOKEN_DAY_WEEK);
+
+		if (t->type == TokenType::TOKEN_UNKNOWN) findNthWeekday(t, daysStr);
 
 		if (t->type == TokenType::TOKEN_UNKNOWN) findInArray(t, monthsStr, TokenType::TOKEN_MONTH);
 
@@ -1741,6 +1958,16 @@ void OpeningHoursParser::buildRule(std::shared_ptr<BasicOpeningHourRule>& basic,
 																					: &basic->getDays();
 				for (auto pair : listOfPairs) {
 					if (pair->at(0) && pair->at(1)) {
+						std::shared_ptr<Token> holidayToken =
+							pair->at(0)->type == TokenType::TOKEN_HOLIDAY ? pair->at(0) :
+							pair->at(1)->type == TokenType::TOKEN_HOLIDAY ? pair->at(1) : nullptr;
+						if (holidayToken &&
+							(pair->at(0)->type == TokenType::TOKEN_DAY_WEEK || pair->at(1)->type == TokenType::TOKEN_DAY_WEEK)) {
+							// "PH Su" means "public holidays falling on Sunday", so the weekday only
+							// restricts the holiday and must not fill the weekday range Mo-Su (#23990).
+							setHolidayFlag(basic, holidayToken->mainNumber);
+							continue;
+						}
 
 						auto& firstMonthToken = !pair->at(0)->parent && pair->at(0)->type == TokenType::TOKEN_MONTH 
 						                        ? pair->at(0) : pair->at(0)->parent;
@@ -1819,12 +2046,7 @@ void OpeningHoursParser::buildRule(std::shared_ptr<BasicOpeningHourRule>& basic,
 						}
 					} else if (pair->at(0)) {
 						if (pair->at(0)->type == TokenType::TOKEN_HOLIDAY) {
-							if (pair->at(0)->mainNumber == 0)
-								basic->setPublicHolidays(true);
-							else if (pair->at(0)->mainNumber == 1)
-								basic->setSchoolHolidays(true);
-							else if (pair->at(0)->mainNumber == 2)
-								basic->setEaster(true);
+							setHolidayFlag(basic, pair->at(0)->mainNumber);
 						} else if (pair->at(0)->mainNumber >= 0) {
 							auto& firstMonthToken = pair->at(0)->parent;
 							if (tokenDayMonth && firstMonthToken)
@@ -1832,6 +2054,10 @@ void OpeningHoursParser::buildRule(std::shared_ptr<BasicOpeningHourRule>& basic,
 
 							if (array != NULL) {
 								array->at(pair->at(0)->mainNumber) = true;
+								if (pair->at(0)->type == TokenType::TOKEN_DAY_WEEK &&
+									pair->at(0)->nthMask != NO_NTH_WEEKDAY) {
+									basic->setDayNthMask(pair->at(0)->mainNumber, pair->at(0)->nthMask);
+								}
 							}
 						}
 					}
@@ -1961,6 +2187,16 @@ void OpeningHoursParser::buildRule(std::shared_ptr<BasicOpeningHourRule>& basic,
 		basic->setHasDays(true);
 	}
 	rules.insert(rules.begin(), basic);
+}
+
+void OpeningHoursParser::setHolidayFlag(std::shared_ptr<BasicOpeningHourRule>& basic, int holidayIndex) {
+	if (holidayIndex == 0) {
+		basic->setPublicHolidays(true);
+	} else if (holidayIndex == 1) {
+		basic->setSchoolHolidays(true);
+	} else if (holidayIndex == 2) {
+		basic->setEaster(true);
+	}
 }
 
 void OpeningHoursParser::fillFirstLastYearsDayOfMonth(std::shared_ptr<BasicOpeningHourRule>& basic,
