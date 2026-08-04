@@ -1397,6 +1397,9 @@ bool OpeningHoursParser::OpeningHours::isOpenedForTimeV2(const tm& dateTime, int
 	for (int i = (int)rules.size() - 1; i >= 0; i--) {
 		const auto rule = rules[i];
 		if (rule->contains(dateTime)) {
+			if (isTimeRestrictedOffRule(rule)) {
+				return false;
+			}
 			bool checkNextNotNeeded = overlap || !isCheckNextNeeded(dateTime, rules, i, rule);
 			bool open = rule->isOpenedForTime(dateTime);
 			if (open || !checkNextNotNeeded) {
@@ -1534,35 +1537,81 @@ std::string OpeningHoursParser::OpeningHours::getTimeDay(const tm& dateTime, int
 	const auto& rules = getRules(sequenceIndex);
 	std::shared_ptr<OpeningHoursRule> prevRule = nullptr;
 	for (const auto& r : rules) {
-		if (appliesToDay(r, dateTime)) {
-			if (atTime.length() > 0 && prevRule && !r->hasOverlapTimes(dateTime, prevRule, true))
-				return atTime;
-			if (isTimeRestrictedOffRule(r) && atTimeMinutes >= 0) {
-				const auto& offRule = std::static_pointer_cast<BasicOpeningHourRule>(r);
-				int offTimeMinutes = offRule->getTimeMinutes(dateTime, false, limit, opening);
-				int currentTimeMinutes = dateTime.tm_hour * 60 + dateTime.tm_min;
-				if (opening) {
-					if (offRule->containsTime(atTimeMinutes)) {
-						// The opening time found before is turned off, it moves to the end of the "off" range.
-						atTimeMinutes = offTimeMinutes;
-						atTime = offRule->formatResult(offTimeMinutes);
-					}
-				} else if (offTimeMinutes >= currentTimeMinutes && offTimeMinutes < atTimeMinutes) {
-					// The "off" range starts before the closing time found before, so it closes earlier.
+		bool applies = appliesToDay(r, dateTime);
+		bool timeRestrictedOff = isTimeRestrictedOffRule(r);
+		bool checkOffRule = timeRestrictedOff && (applies || (!opening && atTimeMinutes >= 0));
+		if (!applies && !checkOffRule) {
+			continue;
+		}
+		if (applies && atTime.length() > 0 && prevRule && !r->hasOverlapTimes(dateTime, prevRule, true)) {
+			return atTime;
+		}
+		if (checkOffRule) {
+			const auto& offRule = std::static_pointer_cast<BasicOpeningHourRule>(r);
+			// Rules like "Jul-Aug 19:00-19:30 off" make only their own time ranges "off",
+			// so they adjust a time found by previous rules instead of discarding it.
+			int currentTimeMinutes = dateTime.tm_hour * 60 + dateTime.tm_min;
+			if (opening) {
+				int offLimit = limit == CURRENT_DAY_TIME_LIMIT ? WITHOUT_TIME_LIMIT : limit;
+				int offTimeMinutes = offRule->getTimeMinutes(dateTime, false, offLimit, true);
+				const auto& prevBasicRule = std::dynamic_pointer_cast<BasicOpeningHourRule>(prevRule);
+				bool currentlyOff = offTimeMinutes != NO_TIME_MINUTES && offRule->containsTime(currentTimeMinutes) &&
+					prevBasicRule && prevBasicRule->containsTime(offTimeMinutes);
+				if (offTimeMinutes != NO_TIME_MINUTES &&
+					((atTimeMinutes >= 0 && offRule->containsTime(atTimeMinutes)) || currentlyOff)) {
+					// The opening time found before is turned off, it moves to the end of the "off" range.
 					atTimeMinutes = offTimeMinutes;
 					atTime = offRule->formatResult(offTimeMinutes);
 				}
-			} else if (const auto& basicRule = std::dynamic_pointer_cast<BasicOpeningHourRule>(r)) {
-				atTimeMinutes = basicRule->getTimeMinutes(dateTime, false, limit, opening);
-				atTime = basicRule->formatResult(atTimeMinutes);
 			} else {
-				atTime = r->getTime(dateTime, false, limit, opening);
-				atTimeMinutes = NO_TIME_MINUTES;
+				int offTimeAbsolute = getNextTimeRestrictedOffStart(dateTime, offRule, limit);
+				int atTimeAbsolute = atTimeMinutes < currentTimeMinutes ? atTimeMinutes + 24 * 60 : atTimeMinutes;
+				if (offTimeAbsolute != NO_TIME_MINUTES && offTimeAbsolute < atTimeAbsolute) {
+					// The "off" range starts before the closing time found before, so it closes earlier.
+					atTimeMinutes = offTimeAbsolute % (24 * 60);
+					atTime = offRule->formatResult(atTimeMinutes);
+				}
 			}
+		} else if (applies && std::dynamic_pointer_cast<BasicOpeningHourRule>(r)) {
+			const auto& basicRule = std::static_pointer_cast<BasicOpeningHourRule>(r);
+			atTimeMinutes = basicRule->getTimeMinutes(dateTime, false, limit, opening);
+			int displayTimeMinutes = atTimeMinutes;
+			if (!opening && atTimeMinutes == NO_TIME_MINUTES && limit != WITHOUT_TIME_LIMIT) {
+				atTimeMinutes = basicRule->getTimeMinutes(dateTime, false, WITHOUT_TIME_LIMIT, false);
+			}
+			atTime = basicRule->formatResult(displayTimeMinutes);
+		} else if (applies) {
+			atTime = r->getTime(dateTime, false, limit, opening);
+			atTimeMinutes = NO_TIME_MINUTES;
+		}
+		if (applies) {
 			prevRule = r;
 		}
 	}
 	return atTime;
+}
+
+int OpeningHoursParser::OpeningHours::getNextTimeRestrictedOffStart(const tm& dateTime, const std::shared_ptr<BasicOpeningHourRule>& offRule, int limit) const {
+	int currentTimeMinutes = dateTime.tm_hour * 60 + dateTime.tm_min;
+	int nextTime = NO_TIME_MINUTES;
+	tm ruleDateTime = dateTime;
+	std::mktime(&ruleDateTime);
+	for (int dayOffset = 0; dayOffset <= 1; dayOffset++) {
+		if (appliesToDay(offRule, ruleDateTime)) {
+			for (int i = 0; i < offRule->timesSize(); i++) {
+				int timeMinutes = offRule->getStartTime(i);
+				int absoluteMinutes = dayOffset * 24 * 60 + timeMinutes;
+				int diff = absoluteMinutes - currentTimeMinutes;
+				if (diff >= 0 && (limit == WITHOUT_TIME_LIMIT || diff <= limit) &&
+					(nextTime == NO_TIME_MINUTES || absoluteMinutes < nextTime)) {
+					nextTime = absoluteMinutes;
+				}
+			}
+		}
+		ruleDateTime.tm_mday += 1;
+		std::mktime(&ruleDateTime);
+	}
+	return nextTime;
 }
 
 bool OpeningHoursParser::OpeningHours::appliesToDay(const std::shared_ptr<OpeningHoursRule>& rule,
@@ -1602,6 +1651,9 @@ std::string OpeningHoursParser::OpeningHours::getCurrentRuleTime(const tm& dateT
 	for (int i = (int)rules.size() - 1; i >= 0; i--) {
 		const auto rule = rules[i];
 		if (rule->contains(dateTime)) {
+			if (isTimeRestrictedOffRule(rule)) {
+				return rule->toLocalRuleString();
+			}
 			bool checkNextNotNeeded = overlap || !isCheckNextNeeded(dateTime, rules, i, rule);
 			bool open = rule->isOpenedForTime(dateTime);
 			if (open || !checkNextNotNeeded) {

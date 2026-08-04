@@ -644,6 +644,7 @@ struct OpeningHoursParser {
 		std::string getTime(const tm& dateTime, int limit, bool opening, int sequenceIndex) const;
 		std::string getSpillOverClosing(const tm& dateTime, int limit, int sequenceIndex) const;
 		std::string getTimeDay(const tm& dateTime, int limit, bool opening, int sequenceIndex) const;
+		int getNextTimeRestrictedOffStart(const tm& dateTime, const std::shared_ptr<BasicOpeningHourRule>& offRule, int limit) const;
 		std::string getTimeAnotherDay(const tm& dateTime, int limit, bool opening, int sequenceIndex) const;
 		bool appliesToDay(const std::shared_ptr<OpeningHoursRule>& rule, const tm& dateTime) const;
 		bool isTimeRestrictedOffRule(const std::shared_ptr<OpeningHoursRule>& rule) const;
