@@ -85,6 +85,7 @@ struct OpeningHoursParser {
 		virtual ~Token();
 
 		int mainNumber;
+		int nthMask;
 		TokenType type;
 		std::string text;
 		std::shared_ptr<Token> parent;
@@ -199,6 +200,11 @@ struct OpeningHoursParser {
 					  std::stringstream& b) const;
 		bool hasYears() const;
 		bool isOpened(int year, int month, int dmonth) const;
+		bool matchesDayNth(int day, const tm& dateTime) const;
+		bool matchesPreviousDayNth(int previousDay, const tm& dateTime) const;
+		static int getLastDayOfMonth(const tm& dateTime);
+		static void appendNthString(std::stringstream& builder, int mask);
+		static bool appendNthValue(std::stringstream& builder, int mask, int nth, bool first);
 		
 
 	   private:
@@ -208,6 +214,11 @@ struct OpeningHoursParser {
 		 */
 		std::vector<bool> _days;
 		bool _hasDays;
+
+		/**
+		 * nth weekday of the month masks per day (like "Su[1]"), see parseNthMask
+		 */
+		std::vector<int> _dayNth;
 
 		/**
 		 * represents the list on which month it is open.
@@ -303,6 +314,7 @@ struct OpeningHoursParser {
 		bool appliesEaster() const;
 		bool appliesToSchoolHolidays() const;
 		bool appliesOff() const;
+		bool appliesToDay(const tm& dateTime) const;
 
 		std::string getComment() const;
 		void setComment(std::string comment);
@@ -447,6 +459,10 @@ struct OpeningHoursParser {
 		bool isOpenedEveryDay() const;
 
 		std::string getTime(const tm& dateTime, bool checkAnotherDay, int limit, bool opening) const;
+		int getTimeMinutes(const tm& dateTime, bool checkAnotherDay, int limit, bool opening) const;
+		std::string formatResult(int timeMinutes) const;
+		bool containsTime(int timeMinutes) const;
+		void setDayNthMask(int day, int mask);
 
 		std::string toRuleString() const;
 		std::string toLocalRuleString() const;
@@ -626,8 +642,12 @@ struct OpeningHoursParser {
 		std::string getOpeningDay(const tm& dateTime, int sequenceIndex) const;
 
 		std::string getTime(const tm& dateTime, int limit, bool opening, int sequenceIndex) const;
+		std::string getSpillOverClosing(const tm& dateTime, int limit, int sequenceIndex) const;
 		std::string getTimeDay(const tm& dateTime, int limit, bool opening, int sequenceIndex) const;
+		int getNextTimeRestrictedOffStart(const tm& dateTime, const std::shared_ptr<BasicOpeningHourRule>& offRule, int limit) const;
 		std::string getTimeAnotherDay(const tm& dateTime, int limit, bool opening, int sequenceIndex) const;
+		bool appliesToDay(const std::shared_ptr<OpeningHoursRule>& rule, const tm& dateTime) const;
+		bool isTimeRestrictedOffRule(const std::shared_ptr<OpeningHoursRule>& rule) const;
 
 		std::string getCurrentRuleTime(const tm& dateTime, int sequenceIndex) const;
 		bool isFallBackRule(int sequenceIndex) const;
@@ -643,6 +663,11 @@ struct OpeningHoursParser {
 	std::string openingHours;
 
 	static void findInArray(std::shared_ptr<Token>& t, const std::vector<std::string>& list, TokenType tokenType);
+	static void findNthWeekday(std::shared_ptr<Token>& t, const std::vector<std::string>& daysStr);
+	static int parseNthMask(const std::string& list);
+	static bool hasNthWeekday(int mask, int nth);
+	static int getNthWeekdayMask(int nth);
+	static void setHolidayFlag(std::shared_ptr<BasicOpeningHourRule>& basic, int holidayIndex);
 	static std::vector<std::vector<std::string>> splitSequences(const std::string& format);
 
 	static bool parseTime(const std::string& time, tm& dateTime);
