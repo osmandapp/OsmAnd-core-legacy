@@ -409,11 +409,29 @@ int countLanesMinOne(SHARED_PTR<RouteSegmentResult>& attached) {
     return max(1, (lns + 1) / 2);
 }
 
+bool isInsignificantRoadAttached(SHARED_PTR<RouteSegmentResult>& prevSegm,
+                                 SHARED_PTR<RouteSegmentResult>& currentSegm,
+                                 vector<SHARED_PTR<RouteSegmentResult>>& attachedRoutes) {
+    if (prevSegm->object->getId() != currentSegm->object->getId()) {
+        return false;
+    }
+    if (attachedRoutes.size() != 1) {
+        return false;
+    }
+    int priority = highwaySpeakPriority(currentSegm->object->getHighway());
+    int priorityAttached = highwaySpeakPriority(attachedRoutes[0]->object->getHighway());
+    return priorityAttached - priority >= MAX_SPEAK_PRIORITY - 1;
+}
+
+
 RoadSplitStructure calculateRoadSplitStructure(SHARED_PTR<RouteSegmentResult>& prevSegm,
                                                SHARED_PTR<RouteSegmentResult>& currentSegm,
                                                vector<SHARED_PTR<RouteSegmentResult>>& attachedRoutes,
                                                string turnLanesPrevSegm) {
     RoadSplitStructure rs;
+    if (isInsignificantRoadAttached(prevSegm, currentSegm, attachedRoutes)) {
+        return rs;
+    }
     int speakPriority = max(highwaySpeakPriority(prevSegm->object->getHighway()),
                             highwaySpeakPriority(currentSegm->object->getHighway()));
     double currentAngle = normalizeDegrees360(currentSegm->getBearingBegin());
