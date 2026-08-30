@@ -1480,7 +1480,9 @@ std::string OpeningHoursParser::OpeningHours::getOpeningDay(const tm& dateTime, 
 	std::string openingTime("");
 	for (int i = 0; i < 7; i++) {
 		cal.tm_mday += 1;
+		cal.tm_isdst = -1;
 		time_t calTime = std::mktime(&cal);
+		if (cal.tm_wday < 0 || cal.tm_wday >= DAYS_IN_WEEK) return "";
 		time_t openingCalTime = 0;
 		std::shared_ptr<OpeningHoursRule> openingRule = nullptr;
 		for (const auto& r : rules) {
@@ -1496,7 +1498,10 @@ std::string OpeningHoursParser::OpeningHours::getOpeningDay(const tm& dateTime, 
 		}
 
 		if (!openingTime.empty()) {
-			openingTime += " " + stringsHolder.localDaysStr[cal.tm_wday];
+			const auto& dayNames = stringsHolder.localDaysStr.size() == DAYS_IN_WEEK
+				? stringsHolder.localDaysStr
+				: stringsHolder.daysStr;
+			openingTime += " " + dayNames[cal.tm_wday];
 			break;
 		}
 
