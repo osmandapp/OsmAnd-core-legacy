@@ -96,8 +96,14 @@ These rules are mandatory. A pull request that does not follow them is not ready
   before/after images of the same tiles, side by side, with the reference render included when one
   exists. Upload the images to the pull request body itself so they survive; do not link to a local
   file or to a host that may expire.
-- **AI disclaimer is required.** When a change was produced with the help of an AI agent, say so
-  explicitly in the description, naming the tool and stating what a human verified.
+- **AI disclaimer is required.** When a change was produced with the help of an AI agent, the
+  description must carry a disclaimer that names the tool, states what was run and on what, and says
+  what a human still has to verify.
+- **The disclaimer must summarise how the change came about.** One to three paragraphs: what the
+  human proposed, what the agent tried, and how it was improved - including the approaches that were
+  rejected and the measurement that rejected them. A reviewer needs to know which dead ends are
+  already explored and which decisions came from the human, without walking any of it again. Write
+  it as a summary of the reasoning, not as a transcript: nobody needs the wording of the exchange.
 - **Describe the mechanism, not just the symptom.** State what the engine did wrong, why, and which
   measurements back the fix - including the ones that failed. Numbers beat adjectives.
 - **State the cost.** Any change to what is read or drawn carries a performance claim; include the
