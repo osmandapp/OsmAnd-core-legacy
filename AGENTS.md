@@ -109,4 +109,16 @@ These rules are mandatory. A pull request that does not follow them is not ready
 - **State the cost.** Any change to what is read or drawn carries a performance claim; include the
   timings that support it.
 
+## 9. Skills
+`.claude/skills/` holds task guides for AI agents working in this repository - what the subsystem
+guarantees, how to diagnose it, what ground truth to compare against, and which approaches were
+already tried and rejected with the measurement that rejected them.
+
+- `coastline-rendering` - water vs land: `processCoastlines`, the ocean/land bit, the basemap
+  fallback and the read boxes in `binaryRead.cpp`.
+
+Add one whenever an investigation produces knowledge that is not obvious from the code and would
+otherwise have to be rediscovered - especially a dead end, so the next session does not walk it
+again. Keep them factual and measured; a guide that guesses is worse than none.
+
 *Note: This file is a living document and should be updated as the project evolves.*
