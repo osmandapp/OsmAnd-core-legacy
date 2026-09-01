@@ -37,6 +37,11 @@ static uint zoomForBaseRouteRendering = 13;
 static uint detailedZoomStartForRouteSection = 13;
 static uint zoomOnlyForBasemaps = 11;
 static uint zoomMaxDetailedForCoastlines = 16;
+// The ocean/land bit of a map data box is stored per zoom 12 tile, so zoom 12 is the grid on which
+// the map itself answers "is this sea or land". A coastline is closed along the border of the box
+// it is processed in, so a box smaller than that can fall between two coastline segments and end up
+// with nothing to close - the same tile then comes out land alone and water inside a metatile.
+static uint zoomForOceanTiles = 12;
 BinaryMapFiles openFiles;
 std::mutex openFilesMutex;
 OsmAnd::OBF::OsmAndStoredIndex* cache = NULL;
@@ -1642,10 +1647,18 @@ MapDataObject* readMapDataObject(CodedInputStream* input, MapTreeBounds* tree, S
 					}
 				}
 				input->PopLimit(old);
-				// bool acceptTps = acceptTypes(req, types, root);
-				// if (!acceptTps) {
-				//	return NULL;
-				//}
+				if (req->coastlinesOnly) {
+					bool coastline = false;
+					for (uint ti = 0; ti < types.size(); ti++) {
+						if (types[ti].first == "natural" && types[ti].second == "coastline") {
+							coastline = true;
+							break;
+						}
+					}
+					if (!coastline) {
+						return NULL;
+					}
+				}
 				break;
 			}
 			case OsmAnd::OBF::MapData::kIdFieldNumber:
@@ -3037,6 +3050,17 @@ void readMapObjects(SearchQuery* q, BinaryMapFile* file) {
 	}
 }
 
+/** Snaps a box outwards to the tile grid of gridZoom. right and bottom are exclusive. */
+void alignToGrid(int gridZoom, int& left, int& right, int& top, int& bottom) {
+	int shift = 31 - gridZoom;
+	left = (left >> shift) << shift;
+	top = (top >> shift) << shift;
+	int64_t r = (int64_t) ((((int64_t) right - 1) >> shift) + 1) << shift;
+	int64_t b = (int64_t) ((((int64_t) bottom - 1) >> shift) + 1) << shift;
+	right = r >= INT_MAX ? INT_MAX : (int) r;
+	bottom = b >= INT_MAX ? INT_MAX : (int) b;
+}
+
 void readMapObjectsForRendering(SearchQuery* q, std::vector<FoundMapDataObject>& basemapResult,
 								std::vector<FoundMapDataObject>& tempResult, std::vector<FoundMapDataObject>& extResult,
 								std::vector<FoundMapDataObject>& coastLines,
@@ -3132,6 +3156,41 @@ void readMapObjectsForRendering(SearchQuery* q, std::vector<FoundMapDataObject>&
 					} else {
 						tempResult.push_back(*r);
 						// renderRouteDataFile = -1;
+					}
+				}
+			}
+			// the first pass is fully classified above, nothing of it may leak into the second
+			q->publisher->clear();
+			// Second pass over the same file, reading nothing but the coastlines and over the whole
+			// zoom 12 ocean tile. The first pass only sees what crosses the requested box, which for
+			// a single tile can be nothing at all even right next to the coast - processCoastlines
+			// then has no ring to close, gives up, and the zoom 11 basemap geometry gets drawn on a
+			// detailed tile. Widening the main read instead would pull in every other object as well
+			// and costs two orders of magnitude on a city tile.
+			if (!basemap && !q->isCancelled() && q->zoom > zoomForOceanTiles) {
+				int cl = q->left, cr = q->right, ct = q->top, cb = q->bottom;
+				alignToGrid(zoomForOceanTiles, cl, cr, ct, cb);
+				if (cl != q->left || cr != q->right || ct != q->top || cb != q->bottom) {
+					q->left = cl;
+					q->right = cr;
+					q->top = ct;
+					q->bottom = cb;
+					q->coastlinesOnly = true;
+					// read it from the map level the ocean tiles are generalized for: this pass only
+					// has to say which side of the coast the box is on, and the detailed geometry of
+					// a whole zoom 12 tile costs an order of magnitude more to read
+					uint detailedZoom = q->zoom;
+					q->zoom = zoomForOceanTiles;
+					readMapObjects(q, file);
+					q->zoom = detailedZoom;
+					q->coastlinesOnly = false;
+					for (std::vector<FoundMapDataObject>::iterator cr2 = q->publisher->result.begin();
+						 cr2 != q->publisher->result.end(); cr2++) {
+						if (deletedIds.find(cr2->obj->id) == deletedIds.end()) {
+							coastLines.push_back(*cr2);
+						} else {
+							delete cr2->obj;
+						}
 					}
 				}
 			}
@@ -3247,12 +3306,8 @@ ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, 
 			int bright = q->right;
 			int btop = q->top;
 			int bbottom = q->bottom;
-			if (q->zoom > zoomMaxDetailedForCoastlines) {
-				int shift = (31 - zoomMaxDetailedForCoastlines );
-				bleft = (q->left >> shift) << shift;
-				bright = ((q->right >> shift) + 1) << shift;
-				btop = (q->top >> shift) << shift;
-				bbottom = ((q->bottom >> shift) + 1) << shift;
+			if (q->zoom > zoomForOceanTiles) {
+				alignToGrid(zoomForOceanTiles, bleft, bright, btop, bbottom);
 			}
 			uniq(coastLines, uniqCoastLines);
 			coastlinesWereAdded = processCoastlines(uniqCoastLines, bleft, bright, bbottom, btop, q->zoom,
