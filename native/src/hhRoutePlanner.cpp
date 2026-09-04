@@ -77,7 +77,8 @@ SHARED_PTR<HHRoutingContext> HHRoutePlanner::selectBestRoutingFiles(int startX, 
 		}
 	}
 	for (auto & g : groups) {
-		g->containsStartEnd = g->contains(startX, startY, hctx) && g->contains(endX, endY, hctx)
+		g->containsStartEndPoints = g->contains(startX, startY, hctx) && g->contains(endX, endY, hctx);
+		g->containsStartEnd = g->containsStartEndPoints
 			&& g->containsStartEndRegion(hctx->rctx->regionsCoveringStartAndTargets);
 		vector<string> params = split_string(g->profileParams, ",");
 		matchGroupRoutingParams(params, router, g);
@@ -85,6 +86,9 @@ SHARED_PTR<HHRoutingContext> HHRoutePlanner::selectBestRoutingFiles(int startX, 
 	std::sort(groups.begin(), groups.end(), [](const SHARED_PTR<HHRouteRegionsGroup> o1, const SHARED_PTR<HHRouteRegionsGroup> o2) {
 		if (o1->containsStartEnd != o2->containsStartEnd) {
 			return o1->containsStartEnd;
+		} else if (o1->containsStartEndPoints != o2->containsStartEndPoints) {
+			// never prefer a newer group without routing data at start / end
+			return o1->containsStartEndPoints;
 		} else if (o1->edition != o2->edition) {
 			return o1->edition > o2->edition;
 		} else if (o1->extraParam != o2->extraParam) {
