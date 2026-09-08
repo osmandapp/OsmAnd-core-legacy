@@ -946,12 +946,12 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jfield_NativeTransportRoute_waysNodesLons = getFid(env, jclass_NativeTransportRoute, "waysNodesLons", "[[D");
 	jmethod_NativeTransportRoute_init = env->GetMethodID(jclass_NativeTransportRoute, "<init>", "()V");
 
-	jclass_RouteSegmentResult = findGlobalClass(env, "net/osmand/router/RouteSegmentResult");
-	jclass_RouteSegmentResultAr = findGlobalClass(env, "[Lnet/osmand/router/RouteSegmentResult;");
+	jclass_RouteSegmentResult = findGlobalClass(env, "net/osmand/shared/routing/RouteSegmentResult");
+	jclass_RouteSegmentResultAr = findGlobalClass(env, "[Lnet/osmand/shared/routing/RouteSegmentResult;");
 	jmethod_RouteSegmentResult_init =
 		env->GetMethodID(jclass_RouteSegmentResult, "<init>",
 						 "(Lnet/osmand/shared/routing/RouteDataObject;"
-						 "II[[Lnet/osmand/router/RouteSegmentResult;FFFFILnet/osmand/shared/routing/TurnType;)V");
+						 "II[[Lnet/osmand/shared/routing/RouteSegmentResult;FFFFILnet/osmand/shared/routing/TurnType;)V");
 
 	jclass_TurnType = findGlobalClass(env, "net/osmand/shared/routing/TurnType");
 	jmethod_TurnType_init = env->GetMethodID(jclass_TurnType, "<init>", "(IIFZ[IZZ)V");
@@ -1304,7 +1304,7 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jmethod_nativeGpxPointApproximation_init =
 		env->GetMethodID(jclass_nativeGpxPointApproximation, "<init>", "(IDDDI)V");
 	jmethod_nativeGpxPointApproximation_addRouteToTarget = env->GetMethodID(
-		jclass_nativeGpxPointApproximation, "addRouteToTarget", "(Lnet/osmand/router/RouteSegmentResult;)V");
+		jclass_nativeGpxPointApproximation, "addRouteToTarget", "(Lnet/osmand/shared/routing/RouteSegmentResult;)V");
 	jfield_nativeGpxPointApproximation_lat = getFid(env, jclass_nativeGpxPointApproximation, "lat", "D");
 	jfield_nativeGpxPointApproximation_lon = getFid(env, jclass_nativeGpxPointApproximation, "lon", "D");
 	jfield_nativeGpxPointApproximation_cumDist = getFid(env, jclass_nativeGpxPointApproximation, "cumDist", "D");
@@ -1316,7 +1316,7 @@ void loadJniRenderingContext(JNIEnv* env) {
 		env->GetMethodID(jclass_GpxRouteApproximationResult, "addFinalPoint",
 						 "(Lnet/osmand/NativeLibrary$NativeGpxPointApproximation;)V");
 	jmethod_GpxRouteApproximationResult_addResultSegment = env->GetMethodID(
-		jclass_GpxRouteApproximationResult, "addResultSegment", "(Lnet/osmand/router/RouteSegmentResult;)V");
+		jclass_GpxRouteApproximationResult, "addResultSegment", "(Lnet/osmand/shared/routing/RouteSegmentResult;)V");
 
 	jclass_HHRoutingConfig = findGlobalClass(env, "net/osmand/router/HHRouteDataStructure$HHRoutingConfig");
 	jfield_HHRoutingConfig_HEURISTIC_COEFFICIENT = getFid(env, jclass_HHRoutingConfig, "HEURISTIC_COEFFICIENT", "F");
