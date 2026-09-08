@@ -977,7 +977,7 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jfield_RoutingContext_config =
 		getFid(env, jclass_RoutingContext, "config", "Lnet/osmand/shared/routing/RoutingConfiguration;");
 	jfield_RoutingContext_precalculatedRouteDirection = getFid(
-		env, jclass_RoutingContext, "precalculatedRouteDirection", "Lnet/osmand/router/PrecalculatedRouteDirection;");
+		env, jclass_RoutingContext, "precalculatedRouteDirection", "Lnet/osmand/shared/routing/PrecalculatedRouteDirection;");
 	jfield_RoutingContext_calculationMode = getFid(env, jclass_RoutingContext, "calculationMode",
 												   "Lnet/osmand/router/RoutePlannerFrontEnd$RouteCalculationMode;");
 	jfield_RoutingContext_calculationProgress =
@@ -1214,7 +1214,7 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jfield_RouteAttributeExpression_valueType =
 		getFid(env, jclass_RouteAttributeExpression, "valueType", "Ljava/lang/String;");
 
-	jclass_PrecalculatedRouteDirection = findGlobalClass(env, "net/osmand/router/PrecalculatedRouteDirection");
+	jclass_PrecalculatedRouteDirection = findGlobalClass(env, "net/osmand/shared/routing/PrecalculatedRouteDirection");
 	jfield_PrecalculatedRouteDirection_tms = getFid(env, jclass_PrecalculatedRouteDirection, "tms", "[F");
 	jfield_PrecalculatedRouteDirection_pointsY = getFid(env, jclass_PrecalculatedRouteDirection, "pointsY", "[I");
 	jfield_PrecalculatedRouteDirection_pointsX = getFid(env, jclass_PrecalculatedRouteDirection, "pointsX", "[I");
