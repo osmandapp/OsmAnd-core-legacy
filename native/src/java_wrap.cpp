@@ -1120,9 +1120,9 @@ void loadJniRenderingContext(JNIEnv* env) {
 		getFid(env, jclass_RoutingConfiguration, "router", "Lnet/osmand/shared/routing/GeneralRouter;");
 
 	jmethod_RoutingConfiguration_getDirectionPoints = env->GetMethodID(
-		jclass_RoutingConfiguration, "getNativeDirectionPoints", "()[Lnet/osmand/NativeLibrary$NativeDirectionPoint;");
+		jclass_RoutingConfiguration, "getNativeDirectionPoints", "()[Lnet/osmand/shared/routing/NativeDirectionPoint;");
 
-	jclass_DirectionPoint = findGlobalClass(env, "net/osmand/NativeLibrary$NativeDirectionPoint");
+	jclass_DirectionPoint = findGlobalClass(env, "net/osmand/shared/routing/NativeDirectionPoint");
 	jfield_DirectionPoint_x31 = getFid(env, jclass_DirectionPoint, "x31", "I");
 	jfield_DirectionPoint_y31 = getFid(env, jclass_DirectionPoint, "y31", "I");
 	jfield_DirectionPoint_tags = getFid(env, jclass_DirectionPoint, "tags", "[[Ljava/lang/String;");
