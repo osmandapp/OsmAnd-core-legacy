@@ -950,7 +950,7 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jclass_RouteSegmentResultAr = findGlobalClass(env, "[Lnet/osmand/router/RouteSegmentResult;");
 	jmethod_RouteSegmentResult_init =
 		env->GetMethodID(jclass_RouteSegmentResult, "<init>",
-						 "(Lnet/osmand/binary/RouteDataObject;"
+						 "(Lnet/osmand/shared/routing/RouteDataObject;"
 						 "II[[Lnet/osmand/router/RouteSegmentResult;FFFFILnet/osmand/shared/routing/TurnType;)V");
 
 	jclass_TurnType = findGlobalClass(env, "net/osmand/shared/routing/TurnType");
@@ -1268,10 +1268,10 @@ void loadJniRenderingContext(JNIEnv* env) {
 		env->GetStaticMethodID(jclass_Reshaper, "reshape", "(Ljava/lang/String;)Ljava/lang/String;");
 	jmethod_Reshaper_reshapebytes = env->GetStaticMethodID(jclass_Reshaper, "reshape", "([B)Ljava/lang/String;");
 
-	jclass_RouteDataObject = findGlobalClass(env, "net/osmand/binary/RouteDataObject");
+	jclass_RouteDataObject = findGlobalClass(env, "net/osmand/shared/routing/RouteDataObject");
 	jclass_NativeRouteSearchResult = findGlobalClass(env, "net/osmand/NativeLibrary$NativeRouteSearchResult");
 	jmethod_NativeRouteSearchResult_init =
-		env->GetMethodID(jclass_NativeRouteSearchResult, "<init>", "(J[Lnet/osmand/binary/RouteDataObject;)V");
+		env->GetMethodID(jclass_NativeRouteSearchResult, "<init>", "(J[Lnet/osmand/shared/routing/RouteDataObject;)V");
 
 	jfield_RouteDataObject_types = getFid(env, jclass_RouteDataObject, "types", "[I");
 	jfield_RouteDataObject_pointsX = getFid(env, jclass_RouteDataObject, "pointsX", "[I");
@@ -1283,15 +1283,15 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jfield_RouteDataObject_id = getFid(env, jclass_RouteDataObject, "id", "J");
 	jmethod_RouteDataObject_init =
 		env->GetMethodID(jclass_RouteDataObject, "<init>",
-						 "(Lnet/osmand/binary/BinaryMapRouteReaderAdapter$RouteRegion;[I[Ljava/lang/String;)V");
+						 "(Lnet/osmand/shared/routing/RouteRegion;[I[Ljava/lang/String;)V");
 	jmethod_RouteDataObject_setRestriction =
 		env->GetMethodID(jclass_RouteDataObject, "setRestriction", "(IJIJ)V");
 
-	jclass_RouteRegion = findGlobalClass(env, "net/osmand/binary/BinaryMapRouteReaderAdapter$RouteRegion");
+	jclass_RouteRegion = findGlobalClass(env, "net/osmand/shared/routing/RouteRegion");
 	jfield_RouteRegion_length = getFid(env, jclass_RouteRegion, "length", "J");
 	jfield_RouteRegion_filePointer = getFid(env, jclass_RouteRegion, "filePointer", "J");
 
-	jclass_RouteSubregion = findGlobalClass(env, "net/osmand/binary/BinaryMapRouteReaderAdapter$RouteSubregion");
+	jclass_RouteSubregion = findGlobalClass(env, "net/osmand/shared/routing/RouteSubregion");
 	jfield_RouteSubregion_length = getFid(env, jclass_RouteSubregion, "length", "J");
 	jfield_RouteSubregion_filePointer = getFid(env, jclass_RouteSubregion, "filePointer", "J");
 	jfield_RouteSubregion_left = getFid(env, jclass_RouteSubregion, "left", "I");
