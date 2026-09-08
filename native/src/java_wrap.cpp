@@ -1061,7 +1061,7 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jfield_TransportRoutingConfiguration_maxRouteTime =
 		getFid(env, jclass_TransportRoutingConfiguration, "maxRouteTime", "I");
 	jfield_TransportRoutingConfiguration_router =
-		getFid(env, jclass_TransportRoutingConfiguration, "router", "Lnet/osmand/router/GeneralRouter;");
+		getFid(env, jclass_TransportRoutingConfiguration, "router", "Lnet/osmand/shared/routing/GeneralRouter;");
 	jfield_TransportRoutingConfiguration_walkSpeed =
 		getFid(env, jclass_TransportRoutingConfiguration, "walkSpeed", "F");
 	jfield_TransportRoutingConfiguration_defaultTravelSpeed =
@@ -1117,7 +1117,7 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jfield_RoutingConfiguration_routerName =
 		getFid(env, jclass_RoutingConfiguration, "routerName", "Ljava/lang/String;");
 	jfield_RoutingConfiguration_router =
-		getFid(env, jclass_RoutingConfiguration, "router", "Lnet/osmand/router/GeneralRouter;");
+		getFid(env, jclass_RoutingConfiguration, "router", "Lnet/osmand/shared/routing/GeneralRouter;");
 
 	jmethod_RoutingConfiguration_getDirectionPoints = env->GetMethodID(
 		jclass_RoutingConfiguration, "getNativeDirectionPoints", "()[Lnet/osmand/NativeLibrary$NativeDirectionPoint;");
@@ -1127,7 +1127,7 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jfield_DirectionPoint_y31 = getFid(env, jclass_DirectionPoint, "y31", "I");
 	jfield_DirectionPoint_tags = getFid(env, jclass_DirectionPoint, "tags", "[[Ljava/lang/String;");
 
-	jclass_GeneralRouter = findGlobalClass(env, "net/osmand/router/GeneralRouter");
+	jclass_GeneralRouter = findGlobalClass(env, "net/osmand/shared/routing/GeneralRouter");
 	jfield_GeneralRouter_restrictionsAware = getFid(env, jclass_GeneralRouter, "restrictionsAware", "Z");
 	jfield_GeneralRouter_sharpTurn = getFid(env, jclass_GeneralRouter, "sharpTurn", "F");
 	jfield_GeneralRouter_shortWaySharpTurn = getFid(env, jclass_GeneralRouter, "shortWaySharpTurn", "F");
@@ -1142,7 +1142,7 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jfield_GeneralRouter_heightObstacles = getFid(env, jclass_GeneralRouter, "heightObstacles", "Z");
 	jfield_GeneralRouter_shortestRoute = getFid(env, jclass_GeneralRouter, "shortestRoute", "Z");
 	jfield_GeneralRouter_objectAttributes = getFid(env, jclass_GeneralRouter, "objectAttributes",
-												   "[Lnet/osmand/router/GeneralRouter$RouteAttributeContext;");
+												   "[Lnet/osmand/shared/routing/GeneralRouter$RouteAttributeContext;");
 	jfield_GeneralRouter_hhNativeFilter = getFid(env, jclass_GeneralRouter, "hhNativeFilter", "[Ljava/lang/String;");
 	jfield_GeneralRouter_hhNativeParameterValues = getFid(env, jclass_GeneralRouter, "hhNativeParameterValues", "[Ljava/lang/String;");
 	jmethod_GeneralRouter_getParameters = env->GetMethodID(jclass_GeneralRouter, "getParameters", "()Ljava/util/Map;");
@@ -1157,9 +1157,9 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jmethod_MapEntry_getValue = env->GetMethodID(jclass_MapEntry, "getValue", "()Ljava/lang/Object;");
 	jclass_Enum = findGlobalClass(env, "java/lang/Enum");
 	jmethod_Enum_name = env->GetMethodID(jclass_Enum, "name", "()Ljava/lang/String;");
-	jclass_RoutingParameter = findGlobalClass(env, "net/osmand/router/GeneralRouter$RoutingParameter");
+	jclass_RoutingParameter = findGlobalClass(env, "net/osmand/shared/routing/GeneralRouter$RoutingParameter");
 	jmethod_RoutingParameter_getType = env->GetMethodID(
-		jclass_RoutingParameter, "getType", "()Lnet/osmand/router/GeneralRouter$RoutingParameterType;");
+		jclass_RoutingParameter, "getType", "()Lnet/osmand/shared/routing/GeneralRouter$RoutingParameterType;");
 	jmethod_RoutingParameter_getDefaultBoolean = env->GetMethodID(jclass_RoutingParameter, "getDefaultBoolean", "()Z");
 	jmethod_RoutingParameter_getDefaultNumeric = env->GetMethodID(jclass_RoutingParameter, "getDefaultNumeric", "()D");
 
@@ -1178,15 +1178,15 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jmethod_RenderedObject_setLabelX = env->GetMethodID(jclass_RenderedObject, "setLabelX", "(I)V");
 	jmethod_RenderedObject_setLabelY = env->GetMethodID(jclass_RenderedObject, "setLabelY", "(I)V");
 
-	jclass_RouteAttributeContext = findGlobalClass(env, "net/osmand/router/GeneralRouter$RouteAttributeContext");
+	jclass_RouteAttributeContext = findGlobalClass(env, "net/osmand/shared/routing/GeneralRouter$RouteAttributeContext");
 	jmethod_RouteAttributeContext_getRules = env->GetMethodID(
-		jclass_RouteAttributeContext, "getRules", "()[Lnet/osmand/router/GeneralRouter$RouteAttributeEvalRule;");
+		jclass_RouteAttributeContext, "getRules", "()[Lnet/osmand/shared/routing/GeneralRouter$RouteAttributeEvalRule;");
 	jmethod_RouteAttributeContext_getParamKeys =
 		env->GetMethodID(jclass_RouteAttributeContext, "getParamKeys", "()[Ljava/lang/String;");
 	jmethod_RouteAttributeContext_getParamValues =
 		env->GetMethodID(jclass_RouteAttributeContext, "getParamValues", "()[Ljava/lang/String;");
 
-	jclass_RouteAttributeEvalRule = findGlobalClass(env, "net/osmand/router/GeneralRouter$RouteAttributeEvalRule");
+	jclass_RouteAttributeEvalRule = findGlobalClass(env, "net/osmand/shared/routing/GeneralRouter$RouteAttributeEvalRule");
 	jfield_RouteAttributeEvalRule_selectValueDef =
 		getFid(env, jclass_RouteAttributeEvalRule, "selectValueDef", "Ljava/lang/String;");
 	jfield_RouteAttributeEvalRule_selectType =
@@ -1202,11 +1202,11 @@ void loadJniRenderingContext(JNIEnv* env) {
 		env->GetMethodID(jclass_RouteAttributeEvalRule, "getParameters", "()[Ljava/lang/String;");
 	jmethod_RouteAttributeEvalRule_getExpressions =
 		env->GetMethodID(jclass_RouteAttributeEvalRule, "getExpressions",
-						 "()[Lnet/osmand/router/GeneralRouter$RouteAttributeExpression;");
+						 "()[Lnet/osmand/shared/routing/GeneralRouter$RouteAttributeExpression;");
 	jfield_RouteAttributeEvalRule_selectExpression =
-		getFid(env, jclass_RouteAttributeEvalRule, "selectExpression", "Lnet/osmand/router/GeneralRouter$RouteAttributeExpression;");
+		getFid(env, jclass_RouteAttributeEvalRule, "selectExpression", "Lnet/osmand/shared/routing/GeneralRouter$RouteAttributeExpression;");
 
-	jclass_RouteAttributeExpression = findGlobalClass(env, "net/osmand/router/GeneralRouter$RouteAttributeExpression");
+	jclass_RouteAttributeExpression = findGlobalClass(env, "net/osmand/shared/routing/GeneralRouter$RouteAttributeExpression");
 	jfield_RouteAttributeExpression_values =
 		getFid(env, jclass_RouteAttributeExpression, "values", "[Ljava/lang/String;");
 	jfield_RouteAttributeExpression_expressionType =
