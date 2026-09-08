@@ -981,7 +981,7 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jfield_RoutingContext_calculationMode = getFid(env, jclass_RoutingContext, "calculationMode",
 												   "Lnet/osmand/router/RoutePlannerFrontEnd$RouteCalculationMode;");
 	jfield_RoutingContext_calculationProgress =
-		getFid(env, jclass_RoutingContext, "calculationProgress", "Lnet/osmand/router/RouteCalculationProgress;");
+		getFid(env, jclass_RoutingContext, "calculationProgress", "Lnet/osmand/shared/routing/RouteCalculationProgress;");
 	jfield_RoutingContext_alertFasterRoadToVisitedSegments = 
 		getFid(env, jclass_RoutingContext, "alertFasterRoadToVisitedSegments", "I");
 	jfield_RoutingContext_alertSlowerSegmentedWasVisitedEarlier =
@@ -989,7 +989,7 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jfield_RoutingContext_regionsCoveringStartAndTargets =
 		getFid(env, jclass_RoutingContext, "regionsCoveringStartAndTargets", "[Ljava/lang/String;");
 
-	jclass_RouteCalculationProgress = findGlobalClass(env, "net/osmand/router/RouteCalculationProgress");
+	jclass_RouteCalculationProgress = findGlobalClass(env, "net/osmand/shared/routing/RouteCalculationProgress");
 	jfield_RouteCalculationProgress_isCancelled = getFid(env, jclass_RouteCalculationProgress, "isCancelled", "Z");
 	jfield_RouteCalculationProgress_fastRoutingStatusOrdinal =
 		getFid(env, jclass_RouteCalculationProgress, "fastRoutingStatusOrdinal", "I");
