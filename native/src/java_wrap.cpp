@@ -975,7 +975,7 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jfield_RoutingContext_keepNativeRoutingContext =
 		getFid(env, jclass_RoutingContext, "keepNativeRoutingContext", "Z");
 	jfield_RoutingContext_config =
-		getFid(env, jclass_RoutingContext, "config", "Lnet/osmand/router/RoutingConfiguration;");
+		getFid(env, jclass_RoutingContext, "config", "Lnet/osmand/shared/routing/RoutingConfiguration;");
 	jfield_RoutingContext_precalculatedRouteDirection = getFid(
 		env, jclass_RoutingContext, "precalculatedRouteDirection", "Lnet/osmand/router/PrecalculatedRouteDirection;");
 	jfield_RoutingContext_calculationMode = getFid(env, jclass_RoutingContext, "calculationMode",
@@ -1094,7 +1094,7 @@ void loadJniRenderingContext(JNIEnv* env) {
 	// "__"); jfield_TransportRoutingConfiguration_speed = getFid(env, jclass_TransportRoutingConfiguration, "speed",
 	// "___");
 
-	jclass_RoutingConfiguration = findGlobalClass(env, "net/osmand/router/RoutingConfiguration");
+	jclass_RoutingConfiguration = findGlobalClass(env, "net/osmand/shared/routing/RoutingConfiguration");
 	jfield_RoutingConfiguration_nativeMemoryLimitation =
 		getFid(env, jclass_RoutingConfiguration, "nativeMemoryLimitation", "J");
 	jfield_RoutingConfiguration_heuristicCoefficient =
