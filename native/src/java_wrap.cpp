@@ -951,9 +951,9 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jmethod_RouteSegmentResult_init =
 		env->GetMethodID(jclass_RouteSegmentResult, "<init>",
 						 "(Lnet/osmand/binary/RouteDataObject;"
-						 "II[[Lnet/osmand/router/RouteSegmentResult;FFFFILnet/osmand/router/TurnType;)V");
+						 "II[[Lnet/osmand/router/RouteSegmentResult;FFFFILnet/osmand/shared/routing/TurnType;)V");
 
-	jclass_TurnType = findGlobalClass(env, "net/osmand/router/TurnType");
+	jclass_TurnType = findGlobalClass(env, "net/osmand/shared/routing/TurnType");
 	jmethod_TurnType_init = env->GetMethodID(jclass_TurnType, "<init>", "(IIFZ[IZZ)V");
 
 	jclass_RoutingContext = findGlobalClass(env, "net/osmand/router/RoutingContext");
