@@ -957,7 +957,7 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jmethod_TurnType_init = env->GetMethodID(jclass_TurnType, "<init>", "(IIFZ[IZZ)V");
 
 	jclass_RoutingContext = findGlobalClass(env, "net/osmand/router/RoutingContext");
-	jclass_RouteCalculationMode = findGlobalClass(env, "net/osmand/router/RoutePlannerFrontEnd$RouteCalculationMode");
+	jclass_RouteCalculationMode = findGlobalClass(env, "net/osmand/shared/routing/RouteCalculationMode");
 	jfield_RoutingContext_startX = getFid(env, jclass_RoutingContext, "startX", "I");
 	jfield_RoutingContext_startY = getFid(env, jclass_RoutingContext, "startY", "I");
 	jfield_RoutingContext_startRoadId = getFid(env, jclass_RoutingContext, "startRoadId", "J");
@@ -979,7 +979,7 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jfield_RoutingContext_precalculatedRouteDirection = getFid(
 		env, jclass_RoutingContext, "precalculatedRouteDirection", "Lnet/osmand/shared/routing/PrecalculatedRouteDirection;");
 	jfield_RoutingContext_calculationMode = getFid(env, jclass_RoutingContext, "calculationMode",
-												   "Lnet/osmand/router/RoutePlannerFrontEnd$RouteCalculationMode;");
+												   "Lnet/osmand/shared/routing/RouteCalculationMode;");
 	jfield_RoutingContext_calculationProgress =
 		getFid(env, jclass_RoutingContext, "calculationProgress", "Lnet/osmand/shared/routing/RouteCalculationProgress;");
 	jfield_RoutingContext_alertFasterRoadToVisitedSegments = 
