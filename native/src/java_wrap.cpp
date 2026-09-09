@@ -1318,7 +1318,7 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jmethod_GpxRouteApproximationResult_addResultSegment = env->GetMethodID(
 		jclass_GpxRouteApproximationResult, "addResultSegment", "(Lnet/osmand/shared/routing/RouteSegmentResult;)V");
 
-	jclass_HHRoutingConfig = findGlobalClass(env, "net/osmand/router/HHRouteDataStructure$HHRoutingConfig");
+	jclass_HHRoutingConfig = findGlobalClass(env, "net/osmand/shared/routing/HHRoutingConfig");
 	jfield_HHRoutingConfig_HEURISTIC_COEFFICIENT = getFid(env, jclass_HHRoutingConfig, "HEURISTIC_COEFFICIENT", "F");
 	jfield_HHRoutingConfig_DIJKSTRA_DIRECTION = getFid(env, jclass_HHRoutingConfig, "DIJKSTRA_DIRECTION", "F");
 	jfield_HHRoutingConfig_ROUTE_LAST_MILE = getFid(env, jclass_HHRoutingConfig, "ROUTE_LAST_MILE", "Z");
