@@ -665,6 +665,7 @@ struct HHRouteRegionsGroup {
 	int highCostParam = 0;
 	int unsupportedParams = 0;
 	bool containsStartEnd = false;
+	bool containsStartEndByBbox = false;
 	double sumIntersects = 0;
 	
 	HHRouteRegionsGroup(): edition(-1), profileParams("") {
