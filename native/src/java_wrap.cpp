@@ -956,7 +956,11 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jclass_TurnType = findGlobalClass(env, "net/osmand/shared/routing/TurnType");
 	jmethod_TurnType_init = env->GetMethodID(jclass_TurnType, "<init>", "(IIFZ[IZZ)V");
 
-	jclass_RoutingContext = findGlobalClass(env, "net/osmand/router/RoutingContext");
+	// The java side split RoutingContext in two: everything read below is declared on
+	// net.osmand.shared.routing.RoutingRequest, and net.osmand.router.RoutingContext extends it
+	// with the java planner's own machinery, which is not read here. Resolving the fields on the
+	// parent means a request built by shared code can be routed too, not only a java context.
+	jclass_RoutingContext = findGlobalClass(env, "net/osmand/shared/routing/RoutingRequest");
 	jclass_RouteCalculationMode = findGlobalClass(env, "net/osmand/shared/routing/RouteCalculationMode");
 	jfield_RoutingContext_startX = getFid(env, jclass_RoutingContext, "startX", "I");
 	jfield_RoutingContext_startY = getFid(env, jclass_RoutingContext, "startY", "I");
