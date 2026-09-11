@@ -98,11 +98,20 @@ void RoutingIndex::completeRouteEncodingRules() {
 
 void RoutingIndex::initRouteEncodingRule(uint32_t id, std::string tag, std::string val) {
 	RouteTypeRule rule(tag, val);
+	bool append = routeEncodingRules.size() <= id;
 	while (!(routeEncodingRules.size() > id)) {
 		RouteTypeRule empty(tag, val);
 		routeEncodingRules.push_back(empty);
 	}
 	routeEncodingRules[id] = rule;
+	if (!decodingRules.empty()) {
+		if (append && id > 0) {
+			// keep the map built by searchRouteEncodingRule() in sync, otherwise rules added later are never found
+			decodingRules[rule.getTag() + "#" + rule.getValue()] = id;
+		} else {
+			decodingRules.clear();
+		}
+	}
 
 	if (tag == "name") {
 		nameTypeRule = id;
