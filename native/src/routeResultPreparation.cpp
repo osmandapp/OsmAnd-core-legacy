@@ -2131,6 +2131,40 @@ void muteAndRemoveTurns(vector<SHARED_PTR<RouteSegmentResult> >& result) {
     }
 }
 
+static bool isObviousRoadContinuation(SHARED_PTR<RouteSegmentResult>& prev,
+                                      SHARED_PTR<RouteSegmentResult>& current) {
+    auto& from = prev->object;
+    auto& to = current->object;
+    const string highway = from->getHighway();
+    if (highway.empty() || highway != to->getHighway() || endsWith(highway, "_link")
+            || from->roundabout() || to->roundabout()
+            || !getTurnLanesString(prev).empty() || !getTurnLanesString(current).empty()
+            || (prev->turnType && !prev->turnType->getLanes().empty())
+            || (from->id == to->id && prev->isForwardDirection() != current->isForwardDirection())) {
+        return false;
+    }
+    string lang;
+    const string ref = from->getRef(lang, false, prev->isForwardDirection());
+    const string nextRef = to->getRef(lang, false, current->isForwardDirection());
+    const bool useRef = !ref.empty() || !nextRef.empty();
+    const string identity = useRef ? ref : from->getName(lang, false);
+    if (identity.empty() || identity != (useRef ? nextRef : to->getName(lang, false))) {
+        return false;
+    }
+    const int priority = highwaySpeakPriority(highway);
+    for (auto& branch : current->getAttachedRoutes(current->getStartPointIndex())) {
+        auto& road = branch->object;
+        const string branchHighway = road->getHighway();
+        if (branchHighway.empty() || endsWith(branchHighway, "_link") || road->roundabout()
+                || !getTurnLanesString(branch).empty() || highwaySpeakPriority(branchHighway) <= priority
+                || identity == (useRef ? road->getRef(lang, false, branch->isForwardDirection())
+                                       : road->getName(lang, false))) {
+            return false;
+        }
+    }
+    return true;
+}
+
 void prepareTurnResults(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResult> >& result) {
     for (int i = 0; i < result.size(); i ++) {
         const auto& turnType = getTurnInfo(result, i, ctx->leftSideNavigation);
@@ -2142,6 +2176,15 @@ void prepareTurnResults(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResul
     justifyUTurns(ctx->leftSideNavigation, result);
     avoidKeepForThroughMoving(result);
     muteAndRemoveTurns(result);
+    for (int i = 1; i < result.size(); i++) {
+        auto& current = result[i];
+        const auto& turn = current->turnType;
+        // Preserve lanes added by turn merging, even if the junction itself has no turn:lanes tags.
+        if (turn && turn->getLanes().empty() && getTurnString(current).empty()
+                && isObviousRoadContinuation(result[i - 1], current)) {
+            current->turnType.reset();
+        }
+    }
     addTurnInfoDescriptions(result);
 }
 
