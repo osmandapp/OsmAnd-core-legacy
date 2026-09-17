@@ -3313,6 +3313,7 @@ ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, 
 				o->types.push_back(tag_value("natural", "land"));
 			}
 			o->area = true;
+			o->surface = true;
 			o->additionalTypes.push_back(tag_value("layer", "-5"));
 			tempResult.push_back(FoundMapDataObject(o, NULL, q->zoom));
 		}
