@@ -8,6 +8,7 @@
 
 #include "Logging.h"
 #include "binaryRoutePlanner.h"
+#include "ferryRoutingHelper.h"
 #include "routeSegment.h"
 
 const int RouteAttributeExpression::LESS_EXPRESSION = 1;
@@ -550,12 +551,17 @@ double GeneralRouter::defineRoutingObstacle(const SHARED_PTR<RouteDataObject>& r
 
 double GeneralRouter::defineRoutingSpeed(const SHARED_PTR<RouteDataObject>& road, bool dir) {
 	double spd = evaluateCache(RouteDataObjectAttribute::ROAD_SPEED, road->region, road->types, defaultSpeed, dir, false);
-	return max(min(spd, maxSpeed), minSpeed);
+	return limitSpeed(road, spd, maxSpeed);
 }
 
 double GeneralRouter::defineVehicleSpeed(const SHARED_PTR<RouteDataObject>& road, bool dir) {
 	double spd = evaluateCache(RouteDataObjectAttribute::ROAD_SPEED, road->region, road->types, defaultSpeed, dir, false);
-	return max(min(spd, maxVehicleSpeed), minSpeed);
+	return limitSpeed(road, spd, maxVehicleSpeed);
+}
+
+// ferry moves with its own speed, whatever vehicle is on board
+double GeneralRouter::limitSpeed(const SHARED_PTR<RouteDataObject>& road, double speed, double max) {
+	return FerryRoutingHelper::isFerry(road) ? speed : std::max(std::min(speed, max), minSpeed);
 }
 
 double GeneralRouter::definePenaltyTransition(const SHARED_PTR<RouteDataObject>& road) {

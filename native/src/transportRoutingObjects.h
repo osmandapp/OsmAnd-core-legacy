@@ -138,7 +138,7 @@ struct TransportRoute : public MapObject {
 	TransportSchedule schedule;
 
 	int intervalInSeconds; // -1
-	const std::string INTERVAL_KEY = "interval";
+	static constexpr const char* INTERVAL_KEY = "interval";
 	UNORDERED_map<std::string, std::string> tags;
 
 	TransportRoute();
@@ -157,7 +157,7 @@ struct TransportRoute : public MapObject {
 	std::string getType() const;
 	std::string getInterval() const;
 	int calcIntervalInSeconds();
-	int parseIntervalTagToSeconds(const std::string& interval);
+	static int parseIntervalTagToSeconds(const std::string& interval);
 	void addTag(const std::string& key, const std::string& value);
 	void setTags(UNORDERED_map<std::string, std::string> newTags);
 };

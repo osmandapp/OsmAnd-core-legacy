@@ -614,6 +614,8 @@ jfieldID jfield_TransportRoutingConfiguration_increaseForAlternativesRoutes = NU
 jfieldID jfield_TransportRoutingConfiguration_increaseForAltRoutesWalking = NULL;
 jfieldID jfield_TransportRoutingConfiguration_combineAltRoutesDiffStops = NULL;
 jfieldID jfield_TransportRoutingConfiguration_combineAltRoutesSumDiffStops = NULL;
+jfieldID jfield_TransportRoutingConfiguration_ferryBoardingTime = NULL;
+jfieldID jfield_TransportRoutingConfiguration_ferryTerminalTime = NULL;
 
 // jfieldID jfield_TransportRoutingConfiguration_rawTypes = NULL;
 // jfieldID jfield_jclass_TransportRoutingConfiguration_speed = NULL;
@@ -631,6 +633,8 @@ jfieldID jfield_RoutingConfiguration_ZOOM_TO_LOAD_TILES = NULL;
 jfieldID jfield_RoutingConfiguration_planRoadDirection = NULL;
 jfieldID jfield_RoutingConfiguration_routeCalculationTime = NULL;
 jfieldID jfield_RoutingConfiguration_routerName = NULL;
+jfieldID jfield_RoutingConfiguration_ferryBoardingTime = NULL;
+jfieldID jfield_RoutingConfiguration_ferryTerminalTime = NULL;
 jfieldID jfield_RoutingConfiguration_router = NULL;
 jmethodID jmethod_RoutingConfiguration_getDirectionPoints = NULL;
 
@@ -812,6 +816,8 @@ jfieldID jfield_NativeTransportRoute_avgWaitIntervals = NULL;
 jfieldID jfield_NativeTransportRoute_waysIds = NULL;
 jfieldID jfield_NativeTransportRoute_waysNodesLats = NULL;
 jfieldID jfield_NativeTransportRoute_waysNodesLons = NULL;
+jfieldID jfield_NativeTransportRoute_tagKeys = NULL;
+jfieldID jfield_NativeTransportRoute_tagValues = NULL;
 jmethodID jmethod_NativeTransportRoute_init = NULL;
 
 jclass jclass_NativeTransportStop = NULL;
@@ -944,6 +950,8 @@ void loadJniRenderingContext(JNIEnv* env) {
 	jfield_NativeTransportRoute_waysIds = getFid(env, jclass_NativeTransportRoute, "waysIds", "[J");
 	jfield_NativeTransportRoute_waysNodesLats = getFid(env, jclass_NativeTransportRoute, "waysNodesLats", "[[D");
 	jfield_NativeTransportRoute_waysNodesLons = getFid(env, jclass_NativeTransportRoute, "waysNodesLons", "[[D");
+	jfield_NativeTransportRoute_tagKeys = getFid(env, jclass_NativeTransportRoute, "tagKeys", "[Ljava/lang/String;");
+	jfield_NativeTransportRoute_tagValues = getFid(env, jclass_NativeTransportRoute, "tagValues", "[Ljava/lang/String;");
 	jmethod_NativeTransportRoute_init = env->GetMethodID(jclass_NativeTransportRoute, "<init>", "()V");
 
 	jclass_RouteSegmentResult = findGlobalClass(env, "net/osmand/router/RouteSegmentResult");
@@ -1090,6 +1098,10 @@ void loadJniRenderingContext(JNIEnv* env) {
 		getFid(env, jclass_TransportRoutingConfiguration, "combineAltRoutesDiffStops", "I");
 	jfield_TransportRoutingConfiguration_combineAltRoutesSumDiffStops =
 		getFid(env, jclass_TransportRoutingConfiguration, "combineAltRoutesSumDiffStops", "I");
+	jfield_TransportRoutingConfiguration_ferryBoardingTime =
+		getFid(env, jclass_TransportRoutingConfiguration, "ferryBoardingTime", "I");
+	jfield_TransportRoutingConfiguration_ferryTerminalTime =
+		getFid(env, jclass_TransportRoutingConfiguration, "ferryTerminalTime", "I");
 	// jfield_TransportRoutingConfiguration_rawTypes = getFid(env, jclass_TransportRoutingConfiguration, "rawTypes",
 	// "__"); jfield_TransportRoutingConfiguration_speed = getFid(env, jclass_TransportRoutingConfiguration, "speed",
 	// "___");
@@ -1116,6 +1128,10 @@ void loadJniRenderingContext(JNIEnv* env) {
 		getFid(env, jclass_RoutingConfiguration, "routeCalculationTime", "J");
 	jfield_RoutingConfiguration_routerName =
 		getFid(env, jclass_RoutingConfiguration, "routerName", "Ljava/lang/String;");
+	jfield_RoutingConfiguration_ferryBoardingTime =
+		getFid(env, jclass_RoutingConfiguration, "ferryBoardingTime", "I");
+	jfield_RoutingConfiguration_ferryTerminalTime =
+		getFid(env, jclass_RoutingConfiguration, "ferryTerminalTime", "I");
 	jfield_RoutingConfiguration_router =
 		getFid(env, jclass_RoutingConfiguration, "router", "Lnet/osmand/router/GeneralRouter;");
 
@@ -1847,6 +1863,8 @@ void parseRouteConfiguration(JNIEnv* ienv, SHARED_PTR<RoutingConfiguration> rCon
 	rConfig->maxStepApproximation = ienv->GetFloatField(jRouteConfig, jfield_RoutingConfiguration_maxStepApproximation);
 	rConfig->smoothenPointsNoRoute = ienv->GetFloatField(jRouteConfig, jfield_RoutingConfiguration_smoothenPointsNoRoute);
 	rConfig->penaltyForReverseDirection = ienv->GetDoubleField(jRouteConfig, jfield_RoutingConfiguration_penaltyForReverseDirection);
+	rConfig->ferryBoardingTime = ienv->GetIntField(jRouteConfig, jfield_RoutingConfiguration_ferryBoardingTime);
+	rConfig->ferryTerminalTime = ienv->GetIntField(jRouteConfig, jfield_RoutingConfiguration_ferryTerminalTime);
 	rConfig->zoomToLoad = ienv->GetIntField(jRouteConfig, jfield_RoutingConfiguration_ZOOM_TO_LOAD_TILES);
 	rConfig->routeCalculationTime =
 		ienv->GetLongField(jRouteConfig, jfield_RoutingConfiguration_routeCalculationTime) / 1000;
@@ -2260,6 +2278,10 @@ void parseTransportRoutingConfiguration(JNIEnv* ienv, shared_ptr<TransportRoutin
 		ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_combineAltRoutesDiffStops);
 	rConfig->combineAltRoutesSumDiffStops =
 		ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_combineAltRoutesSumDiffStops);
+	rConfig->ferryBoardingTime =
+		ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_ferryBoardingTime);
+	rConfig->ferryTerminalTime =
+		ienv->GetIntField(jTransportConfig, jfield_TransportRoutingConfiguration_ferryTerminalTime);
 
 	jobject lrouter = ienv->GetObjectField(jTransportConfig, jfield_TransportRoutingConfiguration_router);
 	jobject router = ienv->NewGlobalRef(lrouter);
@@ -2487,6 +2509,23 @@ jobject convertTransportRouteToJava(JNIEnv* ienv, SHARED_PTR<TransportRoute>& ro
 	ienv->DeleteLocalRef(j_waysIds);
 	ienv->DeleteLocalRef(j_nodesLats);
 	ienv->DeleteLocalRef(j_nodesLons);
+
+	jobjectArray j_tagKeys = ienv->NewObjectArray(route->tags.size(), jclassString, NULL);
+	jobjectArray j_tagValues = ienv->NewObjectArray(route->tags.size(), jclassString, NULL);
+	n = 0;
+	for (const auto& tag : route->tags) {
+		jstring jkey = ienv->NewStringUTF(tag.first.c_str());
+		jstring jvalue = ienv->NewStringUTF(tag.second.c_str());
+		ienv->SetObjectArrayElement(j_tagKeys, n, jkey);
+		ienv->SetObjectArrayElement(j_tagValues, n, jvalue);
+		ienv->DeleteLocalRef(jkey);
+		ienv->DeleteLocalRef(jvalue);
+		n++;
+	}
+	ienv->SetObjectField(jtr, jfield_NativeTransportRoute_tagKeys, j_tagKeys);
+	ienv->SetObjectField(jtr, jfield_NativeTransportRoute_tagValues, j_tagValues);
+	ienv->DeleteLocalRef(j_tagKeys);
+	ienv->DeleteLocalRef(j_tagValues);
 
 	return jtr;
 }

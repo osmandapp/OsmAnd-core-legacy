@@ -40,6 +40,10 @@ struct TransportRoutingConfiguration {
 	int32_t defaultChangeTime = 0;
 	UNORDERED(map)<string, int32_t> changingTimes;
 
+	// ferry crossing, see FerryRoutingHelper
+	int32_t ferryBoardingTime = 0;
+	int32_t ferryTerminalTime = 0;
+
 	bool useSchedule = false;
 
 	int32_t scheduleTimeOfDay = 12 * 60 * 6;
@@ -59,6 +63,8 @@ struct TransportRoutingConfiguration {
 
 	int32_t getStopTime(const std::string &routeType);
 	int32_t getBoardingTime(const std::string &routeType);
+	// waiting for a vehicle (half of its interval if known) and getting on it
+	double getBoardingTime(const std::string &routeType, int intervalSeconds);
 	int32_t getChangeTime(const std::string &fromRouteType, const std::string &toRouteType);
 };
 

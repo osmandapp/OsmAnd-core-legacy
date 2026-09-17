@@ -4,6 +4,7 @@
 #include "routeSegment.h"
 #include "routeSegmentResult.h"
 #include "routeResultPreparation.h"
+#include "ferryRoutingHelper.h"
 #include "turnType.h"
 #include "binaryRoutePlanner.h"
 #include "multipolygons.h"
@@ -250,6 +251,7 @@ void calculateTimeSpeed(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResul
     for (int i = 0; i < result.size(); i++) {
         calculateTimeSpeed(ctx, result[i]);
     }
+    FerryRoutingHelper::updateSegmentTimes(ctx, result);
 }
 
 void calculateTimeSpeed(RoutingContext* ctx, SHARED_PTR<RouteSegmentResult>& rr) {

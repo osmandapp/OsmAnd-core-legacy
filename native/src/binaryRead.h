@@ -129,6 +129,7 @@ struct RoutingIndex : BinaryPartIndex {
 	int stopSign = -1;
 	int stopMinor = -1;
 	int giveWaySign = -1;
+	int ferry = -1;
 
 	RoutingIndex()
 		: BinaryPartIndex(ROUTING_INDEX), nameTypeRule(-1), refTypeRule(-1), destinationTypeRule(-1),
@@ -577,6 +578,10 @@ struct RouteDataObject {
 	int getOneway();
 	string getValue(const string& tag) const;
 	string getValue(uint32_t pnt, const string& tag);
+
+	bool containsType(int cachedType) const {
+		return cachedType != -1 && std::find(types.begin(), types.end(), (uint32_t)cachedType) != types.end();
+	}
 
 	inline int getPointsLength() {
 		return (int)pointsX.size();

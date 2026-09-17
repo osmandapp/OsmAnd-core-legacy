@@ -121,6 +121,8 @@ void RoutingIndex::initRouteEncodingRule(uint32_t id, std::string tag, std::stri
 		stopSign = id;
 	} else if (tag == "highway" && val == "give_way") {
 		giveWaySign = id;
+	} else if (tag == "route" && val == "ferry") {
+		ferry = id;
 	} else if (tag == "traffic_signals:direction") {
 		if (val == "forward") {
 			directionTrafficSignalsForward = id;

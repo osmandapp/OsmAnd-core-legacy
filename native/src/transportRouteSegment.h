@@ -23,6 +23,9 @@ struct TransportRouteSegment {
 	double walkDist = 0;
 	// main field accumulated all time spent from beginning of journey
 	double distFromStart = 0;
+	// time on ferries from waiting to getting off, part of distFromStart
+	// (it isn't compared with walking: walking can't cross water)
+	double ferryTime = 0;
 
 	TransportRouteSegment(SHARED_PTR<TransportRoute> road_, int32_t stopIndex);
 	TransportRouteSegment(SHARED_PTR<TransportRoute> road_, int32_t stopIndex_,
