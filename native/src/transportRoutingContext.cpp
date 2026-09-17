@@ -6,6 +6,7 @@
 #include "Logging.h"
 #include "binaryRead.h"
 #include "routeCalculationProgress.h"
+#include "transportFerryHelper.h"
 #include "transportRoutePlanner.h"
 #include "transportRouteSegment.h"
 #include "transportRouteStopsReader.h"
@@ -65,6 +66,12 @@ void TransportRoutingContext::getTransportStops(int32_t sx, int32_t sy, bool cha
 				}
 			}
 		}
+	}
+	if (!change) {
+		// start and end: junction stop in the water can't be reached on foot
+		res.erase(std::remove_if(res.begin(), res.end(), [](const SHARED_PTR<TransportRouteSegment>& s) {
+			return TransportFerryHelper::isJunctionStop(s->road, s->segStart);
+		}), res.end());
 	}
 	loadTime.Pause();
 }

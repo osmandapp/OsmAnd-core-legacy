@@ -4,6 +4,7 @@
 
 #include <stdlib.h>
 
+#include "ferryRoutingHelper.h"
 #include "generalRouter.h"
 
 TransportRoutingConfiguration::TransportRoutingConfiguration()
@@ -123,6 +124,13 @@ int32_t TransportRoutingConfiguration::getBoardingTime(const std::string &routeT
 		defaultBoardingTime = obstacles.evaluateInt(bs2, 150);
 	}
 	return defaultBoardingTime;
+}
+
+double TransportRoutingConfiguration::getBoardingTime(const std::string &routeType, int intervalSeconds) {
+	if (routeType == FerryRoutingHelper::FERRY) {
+		return FerryRoutingHelper::getBoardingTime(ferryBoardingTime, ferryTerminalTime, intervalSeconds);
+	}
+	return intervalSeconds > 0 ? intervalSeconds / 2.0 : getBoardingTime(routeType);
 }
 
 int32_t TransportRoutingConfiguration::getChangeTime(const std::string &fromRouteType, const std::string &toRouteType) {

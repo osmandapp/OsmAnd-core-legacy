@@ -4,6 +4,7 @@
 #include "routePlannerFrontEnd.h"
 
 #include "binaryRoutePlanner.h"
+#include "ferryRoutingHelper.h"
 #include "routeResultPreparation.h"
 #include "routeSegment.h"
 #include "routeSegmentResult.h"
@@ -115,6 +116,7 @@ void RoutePlannerFrontEnd::makeStartEndPointsPrecise(RoutingContext* ctx, vector
 	if (res.size() > 0) {
 		makeSegmentPointPrecise(ctx, res[0], startX, startY, true);
 		makeSegmentPointPrecise(ctx, res[res.size() - 1], endX, endY, false);
+		FerryRoutingHelper::updateSegmentTimes(ctx, res); // times of the changed segments
 	}
 }
 

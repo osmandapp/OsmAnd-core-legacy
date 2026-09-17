@@ -93,6 +93,10 @@ struct RoutingConfiguration {
     // 1.5 Recalculate distance help
     float recalculateDistance;
     time_t routeCalculationTime = 0;
+
+    // 1.5.1 Ferry crossing, see FerryRoutingHelper
+    int ferryBoardingTime = 0;
+    int ferryTerminalTime = 0;
     
     // 1.7 Maximum visited segments
     int MAX_VISITED = -1;
@@ -119,6 +123,8 @@ struct RoutingConfiguration {
         // don't use file limitations?
         memoryLimitation = (int)parseFloat(getAttribute(router, "nativeMemoryLimitInMB"), memoryLimitation);
         zoomToLoad = (int)parseFloat(getAttribute(router, "zoomToLoadTiles"), 16);
+        ferryBoardingTime = (int)parseFloat(getAttribute(router, "ferryBoardingTime"), 0);
+        ferryTerminalTime = (int)parseFloat(getAttribute(router, "ferryTerminalTime"), 0);
         //routerName = parseString(getAttribute(router, "name"), "default");
     }
 };

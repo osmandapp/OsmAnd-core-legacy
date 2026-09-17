@@ -6,6 +6,7 @@
 
 #include "Logging.h"
 #include "binaryRead.h"
+#include "ferryRoutingHelper.h"
 #include "routePlannerFrontEnd.h"
 #include "routingContext.h"
 
@@ -149,7 +150,8 @@ float calcRoutingSegmentTimeOnlyDist(const SHARED_PTR<GeneralRouter>& router, co
 	int x = segment->road->getPoint31XTile(segment->getSegmentEnd());
 	int y = segment->road->getPoint31YTile(segment->getSegmentEnd());
 	float priority = router->defineSpeedPriority(segment->road, segment->isPositive());
-	float speed = (router->defineRoutingSpeed(segment->road, segment->isPositive()) * priority);
+	float speed = FerryRoutingHelper::getRoutingSpeed(router, segment->road,
+		(float) router->defineRoutingSpeed(segment->road, segment->isPositive())) * priority;
 	if (speed == 0) {
 		speed = router->getDefaultSpeed() * priority;
 	}
@@ -632,7 +634,7 @@ double calculateRouteSegmentTime(RoutingContext* ctx, bool reverseWaySearch, SHA
 	if (heightObstacle < 0) {
 		return -1;
 	}
-	return obstacle + heightObstacle + distTimeOnRoadToPass;
+	return obstacle + heightObstacle + distTimeOnRoadToPass + FerryRoutingHelper::getStopTime(ctx, segment);
 }
 
 void processRouteSegment(RoutingContext* ctx, bool reverseWaySearch, SEGMENTS_QUEUE& graphSegments,
@@ -1118,6 +1120,9 @@ bool processOneRoadIntersection(RoutingContext* ctx, bool reverseWaySearch, SEGM
 		float obstaclesTime = 0;
 		if (next->road->getId() != segment->road->getId()) {
 			obstaclesTime = (float) ctx->config->router->calculateTurnTime(next, segment);
+			// getting on or off a ferry, next segment is the previous one for reverse search
+			obstaclesTime += (float) FerryRoutingHelper::getTransitionTime(ctx, reverseWaySearch ? next : segment,
+				reverseWaySearch ? segment : next);
 		}
 		
 		if (obstaclesTime < 0) {
