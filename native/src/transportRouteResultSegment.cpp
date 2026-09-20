@@ -76,10 +76,13 @@ void TransportRouteResultSegment::getGeometry(vector<shared_ptr<Way>>& list) {
 			}
 		}
 	}
-	bool validOneWay = startInd.way != nullptr && startInd.way == endInd.way && startInd.ind <= endInd.ind;
+	// parallel ways of one route (ferry berths) are merged into a way going there and back,
+	// so the part between the stops can be in any direction
+	bool validOneWay = startInd.way != nullptr && startInd.way == endInd.way;
 	if (validOneWay) {
 		shared_ptr<Way> way = make_shared<Way>(GEOMETRY_WAY_ID);
-		for (int k = startInd.ind; k <= endInd.ind; k++) {
+		int step = startInd.ind <= endInd.ind ? 1 : -1;
+		for (int k = startInd.ind; k != endInd.ind + step; k += step) {
 			way->addNode(startInd.way->nodes[k]);
 		}
 		list.push_back(way);

@@ -237,6 +237,7 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 		if (routeTravelSpeed == 0) {
 			continue;
 		}
+		bool ferryRoute = TransportFerryHelper::isFerry(segment->road);
 		double travelSpeed = TransportFerryHelper::getTravelSpeed(segment->road, routeTravelSpeed);
 		SHARED_PTR<TransportStop> prevStop = segment->getStop(segment->segStart);
 		vector<SHARED_PTR<TransportRouteSegment>> sgms;
@@ -268,13 +269,14 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 				travelTime += interval * 10;
 			} else {
 				// a ferry stop is counted only when the ride continues past it (end of the loop)
-				int stopTime = TransportFerryHelper::isFerry(segment->road) ? 0 : ctx->cfg->getStopTime(segment->road->getType());
+				int stopTime = ferryRoute ? 0 : ctx->cfg->getStopTime(segment->road->getType());
 				double crossingTime = TransportFerryHelper::getCrossingTime(ctx->cfg, segment->road, ind);
 				travelTime += stopTime + segmentDist / travelSpeed + crossingTime;
 				crossingsTime += crossingTime;
 			}
-			double alightingTime = TransportFerryHelper::getAlightingTime(ctx->cfg, segment->road, ind);
-			double ferryTime = TransportFerryHelper::isFerry(segment->road) ? travelTime + alightingTime : crossingsTime;
+			// leaving the vehicle here costs the time to get off a ferry
+			double timeToLeave = travelTime + TransportFerryHelper::getAlightingTime(ctx->cfg, segment->road, ind);
+			double ferryTime = ferryRoute ? timeToLeave : crossingsTime;
 			// the ferry hasn't left the terminal yet: nowhere to get off
 			bool sameTerminal = TransportFerryHelper::isSameTerminal(segment->road, segment->segStart, ind);
 			if (segment->distFromStart + travelTime > finishTime * ctx->cfg->increaseForAlternativesRoutes) {
@@ -303,11 +305,11 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 					nextSegment->parentStop = ind;
 					nextSegment->walkDist =
 					getDistance(nextSegment->getLocationLat(), nextSegment->getLocationLon(), stop->lat, stop->lon);
-					nextSegment->parentTravelTime = travelTime + alightingTime;
+					nextSegment->parentTravelTime = timeToLeave;
 					nextSegment->parentTravelDist = travelDist;
 					double walkTime = nextSegment->walkDist / ctx->cfg->walkSpeed + (junctionStop ? 0 :
 						ctx->cfg->getChangeTime(segment->road->getType(), sgm->road->getType()));
-					nextSegment->distFromStart = segment->distFromStart + travelTime + alightingTime + walkTime;
+					nextSegment->distFromStart = segment->distFromStart + timeToLeave + walkTime;
 					nextSegment->ferryTime = segment->ferryTime + ferryTime;
 					nextSegment->nonce = nonce++;
 					if (ctx->cfg->useSchedule) {
@@ -345,11 +347,11 @@ void TransportRoutePlanner::buildTransportRoute(unique_ptr<TransportRoutingConte
 					finish->parentRoute = segment;
 					finish->parentStop = ind;
 					finish->walkDist = distToEnd;
-					finish->parentTravelTime = travelTime + alightingTime;
+					finish->parentTravelTime = timeToLeave;
 					finish->parentTravelDist = travelDist;
 
 					double walkTime = distToEnd / ctx->cfg->walkSpeed;
-					finish->distFromStart = segment->distFromStart + travelTime + alightingTime + walkTime;
+					finish->distFromStart = segment->distFromStart + timeToLeave + walkTime;
 					finish->ferryTime = segment->ferryTime + ferryTime;
 					finish->nonce = nonce++;
 				}

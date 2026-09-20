@@ -11,10 +11,10 @@
 // without a route relation and ferry crossings of other routes. Stop flags are stored as route tags with indexes
 // of the route stops.
 struct TransportFerryHelper {
-	// stops generated at ferry way ends (not present in OSM): "0,5"
-	static constexpr const char* SYNTHETIC_STOPS_TAG = "osmand:synthetic_ferry_stops";
-	// synthetic stops in the water joining ferry ways: only a change to the next ferry way at the same stop
-	static constexpr const char* JUNCTION_STOPS_TAG = "osmand:ferry_junction_stops";
+	// stops generated at ferry way ends (not present in OSM), "j" marks a junction of ferry ways
+	// in the water (only a change to the next ferry way at the same stop): "0,3:j,5"
+	static constexpr const char* FERRY_STOPS_TAG = "osmand:ferry_stops";
+	static constexpr const char* JUNCTION_VALUE = "j";
 	// non-ferry route goes over a ferry before these stops:
 	// "stop index:ferry interval:ferry duration:ferry length" (seconds and meters, 0 - unknown)
 	static constexpr const char* CROSSINGS_TAG = "osmand:ferry_crossings";
@@ -25,7 +25,7 @@ struct TransportFerryHelper {
 
 	static bool isJunctionStop(const SHARED_PTR<TransportRoute>& route, int stop) {
 		string value;
-		return getStopValue(route, JUNCTION_STOPS_TAG, stop, value);
+		return getStopValue(route, FERRY_STOPS_TAG, stop, value) && value == JUNCTION_VALUE;
 	}
 
 	// ferry with a duration tag moves with the speed from it

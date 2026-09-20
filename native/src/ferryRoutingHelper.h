@@ -87,7 +87,10 @@ struct FerryRoutingHelper {
 			if (speed <= 0) {
 				speed = router->defineVehicleSpeed(road, rr->isForwardDirection());
 			}
-			double time = rr->distance / (speed > 0 ? speed : router->getDefaultSpeed());
+			if (speed <= 0) {
+				speed = router->getDefaultSpeed();
+			}
+			double time = rr->distance / speed;
 			int start = std::min(rr->getStartPointIndex(), rr->getEndPointIndex());
 			int end = std::max(rr->getStartPointIndex(), rr->getEndPointIndex());
 			for (int point = start + 1; point < end; point++) {
