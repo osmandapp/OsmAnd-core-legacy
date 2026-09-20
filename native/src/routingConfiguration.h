@@ -140,6 +140,14 @@ public:
 
     RoutingConfigurationBuilder() : defaultRouter("") {
     }
+
+    // profile attribute or the global one (RoutingConfiguration.Builder.getAttribute)
+    string getAttribute(SHARED_PTR<GeneralRouter> router, string propertyName) {
+        if (router->containsAttribute(propertyName)) {
+            return router->getAttribute(propertyName);
+        }
+        return attributes[propertyName];
+    }
     
     SHARED_PTR<RoutingConfiguration> build(string router, int memoryLimitMB, MAP_STR_STR& params) {
         return build(router, NO_DIRECTION, memoryLimitMB, params);

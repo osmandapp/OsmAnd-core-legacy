@@ -6,6 +6,7 @@
 // #include <algorithm>
 
 class GeneralRouter;
+class RoutingConfigurationBuilder;
 typedef boost::dynamic_bitset<> dynbitset;
 
 struct TransportRoutingConfiguration {
@@ -56,6 +57,10 @@ struct TransportRoutingConfiguration {
 
 	TransportRoutingConfiguration(SHARED_PTR<GeneralRouter> prouter,
 								  MAP_STR_STR params);
+
+	// the ferry times are global attributes of routing.xml, so they need the builder (RoutingConfiguration.java)
+	TransportRoutingConfiguration(SHARED_PTR<RoutingConfigurationBuilder> builder,
+								  SHARED_PTR<GeneralRouter> prouter, MAP_STR_STR params);
 
 	float getSpeedByRouteType(std::string routeType);
 	dynbitset getRawBitset(std::string tg, std::string vl);

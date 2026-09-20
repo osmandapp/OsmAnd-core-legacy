@@ -138,6 +138,7 @@ void TransportRoutePlanner::prepareResults(unique_ptr<TransportRoutingContext>& 
 			auto& vec = r->segments.at(i)->alternatives;
 			vec.insert(vec.end(), alts.begin(), alts.end());
 		}
+		TransportFerryHelper::mergeJunctionSegments(r->segments); // after filtering: changes only presentation
 	}
 }
 

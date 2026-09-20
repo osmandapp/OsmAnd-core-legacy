@@ -6,6 +6,7 @@
 
 #include "ferryRoutingHelper.h"
 #include "generalRouter.h"
+#include "routingConfiguration.h"
 
 TransportRoutingConfiguration::TransportRoutingConfiguration()
 	: router(new GeneralRouter()) {}
@@ -47,6 +48,18 @@ TransportRoutingConfiguration::TransportRoutingConfiguration(SHARED_PTR<GeneralR
 		RouteAttributeContext &spds = router->getObjContext(RouteDataObjectAttribute::ROAD_SPEED);
 		dynbitset bs = getRawBitset("route", "walk");
 		walkSpeed = spds.evaluateFloat(bs, walkSpeed);
+	}
+}
+
+TransportRoutingConfiguration::TransportRoutingConfiguration(SHARED_PTR<RoutingConfigurationBuilder> builder,
+															 SHARED_PTR<GeneralRouter> prouter, MAP_STR_STR params)
+	: TransportRoutingConfiguration(prouter, params) {
+	if (builder != nullptr && prouter != nullptr) {
+		using namespace OsmAndAlgorithms;
+		ferryBoardingTime = parseNumberSilently<int>(
+			builder->getAttribute(prouter, FerryRoutingHelper::BOARDING_TIME_ATTRIBUTE), 0);
+		ferryTerminalTime = parseNumberSilently<int>(
+			builder->getAttribute(prouter, FerryRoutingHelper::TERMINAL_TIME_ATTRIBUTE), 0);
 	}
 }
 

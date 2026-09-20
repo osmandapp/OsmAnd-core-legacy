@@ -18,7 +18,9 @@
 struct FerryRoutingHelper {
 	static constexpr const char* FERRY = "ferry";
 	static constexpr const char* DURATION_TAG = "duration";
-	// routing.xml attributes ferryBoardingTime and ferryTerminalTime (seconds) are read by RoutingConfiguration
+	// routing.xml attributes, seconds (read by RoutingConfiguration and TransportRoutingConfiguration)
+	static constexpr const char* BOARDING_TIME_ATTRIBUTE = "ferryBoardingTime";
+	static constexpr const char* TERMINAL_TIME_ATTRIBUTE = "ferryTerminalTime";
 
 	static bool isFerry(const SHARED_PTR<RouteDataObject>& road) {
 		return road->containsType(road->region->ferry);
@@ -112,6 +114,16 @@ struct FerryRoutingHelper {
 				rr->segmentSpeed = (float)(rr->distance / time);  // navigation calculates time left with the speed
 			}
 		}
+	}
+
+	// the route crosses water by a ferry, not only starts or ends at its terminal
+	static bool hasCrossing(vector<SHARED_PTR<RouteSegmentResult>>& result) {
+		for (int i = 0; i < (int)result.size(); i++) {
+			if (isFerry(result[i]->object) && isCrossing(result, i)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
    private:

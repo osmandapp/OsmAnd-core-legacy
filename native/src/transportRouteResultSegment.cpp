@@ -2,6 +2,7 @@
 #define _OSMAND_TRANSPORT_ROUTE_RESULT_SEGMENT_CPP
 #include "transportRouteResultSegment.h"
 
+#include "transportFerryHelper.h"
 #include "transportRoutingObjects.h"
 
 TransportRouteResultSegment::TransportRouteResultSegment() {
@@ -138,6 +139,43 @@ vector<SHARED_PTR<TransportStop>> TransportRouteResultSegment::getTravelStops() 
 
 const TransportStop& TransportRouteResultSegment::getStop(int32_t i) {
 	return *route->forwardStops.at(i).get();
+}
+
+// the junction stop itself is dropped: the two ways become one ride between its own start and end
+static SHARED_PTR<TransportRouteResultSegment> merge(const SHARED_PTR<TransportRouteResultSegment>& s,
+													 const SHARED_PTR<TransportRouteResultSegment>& next) {
+	vector<SHARED_PTR<TransportStop>> travelStops = s->getTravelStops();
+	vector<SHARED_PTR<TransportStop>> nextStops = next->getTravelStops();
+	vector<SHARED_PTR<TransportStop>> stops(travelStops.begin(), travelStops.end() - 1);
+	stops.insert(stops.end(), nextStops.begin() + 1, nextStops.end());
+	vector<SHARED_PTR<Way>> ways;
+	for (const auto& w : s->route->forwardWays) {
+		ways.push_back(make_shared<Way>(*w));
+	}
+	for (const auto& w : next->route->forwardWays) {
+		ways.push_back(make_shared<Way>(*w));
+	}
+	SHARED_PTR<TransportRouteResultSegment> res = make_shared<TransportRouteResultSegment>();
+	res->route = make_shared<TransportRoute>(s->route, stops, ways);
+	res->start = 0;
+	res->end = (int32_t)stops.size() - 1;
+	res->walkDist = s->walkDist;
+	res->walkTime = s->walkTime;
+	res->depTime = s->depTime;
+	res->travelTime = s->travelTime + next->travelTime;
+	res->travelDistApproximate = s->travelDistApproximate + next->travelDistApproximate;
+	return res;
+}
+
+void TransportFerryHelper::mergeJunctionSegments(vector<SHARED_PTR<TransportRouteResultSegment>>& segments) {
+	for (int i = (int)segments.size() - 1; i > 0; i--) {
+		SHARED_PTR<TransportRouteResultSegment> s = segments[i - 1];
+		if (isJunctionStop(s->route, s->end)) {
+			SHARED_PTR<TransportRouteResultSegment> next = segments[i];
+			segments.erase(segments.begin() + i);
+			segments[i - 1] = merge(s, next);
+		}
+	}
 }
 
 #endif /*_OSMAND_TRANSPORT_ROUTE_RESULT_SEGMENT_CPP*/
