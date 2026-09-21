@@ -1186,11 +1186,11 @@ void setSegments(CodedInputStream * input, HHRoutingContext * ctx, std::vector<i
 	input->PopLimit(oldLimit);
 }
 
-int loadNetworkSegmentPoint(CodedInputStream * input, HHRoutingContext * ctx, SHARED_PTR<HHRouteRegionPointsCtx> regCtx, HHRouteBlockSegments * block, int searchInd) {
+int loadNetworkSegmentPoint(CodedInputStream * input, HHRoutingContext * ctx, SHARED_PTR<HHRouteRegionPointsCtx> regCtx, HHRouteBlockSegments * block, int searchInd, bool reverse) {
 	if (block->sublist.size() > 0) {
 		for (auto * s : block->sublist) {
 			if (HHRoutingContext::checkId(searchInd, s)) {
-				return loadNetworkSegmentPoint(input, ctx, regCtx, s, searchInd);
+				return loadNetworkSegmentPoint(input, ctx, regCtx, s, searchInd, reverse);
 			}
 		}
 		return 0;
@@ -1229,7 +1229,7 @@ int loadNetworkSegmentPoint(CodedInputStream * input, HHRoutingContext * ctx, SH
 //                    OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
 //                                      "BLOCK I:%d %d/%d - %d - %d %d",
 //                                      block->filePointer, block->idRangeStart, block->idRangeLength, block->sublist.size(), child->length, child->filePointer);
-					loaded += loadNetworkSegmentPoint(input, ctx, regCtx, child, searchInd);
+					loaded += loadNetworkSegmentPoint(input, ctx, regCtx, child, searchInd, reverse);
 					input->PopLimit(olLimit);
 					block->sublist.push_back(child);
 				}
@@ -1243,11 +1243,15 @@ int loadNetworkSegmentPoint(CodedInputStream * input, HHRoutingContext * ctx, SH
 					std::vector<int32_t> segmentsIn;
 					std::vector<int32_t> segmentsOut;
 					setSegments(input, ctx, segmentsIn, segmentsOut);
-					if (point != nullptr) {
-						// not used from this file
-						point->connectedSet(true, parseSegments(ctx, segmentsIn, ctx->getIncomingPoints(point), point, false));
-						point->connectedSet(false, parseSegments(ctx, segmentsOut, ctx->getOutgoingPoints(point), point, true));
-						loaded += point->conn(true).size() + point->conn(false).size();
+					// block is read again after unload, keep already loaded (and edited) edges
+					// search expands point in one direction, other direction is loaded on demand
+					if (point != nullptr && !point->isConnSet(reverse)) {
+						if (reverse) {
+							point->connectedSet(true, parseSegments(ctx, segmentsIn, ctx->getIncomingPoints(point), point, false));
+						} else {
+							point->connectedSet(false, parseSegments(ctx, segmentsOut, ctx->getOutgoingPoints(point), point, true));
+						}
+						loaded += point->conn(reverse).size();
 					}
 				}
 				break;
@@ -1260,7 +1264,7 @@ int loadNetworkSegmentPoint(CodedInputStream * input, HHRoutingContext * ctx, SH
 	return 0;
 }
 
-int loadNetworkSegmentPoint(HHRoutingContext * ctx, SHARED_PTR<HHRouteRegionPointsCtx> regCtx, HHRouteBlockSegments * block, int searchInd) {
+int loadNetworkSegmentPoint(HHRoutingContext * ctx, SHARED_PTR<HHRouteRegionPointsCtx> regCtx, HHRouteBlockSegments * block, int searchInd, bool reverse) {
 	auto & file = regCtx->file;
 	auto & reg = regCtx->fileRegion;
 	
@@ -1270,7 +1274,7 @@ int loadNetworkSegmentPoint(HHRoutingContext * ctx, SHARED_PTR<HHRouteRegionPoin
 	CodedInputStream * input = new CodedInputStream(&stream);
 	input->SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 	input->Seek(reg->filePointer);
-	return loadNetworkSegmentPoint(input, ctx, regCtx, block, searchInd);
+	return loadNetworkSegmentPoint(input, ctx, regCtx, block, searchInd, reverse);
 }
 
 bool readTransportBounds(CodedInputStream* input, TransportIndex* ind) {
