@@ -9,8 +9,8 @@
 
 // Public transport ferries (TransportFerryHelper.java): routes built by the map creator from route=ferry ways
 // without a route relation and ferry crossings of other routes. Stop flags are stored as route tags with indexes
-// of the route stops. Hiding generated stops on the map is not here: it reads the name tag of the stop itself
-// (TransportFerryHelper.SYNTHETIC_STOP_TAG), Android in TransportStopsLayer and iOS in OsmAndCore.
+// of the route stops. The name tag a generated stop carries itself is read by the map layers only -
+// TransportStopsLayer on Android, TransportStop::isSynthetic of OsmAndCore on iOS.
 // transportRouteResultSegment.h can't be included here: its MISSING_STOP_SEARCH_RADIUS clashes with
 // the one of transportRouteStopsReader.h, which is included together with this header
 struct TransportRouteResultSegment;
@@ -28,6 +28,7 @@ struct TransportFerryHelper {
 		return route->type == FerryRoutingHelper::FERRY;
 	}
 
+	// the route lists the indexes of its generated stops
 	static bool isSyntheticStop(const SHARED_PTR<TransportRoute>& route, int stop) {
 		string value;
 		return getStopValue(route, FERRY_STOPS_TAG, stop, value);
