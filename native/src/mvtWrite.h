@@ -20,6 +20,8 @@ typedef vtzero::value_index<vtzero::sint_value_type, int32_t, std::unordered_map
 
 static const int MVT_TILE_EXTENT_SHIFT = 12;
 static const int MVT_TILE_WIDTH = 1 << MVT_TILE_EXTENT_SHIFT; // 4096
+static const int MVT_TILE_PIXEL_SIZE = 512;
+static const int MVT_POLYGON_MIN_SIZE = 75; // polygonMinSizeToDisplay in default.render.xml
 static const int MVT_TILE_INCREASE_DETAILS_BEFORE_DETAILED_ZOOM = 9; // increase basemap details
 
 inline int scaleToTile(int coord, int tileStart, int shift) {
@@ -277,6 +279,7 @@ inline void addObjectDataToMapboxVectorTile(vtzero::feature_builder& feature,
 inline std::string buildMapboxVectorTile(
 	std::vector<FoundMapDataObject>& foundMapDataObjects, int x, int y, int zoom) {
 	int s = 31 - zoom;
+	const double pixelScale = MVT_TILE_PIXEL_SIZE / static_cast<double>(1ULL << s);
 	const auto h = 1 << (std::max(s - 1, 0));
 	const std::pair<int, int> corner(x << s, y << s);
 	const std::pair<int, int> tl(std::max(corner.first - h, 0), std::max(corner.second - h, 0));
@@ -328,6 +331,18 @@ inline std::string buildMapboxVectorTile(
 		} else if (!isPoint && (isArea || isCycle)) {
 			if ((isCycle && size < 4) || size < 3)
 				continue;
+			if (zoom >= 9 && zoom <= 14) {
+				// Use the full outer ring before clipping, as in v1/v2 polygon area filtering.
+				int64_t doubledArea = 0;
+				auto prevPoint = obj.points.back();
+				for (const auto& p : obj.points) {
+					doubledArea += static_cast<int64_t>(prevPoint.first) * p.second
+						- static_cast<int64_t>(p.first) * prevPoint.second;
+					prevPoint = p;
+				}
+				if (std::abs(static_cast<double>(doubledArea)) * 0.5 * pixelScale * pixelScale <= MVT_POLYGON_MIN_SIZE)
+					continue;
+			}
 			clipPolygonForTile(obj.points, tl, br, corner, s, temp, polygon, center);
 			center.first = scaleToTile(center.first + (obj.labelX * (1 << LABEL_SHIFT)), corner.first, s);
 			center.second = scaleToTile(center.second + (obj.labelY * (1 << LABEL_SHIFT)), corner.second, s);
