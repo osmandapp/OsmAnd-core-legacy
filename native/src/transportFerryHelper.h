@@ -9,7 +9,8 @@
 
 // Public transport ferries (TransportFerryHelper.java): routes built by the map creator from route=ferry ways
 // without a route relation and ferry crossings of other routes. Stop flags are stored as route tags with indexes
-// of the route stops.
+// of the route stops. Hiding generated stops on the map is not here: it reads the name tag of the stop itself
+// (TransportFerryHelper.SYNTHETIC_STOP_TAG), Android in TransportStopsLayer and iOS in OsmAndCore.
 // transportRouteResultSegment.h can't be included here: its MISSING_STOP_SEARCH_RADIUS clashes with
 // the one of transportRouteStopsReader.h, which is included together with this header
 struct TransportRouteResultSegment;
@@ -17,11 +18,11 @@ struct TransportRouteResultSegment;
 struct TransportFerryHelper {
 	// stops generated at ferry way ends (not present in OSM), "j" marks a junction of ferry ways
 	// in the water (only a change to the next ferry way at the same stop): "0,3:j,5"
-	static constexpr const char* FERRY_STOPS_TAG = "osmand:ferry_stops";
+	static constexpr const char* FERRY_STOPS_TAG = "osmand_ferry_stops";
 	static constexpr const char* JUNCTION_VALUE = "j";
 	// non-ferry route goes over a ferry before these stops:
 	// "stop index:ferry interval:ferry duration:ferry length" (seconds and meters, 0 - unknown)
-	static constexpr const char* CROSSINGS_TAG = "osmand:ferry_crossings";
+	static constexpr const char* CROSSINGS_TAG = "osmand_ferry_crossings";
 
 	static bool isFerry(const SHARED_PTR<TransportRoute>& route) {
 		return route->type == FerryRoutingHelper::FERRY;
@@ -35,28 +36,6 @@ struct TransportFerryHelper {
 	static bool isJunctionStop(const SHARED_PTR<TransportRoute>& route, int stop) {
 		string value;
 		return getStopValue(route, FERRY_STOPS_TAG, stop, value) && value == JUNCTION_VALUE;
-	}
-
-	// synthetic stop from the stops tree is marked in the stop lists of its routes
-	static bool isSyntheticStop(const SHARED_PTR<TransportStop>& stop) {
-		for (const auto& route : stop->routes) {
-			for (int i = 0; i < (int)route->forwardStops.size(); i++) {
-				if (route->forwardStops[i]->id == stop->id) {
-					return isSyntheticStop(route, i);
-				}
-			}
-		}
-		return false;
-	}
-
-	static vector<SHARED_PTR<TransportStop>> getVisibleStops(const SHARED_PTR<TransportRoute>& route) {
-		vector<SHARED_PTR<TransportStop>> stops;
-		for (int i = 0; i < (int)route->forwardStops.size(); i++) {
-			if (!isSyntheticStop(route, i)) {
-				stops.push_back(route->forwardStops[i]);
-			}
-		}
-		return stops;
 	}
 
 	// ferry with a duration tag moves with the speed from it
