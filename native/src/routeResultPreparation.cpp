@@ -248,15 +248,15 @@ void splitRoadsAndAttachRoadSegments(RoutingContext* ctx, vector<SHARED_PTR<Rout
 
 static const double TRAFFIC_SIGNALS_INTERSECTION_SIZE = 60;
 
-struct TimeCalculationState {
+struct CumulativeIntersectionDistance {
     double currentDistance = 0;
     double lastIntersectionDistance = -1;
 };
 
-static void calculateTimeSpeed(RoutingContext* ctx, SHARED_PTR<RouteSegmentResult>& rr, TimeCalculationState& state);
+static void calculateTimeSpeed(RoutingContext* ctx, SHARED_PTR<RouteSegmentResult>& rr, CumulativeIntersectionDistance& state);
 
 void calculateTimeSpeed(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResult>>& result) {
-    TimeCalculationState state;
+    CumulativeIntersectionDistance state;
     for (int i = 0; i < result.size(); i++) {
         if (i > 0) {
             state.currentDistance += result[i - 1]->distance;
@@ -266,11 +266,11 @@ void calculateTimeSpeed(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResul
 }
 
 void calculateTimeSpeed(RoutingContext* ctx, SHARED_PTR<RouteSegmentResult>& rr) {
-    TimeCalculationState state;
+    CumulativeIntersectionDistance state;
     calculateTimeSpeed(ctx, rr, state);
 }
 
-static void calculateTimeSpeed(RoutingContext* ctx, SHARED_PTR<RouteSegmentResult>& rr, TimeCalculationState& state) {
+static void calculateTimeSpeed(RoutingContext* ctx, SHARED_PTR<RouteSegmentResult>& rr, CumulativeIntersectionDistance& state) {
     // Naismith's/Scarf rules are used to clarify time on uphills
     bool useNaismithRule = false;
     double scarfSeconds = 0; // Additional time as per Naismith/Scarf
