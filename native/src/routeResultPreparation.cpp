@@ -246,13 +246,31 @@ void splitRoadsAndAttachRoadSegments(RoutingContext* ctx, vector<SHARED_PTR<Rout
     }
 }
 
+static const double TRAFFIC_SIGNALS_INTERSECTION_SIZE = 60;
+
+struct CumulativeIntersectionDistance {
+    double currentDistance = 0;
+    double lastIntersectionDistance = -1;
+};
+
+static void calculateTimeSpeed(RoutingContext* ctx, SHARED_PTR<RouteSegmentResult>& rr, CumulativeIntersectionDistance& state);
+
 void calculateTimeSpeed(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResult>>& result) {
+    CumulativeIntersectionDistance state;
     for (int i = 0; i < result.size(); i++) {
-        calculateTimeSpeed(ctx, result[i]);
+        if (i > 0) {
+            state.currentDistance += result[i - 1]->distance;
+        }
+        calculateTimeSpeed(ctx, result[i], state);
     }
 }
 
 void calculateTimeSpeed(RoutingContext* ctx, SHARED_PTR<RouteSegmentResult>& rr) {
+    CumulativeIntersectionDistance state;
+    calculateTimeSpeed(ctx, rr, state);
+}
+
+static void calculateTimeSpeed(RoutingContext* ctx, SHARED_PTR<RouteSegmentResult>& rr, CumulativeIntersectionDistance& state) {
     // Naismith's/Scarf rules are used to clarify time on uphills
     bool useNaismithRule = false;
     double scarfSeconds = 0; // Additional time as per Naismith/Scarf
@@ -297,6 +315,16 @@ void calculateTimeSpeed(RoutingContext* ctx, SHARED_PTR<RouteSegmentResult>& rr)
             double obstacle = ctx->config->router->defineObstacle(road, j, !plus);
             if (obstacle < 0) {
                 obstacle = 0;
+            } else if (obstacle > 0 && road->hasTrafficLightAt(j)) {
+                // A driver stops once per intersection
+                double signalDistance = state.currentDistance + distance;
+                bool startsNewIntersection = state.lastIntersectionDistance < 0 ||
+                    signalDistance - state.lastIntersectionDistance >= TRAFFIC_SIGNALS_INTERSECTION_SIZE;
+                if (startsNewIntersection) {
+                    state.lastIntersectionDistance = signalDistance;
+                } else {
+                    obstacle = 0;
+                }
             }
             distOnRoadToPass += d / speed + obstacle;
 
