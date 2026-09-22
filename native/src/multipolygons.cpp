@@ -129,6 +129,7 @@ bool processCoastlines(std::vector<FoundMapDataObject>& coastLines, int leftX, i
 		}
 		o->id = dbId--;
 		o->area = true;
+		o->surface = true;
 		res.push_back(FoundMapDataObject(o, NULL, zoom));
 	}
 	//OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "Ocean: islands %d, closed water %d, coastline touches screen %d",
@@ -142,6 +143,7 @@ bool processCoastlines(std::vector<FoundMapDataObject>& coastLines, int leftX, i
 		o->points.push_back(int_pair(leftX, bottomY));
 		o->points.push_back(int_pair(leftX, topY));
 		o->id = dbId--;
+		o->surface = true;
 		o->types.push_back(tag_value("natural", "coastline"));
 		res.push_back(FoundMapDataObject(o, NULL, zoom));
 	}

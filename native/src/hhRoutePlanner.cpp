@@ -77,7 +77,8 @@ SHARED_PTR<HHRoutingContext> HHRoutePlanner::selectBestRoutingFiles(int startX, 
 		}
 	}
 	for (auto & g : groups) {
-		g->containsStartEnd = g->contains(startX, startY, hctx) && g->contains(endX, endY, hctx)
+		g->containsStartEndByBbox = g->contains(startX, startY, hctx) && g->contains(endX, endY, hctx);
+		g->containsStartEnd = g->containsStartEndByBbox
 			&& g->containsStartEndRegion(hctx->rctx->regionsCoveringStartAndTargets);
 		vector<string> params = split_string(g->profileParams, ",");
 		matchGroupRoutingParams(params, router, g);
@@ -85,6 +86,9 @@ SHARED_PTR<HHRoutingContext> HHRoutePlanner::selectBestRoutingFiles(int startX, 
 	std::sort(groups.begin(), groups.end(), [](const SHARED_PTR<HHRouteRegionsGroup> o1, const SHARED_PTR<HHRouteRegionsGroup> o2) {
 		if (o1->containsStartEnd != o2->containsStartEnd) {
 			return o1->containsStartEnd;
+		} else if (o1->containsStartEndByBbox != o2->containsStartEndByBbox) {
+			// Keep polygon matches first, then prefer endpoint coverage over a newer edition.
+			return o1->containsStartEndByBbox;
 		} else if (o1->edition != o2->edition) {
 			return o1->edition > o2->edition;
 		} else if (o1->extraParam != o2->extraParam) {
@@ -764,6 +768,8 @@ HHNetworkRouteRes * HHRoutePlanner::createRouteSegmentFromFinalPoint(const SHARE
 		route->uniquePoints.insert(itPnt->index);
 		while (itPnt->rt(true)->rtRouteToPoint != nullptr) {
 			NetworkDBPoint * nextPnt = itPnt->rt(true)->rtRouteToPoint;
+			hctx->loadNetworkSegmentPoint(nextPnt, true);
+			nextPnt->edgesEdited = true; // route keeps pointer to edge
 			NetworkDBSegment * segment = nextPnt->getSegment(itPnt, false);
 			HHNetworkSegmentRes res(segment);
 			res.rtTimeDetailed = res.rtTimeHHSegments = segment->dist;
@@ -782,6 +788,8 @@ HHNetworkRouteRes * HHRoutePlanner::createRouteSegmentFromFinalPoint(const SHARE
 		itPnt = pnt;
 		while (itPnt->rt(false)->rtRouteToPoint != nullptr) {
 			NetworkDBPoint * nextPnt = itPnt->rt(false)->rtRouteToPoint;
+			hctx->loadNetworkSegmentPoint(nextPnt, false);
+			nextPnt->edgesEdited = true; // route keeps pointer to edge
 			NetworkDBSegment * segment = nextPnt->getSegment(itPnt, true);
 			HHNetworkSegmentRes res(segment);
 			res.rtTimeDetailed = res.rtTimeHHSegments = segment->dist;
@@ -842,15 +850,18 @@ void HHRoutePlanner::recalculateNetworkCluster(const SHARED_PTR<HHRoutingContext
 				p->endX = o->getEndPointX();
 				p->endY = o->getEndPointY();
 				float routeTime = o->getDistanceFromStart() + calcRoutingSegmentTimeOnlyDist(hctx->rctx->config->router, o) / 2 + 1;
+				hctx->loadNetworkSegmentPoint(start, false);
+				hctx->loadNetworkSegmentPoint(p, true);
+				start->edgesEdited = p->edgesEdited = true; // new edges could be added
 				NetworkDBSegment * c = start->getSegment(p, true);
 				if (c != nullptr) {
-					c->dist = routeTime;
+					c->editDist(routeTime);
 				} else {
 					start->connected.push_back(hctx->createNetworkDBSegment(start, p, routeTime, true, false));
 				}
 				NetworkDBSegment * co = p->getSegment(start, false);
 				if (co != nullptr) {
-					co->dist = routeTime;
+					co->editDist(routeTime);
 				} else {
 					p->connectedReverse.push_back(hctx->createNetworkDBSegment(start, p, routeTime, false, false));
 				}
@@ -858,13 +869,15 @@ void HHRoutePlanner::recalculateNetworkCluster(const SHARED_PTR<HHRoutingContext
 		}
 	}
 	
+	hctx->loadNetworkSegmentPoint(start, false);
 	for (NetworkDBSegment * c : start->connected) {
 		auto it = resUnique.find(calculateRoutePointInternalId(c->end->roadId, c->end->start, c->end->end));
 		if (it == resUnique.end()) {
-			c->dist = -1; // disable as not found
+			c->editDist(-1); // disable as not found
+			hctx->loadNetworkSegmentPoint(c->end, true);
 			NetworkDBSegment * co = c->end->getSegment(start, false);
 			if (co != nullptr) {
-				co->dist = -1;
+				co->editDist(-1);
 			}
 		}
 	}
@@ -876,6 +889,7 @@ bool HHRoutePlanner::retrieveSegmentsGeometry(const SHARED_PTR<HHRoutingContext>
 	if (progress != nullptr && progress->hhGetCalcCounter() > 0) {
 		progress->hhIterationProgress((double) progress->hhGetCalcCounter() / maxCountReiteration);
 	}
+	bool costIncreased = false;
 	for (int i = 0; i < route->segments.size(); i++) {
 		if (progress != nullptr && progress->hhGetCalcCounter() == 0) {
 			progress->hhIterationProgress((double) i / route->segments.size());
@@ -907,7 +921,7 @@ bool HHRoutePlanner::retrieveSegmentsGeometry(const SHARED_PTR<HHRoutingContext>
 				if (full) {
 					recalculateNetworkCluster(hctx, s.segment->start);
 				}
-				s.segment->dist = -1;
+				s.segment->editDist(-1);
 				return true;
 			}
 			if (f.size() > 1) {
@@ -924,14 +938,16 @@ bool HHRoutePlanner::retrieveSegmentsGeometry(const SHARED_PTR<HHRoutingContext>
 									  "Route cost increased (%.2f > %.2f) between %d -> %d: recalculate route\n",
 									  distanceFromStart, s.segment->dist, (int)s.segment->start->index, (int)s.segment->end->index);
 				}
-				s.segment->dist = distanceFromStart;
-				return true;
+				s.segment->editDist(distanceFromStart);
+				// correct every underestimated shortcut of this route before recalculating it
+				costIncreased = true;
+				continue;
 			}
 			s.rtTimeDetailed = distanceFromStart;
 			s.list = convertFinalSegmentToResults(hctx->rctx, f.at(0));
 		}
 	}
-	return false;
+	return costIncreased;
 }
 
 SHARED_PTR<RouteSegmentPoint> HHRoutePlanner::loadPoint(RoutingContext * ctx, const NetworkDBPoint * pnt) {
@@ -1092,7 +1108,7 @@ void HHRoutePlanner::addConnectedToQueue(const SHARED_PTR<HHRoutingContext> & hc
 			OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info,
 							  "Incorrect distance Point %u -> Point %u: db = %.2f > fastest %.2f",
 							  (unsigned int)point->index, (unsigned int)nextPoint->index, connected->dist, sSegmentCost);
-			connected->dist = sSegmentCost;
+			connected->editDist(sSegmentCost);
 		}
 		double cost = point->rt(reverse)->rtDistanceFromStart  + connected->dist + hctx->distanceToEnd(reverse, nextPoint);
 		if (ASSERT_COST_INCREASING && point->rt(reverse)->rtCost - cost > 1) {
@@ -1108,6 +1124,7 @@ void HHRoutePlanner::addConnectedToQueue(const SHARED_PTR<HHRoutingContext> & hc
 			addPointToQueue(hctx, queue, reverse, nextPoint, point, connected->dist, cost);
 		}
 	}
+	hctx->unloadExpandedSegments(point);
 }
 
 NetworkDBPoint * HHRoutePlanner::runRoutingPointsToPoints(const SHARED_PTR<HHRoutingContext> & hctx,

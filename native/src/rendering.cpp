@@ -34,6 +34,8 @@
 const int MAX_V = 10;
 const int MAX_V_AREA = 2000;
 const int DEFAULT_POLYGON_MAX = 11;
+// order of the sea and land surfaces: below any polygon order of a style, bigger ones first (OsmAndCore uses INT_MIN)
+const double SURFACE_POLYGON_ORDER = -1000;
 const int DEFAULT_LINE_MAX = 100;
 const int DEFAULT_POINTS_MAX = 200;
 const int POINT_DRAW_ZOOM_FILTER = 16;
@@ -1329,6 +1331,10 @@ void sortObjectsByProperOrder(std::vector<FoundMapDataObject>& mapDataObjects, R
 
 							if (area > MAX_V && area > minPolygonSize) {
 								mapObj->order = mapObj->order + (1. / area);
+								if (mobj->surface) {
+									mapObj->order = SURFACE_POLYGON_ORDER + (1. / area);
+									pointObj->order = SURFACE_POLYGON_ORDER;
+								}
 								if (mapObj->order < DEFAULT_POLYGON_MAX) {
 									polygonsArray.push_back(mapObj);
 									mapObjAdded = true;

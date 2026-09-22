@@ -263,6 +263,8 @@ class MapDataObject {
 	UNORDERED(map)<std::string, std::string> objectNames;
 	std::vector<std::string> namesOrder;
 	bool area;
+	// sea or land built from coastlines (or a whole-tile fill): drawn below all other polygons, as in OsmAndCore
+	bool surface = false;
 	int64_t id;
 	int32_t labelX;
 	int32_t labelY;

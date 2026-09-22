@@ -27,6 +27,8 @@ struct HHRoutingConfig
 	bool ROUTE_ALL_SEGMENTS = false;
 	bool ROUTE_ALL_ALT_SEGMENTS = false;
 	bool PRELOAD_SEGMENTS = false;
+	// max hub-graph edges kept in memory, oldest expanded points are unloaded first (0 - unlimited)
+	int MAX_LOADED_EDGES = 250000;
 
 	bool CALC_ALTERNATIVES = false;
 	bool USE_GC_MORE_OFTEN = false;
@@ -142,6 +144,7 @@ struct NetworkDBPoint {
 	uint32_t endY;
 	bool rtExclude;
 	bool incomplete;
+	bool edgesEdited = false; // edges are changed or referenced by route and can't be unloaded
 	
 	SHARED_PTR<NetworkDBPointRouteInfo> rtRev;
 	SHARED_PTR<NetworkDBPointRouteInfo> rtPos;
@@ -176,11 +179,11 @@ struct NetworkDBPoint {
 	}
 	
 	void markSegmentsNotLoaded() {
-		connected.clear();
-		isConnectedSet = false;
-		connectedReverse.clear();
-		isConnectedReverseSet = false;
+		unloadSegments();
 	}
+
+	// point owns its edges, returns number of deleted
+	size_t unloadSegments();
 	
 	LatLon getPoint() {
 		LatLon l(get31LatitudeY(startY / 2 + endY / 2), get31LongitudeX(startX / 2 + endX / 2));
@@ -265,6 +268,13 @@ struct NetworkDBSegment {
 	
 	NetworkDBSegment(NetworkDBPoint * start, NetworkDBPoint * end, double dist, bool direction, bool shortcut):
 		direction(direction), start(start), end(end), shortcut(shortcut), dist(dist) {
+	}
+
+	// edited cost can't be restored from file, so edges of both points are never unloaded
+	void editDist(double d) {
+		dist = d;
+		start->edgesEdited = true;
+		end->edgesEdited = true;
 	}
 	
 	/*public List<LatLon> getGeometry() {
@@ -505,7 +515,8 @@ struct HHRoutingContext {
 	UNORDERED_map<int64_t, std::vector<NetworkDBPoint *>> clusterInPoints;
 	UNORDERED_map<int64_t, std::vector<NetworkDBPoint *>> clusterOutPoints;
 	
-	std::vector<NetworkDBSegment *> cacheAllNetworkDBSegment;
+	int64_t loadedEdges = 0;
+	std::queue<NetworkDBPoint *> expandedPoints; // unload order
 	std::vector<NetworkDBPoint *> cacheAllNetworkDBPoint;
 	UNORDERED_map<string, string> filterRoutingParameters;
 	
@@ -519,10 +530,8 @@ struct HHRoutingContext {
 	}
 	
 	~HHRoutingContext() {
-		for (NetworkDBSegment * s : cacheAllNetworkDBSegment) {
-			delete s;
-		}
 		for (NetworkDBPoint * p : cacheAllNetworkDBPoint) {
+			p->unloadSegments();
 			delete p;
 		}
 	}
@@ -620,7 +629,7 @@ struct HHRoutingContext {
 			SHARED_PTR<HHRouteIndex> & fileRegion = r->fileRegion;
 			for (auto * s : fileRegion->segments) {
 				if (s->profileId == r->getRoutingProfile() && checkId(point->fileId, s)) {
-					return ::loadNetworkSegmentPoint(this, r, s, point->fileId);
+					return ::loadNetworkSegmentPoint(this, r, s, point->fileId, reverse);
 				}
 			}
 		}
@@ -628,9 +637,8 @@ struct HHRoutingContext {
 	}
 	
 	NetworkDBSegment * createNetworkDBSegment(NetworkDBPoint * start, NetworkDBPoint * end, double dist, bool direction, bool shortcut) {
-		NetworkDBSegment * ns = new NetworkDBSegment(start, end, dist, direction, shortcut);
-		cacheAllNetworkDBSegment.push_back(ns);
-		return ns;
+		loadedEdges++;
+		return new NetworkDBSegment(start, end, dist, direction, shortcut);
 	}
 	
 	NetworkDBPoint * createNetworkDBPoint() {
@@ -642,7 +650,21 @@ struct HHRoutingContext {
 	void unloadAllConnections() {
 		for (auto it = pointsById.begin(); it != pointsById.end(); it++) {
 			NetworkDBPoint * p = it->second;
-			p->markSegmentsNotLoaded();
+			if (!p->edgesEdited) {
+				loadedEdges -= p->unloadSegments();
+			}
+		}
+	}
+
+	// unload with delay: point could be expanded again soon with a better cost
+	void unloadExpandedSegments(NetworkDBPoint * point) {
+		expandedPoints.push(point);
+		while (config->MAX_LOADED_EDGES > 0 && loadedEdges > config->MAX_LOADED_EDGES && expandedPoints.size() > 1) {
+			NetworkDBPoint * p = expandedPoints.front();
+			expandedPoints.pop();
+			if (!p->edgesEdited) {
+				loadedEdges -= p->unloadSegments();
+			}
 		}
 	}
 	
@@ -665,6 +687,7 @@ struct HHRouteRegionsGroup {
 	int highCostParam = 0;
 	int unsupportedParams = 0;
 	bool containsStartEnd = false;
+	bool containsStartEndByBbox = false;
 	double sumIntersects = 0;
 	
 	HHRouteRegionsGroup(): edition(-1), profileParams("") {

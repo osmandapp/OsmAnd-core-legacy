@@ -1197,5 +1197,5 @@ struct NetworkDBPoint;
 struct HHRoutingContext;
 struct HHRouteRegionPointsCtx;
 void initHHPoints(BinaryMapFile* file, SHARED_PTR<HHRouteIndex> reg, HHRoutingContext * ctx, short mapId, UNORDERED_map<int64_t, NetworkDBPoint *> & resPoints);
-int loadNetworkSegmentPoint(HHRoutingContext * ctx, SHARED_PTR<HHRouteRegionPointsCtx> regCtx, HHRouteBlockSegments * block, int searchInd);
+int loadNetworkSegmentPoint(HHRoutingContext * ctx, SHARED_PTR<HHRouteRegionPointsCtx> regCtx, HHRouteBlockSegments * block, int searchInd, bool reverse);
 #endif
