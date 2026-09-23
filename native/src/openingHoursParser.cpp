@@ -172,6 +172,9 @@ StringsHolder::StringsHolder() {
 	initLocalStrings();
 
 	additionalStrings["off"] = "off";
+	additionalStrings["public_holiday"] = "PH";
+	additionalStrings["school_holiday"] = "SH";
+	additionalStrings["easter"] = "Easter";
 	additionalStrings["is_open"] = "Open";
 	additionalStrings["is_open_24_7"] = "Open 24/7";
 	additionalStrings["is_open_24_7_short"] = "24/7";
@@ -589,7 +592,6 @@ void OpeningHoursParser::BasicOpeningHourRule::addArray(const std::vector<bool>&
 }
 
 std::string OpeningHoursParser::BasicOpeningHourRule::toRuleString(bool useLocalization) const {
-	std::vector<std::string> dayNames = useLocalization ? stringsHolder.localDaysStr : stringsHolder.daysStr;
 	std::vector<std::string> monthNames = useLocalization ? stringsHolder.localMothsStr : stringsHolder.monthsStr;
 	std::string offStr = useLocalization ? stringsHolder.additionalStrings["off"] : "off";
 
@@ -706,7 +708,7 @@ std::string OpeningHoursParser::BasicOpeningHourRule::toRuleString(bool useLocal
 	}
 
 	// Day
-	appendDaysString(b, dayNames);
+	appendDaysString(b, useLocalization);
 	// Time
 	if (_startTimes.empty()) {
 		if (isOpened24_7()) {
@@ -873,11 +875,14 @@ bool OpeningHoursParser::BasicOpeningHourRule::appendYearString(std::stringstrea
 }
 
 void OpeningHoursParser::BasicOpeningHourRule::appendDaysString(std::stringstream& builder) const {
-	appendDaysString(builder, stringsHolder.daysStr);
+	appendDaysString(builder, false);
 }
 
-void OpeningHoursParser::BasicOpeningHourRule::appendDaysString(std::stringstream& builder,
-																const std::vector<std::string>& daysNames) const {
+void OpeningHoursParser::BasicOpeningHourRule::appendDaysString(std::stringstream& builder, bool useLocalization) const {
+	const std::vector<std::string>& daysNames = useLocalization ? stringsHolder.localDaysStr : stringsHolder.daysStr;
+	std::string publicHolidayStr = useLocalization ? stringsHolder.additionalStrings["public_holiday"] : "PH";
+	std::string schoolHolidayStr = useLocalization ? stringsHolder.additionalStrings["school_holiday"] : "SH";
+	std::string easterStr = useLocalization ? stringsHolder.additionalStrings["easter"] : "Easter";
 	bool dash = false;
 	bool first = true;
 	for (int i = 0; i < 7; i++) {
@@ -905,19 +910,19 @@ void OpeningHoursParser::BasicOpeningHourRule::appendDaysString(std::stringstrea
 	if (_publicHoliday) {
 		if (!first) builder << ", ";
 
-		builder << "PH";
+		builder << publicHolidayStr;
 		first = false;
 	}
 	if (_schoolHoliday) {
 		if (!first) builder << ", ";
 
-		builder << "SH";
+		builder << schoolHolidayStr;
 		first = false;
 	}
 	if (_easter) {
 		if (!first) builder << ", ";
 
-		builder << "Easter";
+		builder << easterStr;
 		first = false;
 	}
 	if (!first) builder << " ";
