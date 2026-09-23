@@ -115,6 +115,7 @@ struct RouteSegment {
 
 	RouteSegment()
 		: segmentStart(0),
+		  segmentEnd(0),
 		  road(nullptr),
 		  oppositeDirection(),
 		  parentRoute(),
@@ -148,7 +149,13 @@ struct RouteSegment {
 		  distanceToEnd(0),
 		  isFinalSegment(false) {}
 
-	virtual ~RouteSegment() = default;
+	virtual ~RouteSegment() {
+		auto p = std::move(parentRoute);
+		while (p && p.use_count() == 1) {
+			auto next = std::move(p->parentRoute);
+			p = std::move(next);
+		}
+	}
 
 	virtual std::string toString() {
 		std::string dst;
@@ -216,7 +223,7 @@ struct RouteSegmentPoint : RouteSegment {
 struct FinalRouteSegment : RouteSegment {
 	FinalRouteSegment(const SHARED_PTR<RouteDataObject>& road, int segmentStart, int segmentEnd)
 		: RouteSegment(road, segmentStart, segmentEnd) {}
-	bool reverseWaySearch;
+	bool reverseWaySearch = false;
 	SHARED_PTR<RouteSegment> opposite;
 };
 
@@ -234,9 +241,9 @@ struct GpxPoint {
 	bool straightLine = false;
 	SHARED_PTR<RouteDataObject> object;
 
-	GpxPoint(int32_t ind, double lat, double lon, double cumDist) : ind(ind), lat(lat), lon(lon), cumDist(cumDist){};
+	GpxPoint(int32_t ind, double lat, double lon, double cumDist) : ind(ind), lat(lat), lon(lon), x31(0), y31(0), cumDist(cumDist){};
 
-	GpxPoint(const SHARED_PTR<GpxPoint>& p) : ind(p->ind), lat(p->lat), lon(p->lon), cumDist(p->cumDist), object(p->object) {};
+	GpxPoint(const SHARED_PTR<GpxPoint>& p) : ind(p->ind), lat(p->lat), lon(p->lon), x31(0), y31(0), cumDist(p->cumDist), object(p->object) {};
 
 	SHARED_PTR<RouteSegmentResult> getFirstRouteRes() { return routeToTarget.empty() ? nullptr : routeToTarget.at(0); }
 	SHARED_PTR<RouteSegmentResult> getLastRouteRes() { return routeToTarget.empty() ? nullptr : routeToTarget.at(routeToTarget.size() - 1); }
