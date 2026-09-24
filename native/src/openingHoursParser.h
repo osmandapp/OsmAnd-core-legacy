@@ -469,7 +469,7 @@ struct OpeningHoursParser {
 		std::string toString() const;
 
 		void appendDaysString(std::stringstream& builder) const;
-		void appendDaysString(std::stringstream& builder, const std::vector<std::string>& daysNames) const;
+		void appendDaysString(std::stringstream& builder, bool useLocalization) const;
 		bool appendYearString(std::stringstream& builder, const std::vector<int>& yearMonths, int month) const;
 
 		/**
