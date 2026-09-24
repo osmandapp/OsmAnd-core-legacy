@@ -159,6 +159,7 @@ void fillTextProperties(RenderingContext* rc, SHARED_PTR<TextDrawInfo>& info, Re
 	info->shieldRes = prepareIconValue(info->object, render->getStringPropertyValue(render->props()->R_TEXT_SHIELD));
 	info->shieldResIcon = prepareIconValue(info->object, render->getStringPropertyValue(render->props()->R_ICON));
 	info->textOrder = render->getIntPropertyValue(render->props()->R_TEXT_ORDER, 100);
+	info->textTopSide = render->getStringPropertyValue(render->props()->R_TEXT_TOP_SIDE);
 }
 
 bool isLetterOrDigit(char c) {
@@ -406,7 +407,8 @@ bool calculatePathToRotate(RenderingContext* rc, SHARED_PTR<TextDrawInfo>& p, De
 			if (rot < 0) {
 				rot += M_PI * 2;
 			}
-			if (rot > M_PI_2 && rot < 3 * M_PI_2) {
+			bool flip = p->textTopSide.empty() ? (rot > M_PI_2 && rot < 3 * M_PI_2) : p->textTopSide == "right";
+			if (flip) {
 				rot += M_PI;
 				inverse = true;
 				ox = -ox;

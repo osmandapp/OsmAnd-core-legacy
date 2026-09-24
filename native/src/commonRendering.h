@@ -153,6 +153,8 @@ struct TextDrawInfo {
 	int secondOrder;
 
 	bool drawOnPath;
+	// "left" / "right" of the path direction: keep that orientation instead of flipping for readability
+	std::string textTopSide;
 	SkPath* path;
 	float pathRotate;
 	float vOffset;

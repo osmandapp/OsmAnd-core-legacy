@@ -271,6 +271,7 @@ public:
 	RenderingRuleProperty* R_ICON_ORDER;
 	RenderingRuleProperty* R_TEXT_MIN_DISTANCE;
 	RenderingRuleProperty* R_TEXT_ON_PATH;
+	RenderingRuleProperty* R_TEXT_TOP_SIDE;
 	RenderingRuleProperty* R_ICON_SHIFT_PX;
 	RenderingRuleProperty* R_ICON_SHIFT_PY;
 	RenderingRuleProperty* R_ICON_1;
@@ -420,6 +421,7 @@ public:
 		R_TEXT_BOLD = registerRuleInternal(RenderingRuleProperty::createOutputBooleanProperty("textBold"));
 		R_TEXT_ITALIC = registerRuleInternal(RenderingRuleProperty::createOutputBooleanProperty("textItalic"));
 		R_TEXT_ON_PATH = registerRuleInternal(RenderingRuleProperty::createOutputBooleanProperty("textOnPath"));
+		R_TEXT_TOP_SIDE = registerRuleInternal(RenderingRuleProperty::createOutputStringProperty("textTopSide"));
 
 		// point
 		R_ICON_SHIFT_PX = registerRuleInternal(RenderingRuleProperty::createOutputFloatProperty("icon_shift_px"));
