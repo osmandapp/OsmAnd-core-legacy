@@ -190,7 +190,7 @@ vector<SHARED_PTR<RouteSegmentResult>> RoutePlannerFrontEnd::searchRouteInternal
 
 	refreshProgressDistance(ctx);
 
-	vector<SHARED_PTR<RouteSegment>> segments = searchRouteInternal(ctx, start, end, {}, {});
+	vector<SHARED_PTR<RouteSegment>> segments = searchRouteInternal(ctx, start, recalculationEnd ? recalculationEnd : end, {}, {});
 
 	if (segments.empty()) {
 		// OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Warning, "searchRouteInternalPrepare() got empty segments");
