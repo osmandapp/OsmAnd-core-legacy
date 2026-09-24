@@ -628,7 +628,7 @@ double calculateRouteSegmentTime(RoutingContext* ctx, bool reverseWaySearch, SHA
 	if (obstacle < 0) {
 		return -1;
 	}
-	double heightObstacle = ctx->config->router->defineHeightObstacle(road, segmentInd, prevSegmentInd);
+	double heightObstacle = ctx->config->router->defineHeightObstacle(road, prevSegmentInd, segmentInd);
 	if (heightObstacle < 0) {
 		return -1;
 	}
