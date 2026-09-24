@@ -30,6 +30,9 @@ struct RoadSplitStructure {
     int addRoadsOnRight = 0;
     int leftMaxPrio = 0;
     int rightMaxPrio = 0;
+
+    vector<double> attachedAngles;
+    double currentDeviation = 0;
     
     bool allAreStraight() {
         for (const SHARED_PTR<AttachedRoadInfo> & angle : leftLanesInfo) {

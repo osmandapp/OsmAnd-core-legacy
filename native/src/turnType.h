@@ -265,6 +265,15 @@ public:
         return getPrimaryTurn(type) == turn || getSecondaryTurn(type) == turn || getTertiaryTurn(type) == turn;
     }
     
+    static bool hasActiveLane(const vector<int>& lanes) {
+        for (int lane : lanes) {
+            if (lane % 2 == 1) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     static bool isSharpOrReverse(int type) {
         return type == TSHL || type == TSHR || type == TU || type == TRU;
     }

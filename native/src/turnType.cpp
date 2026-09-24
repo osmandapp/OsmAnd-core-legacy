@@ -356,6 +356,9 @@ int TurnType::convertType(string lane) {
 		turn = TSHL;
 	} else if (lane == "reverse") {
 		turn = TU;
+	} else if (lane == "reverse_right") {
+		// not an OSM value: a U-turn to the right, left-side navigation
+		turn = TRU;
 	} else {
 		// Unknown string
 		turn = C;
