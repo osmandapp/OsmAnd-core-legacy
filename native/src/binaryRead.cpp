@@ -3343,7 +3343,9 @@ ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, 
 
 		// no detailed coastline crosses the tile: before the basemap (its coarse coastline draws squares and
 		// triangles of land in the sea at high zooms), ask the detailed coastlines around the tile
-		if (addBasemapCoastlines && q->zoom > zoomOnlyForBasemaps && !basemapCoastLines.empty()) {
+		// (not only where the basemap has a coastline: oceantiles_12 and the basemap are stale in places, e.g.
+		// zoom 12 tile 1211/244 at the north coast of Ellesmere Island is land there and sea in fact)
+		if (addBasemapCoastlines && q->zoom > zoomOnlyForBasemaps) {
 			const int side = detailedCoastlineSide(q, uniqCoastLines);
 			if (side != 0) {
 				MapDataObject* o = new MapDataObject();
