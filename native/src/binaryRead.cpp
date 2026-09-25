@@ -3227,49 +3227,43 @@ static int nearestCoastlineSide(const std::vector<FoundMapDataObject>& coastline
 	return side;
 }
 
-// A tile that no detailed coastline crosses gets its land/water from the detailed maps, going down their zoom
-// levels: the coastlines of the tile itself, then the detailed coastlines of zoom 14, 12, 10 in a window of
-// that zoom around the tile. A level answers only if its nearest coastline is within the window, so the answer
-// is exact. 0 means the detailed maps have no coastline even at zoom 10, where the basemap is safe to use.
-static int detailedCoastlineSideByLevels(SearchQuery* q, const std::vector<FoundMapDataObject>& tileCoastlines) {
+// Detailed coastlines are read around a tile at this zoom, the same window as _coastlineZoom of OsmAndCore
+static const int coastlineWindowZoom = 10;
+
+// A tile that no detailed coastline crosses gets its land/water from the detailed maps: the coastlines of the
+// tile itself, then the detailed coastlines of zoom 10 in a window of that zoom around the tile (tile +/- half
+// its width). The window answers only if its nearest coastline is within it, so the answer is exact. 0 means
+// no detailed coastline that close, then the basemap is used.
+static int detailedCoastlineSide(SearchQuery* q, const std::vector<FoundMapDataObject>& tileCoastlines) {
 	const double cx = ((double)q->left + q->right) / 2, cy = ((double)q->top + q->bottom) / 2;
 	int side = nearestCoastlineSide(tileCoastlines, cx, cy, std::min(q->right - q->left, q->bottom - q->top) / 2.0);
-	if (side != 0) {
+	if (side != 0 || coastlineWindowZoom >= (int)q->zoom) {
 		return side;
 	}
+	const int shift = 31 - coastlineWindowZoom;
+	const int64_t w = 1ll << shift;
+	const int64_t l = (((int64_t)cx >> shift) << shift) - w / 2, t = (((int64_t)cy >> shift) << shift) - w / 2;
+	const int64_t r = l + 2 * w, b = t + 2 * w;
+	const double radius = std::min(std::min(cx - l, r - cx), std::min(cy - t, b - cy));
+	ResultPublisher publisher;
+	SearchQuery cq((int)std::max<int64_t>(l, 0), (int)std::min<int64_t>(r, INT_MAX), (int)std::max<int64_t>(t, 0),
+				   (int)std::min<int64_t>(b, INT_MAX), q->req, &publisher);
+	cq.zoom = coastlineWindowZoom;
 	const auto openFilesSnapshot = getOpenFilesSnapshot();
-	for (int zoom : {14, 12, 10}) {
-		if (zoom >= (int)q->zoom) {
+	for (auto i = openFilesSnapshot.begin(); i != openFilesSnapshot.end() && !q->isCancelled(); i++) {
+		BinaryMapFile* file = i->get();
+		if (file->isBasemap() || file->isExternal()) {
 			continue;
 		}
-		const int shift = 31 - zoom;
-		const int64_t w = 1ll << shift;
-		const int64_t l = (((int64_t)cx >> shift) << shift) - w / 2, t = (((int64_t)cy >> shift) << shift) - w / 2;
-		const int64_t r = l + 2 * w, b = t + 2 * w;
-		const double radius = std::min(std::min(cx - l, r - cx), std::min(cy - t, b - cy));
-		ResultPublisher publisher;
-		SearchQuery cq((int)std::max<int64_t>(l, 0), (int)std::min<int64_t>(r, INT_MAX),
-					   (int)std::max<int64_t>(t, 0), (int)std::min<int64_t>(b, INT_MAX), q->req, &publisher);
-		cq.zoom = zoom;
-		for (auto i = openFilesSnapshot.begin(); i != openFilesSnapshot.end() && !q->isCancelled(); i++) {
-			BinaryMapFile* file = i->get();
-			if (file->isBasemap() || file->isExternal()) {
-				continue;
-			}
-			readMapObjects(&cq, file);
-		}
-		std::vector<FoundMapDataObject> coastlines;
-		for (const auto& f : publisher.result) {
-			if (f.obj->contains("natural", "coastline")) {
-				coastlines.push_back(f);
-			}
-		}
-		side = nearestCoastlineSide(coastlines, cx, cy, radius);
-		if (side != 0) {
-			return side;
+		readMapObjects(&cq, file);
+	}
+	std::vector<FoundMapDataObject> coastlines;
+	for (const auto& f : publisher.result) {
+		if (f.obj->contains("natural", "coastline")) {
+			coastlines.push_back(f);
 		}
 	}
-	return 0;
+	return nearestCoastlineSide(coastlines, cx, cy, radius);
 }
 
 ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, std::string msgNothingFound,
@@ -3348,9 +3342,9 @@ ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, 
 		detailedCoastlinesWereAdded = coastlinesWereAdded;
 
 		// no detailed coastline crosses the tile: before the basemap (its coarse coastline draws squares and
-		// triangles of land in the sea at high zooms), ask the detailed maps level by level
+		// triangles of land in the sea at high zooms), ask the detailed coastlines around the tile
 		if (addBasemapCoastlines && q->zoom > zoomOnlyForBasemaps && !basemapCoastLines.empty()) {
-			const int side = detailedCoastlineSideByLevels(q, uniqCoastLines);
+			const int side = detailedCoastlineSide(q, uniqCoastLines);
 			if (side != 0) {
 				MapDataObject* o = new MapDataObject();
 				o->points.push_back(int_pair(q->left, q->top));
