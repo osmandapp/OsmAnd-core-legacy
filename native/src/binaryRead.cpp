@@ -36,6 +36,8 @@ using google::protobuf::io::FileOutputStream;
 static uint zoomForBaseRouteRendering = 13;
 static uint detailedZoomStartForRouteSection = 13;
 static uint zoomOnlyForBasemaps = 11;
+// Coastlines of the detailed maps are used from zoom 11 on, the rest of the basemap stays up to zoomOnlyForBasemaps
+static uint zoomOnlyBasemapCoastlines = 10;
 static uint zoomMaxDetailedForCoastlines = 16;
 // The detailed coastline is never farther than coastlineWindowTiles tiles of this zoom from a tile the basemap coastline crosses.
 static uint zoomBasemapCoastlineExact = 13;
@@ -3333,7 +3335,7 @@ ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, 
 		// bool detailedLandData = q->zoom >= 14 && tempResult.size() > 0 && objectsFromMapSectionRead;
 		bool coastlinesWereAdded = false;
 		bool detailedCoastlinesWereAdded = false;
-		if (!coastLines.empty() && q->zoom > zoomOnlyForBasemaps) {
+		if (!coastLines.empty() && q->zoom > zoomOnlyBasemapCoastlines) {
 			int bleft = q->left;
 			int bright = q->right;
 			int btop = q->top;
