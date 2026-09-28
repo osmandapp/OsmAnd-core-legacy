@@ -37,6 +37,9 @@ static uint zoomForBaseRouteRendering = 13;
 static uint detailedZoomStartForRouteSection = 13;
 static uint zoomOnlyForBasemaps = 11;
 static uint zoomMaxDetailedForCoastlines = 16;
+// The detailed coastline is never farther than coastlineWindowTiles tiles of this zoom from a tile the basemap coastline crosses.
+static uint zoomBasemapCoastlineExact = 13;
+static int coastlineWindowTiles = 2;
 BinaryMapFiles openFiles;
 std::mutex openFilesMutex;
 OsmAnd::OBF::OsmAndStoredIndex* cache = NULL;
@@ -1655,6 +1658,10 @@ MapDataObject* readMapDataObject(CodedInputStream* input, MapTreeBounds* tree, S
 					}
 				}
 				input->PopLimit(old);
+				if (req->coastlinesOnly &&
+					std::find(types.begin(), types.end(), tag_value("natural", "coastline")) == types.end()) {
+					return NULL;
+				}
 				// bool acceptTps = acceptTypes(req, types, root);
 				// if (!acceptTps) {
 				//	return NULL;
@@ -3203,6 +3210,77 @@ void uniq(std::vector<FoundMapDataObject>& r, std::vector<FoundMapDataObject>& u
 	}
 }
 
+// true if the segment crosses or lies in the box (Liang-Barsky clipping)
+static bool segmentEntersBox(const int_pair& a, const int_pair& b, int left, int right, int top, int bottom) {
+	double t0 = 0, t1 = 1;
+	double dx = (double)b.first - a.first, dy = (double)b.second - a.second;
+	double p[4] = {-dx, dx, -dy, dy};
+	double r[4] = {(double)a.first - left, (double)right - a.first, (double)a.second - top, (double)bottom - a.second};
+	for (int i = 0; i < 4; i++) {
+		if (p[i] == 0) {
+			if (r[i] < 0) {
+				return false;
+			}
+		} else if (p[i] < 0) {
+			t0 = std::max(t0, r[i] / p[i]);
+		} else {
+			t1 = std::min(t1, r[i] / p[i]);
+		}
+	}
+	return t0 <= t1;
+}
+
+// true if a segment of the lines crosses or lies in the box; exact tests the segment itself, not its bbox
+static bool coastlineCrossesBox(std::vector<FoundMapDataObject>& lines, int left, int right, int top, int bottom,
+								bool exact = false) {
+	for (auto& l : lines) {
+		const auto& p = l.obj->points;
+		for (size_t k = 1; k < p.size(); k++) {
+			if (std::max(p[k - 1].first, p[k].first) >= left && std::min(p[k - 1].first, p[k].first) <= right &&
+				std::max(p[k - 1].second, p[k].second) >= top && std::min(p[k - 1].second, p[k].second) <= bottom &&
+				(!exact || segmentEntersBox(p[k - 1], p[k], left, right, top, bottom))) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+// The tile widened by coastlineWindowTiles tiles of zoomBasemapCoastlineExact
+static void coastlineWindow(SearchQuery* q, int& wl, int& wr, int& wt, int& wb) {
+	int shift = 31 - zoomBasemapCoastlineExact;
+	wl = (int)std::max((int64_t)0, ((int64_t)(q->left >> shift) - coastlineWindowTiles) << shift);
+	wr = (int)std::min((int64_t)INT_MAXIMUM, ((int64_t)(q->right >> shift) + 1 + coastlineWindowTiles) << shift);
+	wt = (int)std::max((int64_t)0, ((int64_t)(q->top >> shift) - coastlineWindowTiles) << shift);
+	wb = (int)std::min((int64_t)INT_MAXIMUM, ((int64_t)(q->bottom >> shift) + 1 + coastlineWindowTiles) << shift);
+}
+
+// Detailed coastlines only, in the window, at the zoom of the window
+static void readDetailedCoastlines(SearchQuery* q, std::vector<FoundMapDataObject>& coast, int wl, int wr, int wt,
+								   int wb) {
+	SearchQuery w = *q;
+	w.zoom = zoomBasemapCoastlineExact;
+	w.left = wl;
+	w.right = wr;
+	w.top = wt;
+	w.bottom = wb;
+	w.coastlinesOnly = true;
+	const auto openFilesSnapshot = getOpenFilesSnapshot();
+	for (auto i = openFilesSnapshot.begin(); i != openFilesSnapshot.end() && !q->isCancelled(); i++) {
+		if (i->get()->isBasemap() || i->get()->isExternal()) {
+			continue;
+		}
+		if (q->req != NULL) {
+			q->req->clearState();
+		}
+		q->publisher->clear();
+		readMapObjects(&w, i->get());
+		coast.insert(coast.end(), q->publisher->result.begin(), q->publisher->result.end());
+		q->publisher->result.clear();
+	}
+	q->publisher->clear();
+}
+
 ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, std::string msgNothingFound,
 										   int& renderedState) {
 	int count = 0;
@@ -3275,6 +3353,22 @@ ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, 
 		} else {
 			// addBasemapCoastlines = !detailedLandData;
 			addBasemapCoastlines = true;
+		}
+		int wl, wr, wt, wb;
+		coastlineWindow(q, wl, wr, wt, wb);
+		if (!coastlinesWereAdded && q->zoom > zoomOnlyForBasemaps &&
+			(coastlineCrossesBox(basemapCoastLines, wl, wr, wt, wb) ||
+			 (!coastLines.empty() && !coastlineCrossesBox(coastLines, q->left, q->right, q->top, q->bottom, true)))) {
+			std::vector<FoundMapDataObject> windowCoastLines;
+			std::vector<FoundMapDataObject> uniqWindowCoastLines;
+			readDetailedCoastlines(q, windowCoastLines, wl, wr, wt, wb);
+			if (!windowCoastLines.empty()) {
+				uniq(windowCoastLines, uniqWindowCoastLines);
+				coastlinesWereAdded =
+					processCoastlines(uniqWindowCoastLines, wl, wr, wb, wt, q->zoom, false, true, tempResult);
+				addBasemapCoastlines = !coastlinesWereAdded;
+			}
+			deleteObjects(windowCoastLines);
 		}
 		detailedCoastlinesWereAdded = coastlinesWereAdded;
 

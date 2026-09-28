@@ -1114,6 +1114,8 @@ struct SearchQuery {
 	coordinates cacheCoordinates;
 	uint ocean = 0;
 	uint oceanTiles = 0;
+	// read only natural=coastline objects
+	bool coastlinesOnly = false;
 
 	uint numberOfVisitedObjects = 0;
 	uint numberOfAcceptedObjects = 0;
