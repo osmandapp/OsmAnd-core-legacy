@@ -398,17 +398,19 @@ bool unifyIncompletedRings(std::vector<std::vector<int_pair> >& toProccess,
 
 	const int EVAL_DELTA = 2 << (22 - zoom);
 
-	// false while every ring is an island cut by one edge and closed on itself (#16898): then nothing
-	// crosses the tile and the sea around the islands has to be added
+	// false while every ring is an island cut by the edges (#16898): then nothing crosses the tile and
+	// the sea around the islands has to be added
 	bool crossing = false;
 	ir = incompletedRings.begin();
 	for (j = 0; ir != incompletedRings.end(); ir++, j++) {
 		if (nonvisitedRings.find(j) == nonvisitedRings.end()) {
 			continue;
 		}
-		// the ring went round a corner of the tile or took in another ring
+		// the ring went round a corner of the tile
 		bool walked = false;
-		bool closedOnItself = false;
+		// the ring took in other rings
+		bool attached = false;
+		bool found = true;
 		int x = ir->at(ir->size() - 1).first;
 		int y = ir->at(ir->size() - 1).second;
 		const int UNDEFINED_MIN_DIFF = -1 - EVAL_DELTA;
@@ -525,6 +527,7 @@ bool unifyIncompletedRings(std::vector<std::vector<int_pair> >& toProccess,
 								  y - topY);
 				ir->push_back(ir->at(0));
 				nonvisitedRings.erase(j);
+				found = false;
 				break;
 			} else if (nextRingIndex == j) {
 				if (DEBUG_LINE) {
@@ -532,10 +535,9 @@ bool unifyIncompletedRings(std::vector<std::vector<int_pair> >& toProccess,
 				}
 				ir->push_back(ir->at(0));
 				nonvisitedRings.erase(j);
-				closedOnItself = true;
 				break;
 			} else {
-				walked = true;
+				attached = true;
 				std::vector<int_pair> p = incompletedRings.at(nextRingIndex);
 				int csx = p.at(0).first;
 				int csy = p.at(0).second;
@@ -551,7 +553,10 @@ bool unifyIncompletedRings(std::vector<std::vector<int_pair> >& toProccess,
 			}
 		}
 
-		crossing |= walked || !closedOnItself;
+		// Pieces of one island cut by the tile edge are joined back through the EVAL_DELTA tolerance
+		// even when their ends on the edge do not meet (basemap pieces of neighbouring tiles): such a
+		// ring goes round no corner and is counterclockwise (land), so it does not cross the tile
+		crossing |= walked || !found || (attached && isClockwiseWay(*ir));
 		completedRings.push_back(*ir);
 	}
 
