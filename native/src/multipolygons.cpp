@@ -134,6 +134,10 @@ bool processCoastlines(std::vector<FoundMapDataObject>& coastLines, int leftX, i
 	}
 	//OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "Ocean: islands %d, closed water %d, coastline touches screen %d",
 	//				  landFound, waterFound, unifiedUncompletedRings);
+	if (!landFound && !waterFound) {
+		// only degenerate rings: the coastline touches the box but says nothing about land or sea inside
+		return false;
+	}
 	if (!waterFound && addWaterPolygonIfMissing) {
 		// add complete water tile
 		MapDataObject* o = new MapDataObject();
