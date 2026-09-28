@@ -364,32 +364,6 @@ int safelyAddDelta(int number, int delta) {
 	return res;
 }
 
-bool closeIncompletedRing(coordinates& ring, int leftX, int rightX, int bottomY, int topY, int evalDelta) {
-	if (ring.size() >= 3) {
-		const auto firstIntersectionPoint = ring.front();
-		const auto secondIntersectionPoint = ring.back();
-
-		const auto firstX = firstIntersectionPoint.first;
-		const auto firstY = firstIntersectionPoint.second;
-		const auto secondX = secondIntersectionPoint.first;
-		const auto secondY = secondIntersectionPoint.second;
-
-		bool shortLeftGap = firstX == leftX && secondX == leftX && firstY <= safelyAddDelta(secondY, evalDelta);
-		bool shortTopGap = firstY == topY && secondY == topY && firstX >= safelyAddDelta(secondX, -evalDelta);
-		bool shortRightGap = firstX == rightX && secondX == rightX && firstY >= safelyAddDelta(secondY, -evalDelta);
-		bool shortBottomGap = firstY == bottomY && secondY == bottomY && firstX <= safelyAddDelta(secondX, evalDelta);
-
-		if (shortLeftGap || shortTopGap || shortRightGap || shortBottomGap)
-		{
-			// Close ring
-			ring.push_back(ring.front());
-			return true;
-		}
-	}
-
-	return false;
-}
-
 bool unifyIncompletedRings(std::vector<std::vector<int_pair> >& toProccess,
 						   std::vector<std::vector<int_pair> >& completedRings, int leftX, int rightX, int bottomY,
 						   int topY, int64_t dbId, int zoom) {
@@ -424,25 +398,17 @@ bool unifyIncompletedRings(std::vector<std::vector<int_pair> >& toProccess,
 
 	const int EVAL_DELTA = 2 << (22 - zoom);
 
-	// Fix https://github.com/osmandapp/OsmAnd/issues/16898#issue-1655569408
-	// If there is one unclosed ring with gap <= EVAL_DELTA, close it without unification
-	// to fix wrong unified polygon. Closing 2 or more rings in such way can break unification of
-	// other unclosed rings
-	if (nonvisitedRings.size() == 1) {
-		auto index = *nonvisitedRings.begin();
-		auto ring = incompletedRings.at(index);
-
-		if (closeIncompletedRing(ring, leftX, rightX, bottomY, topY, EVAL_DELTA)) {
-			completedRings.push_back(ring);
-			return false;
-		}
-	}
-
+	// false while every ring is an island cut by one edge and closed on itself (#16898): then nothing
+	// crosses the tile and the sea around the islands has to be added
+	bool crossing = false;
 	ir = incompletedRings.begin();
 	for (j = 0; ir != incompletedRings.end(); ir++, j++) {
 		if (nonvisitedRings.find(j) == nonvisitedRings.end()) {
 			continue;
 		}
+		// the ring went round a corner of the tile or took in another ring
+		bool walked = false;
+		bool closedOnItself = false;
 		int x = ir->at(ir->size() - 1).first;
 		int y = ir->at(ir->size() - 1).second;
 		const int UNDEFINED_MIN_DIFF = -1 - EVAL_DELTA;
@@ -548,6 +514,7 @@ bool unifyIncompletedRings(std::vector<std::vector<int_pair> >& toProccess,
 						x = leftX;
 					}
 					ir->push_back(int_pair(x, y));
+					walked = true;
 				}
 
 			}  // END go clockwise around rectangle
@@ -565,8 +532,10 @@ bool unifyIncompletedRings(std::vector<std::vector<int_pair> >& toProccess,
 				}
 				ir->push_back(ir->at(0));
 				nonvisitedRings.erase(j);
+				closedOnItself = true;
 				break;
 			} else {
+				walked = true;
 				std::vector<int_pair> p = incompletedRings.at(nextRingIndex);
 				int csx = p.at(0).first;
 				int csy = p.at(0).second;
@@ -582,10 +551,11 @@ bool unifyIncompletedRings(std::vector<std::vector<int_pair> >& toProccess,
 			}
 		}
 
+		crossing |= walked || !closedOnItself;
 		completedRings.push_back(*ir);
 	}
 
-	return true;
+	return crossing;
 }
 
 bool calculateLineCoordinates(bool inside, int x, int y, bool pinside, int px, int py, int leftX, int rightX,
