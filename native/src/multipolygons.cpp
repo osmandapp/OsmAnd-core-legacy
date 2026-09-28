@@ -279,65 +279,20 @@ int ray_intersect_y(int prevX, int prevY, int x, int y, int middleX) {
 	}
 }
 
-// Copied from MapAlgorithms
+// Signed area (shoelace): a ray through the middle Y miscounted rings with vertices on the ray
 bool isClockwiseWay(std::vector<int_pair>& c) {
 	if (c.size() == 0) {
 		return true;
 	}
-
-	// calculate middle Y
-	int64_t middleY = 0;
-	for (size_t i = 0; i < c.size(); i++) {
-		middleY += c.at(i).second;
+	double area = 0;
+	const double x0 = c[0].first, y0 = c[0].second;
+	for (size_t i = 1; i <= c.size(); i++) {
+		const int_pair& p = c[i - 1];
+		const int_pair& n = c[i % c.size()];
+		area += (p.first - x0) * (n.second - y0) - (n.first - x0) * (p.second - y0);
 	}
-	middleY /= c.size();
-
-	double clockwiseSum = 0;
-
-	bool firstDirectionUp = false;
-	int previousX = INT_MIN;
-	int firstX = INT_MIN;
-
-	int prevX = c.at(0).first;
-	int prevY = c.at(0).second;
-
-	for (size_t i = 1; i < c.size(); i++) {
-		int x = c.at(i).first;
-		int y = c.at(i).second;
-		int rX = ray_intersect_x(prevX, prevY, x, y, (int)middleY);
-		if (rX != INT_MIN) {
-			bool skipSameSide = (y <= middleY) == (prevY <= middleY);
-			if (skipSameSide) {
-				continue;
-			}
-			bool directionUp = prevY >= middleY;
-			if (firstX == INT_MIN) {
-				firstDirectionUp = directionUp;
-				firstX = rX;
-			} else {
-				bool clockwise = (!directionUp) == (previousX < rX);
-				if (clockwise) {
-					clockwiseSum += abs(previousX - rX);
-				} else {
-					clockwiseSum -= abs(previousX - rX);
-				}
-			}
-			previousX = rX;
-		}
-		prevX = x;
-		prevY = y;
-	}
-
-	if (firstX != INT_MIN) {
-		bool clockwise = (!firstDirectionUp) == (previousX < firstX);
-		if (clockwise) {
-			clockwiseSum += abs(previousX - firstX);
-		} else {
-			clockwiseSum -= abs(previousX - firstX);
-		}
-	}
-
-	return clockwiseSum >= 0;
+	// y grows down, so a positive area is clockwise on the map
+	return area >= 0;
 }
 
 bool isDegenerateArea(const std::vector<int_pair>& c, int maxSize) {
