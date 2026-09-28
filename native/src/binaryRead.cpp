@@ -3370,7 +3370,9 @@ ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, 
 		}
 		int wl, wr, wt, wb;
 		coastlineWindow(q, wl, wr, wt, wb);
-		if (!coastlinesWereAdded && q->zoom > zoomOnlyForBasemaps &&
+		// wherever detailed coastlines are drawn: a z11 (or high latitude z9-z10) tile of open water next to
+		// the coast has no detailed coastline of its own, and the coarse basemap one would draw land into it
+		if (!coastlinesWereAdded && useDetailedCoastlines(q) &&
 			(coastlineCrossesBox(basemapCoastLines, wl, wr, wt, wb) ||
 			 (!coastLines.empty() && !coastlineCrossesBox(coastLines, q->left, q->right, q->top, q->bottom, true)))) {
 			std::vector<FoundMapDataObject> windowCoastLines;
