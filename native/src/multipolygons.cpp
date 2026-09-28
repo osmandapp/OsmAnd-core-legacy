@@ -3,10 +3,11 @@
 #include "multipolygons.h"
 #include <limits.h>
 
+#include <algorithm>
+
 #include "Logging.h"
 
 const bool DEBUG_LINE = false;
-const int CHECK_COMPLETED_RINGS_SIZE = 5;
 
 void printLine(OsmAnd::LogSeverityLevel level, std::string msg, int64_t id, coordinates& c, int leftX, int rightX,
 			   int bottomY, int topY) {
@@ -110,13 +111,17 @@ bool processCoastlines(std::vector<FoundMapDataObject>& coastLines, int leftX, i
 		//				  uncompletedRings.size(), coastLines.size());
 		return false;
 	}
+	// one pixel of a 256 px tile
+	const double pixel = (double)(1u << std::max(0, 31 - 8 - zoom));
+	const double minRingArea = pixel * pixel;
 	int landFound = 0;
 	int waterFound = 0;
 	for (uint i = 0; i < completedRings.size(); i++) {
-        if (isDegenerateArea(completedRings[i], CHECK_COMPLETED_RINGS_SIZE)) {
-            // avoid rings with area == 0
-            continue;
-        }
+		if (isDegenerateArea(completedRings[i], minRingArea)) {
+			// a ring smaller than a pixel tells nothing about land or sea: a self intersection of a
+			// simplified coastline gives such a loop turned the wrong way (islet 30021051 at z11)
+			continue;
+		}
 		bool clockwise = isClockwiseWay(completedRings[i]);
 		MapDataObject* o = new MapDataObject();
 		o->points = completedRings[i];
@@ -299,18 +304,15 @@ bool isClockwiseWay(std::vector<int_pair>& c) {
 	return area >= 0;
 }
 
-bool isDegenerateArea(const std::vector<int_pair>& c, int maxSize) {
-    if (c.size() > maxSize) {
-        return false;
-    }
-
-    int64_t area = 0;
-    for (size_t i = 0; i < c.size(); i++) {
-        const int_pair & p1 = c[i];
-        const int_pair & p2 = c[(i + 1) % c.size()];
-        area += p1.first * p2.second - p2.first * p1.second;
-    }
-    return std::abs(area) == 0L;
+bool isDegenerateArea(const std::vector<int_pair>& c, double minArea) {
+	double area = 0;
+	const double x0 = c[0].first, y0 = c[0].second;
+	for (size_t i = 1; i < c.size(); i++) {
+		const int_pair& p = c[i - 1];
+		const int_pair& n = c[i % c.size()];
+		area += (p.first - x0) * (n.second - y0) - (n.first - x0) * (p.second - y0);
+	}
+	return std::abs(area) / 2 < minArea;
 }
 
 void combineMultipolygonLine(std::vector<coordinates>& completedRings, std::vector<coordinates>& incompletedRings,
