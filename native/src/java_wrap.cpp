@@ -488,15 +488,15 @@ extern "C" JNIEXPORT jobject JNICALL Java_net_osmand_NativeLibrary_getGeotiffTil
 }
 
 extern "C" JNIEXPORT jbyteArray JNICALL Java_net_osmand_NativeLibrary_getMapboxVectorTileData(
-	JNIEnv* ienv, jobject obj, jint zoom, jint x, jint y, jint shift) {
+	JNIEnv* ienv, jobject obj, jint mapZoom, jint x, jint y, jint shift) {
 
 	ResultPublisher publisher;
-	int s = 31 - zoom;
+	int s = 31 - mapZoom;
 	auto brx = static_cast<int>(std::min((static_cast<int64_t>(x) + 1) << s, static_cast<int64_t>(INT32_MAX)));
 	auto bry = static_cast<int>(std::min((static_cast<int64_t>(y) + 1) << s, static_cast<int64_t>(INT32_MAX)));
 	auto q = SearchQuery(x << s, brx, y << s, bry, nullptr, &publisher);
 
-	const int dataZoom = std::max(0, std::min(MAX_ALLOWED_ZOOM, zoom + shift));
+	const int dataZoom = std::max(0, std::min(MAX_ALLOWED_WEB_ZOOM, mapZoom + shift));
 	q.zoom = dataZoom < MVT_TILE_INCREASE_DETAILS_BEFORE_DETAILED_ZOOM - 1 ? dataZoom + 1 : dataZoom;
 
 	int renderedState = 0;
@@ -505,7 +505,7 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_net_osmand_NativeLibrary_getMapboxV
 	ResultPublisher* res = searchObjectsForRendering(&q, true, "Nothing found", renderedState);
 	deactivateThreadSpecificFileDescriptors();
 
-	auto blob = buildMapboxVectorTile(res->result, x, y, zoom, dataZoom);
+	auto blob = buildMapboxVectorTile(res->result, x, y, mapZoom);
 	jbyteArray resultObject = ienv->NewByteArray(blob.size());
 	ienv->SetByteArrayRegion(resultObject, 0, blob.size(), (const jbyte*)blob.data());
 
