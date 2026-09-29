@@ -18,7 +18,7 @@ typedef vtzero::key_index<std::unordered_map> KeyIdx;
 typedef vtzero::value_index<vtzero::string_value_type, std::string, std::unordered_map> ValueIdx;
 typedef vtzero::value_index<vtzero::sint_value_type, int32_t, std::unordered_map> IntValueIdx;
 
-static const int MAX_ALLOWED_WEB_ZOOM = 15;
+static const int MAX_MVT_TILES_ZOOM = 15;
 static const int MVT_TILE_EXTENT_SHIFT = 12;
 static const int MVT_TILE_WIDTH = 1 << MVT_TILE_EXTENT_SHIFT; // 4096
 static const int MVT_TILE_PIXEL_SIZE = 512;
