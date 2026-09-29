@@ -280,7 +280,7 @@ inline void addObjectDataToMapboxVectorTile(vtzero::feature_builder& feature,
 }
 
 inline std::string buildMapboxVectorTile(
-	std::vector<FoundMapDataObject>& foundMapDataObjects, int x, int y, int mapZoom) {
+	std::vector<FoundMapDataObject>& foundMapDataObjects, int x, int y, int mapZoom, int dataZoom) {
 	int s = 31 - mapZoom;
 	const auto h = 1 << (std::max(s - 1, 0));
 	const std::pair<int, int> corner(x << s, y << s);
@@ -333,7 +333,7 @@ inline std::string buildMapboxVectorTile(
 		} else if (!isPoint && (isArea || isCycle)) {
 			if ((isCycle && size < 4) || size < 3)
 				continue;
-			if (mapZoom >= MVT_POLYGON_FILTER_MIN_ZOOM && mapZoom <= MVT_POLYGON_FILTER_MAX_ZOOM) {
+			if (dataZoom >= MVT_POLYGON_FILTER_MIN_ZOOM && dataZoom <= MVT_POLYGON_FILTER_MAX_ZOOM) {
 				// Use the full outer ring before clipping, as in v1/v2 polygon area filtering.
 				int64_t doubledArea = 0;
 				auto prevPoint = obj.points.back();
@@ -342,7 +342,7 @@ inline std::string buildMapboxVectorTile(
 						- static_cast<int64_t>(p.first) * prevPoint.second;
 					prevPoint = p;
 				}
-				const double pixelScale = MVT_TILE_PIXEL_SIZE / static_cast<double>(1ULL << (31 - mapZoom));
+				const double pixelScale = MVT_TILE_PIXEL_SIZE / static_cast<double>(1ULL << (31 - dataZoom));
 				if (std::abs(static_cast<double>(doubledArea)) * 0.5 * pixelScale * pixelScale <= MVT_POLYGON_MIN_SIZE)
 					continue;
 			}

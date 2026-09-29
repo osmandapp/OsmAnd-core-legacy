@@ -506,7 +506,7 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_net_osmand_NativeLibrary_getMapboxV
 	ResultPublisher* res = searchObjectsForRendering(&q, true, "Nothing found", renderedState);
 	deactivateThreadSpecificFileDescriptors();
 
-	auto blob = buildMapboxVectorTile(res->result, x, y, mapZoom);
+	auto blob = buildMapboxVectorTile(res->result, x, y, mapZoom, dataZoom);
 	jbyteArray resultObject = ienv->NewByteArray(blob.size());
 	ienv->SetByteArrayRegion(resultObject, 0, blob.size(), (const jbyte*)blob.data());
 
