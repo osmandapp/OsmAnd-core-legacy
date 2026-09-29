@@ -3059,6 +3059,20 @@ void readMapObjects(SearchQuery* q, BinaryMapFile* file) {
 	}
 }
 
+// A tile at latitude lat is 1/cos(lat) times smaller on the ground than one of the same zoom at the equator,
+// while the basemap coastline is simplified for the equator: at 60 degrees a zoom 10 tile is as detailed as a
+// zoom 11 one there, and the basemap coastline is visibly too coarse in the Arctic and in Antarctica
+static bool useDetailedCoastlines(SearchQuery* q) {
+	if (q->zoom > zoomOnlyBasemapCoastlines) {
+		return true;
+	}
+	double lat = get31LatitudeY(q->top / 2 + q->bottom / 2);
+	double groundZoom = q->zoom + log2(1 / std::max(0.01, cos(lat * M_PI / 180)));
+	return groundZoom > zoomOnlyBasemapCoastlines + 1;
+}
+
+static void coastlineWindow(SearchQuery* q, int& wl, int& wr, int& wt, int& wb);
+
 void readMapObjectsForRendering(SearchQuery* q, std::vector<FoundMapDataObject>& basemapResult,
 								std::vector<FoundMapDataObject>& tempResult, std::vector<FoundMapDataObject>& extResult,
 								std::vector<FoundMapDataObject>& coastLines,
@@ -3086,6 +3100,14 @@ void readMapObjectsForRendering(SearchQuery* q, std::vector<FoundMapDataObject>&
 		bright = ((q->right >> shift) + 1) << shift;
 		btop = (q->top >> shift) << shift;
 		bbottom = ((q->bottom >> shift) + 1) << shift;
+		// and the detailed coastline window: a basemap coastline in the neighbouring 11-zoom tile has to
+		// open the window too (Taveuni, 13/8188/4489)
+		int wl, wr, wt, wb;
+		coastlineWindow(q, wl, wr, wt, wb);
+		bleft = std::min(bleft, wl);
+		bright = std::max(bright, wr);
+		btop = std::min(btop, wt);
+		bbottom = std::max(bbottom, wb);
 	}
 	if (q->zoom > zoomMaxDetailedForCoastlines) {
 		// expand area to include more coastlines for bbox
@@ -3335,7 +3357,7 @@ ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, 
 		// bool detailedLandData = q->zoom >= 14 && tempResult.size() > 0 && objectsFromMapSectionRead;
 		bool coastlinesWereAdded = false;
 		bool detailedCoastlinesWereAdded = false;
-		if (!coastLines.empty() && q->zoom > zoomOnlyBasemapCoastlines) {
+		if (!coastLines.empty() && useDetailedCoastlines(q)) {
 			int bleft = q->left;
 			int bright = q->right;
 			int btop = q->top;
@@ -3358,7 +3380,9 @@ ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, 
 		}
 		int wl, wr, wt, wb;
 		coastlineWindow(q, wl, wr, wt, wb);
-		if (!coastlinesWereAdded && q->zoom > zoomOnlyForBasemaps &&
+		// wherever detailed coastlines are drawn: a z11 (or high latitude z9-z10) tile of open water next to
+		// the coast has no detailed coastline of its own, and the coarse basemap one would draw land into it
+		if (!coastlinesWereAdded && useDetailedCoastlines(q) &&
 			(coastlineCrossesBox(basemapCoastLines, wl, wr, wt, wb) ||
 			 (!coastLines.empty() && !coastlineCrossesBox(coastLines, q->left, q->right, q->top, q->bottom, true)))) {
 			std::vector<FoundMapDataObject> windowCoastLines;
@@ -3367,7 +3391,7 @@ ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, 
 			if (!windowCoastLines.empty()) {
 				uniq(windowCoastLines, uniqWindowCoastLines);
 				coastlinesWereAdded =
-					processCoastlines(uniqWindowCoastLines, wl, wr, wb, wt, q->zoom, false, true, tempResult);
+					processCoastlines(uniqWindowCoastLines, wl, wr, wb, wt, zoomBasemapCoastlineExact, false, true, tempResult);
 				addBasemapCoastlines = !coastlinesWereAdded;
 			}
 			deleteObjects(windowCoastLines);
