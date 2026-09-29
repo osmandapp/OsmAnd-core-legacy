@@ -3071,6 +3071,8 @@ static bool useDetailedCoastlines(SearchQuery* q) {
 	return groundZoom > zoomOnlyBasemapCoastlines + 1;
 }
 
+static void coastlineWindow(SearchQuery* q, int& wl, int& wr, int& wt, int& wb);
+
 void readMapObjectsForRendering(SearchQuery* q, std::vector<FoundMapDataObject>& basemapResult,
 								std::vector<FoundMapDataObject>& tempResult, std::vector<FoundMapDataObject>& extResult,
 								std::vector<FoundMapDataObject>& coastLines,
@@ -3098,6 +3100,14 @@ void readMapObjectsForRendering(SearchQuery* q, std::vector<FoundMapDataObject>&
 		bright = ((q->right >> shift) + 1) << shift;
 		btop = (q->top >> shift) << shift;
 		bbottom = ((q->bottom >> shift) + 1) << shift;
+		// and the detailed coastline window: a basemap coastline in the neighbouring 11-zoom tile has to
+		// open the window too (Taveuni, 13/8188/4489)
+		int wl, wr, wt, wb;
+		coastlineWindow(q, wl, wr, wt, wb);
+		bleft = std::min(bleft, wl);
+		bright = std::max(bright, wr);
+		btop = std::min(btop, wt);
+		bbottom = std::max(bbottom, wb);
 	}
 	if (q->zoom > zoomMaxDetailedForCoastlines) {
 		// expand area to include more coastlines for bbox
@@ -3381,7 +3391,7 @@ ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, 
 			if (!windowCoastLines.empty()) {
 				uniq(windowCoastLines, uniqWindowCoastLines);
 				coastlinesWereAdded =
-					processCoastlines(uniqWindowCoastLines, wl, wr, wb, wt, q->zoom, false, true, tempResult);
+					processCoastlines(uniqWindowCoastLines, wl, wr, wb, wt, zoomBasemapCoastlineExact, false, true, tempResult);
 				addBasemapCoastlines = !coastlinesWereAdded;
 			}
 			deleteObjects(windowCoastLines);
