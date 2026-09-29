@@ -496,8 +496,9 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_net_osmand_NativeLibrary_getMapboxV
 	auto bry = static_cast<int>(std::min((static_cast<int64_t>(y) + 1) << s, static_cast<int64_t>(INT32_MAX)));
 	auto q = SearchQuery(x << s, brx, y << s, bry, nullptr, &publisher);
 
-	const int dataZoom = std::max(0, std::min(MAX_ALLOWED_WEB_ZOOM, mapZoom + shift));
-	q.zoom = dataZoom < MVT_TILE_INCREASE_DETAILS_BEFORE_DETAILED_ZOOM - 1 ? dataZoom + 1 : dataZoom;
+	const int baseDataZoom = mapZoom < MVT_TILE_INCREASE_DETAILS_BEFORE_DETAILED_ZOOM - 1 ? mapZoom + 1 : mapZoom;
+	const int dataZoom = std::max(1, std::min(MAX_ALLOWED_WEB_ZOOM, baseDataZoom + shift));
+	q.zoom = dataZoom;
 
 	int renderedState = 0;
 
