@@ -2494,10 +2494,6 @@ bool isNoneLane(const string& lane) {
     return lane.empty() || lane == "none";
 }
 
-bool isMergeLane(const string& lane) {
-    return lane == "merge_to_left" || lane == "merge_to_right";
-}
-
 bool hasNoneLane(const string& turnLanes) {
     if (!turnLanes.empty()) {
         for (const string& lane : splitKeepEmpty(turnLanes, '|')) {
@@ -2513,87 +2509,23 @@ int turnOrder(double angle) {
     return TurnType::orderFromLeftToRight(getTurnByAngle(angle));
 }
 
-int signum(int v) {
-    return (v > 0) - (v < 0);
+int laneOrder(const string& option) {
+    return TurnType::orderFromLeftToRight(TurnType::convertType(option));
 }
 
-bool getThroughByOrder(const vector<double>& angles, double& through) {
-    for (double a : angles) {
-        if (turnOrder(a) == 0) {
-            through = a;
-            return true;
-        }
-    }
-    return false;
-}
-
-bool getThroughByMinAngle(const vector<double>& angles, double& through) {
-    bool found = false;
-    for (double angle : angles) {
-        if (abs(angle) <= TURN_DEGREE_MIN && (!found || abs(angle) < abs(through))) {
-            through = angle;
-            found = true;
-        }
-    }
-    return found;
-}
-
-bool getThroughByLanes(const vector<string>& lanes, const string& turnLanes, const vector<double>& angles, double& through) {
-    bool noneLeft = isNoneLane(lanes[0]), noneRight = isNoneLane(lanes[lanes.size() - 1]);
-    if (turnLanes.find("through") == string::npos || noneLeft == noneRight) {
-        return false;
-    }
-    set<int> turns;
-    for (const string& lane : lanes) {
-        if (!isNoneLane(lane)) {
-            for (const string& option : split_string(lane, ";")) {
+/** Turns given to the unmarked lane i have to keep the left to right order with the marked lanes. */
+bool isLeftToRight(const vector<string>& lanes, int i, const string& value) {
+    for (int j = 0; j < lanes.size(); j++) {
+        for (const string& marked : split_string(lanes[j], ";")) {
+            // a lane that ends by merging says nothing about where the other lanes turn
+            if (isNoneLane(lanes[j]) || marked.empty() || marked.rfind("merge_to_", 0) == 0) {
+                continue;
+            }
+            for (const string& option : split_string(value, ";")) {
                 if (option.empty()) {
                     continue;
                 }
-                int order = TurnType::orderFromLeftToRight(TurnType::convertType(option));
-                if (noneLeft ? order > 0 : order < 0) {
-                    turns.insert(order);
-                }
-            }
-        }
-    }
-    // from the right when the unmarked lanes are on the left, from the left otherwise
-    vector<double> sorted = angles;
-    if (noneLeft) {
-        std::stable_sort(sorted.begin(), sorted.end());
-    } else {
-        std::stable_sort(sorted.begin(), sorted.end(), std::greater<double>());
-    }
-    if (turns.size() >= sorted.size() || abs(sorted[turns.size()]) > TURN_DEGREE_MIN) {
-        return false;
-    }
-    through = sorted[turns.size()];
-    return true;
-}
-
-void removeMarkedAngles(const bool marked[3], vector<double>& angles) {
-    angles.erase(std::remove_if(angles.begin(), angles.end(),
-                                [marked](double a) { return marked[signum(turnOrder(a)) + 1]; }),
-                 angles.end());
-}
-
-bool checkTurnLanesOrder(const vector<string>& lanes, int i, const string& value) {
-    for (const string& option : split_string(value, ";")) {
-        if (option.empty()) {
-            continue;
-        }
-        int order = TurnType::orderFromLeftToRight(TurnType::convertType(option));
-        for (int j = 0; j < lanes.size(); j++) {
-            if (isNoneLane(lanes[j])) {
-                continue;
-            }
-            for (const string& m : split_string(lanes[j], ";")) {
-                if (m.empty() || isMergeLane(m)) {
-                    // a lane that ends by merging says nothing about where the other lanes turn
-                    continue;
-                }
-                int other = TurnType::orderFromLeftToRight(TurnType::convertType(m));
-                if (j < i ? other > order : other < order) {
+                if (j < i ? laneOrder(marked) > laneOrder(option) : laneOrder(marked) < laneOrder(option)) {
                     return false;
                 }
             }
@@ -2610,34 +2542,54 @@ bool checkTurnLanesOrder(const vector<string>& lanes, int i, const string& value
 string convertNoneLanes(const string& turnLanes, RoadSplitStructure& rs, const string& currTurnLanes) {
     vector<string> lanes = splitKeepEmpty(turnLanes, '|');
     int noneLanes = 0;
-    bool marked[3] = {false, false, false}; // left, through, right
+    set<int> marked; // turns of the marked lanes by TurnType::orderFromLeftToRight()
     for (const string& lane : lanes) {
         if (isNoneLane(lane)) {
             noneLanes++;
             continue;
         }
         for (const string& option : split_string(lane, ";")) {
-            if (option.empty()) {
-                continue;
+            if (!option.empty()) {
+                marked.insert(laneOrder(option));
             }
-            marked[signum(TurnType::orderFromLeftToRight(TurnType::convertType(option))) + 1] = true;
         }
     }
-    // directions of the junction not described by the marked lanes, from left to right
-    vector<double> angles = rs.attachedAngles;
-    angles.push_back(rs.currentDeviation);
-    std::stable_sort(angles.begin(), angles.end(), std::greater<double>());
+    int markedLeft = 0;
+    int markedRight = 0;
+    for (int order : marked) {
+        markedLeft += order < 0 ? 1 : 0;
+        markedRight += order > 0 ? 1 : 0;
+    }
+    vector<double> allAngles = rs.attachedAngles;
+    allAngles.push_back(rs.currentDeviation);
+    std::stable_sort(allAngles.begin(), allAngles.end(), std::greater<double>());
+    vector<double> angles;
     double throughAngle = 0;
     bool through = false;
-    if (turnLanes != currTurnLanes) {
-        through = getThroughByLanes(lanes, turnLanes, angles, throughAngle);
+
+    // get through by angles (rough)
+    for (double angle : allAngles) {
+        int order = turnOrder(angle);
+        if (order != 0 && (order < 0 ? markedLeft : markedRight) > 0) {
+            continue;
+        }
+        angles.push_back(angle);
+        if (abs(angle) <= TURN_DEGREE_MIN && (!through || abs(angle) < abs(throughAngle))) {
+            throughAngle = angle;
+            through = true;
+        }
     }
-    if (!through && marked[1]) {
-        through = getThroughByOrder(angles, throughAngle);
-    }
-    removeMarkedAngles(marked, angles);
-    if (!through) {
-        through = getThroughByMinAngle(angles, throughAngle);
+
+    // get through by marked lanes
+    bool isNoneFromLeft = isNoneLane(lanes[0]);
+    bool isNoneFromRight = isNoneLane(lanes[lanes.size() - 1]);
+    bool isTurnLanesContinuous = turnLanes == currTurnLanes;
+    if (turnLanes.find("through") != string::npos && isNoneFromLeft != isNoneFromRight && !isTurnLanesContinuous) {
+        int ind = isNoneFromLeft ? (int) allAngles.size() - 1 - markedRight : markedLeft;
+        if (ind >= 0 && ind < allAngles.size() && abs(allAngles[ind]) <= TURN_DEGREE_MIN) {
+            throughAngle = allAngles[ind];
+            through = true;
+        }
     }
     if (through) {
         auto it = std::find(angles.begin(), angles.end(), throughAngle);
@@ -2677,10 +2629,10 @@ string convertNoneLanes(const string& turnLanes, RoadSplitStructure& rs, const s
             res += append;
             k++;
         } else {
-            if (!checkTurnLanesOrder(lanes, i, noneValues[k])) {
+            const string& value = noneValues[k++];
+            if (!isLeftToRight(lanes, i, value)) {
                 return turnLanes;
             }
-            const string& value = noneValues[k++];
             if (!through) {
                 res += value;
             } else if (value.find("right") != string::npos) {
