@@ -41,6 +41,20 @@ std::vector<NetworkDBPoint *> DataTileManager::getClosestObjects(double latitude
 	return res;
 }
 
+size_t NetworkDBPoint::unloadSegments() {
+	size_t n = connected.size() + connectedReverse.size();
+	for (NetworkDBSegment * s : connected) {
+		delete s;
+	}
+	for (NetworkDBSegment * s : connectedReverse) {
+		delete s;
+	}
+	connected.clear();
+	connectedReverse.clear();
+	isConnectedSet = isConnectedReverseSet = false;
+	return n;
+}
+
 NetworkDBSegment * NetworkDBPoint::getSegment(const NetworkDBPoint * target, bool dir) const {
 	std::vector<NetworkDBSegment *> l = (dir ? connected : connectedReverse);
 	for (NetworkDBSegment * s : l) {
