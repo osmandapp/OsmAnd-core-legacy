@@ -399,6 +399,9 @@ bool unifyIncompletedRings(std::vector<std::vector<int_pair> >& toProccess,
 	}
 
 	const int EVAL_DELTA = 2 << (22 - zoom);
+	// one pixel of a 256 px tile, as in processCoastlines
+	const double pixel = (double)(1u << std::max(0, 31 - 8 - zoom));
+	const double minRingArea = pixel * pixel;
 
 	// false while every ring is an island cut by the edges (#16898): then nothing crosses the tile and
 	// the sea around the islands has to be added
@@ -557,8 +560,11 @@ bool unifyIncompletedRings(std::vector<std::vector<int_pair> >& toProccess,
 
 		// Pieces of one island cut by the tile edge are joined back through the EVAL_DELTA tolerance
 		// even when their ends on the edge do not meet (basemap pieces of neighbouring tiles): such a
-		// ring goes round no corner and is counterclockwise (land), so it does not cross the tile
-		crossing |= walked || !found || (attached && isClockwiseWay(*ir));
+		// ring goes round no corner and is counterclockwise (land), so it does not cross the tile.
+		// A ring smaller than a pixel has no reliable direction (a coastline passing twice through the
+		// tile corner, Arzew 12/2045/1610) and is dropped by processCoastlines anyway
+		crossing |= walked || !found
+				|| (attached && isClockwiseWay(*ir) && !isDegenerateArea(*ir, minRingArea));
 		completedRings.push_back(*ir);
 	}
 
