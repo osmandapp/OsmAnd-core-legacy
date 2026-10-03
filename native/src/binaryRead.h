@@ -64,6 +64,11 @@ struct RestrictionInfo {
 bool isThreadSpecificFileDescriptorsEnabled();
 
 struct RoutingIndex;
+
+// Which descriptor of a BinaryMapFile reads its routing section: routing, geocoding and rendering run on different
+// threads and must not share one descriptor.
+enum class RouteFdKind { ROUTING, GEOCODING, RENDERING };
+
 struct RouteSubregion {
 	uint64_t length;
 	uint64_t filePointer;
