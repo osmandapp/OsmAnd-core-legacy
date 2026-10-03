@@ -461,7 +461,7 @@ void searchRouteSubRegion(int fileInd, std::vector<RouteDataObject*>& list, cons
 						  RouteSubregion* sub);
 void searchRouteRegion(CodedInputStream** input, FileInputStream** fis, BinaryMapFile* file, SearchQuery* q,
 					   const SHARED_PTR<RoutingIndex>& ind, std::vector<RouteSubregion>& subregions, std::vector<RouteSubregion>& toLoad,
-					   bool geocoding);
+					   RouteFdKind fdKind);
 bool readRouteTreeData(CodedInputStream* input, RouteSubregion* s, std::vector<RouteDataObject*>& dataObjects,
 					   const SHARED_PTR<RoutingIndex>& routingIndex);
 
@@ -2888,7 +2888,7 @@ bool searchRouteSubregionsForBinaryMapFile(BinaryMapFile* file,
 		if (contains) {
 			FileInputStream* nt = NULL;
 			CodedInputStream* cis = NULL;
-			searchRouteRegion(&cis, &nt, file, q, routeIndex, subs, tempResult, false);
+			searchRouteRegion(&cis, &nt, file, q, routeIndex, subs, tempResult, RouteFdKind::ROUTING);
 			if (cis != NULL) {
 				delete cis;
 			}
@@ -2929,7 +2929,8 @@ void searchRouteSubregions(SearchQuery* q, std::vector<RouteSubregion>& tempResu
 			if (contains) {
 				FileInputStream* nt = NULL;
 				CodedInputStream* cis = NULL;
-				searchRouteRegion(&cis, &nt, file, q, routeIndex, subs, tempResult, geocoding);
+				searchRouteRegion(&cis, &nt, file, q, routeIndex, subs, tempResult,
+								  geocoding ? RouteFdKind::GEOCODING : RouteFdKind::ROUTING);
 				if (cis != NULL) {
 					delete cis;
 				}
@@ -2986,7 +2987,7 @@ void readRouteDataAsMapObjects(SearchQuery* q, BinaryMapFile* file, std::vector<
 			vector<RouteSubregion> found;
 			FileInputStream* nt = NULL;
 			CodedInputStream* cis = NULL;
-			searchRouteRegion(&cis, &nt, file, q, routeIndex, subs, found, false);
+			searchRouteRegion(&cis, &nt, file, q, routeIndex, subs, found, RouteFdKind::RENDERING);
 			if (cis != NULL) {
 				delete cis;
 			}
@@ -3468,11 +3469,22 @@ ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, 
 	return q->publisher;
 }
 
+// Each reader (routing, geocoding, rendering) has its own descriptor of the file: a FileInputStream reads from the
+// descriptor's current offset, so two threads on one descriptor move each other's position.
+static int getRouteReadFD(BinaryMapFile* file, RouteFdKind fdKind) {
+	switch (fdKind) {
+		case RouteFdKind::GEOCODING: return file->getGeocodingFD();
+		case RouteFdKind::RENDERING: return file->getFD();
+		default: return file->getRouteFD();
+	}
+}
+
 void initInputForRouteFile(CodedInputStream** inputStream, FileInputStream** fis, BinaryMapFile* file, uint32_t seek,
-						   bool geocoding) {
+						   RouteFdKind fdKind) {
 	if (*inputStream == 0) {
-		lseek(geocoding ? file->getGeocodingFD() : file->getRouteFD(), 0, SEEK_SET);  // seek 0 or seek (*routeIndex)->filePointer
-		*fis = new FileInputStream(geocoding ? file->getGeocodingFD() : file->getRouteFD());
+		const int fd = getRouteReadFD(file, fdKind);
+		lseek(fd, 0, SEEK_SET);  // seek 0 or seek (*routeIndex)->filePointer
+		*fis = new FileInputStream(fd);
 		(*fis)->SetCloseOnDelete(false);
 		*inputStream = new CodedInputStream(*fis);
 		(*inputStream)->SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
@@ -3486,17 +3498,17 @@ void initInputForRouteFile(CodedInputStream** inputStream, FileInputStream** fis
 
 void searchRouteRegion(CodedInputStream** input, FileInputStream** fis, BinaryMapFile* file, SearchQuery* q,
 					   const SHARED_PTR<RoutingIndex>& ind, std::vector<RouteSubregion>& subregions, std::vector<RouteSubregion>& toLoad,
-					   bool geocoding) {
+					   RouteFdKind fdKind) {
 	for (std::vector<RouteSubregion>::iterator subreg = subregions.begin(); subreg != subregions.end(); subreg++) {
 		if (subreg->right >= (uint)q->left && (uint)q->right >= subreg->left && subreg->bottom >= (uint)q->top &&
 			(uint)q->bottom >= subreg->top) {
 			if (subreg->subregions.empty() && subreg->mapDataBlock == 0) {
-				initInputForRouteFile(input, fis, file, subreg->filePointer, geocoding);
+				initInputForRouteFile(input, fis, file, subreg->filePointer, fdKind);
 				uint32_t old = (*input)->PushLimit(subreg->length);
 				readRouteTree(*input, &(*subreg), NULL, ind, -1 /*contains? -1 : 1*/, false);
 				(*input)->PopLimit(old);
 			}
-			searchRouteRegion(input, fis, file, q, ind, subreg->subregions, toLoad, geocoding);
+			searchRouteRegion(input, fis, file, q, ind, subreg->subregions, toLoad, fdKind);
 			if (subreg->mapDataBlock != 0) {
 				toLoad.push_back(*subreg);
 			}
