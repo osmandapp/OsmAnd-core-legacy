@@ -2858,7 +2858,8 @@ void convertRouteDataObjecToMapObjects(SearchQuery* q, std::vector<RouteDataObje
 }
 
 void checkAndInitRouteRegionRules(int fileInd, const SHARED_PTR<RoutingIndex>& routingIndex) {
-	// init decoding rules
+	// init decoding rules; without the lock another thread reads the rules while push_back reallocates them
+	std::lock_guard<std::mutex> lock(routingIndex->initMutex);
 	if (routingIndex->routeEncodingRules.size() == 0) {
 		lseek(fileInd, 0, SEEK_SET);
 		FileInputStream input(fileInd);

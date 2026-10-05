@@ -115,6 +115,8 @@ struct BinaryPartIndex {
 };
 
 struct RoutingIndex : BinaryPartIndex {
+	// guards the lazy read of routeEncodingRules: routing, geocoding and rendering share the index
+	std::mutex initMutex;
 	vector<RouteTypeRule> routeEncodingRules;
 	UNORDERED_map<std::string, uint32_t> decodingRules;
 	std::vector<RouteSubregion> subregions;
