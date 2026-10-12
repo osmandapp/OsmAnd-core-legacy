@@ -403,8 +403,8 @@ vector<int> calculateRawTurnLanes(string turnLanes, int calcTurnType) {
                 TurnType::setPrimaryTurnAndReset(lanes, i, turn);
             } else {
                 if (turn == calcTurnType ||
-                    (TurnType::isRightTurn(calcTurnType) && TurnType::isRightTurn(turn) && !TurnType::isRightTurn(primary)) ||
-                    (TurnType::isLeftTurn(calcTurnType) && TurnType::isLeftTurn(turn) && !TurnType::isLeftTurn(primary))
+                    (TurnType::isRightTurn(calcTurnType) && TurnType::isRightTurn(turn) && !TurnType::isRightTurnNoUTurn(primary)) ||
+                    (TurnType::isLeftTurn(calcTurnType) && TurnType::isLeftTurn(turn) && !TurnType::isLeftTurnNoUTurn(primary))
                     ) {
                     TurnType::setPrimaryTurnShiftOthers(lanes, i, turn);
                 } else if (TurnType::getSecondaryTurn(lanes[i]) == 0) {
@@ -589,6 +589,10 @@ bool findActiveIndexByLanes(std::array<int, 3>& pair, const std::vector<int>& di
             pair[0] = 0;
             pair[1] = (int)curCntLanes.size() - 1;
             pair[2] = directions[0];
+            int secondary = TurnType::getSecondaryTurn(rawLanes[0]);
+            if (pair[2] == TurnType::TU && secondary != 0) {
+                pair[2] = secondary;
+            }
             return true;
         }
         if (rs->roadsOnLeft > 0 && rs->roadsOnRight == 0)
@@ -705,6 +709,9 @@ vector<int> getTurnLanesInfo(SHARED_PTR<RouteSegmentResult>& prevSegm, SHARED_PT
     int activeTurn = act[2];
     vector<int> activeTurnLane = {activeTurn << 1};
     if (!hasAllowedLanes(mainTurnType, activeTurnLane, 0, 0)) {
+        activeTurn = -1;
+    }
+    if (activeTurn == TurnType::TU) {
         activeTurn = -1;
     }
     if (startIndex != -1 && endIndex != -1) {
@@ -1634,8 +1641,13 @@ void determineTurnsToMerge(bool leftside, vector<SHARED_PTR<RouteSegmentResult> 
         auto currentSegment = result[i];
         const auto& currentTurn = currentSegment->turnType;
         dist += currentSegment->distance;
-        if (!currentTurn || currentTurn->getLanes().empty()) {
+        if (!currentTurn) {
             // skip
+        } else if (currentTurn->getLanes().empty()) {
+            if (!TurnType::isSlightTurn(currentTurn->getValue())) {
+                // all turns except: C, KL, KR, TSLL, TSLR
+                nextSegment = nullptr;
+            }
         } else {
             bool merged = false;
             if (nextSegment) {
@@ -2489,8 +2501,8 @@ bool twiceRoadPresent(vector<SHARED_PTR<RouteSegmentResult> >& result, int i) {
         attachedPriority = min(attachedPriority, highwaySpeakPriority(attach->object->getHighway()));
     }
     // same turn:lanes, minor attached roads (3+ classes lower), except none lanes (none can mean different)
-    return turnLanes == getTurnLanesString(curr) && !hasNoneLane(turnLanes)
-           && attachedPriority - highwaySpeakPriority(curr->object->getHighway()) > 2;
+    bool minorAttachedRoads = attachedPriority == MAX_SPEAK_PRIORITY || attachedPriority - highwaySpeakPriority(curr->object->getHighway()) > 2;
+    return turnLanes == getTurnLanesString(curr) && !hasNoneLane(turnLanes) && minorAttachedRoads;
 }
 
 bool isKeepTurn(SHARED_PTR<TurnType> t) {
