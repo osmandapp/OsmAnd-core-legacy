@@ -1521,8 +1521,44 @@ jobject convertRouteDataObjectToJava(JNIEnv* ienv, RouteDataObject* route, jobje
 	return robj;
 }
 
+// A route result has one segment per point of a road and all of them share the road object,
+// so the road is converted to java once and the java object is shared as well.
+struct RouteDataObjectsJavaCache {
+	UNORDERED(map)<RouteDataObject*, jsize> index;
+	jobjectArray converted = NULL;
+
+	void collect(const SHARED_PTR<RouteSegmentResult>& r) {
+		if (!r || !r->object) {
+			return;
+		}
+		if (index.find(r->object.get()) == index.end()) {
+			jsize ind = (jsize)index.size();
+			index[r->object.get()] = ind;
+		}
+		for (const auto& attached : r->attachedRoutes) {
+			for (const auto& a : attached) {
+				collect(a);
+			}
+		}
+	}
+
+	void init(JNIEnv* ienv) {
+		converted = ienv->NewObjectArray(index.size(), jclass_RouteDataObject, NULL);
+		if (converted == NULL) {
+			ienv->ExceptionClear(); // no cache, every segment converts its own copy
+		}
+	}
+
+	void release(JNIEnv* ienv) {
+		if (converted != NULL) {
+			ienv->DeleteLocalRef(converted);
+			converted = NULL;
+		}
+	}
+};
+
 jobject convertRouteSegmentResultToJava(JNIEnv* ienv, SHARED_PTR<RouteSegmentResult> r, UNORDERED(map) < int64_t,
-										int > &indexes, jobjectArray regions) {
+										int > &indexes, jobjectArray regions, RouteDataObjectsJavaCache* cache = NULL) {
 	RouteDataObject* rdo = r->object.get();
 	jobject reg = NULL;
 	int64_t fp = rdo->region->filePointer;
@@ -1534,14 +1570,28 @@ jobject convertRouteSegmentResultToJava(JNIEnv* ienv, SHARED_PTR<RouteSegmentRes
 	for (jsize k = 0; k < (jsize)r->attachedRoutes.size(); k++) {
 		jobjectArray art = ienv->NewObjectArray(r->attachedRoutes[k].size(), jclass_RouteSegmentResult, NULL);
 		for (jsize kj = 0; kj < (jsize)r->attachedRoutes[k].size(); kj++) {
-			jobject jo = convertRouteSegmentResultToJava(ienv, r->attachedRoutes[k][kj], indexes, regions);
+			jobject jo = convertRouteSegmentResultToJava(ienv, r->attachedRoutes[k][kj], indexes, regions, cache);
 			ienv->SetObjectArrayElement(art, kj, jo);
 			ienv->DeleteLocalRef(jo);
 		}
 		ienv->SetObjectArrayElement(ar, k, art);
 		ienv->DeleteLocalRef(art);
 	}
-	jobject robj = convertRouteDataObjectToJava(ienv, rdo, reg);
+	jobject robj = NULL;
+	jsize cacheInd = -1;
+	if (cache != NULL && cache->converted != NULL) {
+		auto it = cache->index.find(rdo);
+		if (it != cache->index.end()) {
+			cacheInd = it->second;
+			robj = ienv->GetObjectArrayElement(cache->converted, cacheInd);
+		}
+	}
+	if (robj == NULL) {
+		robj = convertRouteDataObjectToJava(ienv, rdo, reg);
+		if (robj != NULL && cacheInd >= 0) {
+			ienv->SetObjectArrayElement(cache->converted, cacheInd, robj);
+		}
+	}
 	jobject turnType = NULL;
 	if (r->turnType != nullptr) {
 		const auto& tt = r->turnType;
@@ -2118,11 +2168,17 @@ extern "C" JNIEXPORT jobject JNICALL Java_net_osmand_NativeLibrary_nativeSearchG
 		ienv->DeleteLocalRef(oreg);
 		indexes[(fp << 31) + ln] = t;
 	}
+	RouteDataObjectsJavaCache cache;
 	for (uint i = 0; i < r->fullRoute.size(); i++) {
-		jobject resobj = convertRouteSegmentResultToJava(ienv, r->fullRoute[i], indexes, regions);
+		cache.collect(r->fullRoute[i]);
+	}
+	cache.init(ienv);
+	for (uint i = 0; i < r->fullRoute.size(); i++) {
+		jobject resobj = convertRouteSegmentResultToJava(ienv, r->fullRoute[i], indexes, regions, &cache);
 		ienv->CallVoidMethod(jResult, jmethod_GpxRouteApproximationResult_addResultSegment, resobj);
 		ienv->DeleteLocalRef(resobj);
 	}
+	cache.release(ienv);
 	for (uint i = 0; i < r->finalPoints.size(); i++) {
 		jobject resobj = convertGpxPointToJava(ienv, r->finalPoints[i], indexes, regions);
 		ienv->CallVoidMethod(jResult, jmethod_GpxRouteApproximationResult_addFinalPoint, resobj);
@@ -2163,13 +2219,19 @@ extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_nativeRo
 	}
 
 	// convert results
-	jobjectArray res = ienv->NewObjectArray(r.size(), jclass_RouteSegmentResult, NULL);
+	RouteDataObjectsJavaCache cache;
 	for (uint i = 0; i < r.size(); i++) {
 		clearDirectionPointFromRouteResult(r[i]);
-		jobject resobj = convertRouteSegmentResultToJava(ienv, r[i], indexes, regions);
+		cache.collect(r[i]);
+	}
+	cache.init(ienv);
+	jobjectArray res = ienv->NewObjectArray(r.size(), jclass_RouteSegmentResult, NULL);
+	for (uint i = 0; i < r.size(); i++) {
+		jobject resobj = convertRouteSegmentResultToJava(ienv, r[i], indexes, regions, &cache);
 		ienv->SetObjectArrayElement(res, i, resobj);
 		ienv->DeleteLocalRef(resobj);
 	}
+	cache.release(ienv);
 	if (c->finalRouteSegment.get() != NULL) {
 		ienv->SetFloatField(progress, jfield_RouteCalculationProgress_routingCalculatedTime,
 							c->finalRouteSegment->distanceFromStart);
