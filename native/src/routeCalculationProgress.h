@@ -145,6 +145,7 @@ class RouteCalculationProgress {
 	int iteration;
 
 	bool cancelled;
+	bool memoryLimitExceeded; // set with cancelled when the memory guard stops the calculation
 	int fastRoutingStatusOrdinal;
 	std::shared_ptr<MissingMapsCalculationResult> missingMapsCalculationResult;
 
@@ -158,7 +159,7 @@ class RouteCalculationProgress {
 		  approximatedDistance(0), routingCalculatedTime(0), visitedSegments(0),
 		  visitedDirectSegments(0), visitedOppositeSegments(0), directQueueSize(0), oppositeQueueSize(0),
 		  finalSegmentsFound(0), loadedTiles(0), unloadedTiles(0), loadedPrevUnloadedTiles(0), distinctLoadedTiles(0),
-		  totalIterations(1), iteration(-1), cancelled(false), fastRoutingStatusOrdinal(FastRoutingState::READY), missingMapsCalculationResult(nullptr), maxLoadedTiles(0),
+		  totalIterations(1), iteration(-1), cancelled(false), memoryLimitExceeded(false), fastRoutingStatusOrdinal(FastRoutingState::READY), missingMapsCalculationResult(nullptr), maxLoadedTiles(0),
 		  requestPrivateAccessRouting(false), hhIterationStep(HH_NOT_STARTED),
 		  hhCurrentStepProgress(0), hhTargetsDone(0), hhTargetsTotal(0), hhCalcCounter(0)
 		{
