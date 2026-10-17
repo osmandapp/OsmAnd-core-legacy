@@ -363,8 +363,19 @@ struct HHRouteRegionPointsCtx {
 	BinaryMapFilePtr file;
 	int32_t routingProfile = 0;
 	UNORDERED_map<int64_t, NetworkDBPoint *> pntsByFileId;
+	// segment blocks of fileRegion, loaded lazily by this routing only
+	std::vector<HHRouteBlockSegments *> segments;
 	
 	HHRouteRegionPointsCtx(short id): id(id), fileRegion(nullptr), file(nullptr) {
+	}
+
+	HHRouteRegionPointsCtx(const HHRouteRegionPointsCtx&) = delete;
+	HHRouteRegionPointsCtx& operator=(const HHRouteRegionPointsCtx&) = delete;
+
+	~HHRouteRegionPointsCtx() {
+		for (auto * s : segments) {
+			delete s;
+		}
 	}
 	
 	HHRouteRegionPointsCtx(short id, SHARED_PTR<HHRouteIndex> fileRegion, BinaryMapFilePtr file, int rProf) {
@@ -570,7 +581,7 @@ struct HHRoutingContext {
 		for (auto & r : regions) {
 			if (r->file != nullptr) {
 				UNORDERED_map<int64_t, NetworkDBPoint *> pnts;
-				initHHPoints(r->file.get(), r->fileRegion, this, r->id, pnts);
+				initHHPoints(r->file.get(), r->fileRegion, this, r->id, pnts, r->segments);
 				
 				for (auto it = pnts.begin(); it != pnts.end(); it++) {
 					auto * pnt = it->second;
@@ -626,8 +637,7 @@ struct HHRoutingContext {
 		short mapId = point->mapId;
 		if (mapId < regions.size()) {
 			SHARED_PTR<HHRouteRegionPointsCtx> & r = regions[mapId];
-			SHARED_PTR<HHRouteIndex> & fileRegion = r->fileRegion;
-			for (auto * s : fileRegion->segments) {
+			for (auto * s : r->segments) {
 				if (s->profileId == r->getRoutingProfile() && checkId(point->fileId, s)) {
 					return ::loadNetworkSegmentPoint(this, r, s, point->fileId, reverse);
 				}

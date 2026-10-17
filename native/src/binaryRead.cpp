@@ -1110,13 +1110,18 @@ bool readStringTable(CodedInputStream* input, std::vector<std::string>& list) {
 }
 
 void initHHPoints(BinaryMapFile* file, SHARED_PTR<HHRouteIndex> reg, HHRoutingContext * hctx,
-				  short mapId, UNORDERED_map<int64_t, NetworkDBPoint *> & resPoints) {
+				  short mapId, UNORDERED_map<int64_t, NetworkDBPoint *> & resPoints,
+				  std::vector<HHRouteBlockSegments *> & segments) {
 	PositionalFileInputStream stream(file->getFD());
-	CodedInputStream* input = new CodedInputStream(&stream);
+	CodedInputStream cis(&stream);
+	CodedInputStream* input = &cis;
 	input->SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 	input->Seek(reg->filePointer);
 	int oldLimit = input->PushLimit(reg->length);
-	reg->segments = {};
+	for (auto * s : segments) {
+		delete s;
+	}
+	segments.clear();
 	uint32_t tag;
 	while (true) {
 		tag = input->ReadTag();
@@ -1128,14 +1133,19 @@ void initHHPoints(BinaryMapFile* file, SHARED_PTR<HHRouteIndex> reg, HHRoutingCo
 				int32_t length;
 				WireFormatLite::ReadPrimitive<int32_t, WireFormatLite::TYPE_INT32>(input, &length);
 				int old = input->PushLimit(length);
-				std::vector<std::string> st;
-				readStringTable(input, st);
-				for (std::string s : st) {
-					size_t i = s.find_first_of('=');
-					if (i != string::npos) {
-						TagValuePair tvp(s.substr(0, i), s.substr(i + 1), -1);
-						reg->encodingRules.push_back(tvp);
+				std::lock_guard<std::mutex> lock(reg->initMutex);
+				if (reg->encodingRules.empty()) {
+					std::vector<std::string> st;
+					readStringTable(input, st);
+					for (std::string s : st) {
+						size_t i = s.find_first_of('=');
+						if (i != string::npos) {
+							TagValuePair tvp(s.substr(0, i), s.substr(i + 1), -1);
+							reg->encodingRules.push_back(tvp);
+						}
 					}
+				} else {
+					input->Skip(input->BytesUntilLimit());
 				}
 				input->PopLimit(old);
 				break;
@@ -1146,7 +1156,7 @@ void initHHPoints(BinaryMapFile* file, SHARED_PTR<HHRouteIndex> reg, HHRoutingCo
 			case OsmAnd::OBF::OsmAndHHRoutingIndex::kPointSegmentsFieldNumber: {
 				HHRouteBlockSegments * seg = reg->createHHRouteBlockSegments();
 				if (readRegionSegmentHeader(input, seg)) {
-					reg->segments.push_back(seg);
+					segments.push_back(seg);
 				} else {
 					delete seg;
 				}
@@ -1308,7 +1318,8 @@ int loadNetworkSegmentPoint(HHRoutingContext * ctx, SHARED_PTR<HHRouteRegionPoin
 	auto & reg = regCtx->fileRegion;
 	
 	PositionalFileInputStream stream(file->getFD());
-	CodedInputStream * input = new CodedInputStream(&stream);
+	CodedInputStream cis(&stream);
+	CodedInputStream * input = &cis;
 	input->SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 	input->Seek(reg->filePointer);
 	return loadNetworkSegmentPoint(input, ctx, regCtx, block, searchInd, reverse);
@@ -1871,7 +1882,8 @@ void getIncompleteTransportRoutes(BinaryMapFile* file) {
 		for (auto& ti : file->transportIndexes) {
 			if (ti->incompleteRoutesLength > 0) {
 				PositionalFileInputStream stream(file->getFD());
-				CodedInputStream* input = new CodedInputStream(&stream);
+				CodedInputStream cis(&stream);
+				CodedInputStream* input = &cis;
 				input->SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 
 				input->Seek(ti->incompleteRoutesOffset);
@@ -2236,7 +2248,8 @@ bool readTransportRouteStop(CodedInputStream* input, SHARED_PTR<TransportStop>& 
 bool readTransportRoute(BinaryMapFile* file, SHARED_PTR<TransportRoute>& transportRoute, int32_t filePointer,
 						UNORDERED(map) < int32_t, string > &stringTable, bool onlyDescription) {
 	PositionalFileInputStream stream(file->getFD());
-	CodedInputStream* input = new CodedInputStream(&stream);
+	CodedInputStream cis(&stream);
+	CodedInputStream* input = &cis;
 	input->SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 	input->Seek(filePointer);
 

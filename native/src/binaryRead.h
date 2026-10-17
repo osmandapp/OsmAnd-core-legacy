@@ -200,17 +200,15 @@ struct HHRouteIndex : BinaryPartIndex {
 	std::vector<std::string> profileParams;
 	SHARED_PTR<HHRoutePointsBox> top;
 	// not stored in cache
-	std::vector<HHRouteBlockSegments *> segments;
 	SkRect * rect;
+	// read once by the first routing; guarded by initMutex
 	std::vector<TagValuePair> encodingRules;
+	std::mutex initMutex;
 	
 	HHRouteIndex() : BinaryPartIndex(HH_INDEX), edition(0), profile(""), rect(nullptr) {
 	}
 	
 	~HHRouteIndex() {
-		for (auto & s : segments) {
-			delete s;
-		}
 		delete rect;
 	}
 	
@@ -241,7 +239,7 @@ struct HHRouteIndex : BinaryPartIndex {
 	}
 	
 	HHRouteBlockSegments * createHHRouteBlockSegments() {
-		// all segments stored in std::vector<HHRouteBlockSegments *> segments
+		// owned by the routing context (HHRouteRegionPointsCtx::segments)
 		HHRouteBlockSegments * np = new HHRouteBlockSegments();
 		return np;
 	}
@@ -1132,6 +1130,7 @@ void getIncompleteTransportRoutes(BinaryMapFile* file);
 struct NetworkDBPoint;
 struct HHRoutingContext;
 struct HHRouteRegionPointsCtx;
-void initHHPoints(BinaryMapFile* file, SHARED_PTR<HHRouteIndex> reg, HHRoutingContext * ctx, short mapId, UNORDERED_map<int64_t, NetworkDBPoint *> & resPoints);
+void initHHPoints(BinaryMapFile* file, SHARED_PTR<HHRouteIndex> reg, HHRoutingContext * ctx, short mapId, UNORDERED_map<int64_t, NetworkDBPoint *> & resPoints,
+				  std::vector<HHRouteBlockSegments *> & segments);
 int loadNetworkSegmentPoint(HHRoutingContext * ctx, SHARED_PTR<HHRouteRegionPointsCtx> regCtx, HHRouteBlockSegments * block, int searchInd, bool reverse);
 #endif
