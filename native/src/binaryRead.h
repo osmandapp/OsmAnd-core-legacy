@@ -61,13 +61,7 @@ struct RestrictionInfo {
 	}
 };
 
-bool isThreadSpecificFileDescriptorsEnabled();
-
 struct RoutingIndex;
-
-// Which descriptor of a BinaryMapFile reads its routing section: routing, geocoding and rendering run on different
-// threads and must not share one descriptor.
-enum class RouteFdKind { ROUTING, GEOCODING, RENDERING };
 
 struct RouteSubregion {
 	uint64_t length;
@@ -938,22 +932,9 @@ struct BinaryMapFile {
 	UNORDERED(map)<uint64_t, shared_ptr<IncompleteTransportRoute>> incompleteTransportRoutes;
 	bool incompleteLoaded = false;
 
+	// shared by all readers: each stream reads at its own offset (pread)
 	int fd = -1;
-	int routefd = -1;
-	int geocodingfd = -1;
-	int hhfd = -1;
-
-	std::mutex fdThreadsMutex;
-	std::unordered_map<std::thread::id, int> fd_threads;
-
-	std::mutex routefdThreadsMutex;
-	std::unordered_map<std::thread::id, int> routefd_threads;
-
-	std::mutex geocodingfdThreadsMutex;
-	std::unordered_map<std::thread::id, int> geocodingfd_threads;
-
-	std::mutex hhfdThreadsMutex;
-	std::unordered_map<std::thread::id, int> hhfd_threads;
+	std::mutex fdMutex;
 
 	bool basemap;
 	bool external;
@@ -976,43 +957,11 @@ struct BinaryMapFile {
 	}
 
 	int getFD() {
-		if (isThreadSpecificFileDescriptorsEnabled()) {
-			return getThreadFD(fdThreadsMutex, fd_threads);
-		}
+		std::lock_guard<std::mutex> lock(fdMutex);
 		if (fd <= 0) {
 			fd = openFile();
 		}
 		return fd;
-	}
-
-	int getRouteFD() {
-		if (isThreadSpecificFileDescriptorsEnabled()) {
-			return getThreadFD(routefdThreadsMutex, routefd_threads);
-		}
-		if (routefd <= 0) {
-			routefd = openFile();
-		}
-		return routefd;
-	}
-
-	int getGeocodingFD() {
-		if (isThreadSpecificFileDescriptorsEnabled()) {
-			return getThreadFD(geocodingfdThreadsMutex, geocodingfd_threads);
-		}
-		if (geocodingfd <= 0) {
-			geocodingfd = openFile();
-		}
-		return geocodingfd;
-	}
-	
-	int getHhFD() {
-		if (isThreadSpecificFileDescriptorsEnabled()) {
-			return getThreadFD(hhfdThreadsMutex, hhfd_threads);
-		}
-		if (hhfd <= 0) {
-			hhfd = openFile();
-		}
-		return hhfd;
 	}
 
 	bool isBasemap() {
@@ -1034,30 +983,11 @@ struct BinaryMapFile {
 		if (fd >= 0) {
 			close(fd);
 		}
-		if (routefd >= 0) {
-			close(routefd);
-		}
-		if (geocodingfd >= 0) {
-			close(geocodingfd);
-		}
-		if (hhfd >= 0) {
-			close(hhfd);
-		}
-		closeAllThreadsFDs();
 	}
-
-	int getThreadFD(std::mutex& fdsMutex, std::unordered_map<std::thread::id, int>& fds);
-
-	void closeAllThreadsFDs();
-	void closeCurrentThreadsFDs();
-	static void closeThreadFDs(std::mutex&, std::unordered_map<std::thread::id, int>&, const std::thread::id*);
 };
 
 using BinaryMapFilePtr = std::shared_ptr<BinaryMapFile>;
 using BinaryMapFiles = std::vector<BinaryMapFilePtr>;
-
-void activateThreadSpecificFileDescriptors();
-void deactivateThreadSpecificFileDescriptors();
 
 struct ResultPublisher {
 	std::vector<FoundMapDataObject> result;
@@ -1175,13 +1105,12 @@ void searchTransportIndex(SearchQuery* q, BinaryMapFile* file);
 void loadTransportRoutes(BinaryMapFile* file, vector<int32_t> filePointers, UNORDERED(map) < int64_t,
 						 SHARED_PTR<TransportRoute> > &result);
 
-void searchRouteSubregions(SearchQuery* q, std::vector<RouteSubregion>& tempResult, bool basemap, bool geocoding, BinaryMapFiles& mapIndexReaderFilter);
+void searchRouteSubregions(SearchQuery* q, std::vector<RouteSubregion>& tempResult, bool basemap, BinaryMapFiles& mapIndexReaderFilter);
 
 bool searchRouteSubregionsForBinaryMapFile(BinaryMapFile* file,
 										   SearchQuery* q);
 
-void searchRouteDataForSubRegion(SearchQuery* q, std::vector<RouteDataObject*>& list, RouteSubregion* sub,
-								 bool geocoding);
+void searchRouteDataForSubRegion(SearchQuery* q, std::vector<RouteDataObject*>& list, RouteSubregion* sub);
 
 ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, std::string msgNothingFound,
 										   int& renderedState);

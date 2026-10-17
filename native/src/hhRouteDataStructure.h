@@ -731,7 +731,7 @@ struct HHRouteRegionsGroup {
 					}
 					checked.insert(reg->name);
 					std::vector<RouteSubregion> res;
-					searchRouteSubregions(&request, res, hctx->rctx->basemap, hctx->rctx->geocoding, hctx->rctx->mapIndexReaderFilter);
+					searchRouteSubregions(&request, res, hctx->rctx->basemap, hctx->rctx->mapIndexReaderFilter);
 					if (!res.empty()) {
 						contains = true;
 					}

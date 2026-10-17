@@ -344,7 +344,7 @@ struct RoutingContext {
 					subregions[j]->setLoaded();
 					SearchQuery q;
 					vector<RouteDataObject*> res;
-					searchRouteDataForSubRegion(&q, res, &subregions[j]->subregion, geocoding);
+					searchRouteDataForSubRegion(&q, res, &subregions[j]->subregion);
 					vector<RouteDataObject*>::iterator i = res.begin();
 					for (; i != res.end(); i++) {
 						if (*i != NULL) {
@@ -385,7 +385,7 @@ struct RoutingContext {
 			SearchQuery q((uint32_t)(xloc << tz), (uint32_t)((xloc + 1) << tz), (uint32_t)(yloc << tz),
 						  (uint32_t)((yloc + 1) << tz));
 			std::vector<RouteSubregion> tempResult;
-			searchRouteSubregions(&q, tempResult, basemap, geocoding, mapIndexReaderFilter);
+			searchRouteSubregions(&q, tempResult, basemap, mapIndexReaderFilter);
 			std::vector<SHARED_PTR<RoutingSubregionTile>> collection;
 			for (uint i = 0; i < tempResult.size(); i++) {
 				RouteSubregion& rs = tempResult[i];

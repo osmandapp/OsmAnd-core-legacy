@@ -500,9 +500,7 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_net_osmand_NativeLibrary_getMapboxV
 
 	int renderedState = 0;
 
-	activateThreadSpecificFileDescriptors();
 	ResultPublisher* res = searchObjectsForRendering(&q, true, "Nothing found", renderedState);
-	deactivateThreadSpecificFileDescriptors();
 
 	auto blob = buildMapboxVectorTile(res->result, x, y, zoom);
 	jbyteArray resultObject = ienv->NewByteArray(blob.size());
@@ -2740,7 +2738,7 @@ extern "C" JNIEXPORT jobject JNICALL Java_net_osmand_NativeLibrary_loadRoutingDa
 	sub.mapDataBlock = ienv->GetLongField(subreg, jfield_RouteSubregion_shiftToData);
 	std::vector<RouteDataObject*> result;
 	SearchQuery q;
-	searchRouteDataForSubRegion(&q, result, &sub, false);
+	searchRouteDataForSubRegion(&q, result, &sub);
 
 	if (loadObjects) {
 		jobjectArray res = ienv->NewObjectArray(result.size(), jclass_RouteDataObject, NULL);

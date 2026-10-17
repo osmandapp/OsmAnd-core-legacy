@@ -87,8 +87,6 @@ OsmAnd::OBF::OsmAndStoredIndex* cache = NULL;
 bool cacheHasChanged = false;
 static const int CACHE_VERSION = 5;// synchronize with CachedOsmandIndexes.java VERSION
 
-static thread_local bool useThreadSpecificFileDescriptors = false; // tested with getMapboxVectorTileData only
-
 #ifdef MALLOC_H
 #include <malloc.h>
 void print_dump(const char* msg1, const char* msg2) {
@@ -499,8 +497,7 @@ bool RouteDataObject::hasTrafficLightAt(int i) {
 void searchRouteSubRegion(int fileInd, std::vector<RouteDataObject*>& list, const SHARED_PTR<RoutingIndex>& routingIndex,
 						  RouteSubregion* sub);
 void searchRouteRegion(CodedInputStream** input, PositionalFileInputStream** fis, BinaryMapFile* file, SearchQuery* q,
-					   const SHARED_PTR<RoutingIndex>& ind, std::vector<RouteSubregion>& subregions, std::vector<RouteSubregion>& toLoad,
-					   RouteFdKind fdKind);
+					   const SHARED_PTR<RoutingIndex>& ind, std::vector<RouteSubregion>& subregions, std::vector<RouteSubregion>& toLoad);
 bool readRouteTreeData(CodedInputStream* input, RouteSubregion* s, std::vector<RouteDataObject*>& dataObjects,
 					   const SHARED_PTR<RoutingIndex>& routingIndex);
 
@@ -1114,7 +1111,7 @@ bool readStringTable(CodedInputStream* input, std::vector<std::string>& list) {
 
 void initHHPoints(BinaryMapFile* file, SHARED_PTR<HHRouteIndex> reg, HHRoutingContext * hctx,
 				  short mapId, UNORDERED_map<int64_t, NetworkDBPoint *> & resPoints) {
-	PositionalFileInputStream stream(file->getHhFD());
+	PositionalFileInputStream stream(file->getFD());
 	CodedInputStream* input = new CodedInputStream(&stream);
 	input->SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 	input->Seek(reg->filePointer);
@@ -1310,7 +1307,7 @@ int loadNetworkSegmentPoint(HHRoutingContext * ctx, SHARED_PTR<HHRouteRegionPoin
 	auto & file = regCtx->file;
 	auto & reg = regCtx->fileRegion;
 	
-	PositionalFileInputStream stream(file->getHhFD());
+	PositionalFileInputStream stream(file->getFD());
 	CodedInputStream * input = new CodedInputStream(&stream);
 	input->SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 	input->Seek(reg->filePointer);
@@ -1873,7 +1870,7 @@ void getIncompleteTransportRoutes(BinaryMapFile* file) {
 	if (!file->incompleteLoaded) {
 		for (auto& ti : file->transportIndexes) {
 			if (ti->incompleteRoutesLength > 0) {
-				PositionalFileInputStream stream(file->getRouteFD());
+				PositionalFileInputStream stream(file->getFD());
 				CodedInputStream* input = new CodedInputStream(&stream);
 				input->SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 
@@ -2238,7 +2235,7 @@ bool readTransportRouteStop(CodedInputStream* input, SHARED_PTR<TransportStop>& 
 
 bool readTransportRoute(BinaryMapFile* file, SHARED_PTR<TransportRoute>& transportRoute, int32_t filePointer,
 						UNORDERED(map) < int32_t, string > &stringTable, bool onlyDescription) {
-	PositionalFileInputStream stream(file->getRouteFD());
+	PositionalFileInputStream stream(file->getFD());
 	CodedInputStream* input = new CodedInputStream(&stream);
 	input->SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 	input->Seek(filePointer);
@@ -2532,7 +2529,7 @@ void searchTransportIndex(const SHARED_PTR<TransportIndex>& index, SearchQuery* 
 }
 
 void searchTransportIndex(SearchQuery* q, BinaryMapFile* file) {
-	PositionalFileInputStream input(file->getRouteFD());
+	PositionalFileInputStream input(file->getFD());
 	CodedInputStream cis(&input);
 	cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 	for (const auto& transportIndex : file->transportIndexes) {
@@ -2585,7 +2582,7 @@ void loadTransportRoutes(BinaryMapFile* file, vector<int32_t> filePointers, UNOR
 				finishInit.push_back(transportRoute);
 			}
 		}
-		PositionalFileInputStream input(file->getRouteFD());
+		PositionalFileInputStream input(file->getFD());
 		CodedInputStream cis(&input);
 		cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 		initializeStringTable(&cis, ind, stringTable);
@@ -2910,7 +2907,7 @@ bool searchRouteSubregionsForBinaryMapFile(BinaryMapFile* file,
 		if (contains) {
 			PositionalFileInputStream* nt = NULL;
 			CodedInputStream* cis = NULL;
-			searchRouteRegion(&cis, &nt, file, q, routeIndex, subs, tempResult, RouteFdKind::ROUTING);
+			searchRouteRegion(&cis, &nt, file, q, routeIndex, subs, tempResult);
 			if (cis != NULL) {
 				delete cis;
 			}
@@ -2923,7 +2920,7 @@ bool searchRouteSubregionsForBinaryMapFile(BinaryMapFile* file,
 	return false;
 }
 
-void searchRouteSubregions(SearchQuery* q, std::vector<RouteSubregion>& tempResult, bool basemap, bool geocoding, BinaryMapFiles& mapIndexReaderFilter) {
+void searchRouteSubregions(SearchQuery* q, std::vector<RouteSubregion>& tempResult, bool basemap, BinaryMapFiles& mapIndexReaderFilter) {
 	const auto openFilesSnapshot = getOpenFilesSnapshot();
 	for (auto i = openFilesSnapshot.begin(); i != openFilesSnapshot.end() && !q->isCancelled(); i++) {
 		const auto& fileRef = *i;
@@ -2951,15 +2948,14 @@ void searchRouteSubregions(SearchQuery* q, std::vector<RouteSubregion>& tempResu
 			if (contains) {
 				PositionalFileInputStream* nt = NULL;
 				CodedInputStream* cis = NULL;
-				searchRouteRegion(&cis, &nt, file, q, routeIndex, subs, tempResult,
-								  geocoding ? RouteFdKind::GEOCODING : RouteFdKind::ROUTING);
+				searchRouteRegion(&cis, &nt, file, q, routeIndex, subs, tempResult);
 				if (cis != NULL) {
 					delete cis;
 				}
 				if (nt != NULL) {
 					delete nt;
 				}
-				checkAndInitRouteRegionRules(geocoding ? file->getGeocodingFD() : file->getRouteFD(), routeIndex);
+				checkAndInitRouteRegionRules(file->getFD(), routeIndex);
 			}
 		}
 	}
@@ -3007,7 +3003,7 @@ void readRouteDataAsMapObjects(SearchQuery* q, BinaryMapFile* file, std::vector<
 			vector<RouteSubregion> found;
 			PositionalFileInputStream* nt = NULL;
 			CodedInputStream* cis = NULL;
-			searchRouteRegion(&cis, &nt, file, q, routeIndex, subs, found, RouteFdKind::RENDERING);
+			searchRouteRegion(&cis, &nt, file, q, routeIndex, subs, found);
 			if (cis != NULL) {
 				delete cis;
 			}
@@ -3365,20 +3361,9 @@ ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, 
 	return q->publisher;
 }
 
-// Each reader (routing, geocoding, rendering) has its own descriptor of the file.
-static int getRouteReadFD(BinaryMapFile* file, RouteFdKind fdKind) {
-	switch (fdKind) {
-		case RouteFdKind::GEOCODING: return file->getGeocodingFD();
-		case RouteFdKind::RENDERING: return file->getFD();
-		default: return file->getRouteFD();
-	}
-}
-
-void initInputForRouteFile(CodedInputStream** inputStream, PositionalFileInputStream** fis, BinaryMapFile* file, uint32_t seek,
-						   RouteFdKind fdKind) {
+void initInputForRouteFile(CodedInputStream** inputStream, PositionalFileInputStream** fis, BinaryMapFile* file, uint32_t seek) {
 	if (*inputStream == 0) {
-		const int fd = getRouteReadFD(file, fdKind);
-		*fis = new PositionalFileInputStream(fd);
+		*fis = new PositionalFileInputStream(file->getFD());
 		*inputStream = new CodedInputStream(*fis);
 		(*inputStream)->SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 		(*inputStream)->PushLimit(INT_MAXIMUM);
@@ -3390,18 +3375,17 @@ void initInputForRouteFile(CodedInputStream** inputStream, PositionalFileInputSt
 }
 
 void searchRouteRegion(CodedInputStream** input, PositionalFileInputStream** fis, BinaryMapFile* file, SearchQuery* q,
-					   const SHARED_PTR<RoutingIndex>& ind, std::vector<RouteSubregion>& subregions, std::vector<RouteSubregion>& toLoad,
-					   RouteFdKind fdKind) {
+					   const SHARED_PTR<RoutingIndex>& ind, std::vector<RouteSubregion>& subregions, std::vector<RouteSubregion>& toLoad) {
 	for (std::vector<RouteSubregion>::iterator subreg = subregions.begin(); subreg != subregions.end(); subreg++) {
 		if (subreg->right >= (uint)q->left && (uint)q->right >= subreg->left && subreg->bottom >= (uint)q->top &&
 			(uint)q->bottom >= subreg->top) {
 			if (subreg->subregions.empty() && subreg->mapDataBlock == 0) {
-				initInputForRouteFile(input, fis, file, subreg->filePointer, fdKind);
+				initInputForRouteFile(input, fis, file, subreg->filePointer);
 				uint32_t old = (*input)->PushLimit(subreg->length);
 				readRouteTree(*input, &(*subreg), NULL, ind, -1 /*contains? -1 : 1*/, false);
 				(*input)->PopLimit(old);
 			}
-			searchRouteRegion(input, fis, file, q, ind, subreg->subregions, toLoad, fdKind);
+			searchRouteRegion(input, fis, file, q, ind, subreg->subregions, toLoad);
 			if (subreg->mapDataBlock != 0) {
 				toLoad.push_back(*subreg);
 			}
@@ -3709,8 +3693,7 @@ void searchRouteSubRegion(int fileInd, std::vector<RouteDataObject*>& list, cons
 	cis.PopLimit(old);
 }
 
-void searchRouteDataForSubRegion(SearchQuery* q, std::vector<RouteDataObject*>& list, RouteSubregion* sub,
-								 bool geocoding) {
+void searchRouteDataForSubRegion(SearchQuery* q, std::vector<RouteDataObject*>& list, RouteSubregion* sub) {
 	const auto& rs = sub->routingIndex;
 	const auto openFilesSnapshot = getOpenFilesSnapshot();
 	for (auto i = openFilesSnapshot.begin(); i != openFilesSnapshot.end() && !q->isCancelled(); i++) {
@@ -3722,7 +3705,7 @@ void searchRouteDataForSubRegion(SearchQuery* q, std::vector<RouteDataObject*>& 
 			if (rs && (rs->name != routingIndex->name || rs->filePointer != routingIndex->filePointer)) {
 				continue;
 			}
-			searchRouteSubRegion(geocoding ? file->getGeocodingFD() : file->getRouteFD(), list, routingIndex, sub);
+			searchRouteSubRegion(file->getFD(), list, routingIndex, sub);
 			return;
 		}
 	}
@@ -4091,73 +4074,4 @@ bool writeMapFilesCache(const std::string& filePath) {
 		cacheHasChanged = false;
 	}
 	return true;
-}
-
-void BinaryMapFile::closeThreadFDs(std::mutex& fdsMutex, std::unordered_map<std::thread::id, int>& fds,
-                                   const std::thread::id* threadId) {
-	std::vector<int> fdsToClose;
-	{
-		std::lock_guard<std::mutex> mapLock(fdsMutex);
-		if (threadId != nullptr) {
-			const auto it = fds.find(*threadId);
-			if (it != fds.end()) {
-				fdsToClose.push_back(it->second);
-				fds.erase(it);
-			}
-		} else {
-			for (const auto& entry : fds) {
-				fdsToClose.push_back(entry.second);
-			}
-			fds.clear();
-		}
-	}
-	for (const int f : fdsToClose) {
-		close(f);
-	}
-}
-
-void BinaryMapFile::closeAllThreadsFDs() {
-	closeThreadFDs(fdThreadsMutex, fd_threads, nullptr);
-	closeThreadFDs(routefdThreadsMutex, routefd_threads, nullptr);
-	closeThreadFDs(geocodingfdThreadsMutex, geocodingfd_threads, nullptr);
-	closeThreadFDs(hhfdThreadsMutex, hhfd_threads, nullptr);
-}
-
-int BinaryMapFile::getThreadFD(std::mutex& fdsMutex, std::unordered_map<std::thread::id, int>& fds) {
-	const std::thread::id currentThreadId = std::this_thread::get_id();
-	std::lock_guard<std::mutex> lock(fdsMutex);
-	const auto it = fds.find(currentThreadId);
-	if (it != fds.end()) {
-		return it->second;
-	}
-
-	const int threadFD = openFile();
-	if (threadFD >= 0) {
-		fds.insert({currentThreadId, threadFD});
-	}
-	return threadFD;
-}
-
-void BinaryMapFile::closeCurrentThreadsFDs() {
-	const std::thread::id currentThreadId = std::this_thread::get_id();
-	closeThreadFDs(fdThreadsMutex, fd_threads, &currentThreadId);
-	closeThreadFDs(routefdThreadsMutex, routefd_threads, &currentThreadId);
-	closeThreadFDs(geocodingfdThreadsMutex, geocodingfd_threads, &currentThreadId);
-	closeThreadFDs(hhfdThreadsMutex, hhfd_threads, &currentThreadId);
-}
-
-void activateThreadSpecificFileDescriptors() {
-	useThreadSpecificFileDescriptors = true;
-}
-
-void deactivateThreadSpecificFileDescriptors() {
-	const auto openFilesSnapshot = getOpenFilesSnapshot();
-	for (auto& file : openFilesSnapshot) {
-		file->closeCurrentThreadsFDs();
-	}
-	useThreadSpecificFileDescriptors = false;
-}
-
-bool isThreadSpecificFileDescriptorsEnabled() {
-	return useThreadSpecificFileDescriptors;
 }
