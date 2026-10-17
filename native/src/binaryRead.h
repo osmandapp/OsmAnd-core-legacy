@@ -151,6 +151,10 @@ struct RoutingIndex : BinaryPartIndex {
 	uint32_t searchRouteEncodingRule(const std::string& tag, const std::string& value);
 
 	RouteTypeRule& quickGetEncodingRule(uint32_t id) {
+		if (id >= routeEncodingRules.size()) {
+			static RouteTypeRule emptyRule;
+			return emptyRule;
+		}
 		return routeEncodingRules[id];
 	}
 };
@@ -1058,6 +1062,26 @@ using BinaryMapFiles = std::vector<BinaryMapFilePtr>;
 
 void activateThreadSpecificFileDescriptors();
 void deactivateThreadSpecificFileDescriptors();
+
+// Gives the current thread its own descriptors of the open files until the scope ends: concurrent readers of one
+// shared descriptor move each other's offset. A nested scope keeps the outer one's descriptors.
+class ThreadSpecificFileDescriptorsScope {
+	const bool activated;
+
+   public:
+	ThreadSpecificFileDescriptorsScope() : activated(!isThreadSpecificFileDescriptorsEnabled()) {
+		if (activated) {
+			activateThreadSpecificFileDescriptors();
+		}
+	}
+	~ThreadSpecificFileDescriptorsScope() {
+		if (activated) {
+			deactivateThreadSpecificFileDescriptors();
+		}
+	}
+	ThreadSpecificFileDescriptorsScope(const ThreadSpecificFileDescriptorsScope&) = delete;
+	ThreadSpecificFileDescriptorsScope& operator=(const ThreadSpecificFileDescriptorsScope&) = delete;
+};
 
 struct ResultPublisher {
 	std::vector<FoundMapDataObject> result;

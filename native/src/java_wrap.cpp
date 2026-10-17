@@ -2123,6 +2123,7 @@ HHRoutingConfig * getHHRoutingConfig(JNIEnv* ienv, jobject jHHConf) {
 
 extern "C" JNIEXPORT jboolean JNICALL Java_net_osmand_NativeLibrary_nativeNeedRequestPrivateAccessRouting(
 	JNIEnv* ienv, jobject obj, jobject jCtx, jintArray jcoordinatesX, jintArray jcoordinatesY) {
+	ThreadSpecificFileDescriptorsScope threadFDs;
 	jsize size = ienv->GetArrayLength(jcoordinatesX);
 	std::vector<int> coordinatesX(size);
 	std::vector<int> coordinatesY(size);
@@ -2140,6 +2141,7 @@ extern "C" JNIEXPORT jboolean JNICALL Java_net_osmand_NativeLibrary_nativeNeedRe
 extern "C" JNIEXPORT jobject JNICALL Java_net_osmand_NativeLibrary_nativeSearchGpxRoute(JNIEnv* ienv, jobject obj,
 	jobject jCtx, jobjectArray jGpxPoints, jobjectArray regions, bool useGeo)
 {
+	ThreadSpecificFileDescriptorsScope threadFDs;
 	jobject progress = ienv->GetObjectField(jCtx, jfield_RoutingContext_calculationProgress);
 	RoutingContext* c = getRoutingContext(ienv, jCtx, NO_DIRECTION, false, progress);
 	SHARED_PTR<GpxRouteApproximation> r = shared_ptr<GpxRouteApproximation>(new GpxRouteApproximation(c));
@@ -2187,6 +2189,7 @@ extern "C" JNIEXPORT jobject JNICALL Java_net_osmand_NativeLibrary_nativeSearchG
 
 extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_nativeRouting(JNIEnv* ienv, jobject obj,
 	jobject jCtx, jobject jHHConfig, jfloat initDirection, jobjectArray regions, bool basemap, bool nativeResult) {
+	ThreadSpecificFileDescriptorsScope threadFDs;
 	jobject precalculatedRoute = ienv->GetObjectField(jCtx, jfield_RoutingContext_precalculatedRouteDirection);
 	jobject progress = ienv->GetObjectField(jCtx, jfield_RoutingContext_calculationProgress);
 
@@ -2625,6 +2628,7 @@ jobject convertPTResultToJava(JNIEnv* ienv, const SHARED_PTR<TransportRouteResul
 
 extern "C" JNIEXPORT jobjectArray JNICALL Java_net_osmand_NativeLibrary_nativeTransportRouting(
 	JNIEnv* ienv, jobject obj, jintArray coordinates, jobject jTransportRoutingConfig, jobject progress) {
+	ThreadSpecificFileDescriptorsScope threadFDs;
 	shared_ptr<TransportRoutingConfiguration> trConfig =
 		shared_ptr<TransportRoutingConfiguration>(new TransportRoutingConfiguration);
 	parseTransportRoutingConfiguration(ienv, trConfig, jTransportRoutingConfig);
@@ -2727,6 +2731,7 @@ extern "C" JNIEXPORT jobject JNICALL Java_net_osmand_NativeLibrary_loadRoutingDa
 																				   jobject reg, jstring regName,
 																				   jint regFilePointer, jobject subreg,
 																				   jboolean loadObjects) {
+	ThreadSpecificFileDescriptorsScope threadFDs;
 	auto ind = std::make_shared<RoutingIndex>();
 	ind->filePointer = regFilePointer;
 	ind->name = getString(ienv, regName);
