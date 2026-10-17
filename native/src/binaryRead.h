@@ -115,6 +115,8 @@ struct RoutingIndex : BinaryPartIndex {
 	UNORDERED_map<std::string, uint32_t> decodingRules;
 	std::vector<RouteSubregion> subregions;
 	std::vector<RouteSubregion> basesubregions;
+	// guards the subregion trees: searchRouteRegion reads their lower levels lazily
+	std::mutex subregionsMutex;
 
 	int nameTypeRule;
 	int refTypeRule;

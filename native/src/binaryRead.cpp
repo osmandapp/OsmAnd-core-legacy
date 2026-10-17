@@ -2920,7 +2920,10 @@ bool searchRouteSubregionsForBinaryMapFile(BinaryMapFile* file,
 		if (contains) {
 			PositionalFileInputStream* nt = NULL;
 			CodedInputStream* cis = NULL;
-			searchRouteRegion(&cis, &nt, file, q, routeIndex, subs, tempResult);
+			{
+				std::lock_guard<std::mutex> lock(routeIndex->subregionsMutex);
+				searchRouteRegion(&cis, &nt, file, q, routeIndex, subs, tempResult);
+			}
 			if (cis != NULL) {
 				delete cis;
 			}
@@ -2961,7 +2964,10 @@ void searchRouteSubregions(SearchQuery* q, std::vector<RouteSubregion>& tempResu
 			if (contains) {
 				PositionalFileInputStream* nt = NULL;
 				CodedInputStream* cis = NULL;
-				searchRouteRegion(&cis, &nt, file, q, routeIndex, subs, tempResult);
+				{
+					std::lock_guard<std::mutex> lock(routeIndex->subregionsMutex);
+					searchRouteRegion(&cis, &nt, file, q, routeIndex, subs, tempResult);
+				}
 				if (cis != NULL) {
 					delete cis;
 				}
@@ -3001,9 +3007,10 @@ void readRouteDataAsMapObjects(SearchQuery* q, BinaryMapFile* file, std::vector<
 			break;
 		}
 		bool contains = false;
-		std::vector<RouteSubregion> subs = routeIndex->subregions;
-		if (q->zoom <= zoomForBaseRouteRendering) {
-			subs = routeIndex->basesubregions;
+		std::vector<RouteSubregion> subs;
+		{
+			std::lock_guard<std::mutex> lock(routeIndex->subregionsMutex);
+			subs = q->zoom <= zoomForBaseRouteRendering ? routeIndex->basesubregions : routeIndex->subregions;
 		}
 		for (std::vector<RouteSubregion>::iterator subreg = subs.begin(); subreg != subs.end(); subreg++) {
 			if (subreg->right >= (uint)q->left && (uint)q->right >= subreg->left && subreg->bottom >= (uint)q->top &&
