@@ -5,7 +5,10 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include <errno.h>
+
 #include <algorithm>
+#include <limits>
 
 #include "Logging.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
@@ -27,6 +30,47 @@ using google::protobuf::internal::WireFormatLite;
 using google::protobuf::io::CodedInputStream;
 using google::protobuf::io::FileInputStream;
 using google::protobuf::io::FileOutputStream;
+
+// Reads the file with pread at the stream's own offset. FileInputStream reads and skips at the descriptor's
+// offset, so threads sharing one descriptor move each other's position.
+class PositionalFileInputStream : public google::protobuf::io::ZeroCopyInputStream {
+   public:
+	explicit PositionalFileInputStream(int fd) : reader(fd), impl(&reader) {}
+	bool Next(const void** data, int* size) override { return impl.Next(data, size); }
+	void BackUp(int count) override { impl.BackUp(count); }
+	bool Skip(int count) override { return impl.Skip(count); }
+	google::protobuf::int64 ByteCount() const override { return impl.ByteCount(); }
+
+   private:
+	class Reader : public google::protobuf::io::CopyingInputStream {
+	   public:
+		explicit Reader(int fd) : fd(fd) {}
+		int Read(void* buffer, int size) override {
+			if (offset > std::numeric_limits<off_t>::max()) {
+				return -1;
+			}
+			ssize_t n;
+			do {
+				n = pread(fd, buffer, size, (off_t)offset);
+			} while (n < 0 && errno == EINTR);
+			if (n > 0) {
+				offset += n;
+			}
+			return (int)n;
+		}
+		// Like FileInputStream (lseek SEEK_CUR), does not check the end of file: the next Read returns 0 there.
+		int Skip(int count) override {
+			offset += count;
+			return count;
+		}
+
+	   private:
+		const int fd;
+		int64_t offset = 0;
+	};
+	Reader reader;
+	google::protobuf::io::CopyingInputStreamAdaptor impl;
+};
 
 // using namespace google::protobuf::internal;
 #define INT_MAXIMUM 0x7fffffff
@@ -454,7 +498,7 @@ bool RouteDataObject::hasTrafficLightAt(int i) {
 
 void searchRouteSubRegion(int fileInd, std::vector<RouteDataObject*>& list, const SHARED_PTR<RoutingIndex>& routingIndex,
 						  RouteSubregion* sub);
-void searchRouteRegion(CodedInputStream** input, FileInputStream** fis, BinaryMapFile* file, SearchQuery* q,
+void searchRouteRegion(CodedInputStream** input, PositionalFileInputStream** fis, BinaryMapFile* file, SearchQuery* q,
 					   const SHARED_PTR<RoutingIndex>& ind, std::vector<RouteSubregion>& subregions, std::vector<RouteSubregion>& toLoad,
 					   RouteFdKind fdKind);
 bool readRouteTreeData(CodedInputStream* input, RouteSubregion* s, std::vector<RouteDataObject*>& dataObjects,
@@ -1070,9 +1114,7 @@ bool readStringTable(CodedInputStream* input, std::vector<std::string>& list) {
 
 void initHHPoints(BinaryMapFile* file, SHARED_PTR<HHRouteIndex> reg, HHRoutingContext * hctx,
 				  short mapId, UNORDERED_map<int64_t, NetworkDBPoint *> & resPoints) {
-	lseek(file->getHhFD(), 0, SEEK_SET);
-	FileInputStream stream(file->getHhFD());
-	stream.SetCloseOnDelete(false);
+	PositionalFileInputStream stream(file->getHhFD());
 	CodedInputStream* input = new CodedInputStream(&stream);
 	input->SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 	input->Seek(reg->filePointer);
@@ -1268,9 +1310,7 @@ int loadNetworkSegmentPoint(HHRoutingContext * ctx, SHARED_PTR<HHRouteRegionPoin
 	auto & file = regCtx->file;
 	auto & reg = regCtx->fileRegion;
 	
-	lseek(file->getHhFD(), 0, SEEK_SET);
-	FileInputStream stream(file->getHhFD());
-	stream.SetCloseOnDelete(false);
+	PositionalFileInputStream stream(file->getHhFD());
 	CodedInputStream * input = new CodedInputStream(&stream);
 	input->SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 	input->Seek(reg->filePointer);
@@ -1833,9 +1873,7 @@ void getIncompleteTransportRoutes(BinaryMapFile* file) {
 	if (!file->incompleteLoaded) {
 		for (auto& ti : file->transportIndexes) {
 			if (ti->incompleteRoutesLength > 0) {
-				lseek(file->getRouteFD(), 0, SEEK_SET);
-				FileInputStream stream(file->getRouteFD());
-				stream.SetCloseOnDelete(false);
+				PositionalFileInputStream stream(file->getRouteFD());
 				CodedInputStream* input = new CodedInputStream(&stream);
 				input->SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 
@@ -2200,9 +2238,7 @@ bool readTransportRouteStop(CodedInputStream* input, SHARED_PTR<TransportStop>& 
 
 bool readTransportRoute(BinaryMapFile* file, SHARED_PTR<TransportRoute>& transportRoute, int32_t filePointer,
 						UNORDERED(map) < int32_t, string > &stringTable, bool onlyDescription) {
-	lseek(file->getRouteFD(), 0, SEEK_SET);
-	FileInputStream stream(file->getRouteFD());
-	stream.SetCloseOnDelete(false);
+	PositionalFileInputStream stream(file->getRouteFD());
 	CodedInputStream* input = new CodedInputStream(&stream);
 	input->SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 	input->Seek(filePointer);
@@ -2496,9 +2532,7 @@ void searchTransportIndex(const SHARED_PTR<TransportIndex>& index, SearchQuery* 
 }
 
 void searchTransportIndex(SearchQuery* q, BinaryMapFile* file) {
-	lseek(file->getRouteFD(), 0, SEEK_SET);
-	FileInputStream input(file->getRouteFD());
-	input.SetCloseOnDelete(false);
+	PositionalFileInputStream input(file->getRouteFD());
 	CodedInputStream cis(&input);
 	cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 	for (const auto& transportIndex : file->transportIndexes) {
@@ -2551,9 +2585,7 @@ void loadTransportRoutes(BinaryMapFile* file, vector<int32_t> filePointers, UNOR
 				finishInit.push_back(transportRoute);
 			}
 		}
-		lseek(file->getRouteFD(), 0, SEEK_SET);
-		FileInputStream input(file->getRouteFD());
-		input.SetCloseOnDelete(false);
+		PositionalFileInputStream input(file->getRouteFD());
 		CodedInputStream cis(&input);
 		cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 		initializeStringTable(&cis, ind, stringTable);
@@ -2852,9 +2884,7 @@ void checkAndInitRouteRegionRules(int fileInd, const SHARED_PTR<RoutingIndex>& r
 	// init decoding rules; without the lock another thread reads the rules while push_back reallocates them
 	std::lock_guard<std::mutex> lock(routingIndex->initMutex);
 	if (routingIndex->routeEncodingRules.size() == 0) {
-		lseek(fileInd, 0, SEEK_SET);
-		FileInputStream input(fileInd);
-		input.SetCloseOnDelete(false);
+		PositionalFileInputStream input(fileInd);
 		CodedInputStream cis(&input);
 		cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 
@@ -2878,7 +2908,7 @@ bool searchRouteSubregionsForBinaryMapFile(BinaryMapFile* file,
 			}
 		}
 		if (contains) {
-			FileInputStream* nt = NULL;
+			PositionalFileInputStream* nt = NULL;
 			CodedInputStream* cis = NULL;
 			searchRouteRegion(&cis, &nt, file, q, routeIndex, subs, tempResult, RouteFdKind::ROUTING);
 			if (cis != NULL) {
@@ -2919,7 +2949,7 @@ void searchRouteSubregions(SearchQuery* q, std::vector<RouteSubregion>& tempResu
 				}
 			}
 			if (contains) {
-				FileInputStream* nt = NULL;
+				PositionalFileInputStream* nt = NULL;
 				CodedInputStream* cis = NULL;
 				searchRouteRegion(&cis, &nt, file, q, routeIndex, subs, tempResult,
 								  geocoding ? RouteFdKind::GEOCODING : RouteFdKind::ROUTING);
@@ -2938,9 +2968,7 @@ void searchRouteSubregions(SearchQuery* q, std::vector<RouteSubregion>& tempResu
 void readRouteMapObjects(SearchQuery* q, BinaryMapFile* file, vector<RouteSubregion>& found, const SHARED_PTR<RoutingIndex>& routeIndex,
 						 std::vector<FoundMapDataObject>& tempResult, int& renderedState) {
 	sort(found.begin(), found.end(), sortRouteRegions);
-	lseek(file->getFD(), 0, SEEK_SET);
-	FileInputStream input(file->getFD());
-	input.SetCloseOnDelete(false);
+	PositionalFileInputStream input(file->getFD());
 	CodedInputStream cis(&input);
 	cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 	for (std::vector<RouteSubregion>::iterator sub = found.begin(); sub != found.end(); sub++) {
@@ -2977,7 +3005,7 @@ void readRouteDataAsMapObjects(SearchQuery* q, BinaryMapFile* file, std::vector<
 		}
 		if (contains) {
 			vector<RouteSubregion> found;
-			FileInputStream* nt = NULL;
+			PositionalFileInputStream* nt = NULL;
 			CodedInputStream* cis = NULL;
 			searchRouteRegion(&cis, &nt, file, q, routeIndex, subs, found, RouteFdKind::RENDERING);
 			if (cis != NULL) {
@@ -3006,14 +3034,9 @@ void readMapObjects(SearchQuery* q, BinaryMapFile* file) {
 					// OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Info, "Search map %s", mapIndex->name.c_str());
 					// lazy initializing rules
 					{
-						std::unique_lock<std::mutex> lock(mapIndex->initMutex, std::defer_lock);
-						if (isThreadSpecificFileDescriptorsEnabled()) {
-							lock.lock();
-						}
+						std::lock_guard<std::mutex> lock(mapIndex->initMutex);
 						if (mapIndex->decodingRules.size() == 0) {
-							lseek(file->getFD(), 0, SEEK_SET);
-							FileInputStream input(file->getFD());
-							input.SetCloseOnDelete(false);
+							PositionalFileInputStream input(file->getFD());
 							CodedInputStream cis(&input);
 							cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 							cis.Seek(mapIndex->filePointer);
@@ -3024,14 +3047,9 @@ void readMapObjects(SearchQuery* q, BinaryMapFile* file) {
 					}
 					// lazy initializing subtrees
 					{
-						std::unique_lock<std::mutex> lock(*mapLevel->boundsMutex, std::defer_lock);
-						if (isThreadSpecificFileDescriptorsEnabled()) {
-							lock.lock();
-						}
+						std::lock_guard<std::mutex> lock(*mapLevel->boundsMutex);
 						if (mapLevel->bounds.size() == 0) {
-							lseek(file->getFD(), 0, SEEK_SET);
-							FileInputStream input(file->getFD());
-							input.SetCloseOnDelete(false);
+							PositionalFileInputStream input(file->getFD());
 							CodedInputStream cis(&input);
 							cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 							cis.Seek(mapLevel->filePointer);
@@ -3040,9 +3058,7 @@ void readMapObjects(SearchQuery* q, BinaryMapFile* file) {
 							cis.PopLimit(oldLimit);
 						}
 					}
-					lseek(file->getFD(), 0, SEEK_SET);
-					FileInputStream input(file->getFD());
-					input.SetCloseOnDelete(false);
+					PositionalFileInputStream input(file->getFD());
 					CodedInputStream cis(&input);
 					cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 					searchMapData(&cis, &(*mapLevel), &(*mapIndex), q);
@@ -3349,8 +3365,7 @@ ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, 
 	return q->publisher;
 }
 
-// Each reader (routing, geocoding, rendering) has its own descriptor of the file: a FileInputStream reads from the
-// descriptor's current offset, so two threads on one descriptor move each other's position.
+// Each reader (routing, geocoding, rendering) has its own descriptor of the file.
 static int getRouteReadFD(BinaryMapFile* file, RouteFdKind fdKind) {
 	switch (fdKind) {
 		case RouteFdKind::GEOCODING: return file->getGeocodingFD();
@@ -3359,13 +3374,11 @@ static int getRouteReadFD(BinaryMapFile* file, RouteFdKind fdKind) {
 	}
 }
 
-void initInputForRouteFile(CodedInputStream** inputStream, FileInputStream** fis, BinaryMapFile* file, uint32_t seek,
+void initInputForRouteFile(CodedInputStream** inputStream, PositionalFileInputStream** fis, BinaryMapFile* file, uint32_t seek,
 						   RouteFdKind fdKind) {
 	if (*inputStream == 0) {
 		const int fd = getRouteReadFD(file, fdKind);
-		lseek(fd, 0, SEEK_SET);  // seek 0 or seek (*routeIndex)->filePointer
-		*fis = new FileInputStream(fd);
-		(*fis)->SetCloseOnDelete(false);
+		*fis = new PositionalFileInputStream(fd);
 		*inputStream = new CodedInputStream(*fis);
 		(*inputStream)->SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 		(*inputStream)->PushLimit(INT_MAXIMUM);
@@ -3376,7 +3389,7 @@ void initInputForRouteFile(CodedInputStream** inputStream, FileInputStream** fis
 	}
 }
 
-void searchRouteRegion(CodedInputStream** input, FileInputStream** fis, BinaryMapFile* file, SearchQuery* q,
+void searchRouteRegion(CodedInputStream** input, PositionalFileInputStream** fis, BinaryMapFile* file, SearchQuery* q,
 					   const SHARED_PTR<RoutingIndex>& ind, std::vector<RouteSubregion>& subregions, std::vector<RouteSubregion>& toLoad,
 					   RouteFdKind fdKind) {
 	for (std::vector<RouteSubregion>::iterator subreg = subregions.begin(); subreg != subregions.end(); subreg++) {
@@ -3684,9 +3697,7 @@ void searchRouteSubRegion(int fileInd, std::vector<RouteDataObject*>& list, cons
 	checkAndInitRouteRegionRules(fileInd, routingIndex);
 
 	// could be simplified but it will be concurrency with init block
-	lseek(fileInd, 0, SEEK_SET);
-	FileInputStream input(fileInd);
-	input.SetCloseOnDelete(false);
+	PositionalFileInputStream input(fileInd);
 	CodedInputStream cis(&input);
 	cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 
@@ -3893,8 +3904,7 @@ auto initBinaryMapFile(const std::string& inputName, bool useLive, bool routingO
 		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Debug, "Native file initialized from cache: %s %d ms",
 						  inputName.c_str(), (int)timer.GetElapsedMs());
 	} else {
-		FileInputStream input(mapFile->getFD());
-		input.SetCloseOnDelete(false);
+		PositionalFileInputStream input(mapFile->getFD());
 		CodedInputStream cis(&input);
 		cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 		if (!initMapStructure(&cis, mapFile.get(), useLive, routingOnly)) {
@@ -3934,8 +3944,7 @@ bool cacheBinaryMapFileIfNeeded(const std::string& inputName, bool routingOnly) 
 	mapFile->liveMap = inputName.find("live/") != string::npos;
 	mapFile->inputName = inputName;
 	mapFile->roadOnly = inputName.find(".road") != string::npos;
-	FileInputStream input(mapFile->getFD());
-	input.SetCloseOnDelete(false);
+	PositionalFileInputStream input(mapFile->getFD());
 	CodedInputStream cis(&input);
 	cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
 	if (!initMapStructure(&cis, mapFile.get(), true, routingOnly)) {
