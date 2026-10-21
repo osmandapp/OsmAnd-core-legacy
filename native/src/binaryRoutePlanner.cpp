@@ -70,7 +70,8 @@ int64_t calculateRoutePointId(const SHARED_PTR<RouteSegment>& segm) {
 	// return calculateRoutePointInternalId(segm.getRoad(), segm.getSegmentStart(), segm.getSegmentEnd());
 }
 float cost(float distanceFromStart, float distanceToEnd, RoutingContext* ctx) {
-	return ctx->config->heurCoefficient * distanceToEnd + distanceFromStart;
+	float heuristicCost = ctx->config->heurCoefficient * distanceToEnd;
+	return heuristicCost + distanceFromStart;
 }
 
 static float estimatedDistance(const SHARED_PTR<RouteSegment>& seg, bool rev, const RoutingContext* ctx) {
