@@ -532,13 +532,8 @@ bool OpeningHoursParser::BasicOpeningHourRule::contains(const tm& dateTime) cons
 }
 
 bool OpeningHoursParser::BasicOpeningHourRule::isOpened24_7() const {
-	bool opened24_7 = isOpenedEveryDay();
-	for (int i = 0; i < 7; i++) {
-		if (!_days[i]) {
-			opened24_7 = false;
-			break;
-		}
-	}
+	// month or date ranges like "Oct-Mar off" don't cover the whole year (#11571)
+	bool opened24_7 = isOpenedEveryDay() && isOpenedEveryMonth() && !hasDayMonths();
 
 	if (opened24_7) {
 		if (!_startTimes.empty()) {
@@ -563,6 +558,13 @@ bool OpeningHoursParser::BasicOpeningHourRule::isOpenedEveryDay() const {
 		}
 	}
 	return openedEveryDay;
+}
+
+bool OpeningHoursParser::BasicOpeningHourRule::isOpenedEveryMonth() const {
+	for (int i = 0; i < _months.size(); i++) {
+		if (!_months[i]) return false;
+	}
+	return true;
 }
 
 void OpeningHoursParser::BasicOpeningHourRule::addArray(const std::vector<bool>& array,
