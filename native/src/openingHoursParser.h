@@ -457,6 +457,7 @@ struct OpeningHoursParser {
 
 		bool isOpened24_7() const;
 		bool isOpenedEveryDay() const;
+		bool isOpenedEveryMonth() const;
 
 		std::string getTime(const tm& dateTime, bool checkAnotherDay, int limit, bool opening) const;
 		int getTimeMinutes(const tm& dateTime, bool checkAnotherDay, int limit, bool opening) const;
