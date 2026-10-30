@@ -346,6 +346,12 @@ int updatePaint(RenderingRuleSearchRequest* req, SkPaint* paint, int ind, int ar
 	return 1;
 }
 
+// empty value counts as missing: objectNames["name"] in drawPoint() inserts it
+static bool hasObjectName(MapDataObject* obj, const std::string& tag) {
+	auto it = obj->objectNames.find(tag);
+	return it != obj->objectNames.end() && !it->second.empty();
+}
+
 void renderText(MapDataObjectPrimitive* objPrimitive, RenderableObject* rObj, RenderingRuleSearchRequest* req, RenderingContext* rc,
 				std::string tag, std::string value, float xText, float yText, float lineLength, SkPath* path,
 				SHARED_PTR<IconDrawInfo> ico, std::unordered_map<int64_t, RenderableObject*>& renderableObjects) {
@@ -358,21 +364,15 @@ void renderText(MapDataObjectPrimitive* objPrimitive, RenderableObject* rObj, Re
 		bool englishFallback = false;
 		auto pos = (*it).rfind(":");
 		if (pos != std::string::npos && pos + 4 >= it->length()) {
-			// localized tag is used only if base tag is missing (e.g. name:en without name)
-			std::string baseTag = it->substr(0, pos);
-			std::string lang = it->substr(pos + 1);
+			// localized tag replaces missing base tag: name:<locale>, or name:en if transliterate and no name:<locale>
 			std::string locale = rc->getPreferredLocale();
-			// empty value counts as missing: objectNames["name"] in drawPoint() inserts it
-			auto baseIt = obj->objectNames.find(baseTag);
-			auto localeIt = obj->objectNames.find(baseTag + ":" + locale);
-			bool hasBaseTag = baseIt != obj->objectNames.end() && !baseIt->second.empty();
-			bool hasLocaleTag = localeIt != obj->objectNames.end() && !localeIt->second.empty();
-			englishFallback = lang == "en" && !hasLocaleTag && rc->getTransliterate();
-			if (hasBaseTag || locale == "" || (lang != locale && !englishFallback)) {
+			std::string lang = it->substr(pos + 1);
+			nameTag = it->substr(0, pos);
+			englishFallback = lang == "en" && rc->getTransliterate() && !hasObjectName(obj, nameTag + ":" + locale);
+			if (locale == "" || hasObjectName(obj, nameTag) || (lang != locale && !englishFallback)) {
 				it++;
 				continue;
 			}
-			nameTag = baseTag;
 		}
 		std::string tagName = nameTag == "name" ? "" : nameTag;
 		std::string name = obj->objectNames[*it];
