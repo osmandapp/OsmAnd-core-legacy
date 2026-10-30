@@ -354,16 +354,31 @@ void renderText(MapDataObjectPrimitive* objPrimitive, RenderableObject* rObj, Re
 	uint k = 0;
 	while (it != obj->namesOrder.end()) {
 		k++;
+		std::string nameTag = *it;
+		bool englishFallback = false;
 		auto pos = (*it).rfind(":");
 		if (pos != std::string::npos && pos + 4 >= it->length()) {
-			it++;
-			continue;
+			// localized tag is used only if base tag is missing (e.g. name:en without name)
+			std::string baseTag = it->substr(0, pos);
+			std::string lang = it->substr(pos + 1);
+			std::string locale = rc->getPreferredLocale();
+			// empty value counts as missing: objectNames["name"] in drawPoint() inserts it
+			auto baseIt = obj->objectNames.find(baseTag);
+			auto localeIt = obj->objectNames.find(baseTag + ":" + locale);
+			bool hasBaseTag = baseIt != obj->objectNames.end() && !baseIt->second.empty();
+			bool hasLocaleTag = localeIt != obj->objectNames.end() && !localeIt->second.empty();
+			englishFallback = lang == "en" && !hasLocaleTag && rc->getTransliterate();
+			if (hasBaseTag || locale == "" || (lang != locale && !englishFallback)) {
+				it++;
+				continue;
+			}
+			nameTag = baseTag;
 		}
-		std::string tagName = (*it) == "name" ? "" : (*it);
+		std::string tagName = nameTag == "name" ? "" : nameTag;
 		std::string name = obj->objectNames[*it];
-		bool missingName = rc->getPreferredLocale() != "";
+		bool missingName = rc->getPreferredLocale() != "" && !englishFallback;
 		// if(nameTag) {
-		std::string tagNameLocale = (*it) + ":" + rc->getPreferredLocale();
+		std::string tagNameLocale = nameTag + ":" + rc->getPreferredLocale();
 		if (rc->getPreferredLocale() != "" && obj->objectNames.find(tagNameLocale) != obj->objectNames.end()) {
 			std::string sname = obj->objectNames[tagNameLocale];
 			if (sname.length() > 0) {
