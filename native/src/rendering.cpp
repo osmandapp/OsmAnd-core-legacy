@@ -346,6 +346,12 @@ int updatePaint(RenderingRuleSearchRequest* req, SkPaint* paint, int ind, int ar
 	return 1;
 }
 
+// empty value counts as missing: objectNames["name"] in drawPoint() inserts it
+static bool hasObjectName(MapDataObject* obj, const std::string& tag) {
+	auto it = obj->objectNames.find(tag);
+	return it != obj->objectNames.end() && !it->second.empty();
+}
+
 void renderText(MapDataObjectPrimitive* objPrimitive, RenderableObject* rObj, RenderingRuleSearchRequest* req, RenderingContext* rc,
 				std::string tag, std::string value, float xText, float yText, float lineLength, SkPath* path,
 				SHARED_PTR<IconDrawInfo> ico, std::unordered_map<int64_t, RenderableObject*>& renderableObjects) {
@@ -354,16 +360,25 @@ void renderText(MapDataObjectPrimitive* objPrimitive, RenderableObject* rObj, Re
 	uint k = 0;
 	while (it != obj->namesOrder.end()) {
 		k++;
+		std::string nameTag = *it;
+		bool englishFallback = false;
 		auto pos = (*it).rfind(":");
 		if (pos != std::string::npos && pos + 4 >= it->length()) {
-			it++;
-			continue;
+			// localized tag replaces missing base tag: name:<locale>, or name:en if transliterate and no name:<locale>
+			std::string locale = rc->getPreferredLocale();
+			std::string lang = it->substr(pos + 1);
+			nameTag = it->substr(0, pos);
+			englishFallback = lang == "en" && rc->getTransliterate() && !hasObjectName(obj, nameTag + ":" + locale);
+			if (locale == "" || hasObjectName(obj, nameTag) || (lang != locale && !englishFallback)) {
+				it++;
+				continue;
+			}
 		}
-		std::string tagName = (*it) == "name" ? "" : (*it);
+		std::string tagName = nameTag == "name" ? "" : nameTag;
 		std::string name = obj->objectNames[*it];
-		bool missingName = rc->getPreferredLocale() != "";
+		bool missingName = rc->getPreferredLocale() != "" && !englishFallback;
 		// if(nameTag) {
-		std::string tagNameLocale = (*it) + ":" + rc->getPreferredLocale();
+		std::string tagNameLocale = nameTag + ":" + rc->getPreferredLocale();
 		if (rc->getPreferredLocale() != "" && obj->objectNames.find(tagNameLocale) != obj->objectNames.end()) {
 			std::string sname = obj->objectNames[tagNameLocale];
 			if (sname.length() > 0) {
