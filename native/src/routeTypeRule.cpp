@@ -59,6 +59,10 @@ void RouteTypeRule::analyze() {
 					cond.condition = trim(cond.condition.substr(0, cond.condition.length() - 1));
 				}
 				cond.hours = OpeningHoursParser::parseOpenedHours(cond.condition);
+				// "Mo-Fr AND weight>7.5" can't be checked, the same as "weight>7.5" alone
+				if (cond.hours != nullptr && cond.hours->hasUnknownCondition()) {
+					cond.hours = nullptr;
+				}
 				conditions.push_back(cond);
 			}
 		}
