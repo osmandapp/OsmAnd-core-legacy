@@ -559,6 +559,7 @@ struct OpeningHoursParser {
 		std::vector<std::shared_ptr<OpeningHoursRule>> _rules;
 		std::string _original;
 		int _sequenceCount;
+		bool _unknownCondition = false;
 
 		std::shared_ptr<Info> getInfo(const tm& dateTime, int sequenceIndex) const;
 		bool isCheckNextNeeded(const tm&  cal, const std::vector<std::shared_ptr<OpeningHoursRule>>& rules, int i,
@@ -606,6 +607,13 @@ struct OpeningHoursParser {
 		std::vector<std::shared_ptr<OpeningHoursRule>> getRules() const;
 
 		std::vector<std::shared_ptr<OpeningHoursRule>> getRules(int sequenceIndex) const;
+
+		/**
+		 * @return true when the original string also requires a condition that is not opening hours,
+		 * for example "Mo-Fr 06:00-20:00 AND weight>7.5", so these hours alone don't describe it
+		 */
+		bool hasUnknownCondition() const;
+		void setUnknownCondition(bool unknownCondition);
 
 		int getSequenceCount() const;
 		void setSequenceCount(int sequenceCount);
@@ -706,9 +714,13 @@ struct OpeningHoursParser {
 	static void setAmpmOnLeft(bool value);
 	static void setTwelveHourFormattingEnabled(bool enabled);
 
-	static void parseRuleV2(const std::string& rl, int sequenceIndex,
+	/**
+	 * @return true when the rule is joined by AND with a condition that is not opening hours, for
+	 * example "Mo-Fr 06:00-20:00 AND weight>7.5". The parsed rule keeps only the opening hours.
+	 */
+	static bool parseRuleV2(const std::string& rl, int sequenceIndex,
 	                        std::vector<std::shared_ptr<OpeningHoursRule>>& rules);
-	static void parseRules(const std::string& rl, int sequenceIndex,
+	static bool parseRules(const std::string& rl, int sequenceIndex,
 	                       std::vector<std::shared_ptr<OpeningHoursRule>>& rules);
 
 	static std::shared_ptr<OpeningHours> parseOpenedHours(const std::string& format);
