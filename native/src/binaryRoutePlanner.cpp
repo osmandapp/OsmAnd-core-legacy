@@ -554,8 +554,7 @@ bool checkViaRestrictions(RoutingContext* ctx, const SHARED_PTR<RouteSegment>& f
 				}
 				break;
 			}
-			if (tp == RESTRICTION_ONLY_STRAIGHT_ON ||
-				(from->getRoad()->restrictions[i].via == viaId && isViaOnlyRestriction(ctx, tp, id, to, reverseWay))) {
+			if (from->getRoad()->restrictions[i].via == viaId && isViaOnlyRestriction(ctx, tp, id, to, reverseWay)) {
 				return false;
 			}
 		}
