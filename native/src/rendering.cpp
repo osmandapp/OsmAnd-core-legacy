@@ -392,14 +392,18 @@ void renderText(MapDataObjectPrimitive* objPrimitive, RenderableObject* rObj, Re
 			}
 		}
 		if (nameIt != obj->objectNames.end() && !nameIt->second.empty()) {
-			if (missingName && transliterate) {
-				// latin name: name:en if present (as V2)
+			bool transliterateName = missingName && transliterate;
+			if (transliterateName) {
+				// latin name: name:en if present (as V2), otherwise transliterated
 				auto en = obj->objectNames.find((*it) + ":en");
 				if (en != obj->objectNames.end() && !en->second.empty()) {
 					nameIt = en;
+					transliterateName = false;
 				}
 			}
-			const std::string& name = nameIt->second;
+			const std::string transliteratedName =
+				transliterateName ? rc->getTranslatedString(nameIt->second) : std::string();
+			const std::string& name = transliterateName ? transliteratedName : nameIt->second;
 			// name = rc->getReshapedString(name);
 			req->setInitialTagValueZoom(tag, value, rc->getZoom(), obj);
 			req->setIntFilter(req->props()->R_TEXT_LENGTH, name.length());
