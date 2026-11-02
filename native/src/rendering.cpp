@@ -356,18 +356,18 @@ void renderText(MapDataObjectPrimitive* objPrimitive, RenderableObject* rObj, Re
 				std::string tag, std::string value, float xText, float yText, float lineLength, SkPath* path,
 				SHARED_PTR<IconDrawInfo> ico, std::unordered_map<int64_t, RenderableObject*>& renderableObjects) {
 	MapDataObject* obj = objPrimitive->obj;
-	const std::string locale = rc->getPreferredLocale();
+	const std::string& locale = rc->getPreferredLocale();
 	const bool transliterate = rc->getTransliterate();
 	std::vector<std::string>::iterator it = obj->namesOrder.begin();
 	uint k = 0;
 	while (it != obj->namesOrder.end()) {
 		k++;
-		const std::string* nameTag = &*it;
 		std::string baseTag;
 		auto pos = it->rfind(':');
-		if (pos != std::string::npos && pos + 4 >= it->length()) {
+		const bool isLocale = pos != std::string::npos && it->compare(pos + 1, std::string::npos, locale) == 0;
+		const bool isLocalizedTag = pos != std::string::npos && (pos + 4 >= it->length() || isLocale);
+		if (isLocalizedTag) {
 			// localized tag replaces missing base tag: name:<locale>, or name:en if transliterate and no name:<locale>
-			bool isLocale = it->compare(pos + 1, std::string::npos, locale) == 0;
 			bool englishFallback = !isLocale && transliterate && it->compare(pos + 1, std::string::npos, "en") == 0;
 			if (locale.empty() || (!isLocale && !englishFallback)) {
 				it++;
@@ -378,30 +378,28 @@ void renderText(MapDataObjectPrimitive* objPrimitive, RenderableObject* rObj, Re
 				it++;
 				continue;
 			}
-			nameTag = &baseTag;
 		}
-		std::string tagName = *nameTag == "name" ? "" : *nameTag;
-		std::string name = obj->objectNames[*it];
+		const std::string& nameTag = isLocalizedTag ? baseTag : *it;
+		std::string tagName = nameTag == "name" ? "" : nameTag;
+		auto nameIt = obj->objectNames.find(*it);
 		// localized tag is drawn as is
-		bool missingName = locale != "" && nameTag == &*it;
-		// if(nameTag) {
-		std::string tagNameLocale = (*it) + ":" + locale;
-		if (missingName && obj->objectNames.find(tagNameLocale) != obj->objectNames.end()) {
-			std::string sname = obj->objectNames[tagNameLocale];
-			if (sname.length() > 0) {
-				name = sname;
+		bool missingName = !locale.empty() && !isLocalizedTag;
+		if (missingName) {
+			const auto localizedName = obj->objectNames.find((*it) + ":" + locale);
+			if (localizedName != obj->objectNames.end() && !localizedName->second.empty()) {
+				nameIt = localizedName;
 				missingName = false;
 			}
 		}
-		//}
-		if (name.length() > 0) {
+		if (nameIt != obj->objectNames.end() && !nameIt->second.empty()) {
 			if (missingName && transliterate) {
 				// latin name: name:en if present (as V2)
 				auto en = obj->objectNames.find((*it) + ":en");
 				if (en != obj->objectNames.end() && !en->second.empty()) {
-					name = en->second;
+					nameIt = en;
 				}
 			}
+			const std::string& name = nameIt->second;
 			// name = rc->getReshapedString(name);
 			req->setInitialTagValueZoom(tag, value, rc->getZoom(), obj);
 			req->setIntFilter(req->props()->R_TEXT_LENGTH, name.length());
