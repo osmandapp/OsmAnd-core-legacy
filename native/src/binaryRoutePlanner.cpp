@@ -522,7 +522,26 @@ bool checkMovementAllowed(RoutingContext* ctx, bool reverseWaySearch, const SHAR
 	return directionAllowed;
 }
 
-bool checkViaRestrictions(const SHARED_PTR<RouteSegment>& from, const SHARED_PTR<RouteSegment>& to) {
+// A relation with several via ways is stored as via1 + the final "to", so left / right count only if "to"
+// leaves the end of the via way: otherwise the way after via1 is the legal continuation.
+static bool isViaOnlyRestriction(RoutingContext* ctx, int type, int64_t to, const SHARED_PTR<RouteSegment>& viaEnd,
+								 bool reverseWay) {
+	if (type == RESTRICTION_ONLY_STRAIGHT_ON) {
+		return true;
+	}
+	if (type != RESTRICTION_ONLY_RIGHT_TURN && type != RESTRICTION_ONLY_LEFT_TURN) {
+		return false;
+	}
+	for (const auto& s : ctx->loadRouteSegment(viaEnd->getEndPointX(), viaEnd->getEndPointY(), reverseWay)) {
+		if (s->getRoad()->id == to) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool checkViaRestrictions(RoutingContext* ctx, const SHARED_PTR<RouteSegment>& from,
+						  const SHARED_PTR<RouteSegment>& to, int64_t viaId, bool reverseWay) {
 	if (from && to) {
 		int64_t fid = to->getRoad()->getId();
 		for (uint i = 0; i < from->getRoad()->restrictions.size(); i++) {
@@ -535,7 +554,8 @@ bool checkViaRestrictions(const SHARED_PTR<RouteSegment>& from, const SHARED_PTR
 				}
 				break;
 			}
-			if (tp == RESTRICTION_ONLY_STRAIGHT_ON) {
+			if (tp == RESTRICTION_ONLY_STRAIGHT_ON ||
+				(from->getRoad()->restrictions[i].via == viaId && isViaOnlyRestriction(ctx, tp, id, to, reverseWay))) {
 				return false;
 			}
 		}
@@ -576,7 +596,7 @@ bool checkIfOppositeSegmentWasVisited(RoutingContext* ctx, bool reverseWaySearch
 		SHARED_PTR<RouteSegment> oppParent = getParentDiffId(opposite);
 		SHARED_PTR<RouteSegment> to = reverseWaySearch ? curParent : oppParent;
 		SHARED_PTR<RouteSegment> from = !reverseWaySearch ? curParent : oppParent;
-		if (checkViaRestrictions(from, to)) {
+		if (checkViaRestrictions(ctx, from, to, currentSegment->getRoad()->getId(), reverseWaySearch)) {
 			SHARED_PTR<RouteSegment> frs = std::make_shared<RouteSegment>(
 				currentSegment->getRoad(), currentSegment->getSegmentStart(), currentSegment->getSegmentEnd());
 			frs->parentRoute = currentSegment->getParentRoute();
@@ -732,7 +752,7 @@ void clearSegments(vector<SHARED_PTR<RouteSegment>>& segments) {
 }
 
 void processRestriction(RoutingContext* ctx, std::vector<SHARED_PTR<RouteSegment>>& inputNext, bool reverseWay,
-						int64_t viaId, const SHARED_PTR<RouteDataObject>& road) {
+						int64_t viaId, const SHARED_PTR<RouteDataObject>& road, const SHARED_PTR<RouteSegment>& viaEnd) {
 	bool via = viaId != 0;
 	std::vector<SHARED_PTR<RouteSegment>> segments = inputNext;
 	bool exclusiveRestriction = false;
@@ -749,7 +769,7 @@ void processRestriction(RoutingContext* ctx, std::vector<SHARED_PTR<RouteSegment
 					}
 				}
 				if (road->restrictions[i].via == viaId && via &&
-					road->restrictions[i].type == RESTRICTION_ONLY_STRAIGHT_ON) {
+					isViaOnlyRestriction(ctx, road->restrictions[i].type, road->restrictions[i].to, viaEnd, reverseWay)) {
 					type = RESTRICTION_NO_STRAIGHT_ON;
 					break;
 				}
@@ -764,7 +784,8 @@ void processRestriction(RoutingContext* ctx, std::vector<SHARED_PTR<RouteSegment
 						break;
 					}
 				}
-				if (segment->getRoad()->restrictions[i].via == viaId && via && rt == RESTRICTION_ONLY_STRAIGHT_ON) {
+				if (segment->getRoad()->restrictions[i].via == viaId && via &&
+					isViaOnlyRestriction(ctx, rt, restrictedTo, viaEnd, reverseWay)) {
 					type = RESTRICTION_NO_STRAIGHT_ON;
 					break;
 				}
@@ -841,9 +862,10 @@ bool proccessRestrictions(RoutingContext* ctx, const SHARED_PTR<RouteSegment>& s
 	}
 	clearSegments(ctx->segmentsToVisitPrescripted);
 	clearSegments(ctx->segmentsToVisitNotForbidden);
-	processRestriction(ctx, inputNext, reverseWay, 0, road);
+	processRestriction(ctx, inputNext, reverseWay, 0, road, nullptr);
 	if (parent) {
-		processRestriction(ctx, inputNext, reverseWay, segment->getRoad()->id, parent->road);
+		processRestriction(ctx, inputNext, reverseWay, segment->getRoad()->id, parent->road,
+						   reverseWay ? parent : segment);
 	}
 	return true;
 }
