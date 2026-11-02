@@ -522,7 +522,12 @@ bool checkMovementAllowed(RoutingContext* ctx, bool reverseWaySearch, const SHAR
 	return directionAllowed;
 }
 
-bool checkViaRestrictions(const SHARED_PTR<RouteSegment>& from, const SHARED_PTR<RouteSegment>& to) {
+static bool isOnlyRestriction(int type) {
+	return type == RESTRICTION_ONLY_RIGHT_TURN || type == RESTRICTION_ONLY_LEFT_TURN ||
+		   type == RESTRICTION_ONLY_STRAIGHT_ON;
+}
+
+bool checkViaRestrictions(const SHARED_PTR<RouteSegment>& from, const SHARED_PTR<RouteSegment>& to, int64_t viaId) {
 	if (from && to) {
 		int64_t fid = to->getRoad()->getId();
 		for (uint i = 0; i < from->getRoad()->restrictions.size(); i++) {
@@ -535,7 +540,8 @@ bool checkViaRestrictions(const SHARED_PTR<RouteSegment>& from, const SHARED_PTR
 				}
 				break;
 			}
-			if (tp == RESTRICTION_ONLY_STRAIGHT_ON) {
+			if (tp == RESTRICTION_ONLY_STRAIGHT_ON ||
+				(isOnlyRestriction(tp) && from->getRoad()->restrictions[i].via == viaId)) {
 				return false;
 			}
 		}
@@ -576,7 +582,7 @@ bool checkIfOppositeSegmentWasVisited(RoutingContext* ctx, bool reverseWaySearch
 		SHARED_PTR<RouteSegment> oppParent = getParentDiffId(opposite);
 		SHARED_PTR<RouteSegment> to = reverseWaySearch ? curParent : oppParent;
 		SHARED_PTR<RouteSegment> from = !reverseWaySearch ? curParent : oppParent;
-		if (checkViaRestrictions(from, to)) {
+		if (checkViaRestrictions(from, to, currentSegment->getRoad()->getId())) {
 			SHARED_PTR<RouteSegment> frs = std::make_shared<RouteSegment>(
 				currentSegment->getRoad(), currentSegment->getSegmentStart(), currentSegment->getSegmentEnd());
 			frs->parentRoute = currentSegment->getParentRoute();
@@ -748,8 +754,7 @@ void processRestriction(RoutingContext* ctx, std::vector<SHARED_PTR<RouteSegment
 						break;
 					}
 				}
-				if (road->restrictions[i].via == viaId && via &&
-					road->restrictions[i].type == RESTRICTION_ONLY_STRAIGHT_ON) {
+				if (road->restrictions[i].via == viaId && via && isOnlyRestriction(road->restrictions[i].type)) {
 					type = RESTRICTION_NO_STRAIGHT_ON;
 					break;
 				}
@@ -764,7 +769,7 @@ void processRestriction(RoutingContext* ctx, std::vector<SHARED_PTR<RouteSegment
 						break;
 					}
 				}
-				if (segment->getRoad()->restrictions[i].via == viaId && via && rt == RESTRICTION_ONLY_STRAIGHT_ON) {
+				if (segment->getRoad()->restrictions[i].via == viaId && via && isOnlyRestriction(rt)) {
 					type = RESTRICTION_NO_STRAIGHT_ON;
 					break;
 				}
