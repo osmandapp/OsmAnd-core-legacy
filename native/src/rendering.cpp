@@ -364,12 +364,11 @@ void renderText(MapDataObjectPrimitive* objPrimitive, RenderableObject* rObj, Re
 		k++;
 		const std::string* nameTag = &*it;
 		std::string baseTag;
-		bool englishFallback = false;
 		auto pos = it->rfind(':');
 		if (pos != std::string::npos && pos + 4 >= it->length()) {
 			// localized tag replaces missing base tag: name:<locale>, or name:en if transliterate and no name:<locale>
 			bool isLocale = it->compare(pos + 1, std::string::npos, locale) == 0;
-			englishFallback = !isLocale && transliterate && it->compare(pos + 1, std::string::npos, "en") == 0;
+			bool englishFallback = !isLocale && transliterate && it->compare(pos + 1, std::string::npos, "en") == 0;
 			if (locale.empty() || (!isLocale && !englishFallback)) {
 				it++;
 				continue;
@@ -383,10 +382,11 @@ void renderText(MapDataObjectPrimitive* objPrimitive, RenderableObject* rObj, Re
 		}
 		std::string tagName = *nameTag == "name" ? "" : *nameTag;
 		std::string name = obj->objectNames[*it];
-		bool missingName = locale != "" && !englishFallback;
+		// localized tag is drawn as is
+		bool missingName = locale != "" && nameTag == &*it;
 		// if(nameTag) {
-		std::string tagNameLocale = *nameTag + ":" + locale;
-		if (locale != "" && obj->objectNames.find(tagNameLocale) != obj->objectNames.end()) {
+		std::string tagNameLocale = (*it) + ":" + locale;
+		if (missingName && obj->objectNames.find(tagNameLocale) != obj->objectNames.end()) {
 			std::string sname = obj->objectNames[tagNameLocale];
 			if (sname.length() > 0) {
 				name = sname;
@@ -395,10 +395,12 @@ void renderText(MapDataObjectPrimitive* objPrimitive, RenderableObject* rObj, Re
 		}
 		//}
 		if (name.length() > 0) {
-			if (missingName) {
-				// latin name: name:en if present (as V2), else transliterated
-				auto en = transliterate ? obj->objectNames.find(*nameTag + ":en") : obj->objectNames.end();
-				name = en != obj->objectNames.end() && !en->second.empty() ? en->second : rc->getTranslatedString(name);
+			if (missingName && transliterate) {
+				// latin name: name:en if present (as V2)
+				auto en = obj->objectNames.find((*it) + ":en");
+				if (en != obj->objectNames.end() && !en->second.empty()) {
+					name = en->second;
+				}
 			}
 			// name = rc->getReshapedString(name);
 			req->setInitialTagValueZoom(tag, value, rc->getZoom(), obj);
