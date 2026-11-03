@@ -57,6 +57,17 @@ SHARED_PTR<HHRoutingContext> HHRoutePlanner::initNewContext(RoutingContext * ctx
 	return currentCtx;
 }
 
+// BinaryMapIndexReader.containsActualRouteData in Java
+static bool containsActualRouteData(BinaryMapFile* file, int x31, int y31) {
+	int zoomToLoad = 14;
+	int x = x31 >> zoomToLoad;
+	int y = y31 >> zoomToLoad;
+	SearchQuery q((uint32_t)(x << zoomToLoad), (uint32_t)((x + 1) << zoomToLoad), (uint32_t)(y << zoomToLoad), (uint32_t)((y + 1) << zoomToLoad));
+	// a data box at the tile, as in Java: an intersecting top-level box alone also covers neighbouring regions
+	std::vector<RouteSubregion> found;
+	return searchRouteSubregionsForBinaryMapFile(file, &q, &found) && !found.empty();
+}
+
 SHARED_PTR<HHRoutingContext> HHRoutePlanner::selectBestRoutingFiles(int startX, int startY, int endX, int endY,
                                                                     const SHARED_PTR<HHRoutingContext>& hctx,
                                                                     bool strictBestGroupMap) {
@@ -70,7 +81,9 @@ SHARED_PTR<HHRoutingContext> HHRoutePlanner::selectBestRoutingFiles(int startX, 
 	for (const auto& r : openFiles) {
 		for (SHARED_PTR<HHRouteIndex> & hhRegion : r->hhIndexes) {
 			SkRect * hhRegionRect = hhRegion->getSkRect();
-			if (hhRegion->profile == profile && SkRect::Intersects(qr, *hhRegionRect)) {
+			// the bbox of network points can end before the map does (Iceland: 66.14N, roads up to 66.57N)
+			if (hhRegion->profile == profile && (SkRect::Intersects(qr, *hhRegionRect)
+					|| (containsActualRouteData(r.get(), startX, startY) && containsActualRouteData(r.get(), endX, endY)))) {
 				double intersect = hhRegion->intersectionArea(qr);
 				hhRouteRegionGroup->appendToGroups(hhRegion, r, groups, intersect);
 			}
