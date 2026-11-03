@@ -394,7 +394,7 @@ struct RenderingContext {
 		this->preferredLocale = pref;
 	}
 
-	std::string getPreferredLocale() {
+	const std::string& getPreferredLocale() const {
 		return this->preferredLocale;
 	}
 

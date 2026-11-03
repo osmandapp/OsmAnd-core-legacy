@@ -346,6 +346,23 @@ int updatePaint(RenderingRuleSearchRequest* req, SkPaint* paint, int ind, int ar
 	return 1;
 }
 
+const std::string NAME_TAG = "name";
+const std::string LOCALIZED_NAME_PREFIX = NAME_TAG + ":";
+
+const std::string* getObjectName(MapDataObject* obj, const std::string& tag) {
+	auto it = obj->objectNames.find(tag);
+	return it != obj->objectNames.end() && !it->second.empty() ? &it->second : nullptr;
+}
+
+const std::string* getLocalizedName(MapDataObject* obj, RenderingContext* rc, const std::string& tag) {
+	const std::string& locale = rc->getPreferredLocale();
+	if (locale.empty()) {
+		return nullptr;
+	}
+	const std::string* name = getObjectName(obj, tag + ":" + locale);
+	return name == nullptr && rc->getTransliterate() ? getObjectName(obj, tag + ":en") : name;
+}
+
 void renderText(MapDataObjectPrimitive* objPrimitive, RenderableObject* rObj, RenderingRuleSearchRequest* req, RenderingContext* rc,
 				std::string tag, std::string value, float xText, float yText, float lineLength, SkPath* path,
 				SHARED_PTR<IconDrawInfo> ico, std::unordered_map<int64_t, RenderableObject*>& renderableObjects) {
@@ -354,28 +371,27 @@ void renderText(MapDataObjectPrimitive* objPrimitive, RenderableObject* rObj, Re
 	uint k = 0;
 	while (it != obj->namesOrder.end()) {
 		k++;
-		auto pos = (*it).rfind(":");
-		if (pos != std::string::npos && pos + 4 >= it->length()) {
-			it++;
-			continue;
-		}
-		std::string tagName = (*it) == "name" ? "" : (*it);
-		std::string name = obj->objectNames[*it];
-		bool missingName = rc->getPreferredLocale() != "";
-		// if(nameTag) {
-		std::string tagNameLocale = (*it) + ":" + rc->getPreferredLocale();
-		if (rc->getPreferredLocale() != "" && obj->objectNames.find(tagNameLocale) != obj->objectNames.end()) {
-			std::string sname = obj->objectNames[tagNameLocale];
-			if (sname.length() > 0) {
-				name = sname;
-				missingName = false;
+		const std::string* objectName = getObjectName(obj, *it);
+		std::string tagName = *it == NAME_TAG ? "" : *it;
+		bool transliterateName = false;
+		if (it->compare(0, LOCALIZED_NAME_PREFIX.length(), LOCALIZED_NAME_PREFIX) == 0) {
+			if (getObjectName(obj, NAME_TAG) != nullptr || getLocalizedName(obj, rc, NAME_TAG) != objectName) {
+				it++;
+				continue;
+			}
+			tagName = "";
+		} else if (objectName != nullptr) {
+			const std::string* localizedName = getLocalizedName(obj, rc, *it);
+			if (localizedName != nullptr) {
+				objectName = localizedName;
+			} else {
+				transliterateName = !rc->getPreferredLocale().empty() && rc->getTransliterate();
 			}
 		}
-		//}
-		if (name.length() > 0) {
-			if (missingName) {
-				name = rc->getTranslatedString(name);
-			}
+		if (objectName != nullptr) {
+			const std::string transliteratedName =
+				transliterateName ? rc->getTranslatedString(*objectName) : std::string();
+			const std::string& name = transliterateName ? transliteratedName : *objectName;
 			// name = rc->getReshapedString(name);
 			req->setInitialTagValueZoom(tag, value, rc->getZoom(), obj);
 			req->setIntFilter(req->props()->R_TEXT_LENGTH, name.length());
