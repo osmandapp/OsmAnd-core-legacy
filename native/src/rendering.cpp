@@ -349,13 +349,11 @@ int updatePaint(RenderingRuleSearchRequest* req, SkPaint* paint, int ind, int ar
 const std::string NAME_TAG = "name";
 const std::string LOCALIZED_NAME_PREFIX = NAME_TAG + ":";
 
-// empty value counts as missing: objectNames["name"] in drawPoint() inserts it
 const std::string* getObjectName(MapDataObject* obj, const std::string& tag) {
 	auto it = obj->objectNames.find(tag);
 	return it != obj->objectNames.end() && !it->second.empty() ? &it->second : nullptr;
 }
 
-// <tag>:<locale>, else with transliteration <tag>:en
 const std::string* getLocalizedName(MapDataObject* obj, RenderingContext* rc, const std::string& tag) {
 	const std::string& locale = rc->getPreferredLocale();
 	if (locale.empty()) {
@@ -377,7 +375,6 @@ void renderText(MapDataObjectPrimitive* objPrimitive, RenderableObject* rObj, Re
 		std::string tagName = *it == NAME_TAG ? "" : *it;
 		bool transliterateName = false;
 		if (it->compare(0, LOCALIZED_NAME_PREFIX.length(), LOCALIZED_NAME_PREFIX) == 0) {
-			// name:<lang> is not a separate text, it replaces missing name
 			if (getObjectName(obj, NAME_TAG) != nullptr || getLocalizedName(obj, rc, NAME_TAG) != objectName) {
 				it++;
 				continue;
