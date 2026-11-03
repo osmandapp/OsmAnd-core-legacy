@@ -956,6 +956,7 @@ struct BinaryMapFile {
 	std::unordered_map<std::thread::id, int> hhfd_threads;
 
 	bool basemap;
+	bool contourLines;
 	bool external;
 	bool roadOnly;
 	bool liveMap;
@@ -1017,6 +1018,10 @@ struct BinaryMapFile {
 
 	bool isBasemap() {
 		return basemap;
+	}
+
+	bool isContourLines() {
+		return contourLines;
 	}
 
 	bool isExternal() {
@@ -1105,6 +1110,8 @@ struct ResultPublisher {
 	}
 };
 
+enum class ContourLinesMode { ALL = 0, WITHOUT = 1, ONLY = 2 };
+
 struct SearchQuery {
 	RenderingRuleSearchRequest* req;
 	int left = 0;
@@ -1123,6 +1130,7 @@ struct SearchQuery {
 	uint oceanTiles = 0;
 	// read only natural=coastline objects
 	bool coastlinesOnly = false;
+	ContourLinesMode contourLinesMode = ContourLinesMode::ALL;
 
 	uint numberOfVisitedObjects = 0;
 	uint numberOfAcceptedObjects = 0;
@@ -1167,6 +1175,11 @@ struct SearchQuery {
 
 	bool isCancelled() {
 		return publisher && publisher->isCancelled();
+	}
+
+	bool skipFile(BinaryMapFile* file) {
+		return (contourLinesMode == ContourLinesMode::WITHOUT && file->isContourLines()) ||
+			   (contourLinesMode == ContourLinesMode::ONLY && !file->isContourLines());
 	}
 };
 
