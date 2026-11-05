@@ -1449,6 +1449,7 @@ bool initMapStructure(CodedInputStream* input, BinaryMapFile* file, bool useLive
 				file->mapIndexes.push_back(mapIndex);
 				file->indexes.push_back(file->mapIndexes.back());
 				file->basemap = file->basemap || mapIndex->name.find("basemap") != string::npos;
+				file->contourLines = file->contourLines || to_lowercase(mapIndex->name).find("contour") != string::npos;
 				file->external = file->external || mapIndex->name.find("osmand_ext") != string::npos;
 				break;
 			}
@@ -3084,6 +3085,9 @@ void readMapObjectsForRendering(SearchQuery* q, std::vector<FoundMapDataObject>&
 	auto i = openFilesSnapshot.begin();
 	for (; i != openFilesSnapshot.end() && !q->isCancelled(); i++) {
 		BinaryMapFile* file = i->get();
+		if (q->skipFile(file)) {
+			continue;
+		}
 		basemapExists |= file->isBasemap();
 	}
 	i = openFilesSnapshot.begin();
@@ -3122,6 +3126,9 @@ void readMapObjectsForRendering(SearchQuery* q, std::vector<FoundMapDataObject>&
 	UNORDERED(set)<uint64_t> deletedIds;
 	for (; i != openFilesSnapshot.end() && !q->isCancelled(); i++) {
 		BinaryMapFile* file = i->get();
+		if (q->skipFile(file)) {
+			continue;
+		}
 		if (q->req != NULL) {
 			q->req->clearState();
 		}
@@ -3293,7 +3300,7 @@ static void readDetailedCoastlines(SearchQuery* q, std::vector<FoundMapDataObjec
 	w.coastlinesOnly = true;
 	const auto openFilesSnapshot = getOpenFilesSnapshot();
 	for (auto i = openFilesSnapshot.begin(); i != openFilesSnapshot.end() && !q->isCancelled(); i++) {
-		if (i->get()->isBasemap() || i->get()->isExternal()) {
+		if (i->get()->isBasemap() || i->get()->isExternal() || q->skipFile(i->get())) {
 			continue;
 		}
 		if (q->req != NULL) {
@@ -3329,7 +3336,7 @@ ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, 
 		for (; i != openFilesSnapshot.end() && !q->isCancelled(); i++) {
 			BinaryMapFile* file = i->get();
 			// false positive case when we have 2 sep maps Country-roads & Country
-			if (file->isRoadOnly()) {
+			if (file->isRoadOnly() && !q->skipFile(file)) {
 				if (q->req != NULL) {
 					q->req->clearState();
 				}
@@ -3356,6 +3363,7 @@ ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, 
 		bool emptyData = q->zoom > zoomOnlyForBasemaps && tempResult.empty() && coastLines.empty();
 		// determine if there are enough objects like land/lake..
 		bool basemapMissing = q->zoom <= zoomOnlyForBasemaps && basemapCoastLines.empty() && !basemapExists;
+		bool contourLinesOnly = q->contourLinesMode == ContourLinesMode::ONLY;
 		// bool detailedLandData = q->zoom >= 14 && tempResult.size() > 0 && objectsFromMapSectionRead;
 		bool coastlinesWereAdded = false;
 		bool detailedCoastlinesWereAdded = false;
@@ -3426,7 +3434,7 @@ ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, 
 		deleteObjects(basemapCoastLines);
 		deleteObjects(coastLines);
 		// ocean=0.5 on /vector/3/1/5.mvt with https://www.openstreetmap.org/node/305640292 etc
-		if (!coastlinesWereAdded && ocean >= 0.5) {
+		if (!contourLinesOnly && !coastlinesWereAdded && ocean >= 0.5) {
 			MapDataObject* o = new MapDataObject();
 			o->points.push_back(int_pair(q->left, q->top));
 			o->points.push_back(int_pair(q->right, q->top));
@@ -3443,7 +3451,7 @@ ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, 
 			o->additionalTypes.push_back(tag_value("layer", "-5"));
 			tempResult.push_back(FoundMapDataObject(o, NULL, q->zoom));
 		}
-		if ((emptyData && extResult.size() == 0) || basemapMissing) {
+		if (!contourLinesOnly && ((emptyData && extResult.size() == 0) || basemapMissing)) {
 			// message
 			// avoid overflow int errors
 			MapDataObject* o = new MapDataObject();
@@ -3940,6 +3948,7 @@ auto initBinaryMapFile(const std::string& inputName, bool useLive, bool routingO
 					mi->levels.push_back(mr);
 				}
 				mapFile->basemap = mapFile->basemap || mi->name.find("basemap") != string::npos;
+				mapFile->contourLines = mapFile->contourLines || to_lowercase(mi->name).find("contour") != string::npos;
 				mapFile->mapIndexes.push_back(mi);
 				mapFile->indexes.push_back(mapFile->mapIndexes.back());
 			}
