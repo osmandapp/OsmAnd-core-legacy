@@ -90,6 +90,8 @@ struct RoutingConfiguration {
     // Parameter to smoother the track itself (could be 0 if it's not recorded track)
     float smoothenPointsNoRoute = 5;
 
+    bool showMinorTurns = false;
+
     // 1.5 Recalculate distance help
     float recalculateDistance;
     time_t routeCalculationTime = 0;
