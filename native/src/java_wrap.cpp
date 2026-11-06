@@ -488,7 +488,7 @@ extern "C" JNIEXPORT jobject JNICALL Java_net_osmand_NativeLibrary_getGeotiffTil
 }
 
 extern "C" JNIEXPORT jbyteArray JNICALL Java_net_osmand_NativeLibrary_getMapboxVectorTileData(
-	JNIEnv* ienv, jobject obj, jint mapZoom, jint x, jint y, jint shift, jboolean contourLinesOnly) {
+	JNIEnv* ienv, jobject obj, jint mapZoom, jint x, jint y, jint shift, jboolean contoursOnly, jboolean feetContours) {
 
 	ResultPublisher publisher;
 	int s = 31 - mapZoom;
@@ -499,7 +499,11 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_net_osmand_NativeLibrary_getMapboxV
 	const int baseDataZoom = mapZoom < MVT_TILE_INCREASE_DETAILS_BEFORE_DETAILED_ZOOM - 1 ? mapZoom + 1 : mapZoom;
 	const int dataZoom = std::max(1, std::min(MAX_MVT_TILES_ZOOM, baseDataZoom + shift));
 	q.zoom = dataZoom;
-	q.contourLinesMode = contourLinesOnly == JNI_TRUE ? ContourLinesMode::ONLY : ContourLinesMode::WITHOUT;
+	if (contoursOnly == JNI_TRUE) {
+		q.contourFilter = feetContours == JNI_TRUE ? ContourMapsFilter::ONLY_FEET : ContourMapsFilter::ONLY_METERS;
+	} else {
+		q.contourFilter = ContourMapsFilter::WITHOUT_CONTOURS;
+	}
 
 	int renderedState = 0;
 
