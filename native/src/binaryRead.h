@@ -957,6 +957,7 @@ struct BinaryMapFile {
 
 	bool basemap;
 	bool contourLines;
+	bool contourLinesFeet;
 	bool external;
 	bool roadOnly;
 	bool liveMap;
@@ -1022,6 +1023,10 @@ struct BinaryMapFile {
 
 	bool isContourLines() {
 		return contourLines;
+	}
+
+	bool isContourLinesFeet() {
+		return contourLinesFeet;
 	}
 
 	bool isExternal() {
@@ -1110,7 +1115,7 @@ struct ResultPublisher {
 	}
 };
 
-enum class ContourLinesMode { ALL = 0, WITHOUT = 1, ONLY = 2 };
+enum class ContourLinesMode { ALL = 0, WITHOUT = 1, ONLY_METERS = 2, ONLY_FEET = 3 };
 
 struct SearchQuery {
 	RenderingRuleSearchRequest* req;
@@ -1177,9 +1182,19 @@ struct SearchQuery {
 		return publisher && publisher->isCancelled();
 	}
 
-	bool skipFile(BinaryMapFile* file) {
-		return (contourLinesMode == ContourLinesMode::WITHOUT && file->isContourLines()) ||
-			   (contourLinesMode == ContourLinesMode::ONLY && !file->isContourLines());
+	bool isContourLinesOnly() {
+		return contourLinesMode == ContourLinesMode::ONLY_METERS || contourLinesMode == ContourLinesMode::ONLY_FEET;
+	}
+
+	bool skipByContourLinesMode(BinaryMapFile* file) {
+		if (contourLinesMode == ContourLinesMode::WITHOUT) {
+			return file->isContourLines();
+		}
+		if (isContourLinesOnly()) {
+			return !file->isContourLines() ||
+				   file->isContourLinesFeet() != (contourLinesMode == ContourLinesMode::ONLY_FEET);
+		}
+		return false;
 	}
 };
 

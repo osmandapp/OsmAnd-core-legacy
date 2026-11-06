@@ -3085,7 +3085,7 @@ void readMapObjectsForRendering(SearchQuery* q, std::vector<FoundMapDataObject>&
 	auto i = openFilesSnapshot.begin();
 	for (; i != openFilesSnapshot.end() && !q->isCancelled(); i++) {
 		BinaryMapFile* file = i->get();
-		if (q->skipFile(file)) {
+		if (q->skipByContourLinesMode(file)) {
 			continue;
 		}
 		basemapExists |= file->isBasemap();
@@ -3126,7 +3126,7 @@ void readMapObjectsForRendering(SearchQuery* q, std::vector<FoundMapDataObject>&
 	UNORDERED(set)<uint64_t> deletedIds;
 	for (; i != openFilesSnapshot.end() && !q->isCancelled(); i++) {
 		BinaryMapFile* file = i->get();
-		if (q->skipFile(file)) {
+		if (q->skipByContourLinesMode(file)) {
 			continue;
 		}
 		if (q->req != NULL) {
@@ -3300,7 +3300,7 @@ static void readDetailedCoastlines(SearchQuery* q, std::vector<FoundMapDataObjec
 	w.coastlinesOnly = true;
 	const auto openFilesSnapshot = getOpenFilesSnapshot();
 	for (auto i = openFilesSnapshot.begin(); i != openFilesSnapshot.end() && !q->isCancelled(); i++) {
-		if (i->get()->isBasemap() || i->get()->isExternal() || q->skipFile(i->get())) {
+		if (i->get()->isBasemap() || i->get()->isExternal() || q->skipByContourLinesMode(i->get())) {
 			continue;
 		}
 		if (q->req != NULL) {
@@ -3336,7 +3336,7 @@ ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, 
 		for (; i != openFilesSnapshot.end() && !q->isCancelled(); i++) {
 			BinaryMapFile* file = i->get();
 			// false positive case when we have 2 sep maps Country-roads & Country
-			if (file->isRoadOnly() && !q->skipFile(file)) {
+			if (file->isRoadOnly() && !q->skipByContourLinesMode(file)) {
 				if (q->req != NULL) {
 					q->req->clearState();
 				}
@@ -3363,7 +3363,7 @@ ResultPublisher* searchObjectsForRendering(SearchQuery* q, bool skipDuplicates, 
 		bool emptyData = q->zoom > zoomOnlyForBasemaps && tempResult.empty() && coastLines.empty();
 		// determine if there are enough objects like land/lake..
 		bool basemapMissing = q->zoom <= zoomOnlyForBasemaps && basemapCoastLines.empty() && !basemapExists;
-		bool contourLinesOnly = q->contourLinesMode == ContourLinesMode::ONLY;
+		bool contourLinesOnly = q->isContourLinesOnly();
 		// bool detailedLandData = q->zoom >= 14 && tempResult.size() > 0 && objectsFromMapSectionRead;
 		bool coastlinesWereAdded = false;
 		bool detailedCoastlinesWereAdded = false;
@@ -3907,6 +3907,7 @@ auto initBinaryMapFile(const std::string& inputName, bool useLive, bool routingO
 	mapFile->liveMap = inputName.find("live/") != string::npos;
 	mapFile->inputName = inputName;
 	mapFile->roadOnly = inputName.find(".road") != string::npos;
+	mapFile->contourLinesFeet = inputName.find(".srtmf.") != string::npos;
 	OsmAnd::OBF::FileIndex* fo = NULL;
 	if (cache != NULL) {
 		struct stat stats;
