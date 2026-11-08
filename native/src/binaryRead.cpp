@@ -2764,8 +2764,26 @@ bool sortTreeBounds(const MapTreeBounds& i, const MapTreeBounds& j) {
 	return (i.mapDataBlock < j.mapDataBlock);
 }
 
-void searchMapData(CodedInputStream* input, MapRoot* root, MapIndex* ind, SearchQuery* req) {
-	// search
+void searchMapData(int fd, MapRoot* root, MapIndex* ind, SearchQuery* req) {
+	// CodedInputStream::Seek() goes back with BackUp(), which works only inside the last buffer read from the file and
+	// aborts the app otherwise. Our maps have one root box per level with the data blocks after it, so all seeks here
+	// go forward. Maps from other generators can have several root boxes and then all data blocks: going from the
+	// blocks of one box to the next box is a seek back, so the file is opened again for it.
+	std::unique_ptr<FileInputStream> stream;
+	std::unique_ptr<CodedInputStream> cis;
+	CodedInputStream* input = NULL;
+	auto seek = [&](uint64_t filePointer) {
+		if (input == NULL || filePointer < (uint64_t)input->TotalBytesRead()) {
+			cis.reset();
+			lseek(fd, 0, SEEK_SET);
+			stream.reset(new FileInputStream(fd));
+			stream->SetCloseOnDelete(false);
+			cis.reset(new CodedInputStream(stream.get()));
+			cis->SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
+			input = cis.get();
+		}
+		input->Seek(filePointer);
+	};
 	for (std::vector<MapTreeBounds>::iterator i = root->bounds.begin(); i != root->bounds.end(); i++) {
 		if (req->isCancelled()) {
 			return;
@@ -2775,7 +2793,7 @@ void searchMapData(CodedInputStream* input, MapRoot* root, MapIndex* ind, Search
 			continue;
 		}
 		std::vector<MapTreeBounds> foundSubtrees;
-		input->Seek(i->filePointer);
+		seek(i->filePointer);
 		int oldLimit = input->PushLimit(i->length);
 		searchMapTreeBounds(input, &(*i), root, req, &foundSubtrees);
 		input->PopLimit(oldLimit);
@@ -2786,7 +2804,7 @@ void searchMapData(CodedInputStream* input, MapRoot* root, MapIndex* ind, Search
 			if (req->isCancelled()) {
 				return;
 			}
-			input->Seek(tree->mapDataBlock);
+			seek(tree->mapDataBlock);
 			WireFormatLite::ReadPrimitive<uint32_t, WireFormatLite::TYPE_UINT32>(input, &length);
 			int oldLimit = input->PushLimit(length);
 			readMapDataBlocks(input, req, &(*tree), ind);
@@ -3050,12 +3068,7 @@ void readMapObjects(SearchQuery* q, BinaryMapFile* file) {
 							cis.PopLimit(oldLimit);
 						}
 					}
-					lseek(file->getFD(), 0, SEEK_SET);
-					FileInputStream input(file->getFD());
-					input.SetCloseOnDelete(false);
-					CodedInputStream cis(&input);
-					cis.SetTotalBytesLimit(INT_MAXIMUM, INT_MAX_THRESHOLD);
-					searchMapData(&cis, &(*mapLevel), &(*mapIndex), q);
+					searchMapData(file->getFD(), &(*mapLevel), &(*mapIndex), q);
 				}
 			}
 		}
