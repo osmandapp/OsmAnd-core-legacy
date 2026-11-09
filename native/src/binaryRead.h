@@ -957,6 +957,7 @@ struct BinaryMapFile {
 
 	bool basemap;
 	bool contourLines;
+	bool contourLinesFeet;
 	bool external;
 	bool roadOnly;
 	bool liveMap;
@@ -1022,6 +1023,10 @@ struct BinaryMapFile {
 
 	bool isContourLines() {
 		return contourLines;
+	}
+
+	bool isContourLinesFeet() {
+		return contourLinesFeet;
 	}
 
 	bool isExternal() {
@@ -1110,7 +1115,7 @@ struct ResultPublisher {
 	}
 };
 
-enum class ContourLinesMode { ALL = 0, WITHOUT = 1, ONLY = 2 };
+enum class ContourMapsFilter { NO_FILTER = 0, WITHOUT_CONTOURS = 1, ONLY_METERS = 2, ONLY_FEET = 3 };
 
 struct SearchQuery {
 	RenderingRuleSearchRequest* req;
@@ -1130,7 +1135,8 @@ struct SearchQuery {
 	uint oceanTiles = 0;
 	// read only natural=coastline objects
 	bool coastlinesOnly = false;
-	ContourLinesMode contourLinesMode = ContourLinesMode::ALL;
+
+	ContourMapsFilter contourFilter = ContourMapsFilter::NO_FILTER; // for Android v1 engine
 
 	uint numberOfVisitedObjects = 0;
 	uint numberOfAcceptedObjects = 0;
@@ -1177,9 +1183,19 @@ struct SearchQuery {
 		return publisher && publisher->isCancelled();
 	}
 
-	bool skipFile(BinaryMapFile* file) {
-		return (contourLinesMode == ContourLinesMode::WITHOUT && file->isContourLines()) ||
-			   (contourLinesMode == ContourLinesMode::ONLY && !file->isContourLines());
+	bool isContourLinesOnly() {
+		return contourFilter == ContourMapsFilter::ONLY_METERS || contourFilter == ContourMapsFilter::ONLY_FEET;
+	}
+
+	bool skipByContourLinesMode(BinaryMapFile* file) {
+		if (contourFilter == ContourMapsFilter::WITHOUT_CONTOURS) {
+			return file->isContourLines();
+		}
+		if (isContourLinesOnly()) {
+			return !file->isContourLines() ||
+				   file->isContourLinesFeet() != (contourFilter == ContourMapsFilter::ONLY_FEET);
+		}
+		return false;
 	}
 };
 
