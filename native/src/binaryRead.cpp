@@ -3148,7 +3148,19 @@ void readMapObjectsForRendering(SearchQuery* q, std::vector<FoundMapDataObject>&
 				q->top = stop;
 				q->bottom = sbottom;
 			}
-			readMapObjects(q, file);
+			uint ocean = q->ocean;
+			uint oceanTiles = q->oceanTiles;
+			try {
+				readMapObjects(q, file);
+			} catch (const google::protobuf::FatalException& e) {
+				// a broken file (e.g. a seek back beyond the stream buffer) must not abort the app: skip it
+				OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "Skip map data of %s: %s",
+								  file->inputName.c_str(), e.what());
+				deleteObjects(q->publisher->result);
+				q->publisher->clear();
+				q->ocean = ocean;
+				q->oceanTiles = oceanTiles;
+			}
 			std::vector<FoundMapDataObject>::iterator r = q->publisher->result.begin();
 			tempResult.reserve((size_t)(q->publisher->result.size() + tempResult.size()));
 
