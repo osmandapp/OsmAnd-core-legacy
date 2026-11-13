@@ -8,6 +8,7 @@
 #include "Logging.h"
 
 static const int LOW_TIME_LIMIT = 120;
+static const char* const CONDITION_AND = "and";
 static const int WITHOUT_TIME_LIMIT = -1;
 static const int CURRENT_DAY_TIME_LIMIT = -2;
 static const int NO_TIME_MINUTES = -1;
@@ -1348,6 +1349,14 @@ std::vector<std::shared_ptr<OpeningHoursParser::OpeningHoursRule>> OpeningHoursP
 	}
 }
 
+bool OpeningHoursParser::OpeningHours::hasUnknownCondition() const {
+	return _unknownCondition;
+}
+
+void OpeningHoursParser::OpeningHours::setUnknownCondition(bool unknownCondition) {
+	_unknownCondition = unknownCondition;
+}
+
 int OpeningHoursParser::OpeningHours::getSequenceCount() const {
 	return _sequenceCount;
 }
@@ -1853,7 +1862,7 @@ std::vector<std::vector<std::string>> OpeningHoursParser::splitSequences(const s
 	return res;
 }
 
-void OpeningHoursParser::parseRuleV2(const std::string& rl, int sequenceIndex,
+bool OpeningHoursParser::parseRuleV2(const std::string& rl, int sequenceIndex,
 									 std::vector<std::shared_ptr<OpeningHoursRule>>& rules) {
 	std::string r = ohp_trim(rl);
 
@@ -1885,7 +1894,7 @@ void OpeningHoursParser::parseRuleV2(const std::string& rl, int sequenceIndex,
 		std::fill(months.begin(), months.end(), true);
 		basic->addTimeRange(0, 24 * 60);
 		rules.push_back(basic);
-		return;
+		return false;
 	}
 	std::vector<std::shared_ptr<Token>> tokens;
 	int startWord = 0;
@@ -1992,7 +2001,19 @@ void OpeningHoursParser::parseRuleV2(const std::string& rl, int sequenceIndex,
 		}
 	}
 
+	bool hasAnd = false;
+	bool hasUnknownToken = false;
+	for (const auto& t : tokens) {
+		if (t->type == TokenType::TOKEN_UNKNOWN) {
+			if (t->text == CONDITION_AND) {
+				hasAnd = true;
+			} else {
+				hasUnknownToken = true;
+			}
+		}
+	}
 	buildRule(basic, tokens, rules);
+	return hasAnd && hasUnknownToken;
 }
 
 void OpeningHoursParser::buildRule(std::shared_ptr<BasicOpeningHourRule>& basic,
@@ -2312,7 +2333,7 @@ OpeningHoursParser::~OpeningHoursParser() {
  * @param r the string to parse
  * @return BasicRule if the String is successfully parsed and UnparseableRule otherwise
  */
-void OpeningHoursParser::parseRules(const std::string& rl, int sequenceIndex,
+bool OpeningHoursParser::parseRules(const std::string& rl, int sequenceIndex,
 									std::vector<std::shared_ptr<OpeningHoursRule>>& rules) {
 	return parseRuleV2(rl, sequenceIndex, rules);
 }
@@ -2337,7 +2358,9 @@ std::shared_ptr<OpeningHoursParser::OpeningHours> OpeningHoursParser::parseOpene
 		for (const auto& r : rules) {
 			// check if valid
 			std::vector<std::shared_ptr<OpeningHoursRule>> rList;
-			parseRules(r, i, rList);
+			if (parseRules(r, i, rList)) {
+				rs->setUnknownCondition(true);
+			}
 			for (const auto& rule : rList) {
 				if (typeid(*rule) == typeid(BasicOpeningHourRule)) basicRules.push_back(rule);
 			}
