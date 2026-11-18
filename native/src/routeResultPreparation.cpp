@@ -1232,9 +1232,17 @@ bool containsAll(vector<int> a, vector<int> b) {
 	return true;
 }
 
+bool isAreaOutline(const SHARED_PTR<RouteDataObject>& road) {
+    size_t n = road->pointsX.size();
+    return n > 2 && road->getValue("area") == "yes" && road->pointsX[0] == road->pointsX[n - 1] && road->pointsY[0] == road->pointsY[n - 1];
+}
+
 SHARED_PTR<TurnType> attachKeepLeftInfoAndLanes(bool leftSide, SHARED_PTR<RouteSegmentResult>& prevSegm, SHARED_PTR<RouteSegmentResult>& currentSegm,
                                                 bool twiceRoadPresent, float prevBearingEnd) {
     auto attachedRoutes = currentSegm->getAttachedRoutes(currentSegm->getStartPointIndex());
+    attachedRoutes.erase(std::remove_if(attachedRoutes.begin(), attachedRoutes.end(),
+                                        [](const SHARED_PTR<RouteSegmentResult>& attached) { return isAreaOutline(attached->object); }),
+                         attachedRoutes.end());
     if (attachedRoutes.empty()) {
         return nullptr;
     }
