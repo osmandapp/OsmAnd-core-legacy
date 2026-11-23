@@ -46,6 +46,7 @@ SHARED_PTR<TurnType> getActiveTurnType(const vector<int>& lanes, bool leftSide, 
 bool hasAllowedLanes(int mainTurnType, vector<int>& lanesArray, int startActiveIndex, int endActiveIndex);
 int countOccurrences(const string& haystack, char needle);
 int highwaySpeakPriority(const string& highway);
+int highwaySpeakPriority(const string& highway, bool footOrBicycle);
 int getTurnByAngle(double angle);
 bool isSwitchToLink(SHARED_PTR<RouteSegmentResult>& curr, SHARED_PTR<RouteSegmentResult>& prev);
 bool twiceRoadPresent(vector<SHARED_PTR<RouteSegmentResult> >& result, int i);
