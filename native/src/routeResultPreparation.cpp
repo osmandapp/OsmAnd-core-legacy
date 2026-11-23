@@ -467,11 +467,11 @@ int countLanesMinOne(SHARED_PTR<RouteSegmentResult>& attached) {
 RoadSplitStructure calculateRoadSplitStructure(SHARED_PTR<RouteSegmentResult>& prevSegm,
                                                SHARED_PTR<RouteSegmentResult>& currentSegm,
                                                vector<SHARED_PTR<RouteSegmentResult>>& attachedRoutes,
-                                               string turnLanesPrevSegm, float prevBearingEnd) {
+                                               string turnLanesPrevSegm, float prevBearingEnd, bool footOrBicycle = false) {
     RoadSplitStructure rs;
     rs.currentDeviation = degreesDiff(prevBearingEnd, currentSegm->getBearingBegin());
-    int speakPriority = max(highwaySpeakPriority(prevSegm->object->getHighway()),
-                            highwaySpeakPriority(currentSegm->object->getHighway()));
+    int speakPriority = max(highwaySpeakPriority(prevSegm->object->getHighway(), footOrBicycle),
+                            highwaySpeakPriority(currentSegm->object->getHighway(), footOrBicycle));
     double currentAngle = normalizeDegrees360(currentSegm->getBearingBegin());
     double prevAngle =  normalizeDegrees360(prevSegm->getBearingBegin() - 180);
     bool hasSharpOrReverseLane = hasSharpOrReverseTurnLane(turnLanesPrevSegm);
@@ -737,6 +737,17 @@ vector<int> getTurnLanesInfo(SHARED_PTR<RouteSegmentResult>& prevSegm, SHARED_PT
         isSet = setAllowedLanes(mainTurnType, lanesArray);
     }
     return lanesArray;
+}
+
+// A bicycle or foot route on a cycleway or a footway is on a minor way itself, like on a path or a track, so a track
+// or a path forking off it is a real choice and is spoken (#27188). Only the route's own ways are judged so:
+// the roads attached to it keep their priority, and car routes keep the old order.
+int highwaySpeakPriority(const string& highway, bool footOrBicycle) {
+    if (footOrBicycle && (endsWith(highway, "cycleway") || endsWith(highway, "footway") || endsWith(highway, "pedestrian")
+                          || endsWith(highway, "bridleway") || endsWith(highway, "steps"))) {
+        return MAX_SPEAK_PRIORITY;
+    }
+    return highwaySpeakPriority(highway);
 }
 
 int highwaySpeakPriority(const string& highway) {
@@ -1233,14 +1244,14 @@ bool containsAll(vector<int> a, vector<int> b) {
 }
 
 SHARED_PTR<TurnType> attachKeepLeftInfoAndLanes(bool leftSide, SHARED_PTR<RouteSegmentResult>& prevSegm, SHARED_PTR<RouteSegmentResult>& currentSegm,
-                                                bool twiceRoadPresent, float prevBearingEnd) {
+                                                bool twiceRoadPresent, float prevBearingEnd, bool footOrBicycle) {
     auto attachedRoutes = currentSegm->getAttachedRoutes(currentSegm->getStartPointIndex());
     if (attachedRoutes.empty()) {
         return nullptr;
     }
     // keep left/right
     string turnLanesPrevSegm = twiceRoadPresent ? "" : getTurnLanesString(prevSegm);
-    RoadSplitStructure rs = calculateRoadSplitStructure(prevSegm, currentSegm, attachedRoutes, turnLanesPrevSegm, prevBearingEnd);
+    RoadSplitStructure rs = calculateRoadSplitStructure(prevSegm, currentSegm, attachedRoutes, turnLanesPrevSegm, prevBearingEnd, footOrBicycle);
     if(rs.roadsOnLeft  + rs.roadsOnRight == 0) {
         return nullptr;
     }
@@ -1249,7 +1260,7 @@ SHARED_PTR<TurnType> attachKeepLeftInfoAndLanes(bool leftSide, SHARED_PTR<RouteS
         string converted = convertNoneLanes(turnLanesPrevSegm, rs, getTurnLanesString(currentSegm));
         if (converted != turnLanesPrevSegm) {
             turnLanesPrevSegm = converted;
-            rs = calculateRoadSplitStructure(prevSegm, currentSegm, attachedRoutes, turnLanesPrevSegm, prevBearingEnd);
+            rs = calculateRoadSplitStructure(prevSegm, currentSegm, attachedRoutes, turnLanesPrevSegm, prevBearingEnd, footOrBicycle);
         }
     }
     
@@ -1285,7 +1296,7 @@ float getBearingEndExtended(vector<SHARED_PTR<RouteSegmentResult> >& result, int
     return bearing;
 }
 
-SHARED_PTR<TurnType> getTurnInfo(vector<SHARED_PTR<RouteSegmentResult> >& result, int i, bool leftSide) {
+SHARED_PTR<TurnType> getTurnInfo(vector<SHARED_PTR<RouteSegmentResult> >& result, int i, bool leftSide, bool footOrBicycle) {
     if (i == 0) {
         return TurnType::ptrValueOf(TurnType::C, false);
     }
@@ -1316,7 +1327,7 @@ SHARED_PTR<TurnType> getTurnInfo(vector<SHARED_PTR<RouteSegmentResult> >& result
                 t = getActiveTurnType(lanes, leftSide, t);
                 t->setLanes(lanes);
             } else if (fromTag != TurnType::C) {
-                t = attachKeepLeftInfoAndLanes(leftSide, prev, rr, twRoadPresent, getBearingEndExtended(result, i, bearingDist));
+                t = attachKeepLeftInfoAndLanes(leftSide, prev, rr, twRoadPresent, getBearingEndExtended(result, i, bearingDist), footOrBicycle);
                 if (t) {
                     SHARED_PTR<TurnType> mainTurnType = TurnType::ptrValueOf(fromTag, leftSide);
                     const vector<int>& lanes = t->getLanes();
@@ -1358,7 +1369,7 @@ SHARED_PTR<TurnType> getTurnInfo(vector<SHARED_PTR<RouteSegmentResult> >& result
             t = getActiveTurnType(lanes, leftSide, t);
 			t->setLanes(lanes);
 		} else {
-			t = attachKeepLeftInfoAndLanes(leftSide, prev, rr, twRoadPresent, getBearingEndExtended(result, i, bearingDist));
+			t = attachKeepLeftInfoAndLanes(leftSide, prev, rr, twRoadPresent, getBearingEndExtended(result, i, bearingDist), footOrBicycle);
 		}
 		if (t) {
 			t->setTurnAngle((float) -mpi);
@@ -2273,8 +2284,10 @@ void muteAndRemoveTurns(vector<SHARED_PTR<RouteSegmentResult> >& result) {
 }
 
 void prepareTurnResults(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResult> >& result) {
+    const auto profile = ctx->config->router->getProfile();
+    const bool footOrBicycle = profile == GeneralRouterProfile::BICYCLE || profile == GeneralRouterProfile::PEDESTRIAN;
     for (int i = 0; i < result.size(); i ++) {
-        const auto& turnType = getTurnInfo(result, i, ctx->leftSideNavigation);
+        const auto& turnType = getTurnInfo(result, i, ctx->leftSideNavigation, footOrBicycle);
         result[i]->turnType = turnType;
     }
     
