@@ -26,7 +26,7 @@ vector<SHARED_PTR<RouteSegmentResult> > prepareResult(RoutingContext* ctx, vecto
 vector<int> parseTurnLanes(const SHARED_PTR<RouteDataObject>& ro, double dirToNorthEastPi);
 vector<int> parseLanes(const SHARED_PTR<RouteDataObject>& ro, double dirToNorthEastPi);
 void avoidKeepForThroughMoving(vector<SHARED_PTR<RouteSegmentResult> >& result);
-void muteAndRemoveTurns(vector<SHARED_PTR<RouteSegmentResult> >& result);
+void muteAndRemoveTurns(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResult> >& result);
 void prepareTurnResults(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResult> >& result);
 SHARED_PTR<TurnType> getTurnByCurrentTurns(std::vector<SHARED_PTR<AttachedRoadInfo>> & lanesInfo, vector<int>& rawLanes,
 										   int keepTurnType, bool leftSide);

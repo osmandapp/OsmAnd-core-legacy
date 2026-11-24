@@ -2241,7 +2241,7 @@ void avoidKeepForThroughMoving(vector<SHARED_PTR<RouteSegmentResult> >& result) 
     }
 }
 
-void muteAndRemoveTurns(vector<SHARED_PTR<RouteSegmentResult> >& result) {
+void muteAndRemoveTurns(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResult> >& result) {
     for (int i = 0; i < result.size(); i++) {
         auto & curr = result[i];
         auto & turnType = curr->turnType;
@@ -2257,6 +2257,9 @@ void muteAndRemoveTurns(vector<SHARED_PTR<RouteSegmentResult> >& result) {
                 continue;
             }
             turnType->setSkipToSpeak(true);
+            if (ctx->config->showMinorTurns) {
+                continue;
+            }
             if (turnType->goAhead()) {
                 int uniqDirections = turnType->countDirections();
                 if (uniqDirections >= 3) {
@@ -2282,7 +2285,7 @@ void prepareTurnResults(RoutingContext* ctx, vector<SHARED_PTR<RouteSegmentResul
     ignorePrecedingStraightsOnSameIntersection(ctx->leftSideNavigation, result);
     justifyUTurns(ctx->leftSideNavigation, result);
     avoidKeepForThroughMoving(result);
-    muteAndRemoveTurns(result);
+    muteAndRemoveTurns(ctx, result);
     addTurnInfoDescriptions(result);
 }
 
