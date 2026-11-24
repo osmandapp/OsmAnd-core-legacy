@@ -2765,9 +2765,9 @@ bool sortTreeBounds(const MapTreeBounds& i, const MapTreeBounds& j) {
 }
 
 void searchMapData(CodedInputStream* input, MapRoot* root, MapIndex* ind, SearchQuery* req) {
-	// search
-	// a level may have several root boxes in front of the data blocks, and Seek cannot go back beyond the last
-	// buffer read: walk all root boxes first, then read their data blocks in file order
+	// Follow core v2 ObfMapSectionReader_P::loadMapObjects(): collect nodes from all roots
+	// via readTreeNodeChildren() before reading data blocks. Reading data inside this loop
+	// would require seeking back to the next root, possibly beyond FileInputStream's buffer.
 	std::vector<MapTreeBounds> foundSubtrees;
 	for (std::vector<MapTreeBounds>::iterator i = root->bounds.begin(); i != root->bounds.end(); i++) {
 		if (req->isCancelled()) {
@@ -2783,6 +2783,7 @@ void searchMapData(CodedInputStream* input, MapRoot* root, MapIndex* ind, Search
 		input->PopLimit(oldLimit);
 	}
 
+	// As in v2 loadMapObjects(), sort all blocks by offset before readMapObjectsBlock().
 	sort(foundSubtrees.begin(), foundSubtrees.end(), sortTreeBounds);
 	uint32_t length;
 	for (std::vector<MapTreeBounds>::iterator tree = foundSubtrees.begin(); tree != foundSubtrees.end(); tree++) {
@@ -3064,23 +3065,6 @@ void readMapObjects(SearchQuery* q, BinaryMapFile* file) {
 	}
 }
 
-// A broken file must not abort the app (protobuf throws, e.g. on a seek back beyond its buffer): skip it.
-// The callers clear the publisher before each file, so only this file's objects are dropped.
-static void readMapObjectsOrSkip(SearchQuery* q, BinaryMapFile* file) {
-	uint ocean = q->ocean;
-	uint oceanTiles = q->oceanTiles;
-	try {
-		readMapObjects(q, file);
-	} catch (const google::protobuf::FatalException& e) {
-		OsmAnd::LogPrintf(OsmAnd::LogSeverityLevel::Error, "Skip map data of %s: %s", file->inputName.c_str(),
-						  e.what());
-		deleteObjects(q->publisher->result);
-		q->publisher->clear();
-		q->ocean = ocean;
-		q->oceanTiles = oceanTiles;
-	}
-}
-
 // A tile at latitude lat is 1/cos(lat) times smaller on the ground than one of the same zoom at the equator,
 // while the basemap coastline is simplified for the equator: at 60 degrees a zoom 10 tile is as detailed as a
 // zoom 11 one there, and the basemap coastline is visibly too coarse in the Arctic and in Antarctica
@@ -3167,7 +3151,7 @@ void readMapObjectsForRendering(SearchQuery* q, std::vector<FoundMapDataObject>&
 				q->top = stop;
 				q->bottom = sbottom;
 			}
-			readMapObjectsOrSkip(q, file);
+			readMapObjects(q, file);
 			std::vector<FoundMapDataObject>::iterator r = q->publisher->result.begin();
 			tempResult.reserve((size_t)(q->publisher->result.size() + tempResult.size()));
 
@@ -3326,7 +3310,7 @@ static void readDetailedCoastlines(SearchQuery* q, std::vector<FoundMapDataObjec
 			q->req->clearState();
 		}
 		q->publisher->clear();
-		readMapObjectsOrSkip(&w, i->get());
+		readMapObjects(&w, i->get());
 		coast.insert(coast.end(), q->publisher->result.begin(), q->publisher->result.end());
 		q->publisher->result.clear();
 	}
