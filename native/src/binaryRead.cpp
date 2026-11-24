@@ -2765,7 +2765,10 @@ bool sortTreeBounds(const MapTreeBounds& i, const MapTreeBounds& j) {
 }
 
 void searchMapData(CodedInputStream* input, MapRoot* root, MapIndex* ind, SearchQuery* req) {
-	// search
+	// Follow core v2 ObfMapSectionReader_P::loadMapObjects(): collect nodes from all roots
+	// via readTreeNodeChildren() before reading data blocks. Reading data inside this loop
+	// would require seeking back to the next root, possibly beyond FileInputStream's buffer.
+	std::vector<MapTreeBounds> foundSubtrees;
 	for (std::vector<MapTreeBounds>::iterator i = root->bounds.begin(); i != root->bounds.end(); i++) {
 		if (req->isCancelled()) {
 			return;
@@ -2774,24 +2777,24 @@ void searchMapData(CodedInputStream* input, MapRoot* root, MapIndex* ind, Search
 			i->bottom < (uint)req->top) {
 			continue;
 		}
-		std::vector<MapTreeBounds> foundSubtrees;
 		input->Seek(i->filePointer);
 		int oldLimit = input->PushLimit(i->length);
 		searchMapTreeBounds(input, &(*i), root, req, &foundSubtrees);
 		input->PopLimit(oldLimit);
+	}
 
-		sort(foundSubtrees.begin(), foundSubtrees.end(), sortTreeBounds);
-		uint32_t length;
-		for (std::vector<MapTreeBounds>::iterator tree = foundSubtrees.begin(); tree != foundSubtrees.end(); tree++) {
-			if (req->isCancelled()) {
-				return;
-			}
-			input->Seek(tree->mapDataBlock);
-			WireFormatLite::ReadPrimitive<uint32_t, WireFormatLite::TYPE_UINT32>(input, &length);
-			int oldLimit = input->PushLimit(length);
-			readMapDataBlocks(input, req, &(*tree), ind);
-			input->PopLimit(oldLimit);
+	// As in v2 loadMapObjects(), sort all blocks by offset before readMapObjectsBlock().
+	sort(foundSubtrees.begin(), foundSubtrees.end(), sortTreeBounds);
+	uint32_t length;
+	for (std::vector<MapTreeBounds>::iterator tree = foundSubtrees.begin(); tree != foundSubtrees.end(); tree++) {
+		if (req->isCancelled()) {
+			return;
 		}
+		input->Seek(tree->mapDataBlock);
+		WireFormatLite::ReadPrimitive<uint32_t, WireFormatLite::TYPE_UINT32>(input, &length);
+		int oldLimit = input->PushLimit(length);
+		readMapDataBlocks(input, req, &(*tree), ind);
+		input->PopLimit(oldLimit);
 	}
 }
 
