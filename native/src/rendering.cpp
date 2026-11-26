@@ -186,7 +186,7 @@ void calcPoint(std::pair<int, int> c, RenderingContext* rc) {
 }
 
 UNORDERED(map)<std::string, sk_sp<SkPathEffect>> pathEffects;
-sk_sp<SkPathEffect> getDashEffect(RenderingContext* rc, std::string input) {
+sk_sp<SkPathEffect> getDashEffect(RenderingContext* rc, std::string input, float phase) {
 	const char* chars = input.c_str();
 	int i = 0;
 	char fval[10];
@@ -223,9 +223,11 @@ sk_sp<SkPathEffect> getDashEffect(RenderingContext* rc, std::string input) {
 		}
 	}
 
+	hash += '@';
+	hash += std::to_string(phase);
 	if (pathEffects.find(hash) != pathEffects.end()) return pathEffects[hash];
 
-	sk_sp<SkPathEffect> r = SkDashPathEffect::Make(&primFloats[0], primFloats.size(), 0);
+	sk_sp<SkPathEffect> r = SkDashPathEffect::Make(&primFloats[0], primFloats.size(), phase);
 	pathEffects[hash] = r;
 	return r;
 }
@@ -235,46 +237,55 @@ int updatePaint(RenderingRuleSearchRequest* req, SkPaint* paint, int ind, int ar
 	RenderingRuleProperty* rStrokeW;
 	RenderingRuleProperty* rCap;
 	RenderingRuleProperty* rPathEff;
+	RenderingRuleProperty* rPathEffPhase;
 	if (ind == 0) {
 		rColor = req->props()->R_COLOR;
 		rStrokeW = req->props()->R_STROKE_WIDTH;
 		rCap = req->props()->R_CAP;
 		rPathEff = req->props()->R_PATH_EFFECT;
+		rPathEffPhase = req->props()->R_PATH_EFFECT_PHASE;
 	} else if (ind == 1) {
 		rColor = req->props()->R_COLOR_2;
 		rStrokeW = req->props()->R_STROKE_WIDTH_2;
 		rCap = req->props()->R_CAP_2;
 		rPathEff = req->props()->R_PATH_EFFECT_2;
+		rPathEffPhase = req->props()->R_PATH_EFFECT_PHASE_2;
 	} else if (ind == -1) {
 		rColor = req->props()->R_COLOR_0;
 		rStrokeW = req->props()->R_STROKE_WIDTH_0;
 		rCap = req->props()->R_CAP_0;
 		rPathEff = req->props()->R_PATH_EFFECT_0;
+		rPathEffPhase = req->props()->R_PATH_EFFECT_PHASE_0;
 	} else if (ind == -2) {
 		rColor = req->props()->R_COLOR__1;
 		rStrokeW = req->props()->R_STROKE_WIDTH__1;
 		rCap = req->props()->R_CAP__1;
 		rPathEff = req->props()->R_PATH_EFFECT__1;
+		rPathEffPhase = req->props()->R_PATH_EFFECT_PHASE__1;
 	} else if (ind == 2) {
 		rColor = req->props()->R_COLOR_3;
 		rStrokeW = req->props()->R_STROKE_WIDTH_3;
 		rCap = req->props()->R_CAP_3;
 		rPathEff = req->props()->R_PATH_EFFECT_3;
+		rPathEffPhase = req->props()->R_PATH_EFFECT_PHASE_3;
 	} else if (ind == -3) {
 		rColor = req->props()->R_COLOR__2;
 		rStrokeW = req->props()->R_STROKE_WIDTH__2;
 		rCap = req->props()->R_CAP__2;
 		rPathEff = req->props()->R_PATH_EFFECT__2;
+		rPathEffPhase = req->props()->R_PATH_EFFECT_PHASE__2;
 	} else if (ind == 3) {
 		rColor = req->props()->R_COLOR_4;
 		rStrokeW = req->props()->R_STROKE_WIDTH_4;
 		rCap = req->props()->R_CAP_4;
 		rPathEff = req->props()->R_PATH_EFFECT_4;
+		rPathEffPhase = req->props()->R_PATH_EFFECT_PHASE_4;
 	} else {
 		rColor = req->props()->R_COLOR_5;
 		rStrokeW = req->props()->R_STROKE_WIDTH_5;
 		rCap = req->props()->R_CAP_5;
 		rPathEff = req->props()->R_PATH_EFFECT_5;
+		rPathEffPhase = req->props()->R_PATH_EFFECT_PHASE_5;
 	}
 
 	if (area) {
@@ -305,7 +316,7 @@ int updatePaint(RenderingRuleSearchRequest* req, SkPaint* paint, int ind, int ar
 			paint->setStrokeCap(SkPaint::kButt_Cap);
 
 		if (pathEff.size() > 0) {
-			sk_sp<SkPathEffect> p = getDashEffect(rc, pathEff);
+			sk_sp<SkPathEffect> p = getDashEffect(rc, pathEff, getDensityValue(rc, req, rPathEffPhase));
 			paint->setPathEffect(p);
 		} else {
 			paint->setPathEffect(NULL);
