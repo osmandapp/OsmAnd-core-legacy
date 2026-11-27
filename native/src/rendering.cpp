@@ -303,6 +303,8 @@ int updatePaint(RenderingRuleSearchRequest* req, SkPaint* paint, int ind, int ar
 			paint->setStrokeCap(SkPaint::kSquare_Cap);
 		else
 			paint->setStrokeCap(SkPaint::kButt_Cap);
+		// Round joins, as in OsmAnd-core MapRasterizer_P::updatePaint (Skia default miter spikes at sharp bends)
+		paint->setStrokeJoin(SkPaint::kRound_Join);
 
 		if (pathEff.size() > 0) {
 			sk_sp<SkPathEffect> p = getDashEffect(rc, pathEff);
