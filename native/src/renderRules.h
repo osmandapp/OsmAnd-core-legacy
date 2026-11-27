@@ -247,6 +247,15 @@ public:
 	RenderingRuleProperty* R_PATH_EFFECT__1;
 	RenderingRuleProperty* R_PATH_EFFECT__2;
 
+	RenderingRuleProperty* R_PATH_EFFECT_PHASE_5;
+	RenderingRuleProperty* R_PATH_EFFECT_PHASE_4;
+	RenderingRuleProperty* R_PATH_EFFECT_PHASE_3;
+	RenderingRuleProperty* R_PATH_EFFECT_PHASE_2;
+	RenderingRuleProperty* R_PATH_EFFECT_PHASE;
+	RenderingRuleProperty* R_PATH_EFFECT_PHASE_0;
+	RenderingRuleProperty* R_PATH_EFFECT_PHASE__1;
+	RenderingRuleProperty* R_PATH_EFFECT_PHASE__2;
+
 	RenderingRuleProperty* R_STROKE_WIDTH_5;
 	RenderingRuleProperty* R_STROKE_WIDTH_4;
 	RenderingRuleProperty* R_STROKE_WIDTH_3;
@@ -463,6 +472,15 @@ public:
 		R_PATH_EFFECT_0 = registerRuleInternal(RenderingRuleProperty::createOutputStringProperty("pathEffect_0"));
 		R_PATH_EFFECT__1 = registerRuleInternal(RenderingRuleProperty::createOutputStringProperty("pathEffect__1"));
 		R_PATH_EFFECT__2 = registerRuleInternal(RenderingRuleProperty::createOutputStringProperty("pathEffect__2"));
+
+		R_PATH_EFFECT_PHASE = registerRuleInternal(RenderingRuleProperty::createOutputFloatProperty("pathEffectPhase"));
+		R_PATH_EFFECT_PHASE_2 = registerRuleInternal(RenderingRuleProperty::createOutputFloatProperty("pathEffectPhase_2"));
+		R_PATH_EFFECT_PHASE_4 = registerRuleInternal(RenderingRuleProperty::createOutputFloatProperty("pathEffectPhase_4"));
+		R_PATH_EFFECT_PHASE_5 = registerRuleInternal(RenderingRuleProperty::createOutputFloatProperty("pathEffectPhase_5"));
+		R_PATH_EFFECT_PHASE_3 = registerRuleInternal(RenderingRuleProperty::createOutputFloatProperty("pathEffectPhase_3"));
+		R_PATH_EFFECT_PHASE_0 = registerRuleInternal(RenderingRuleProperty::createOutputFloatProperty("pathEffectPhase_0"));
+		R_PATH_EFFECT_PHASE__1 = registerRuleInternal(RenderingRuleProperty::createOutputFloatProperty("pathEffectPhase__1"));
+		R_PATH_EFFECT_PHASE__2 = registerRuleInternal(RenderingRuleProperty::createOutputFloatProperty("pathEffectPhase__2"));
 
 		R_CAP = registerRuleInternal(RenderingRuleProperty::createOutputStringProperty("cap"));
 		R_CAP_2 = registerRuleInternal(RenderingRuleProperty::createOutputStringProperty("cap_2"));
